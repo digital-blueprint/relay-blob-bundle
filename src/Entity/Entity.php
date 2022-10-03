@@ -21,7 +21,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *     },
  *     itemOperations={
  *         "get" = {
- *             "path" = "/blob/entitys/{identifier}",
+ *             "path" = "/blob/entitysTEST/{identifier}",
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},
  *             },
