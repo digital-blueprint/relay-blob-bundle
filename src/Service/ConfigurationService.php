@@ -5,11 +5,7 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Service;
 
 use Dbp\Relay\BlobBundle\Entity\Bucket;
-use Dbp\Relay\MonoBundle\Entity\PaymentContract;
-use Dbp\Relay\MonoBundle\Entity\PaymentMethod;
-use Dbp\Relay\MonoBundle\Entity\PaymentType;
 use Symfony\Component\HttpFoundation\UrlHelper;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ConfigurationService
 {
@@ -41,7 +37,7 @@ class ConfigurationService
     /**
      * @return array
      */
-    public function getConfig()
+    public function getConfig(): array
     {
         return $this->config;
     }
@@ -55,7 +51,7 @@ class ConfigurationService
 
         $bucketsConfig = $this->config['buckets'];
         foreach ($bucketsConfig as $bucket => $bucketConfig) {
-            $bucket = Bucket::fromConfig($bucket, $bucketConfig);
+            $bucket = Bucket::fromConfig($bucketConfig);
             $buckets[] = $bucket;
         }
 
@@ -68,7 +64,7 @@ class ConfigurationService
 
         if (array_key_exists($bucketName, $this->config['buckets'])) {
             $bucketConfig = $this->config['buckets'][$bucketName];
-            $bucket = Bucket::fromConfig($bucketName, $bucketConfig);
+            $bucket = Bucket::fromConfig($bucketConfig);
         }
 
         return $bucket;
@@ -79,7 +75,7 @@ class ConfigurationService
         $buckets = $this->config['buckets'];
         foreach ($buckets as $bucket => $bucketConfig) {
             if (array_key_exists($bucketID, $bucketConfig['bucket_id'])) {
-                return Bucket::fromConfig($bucket, $bucketConfig);
+                return Bucket::fromConfig($bucketConfig);
             }
         }
 

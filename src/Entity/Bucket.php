@@ -197,7 +197,7 @@ class Bucket
         $this->policies = $policies;
     }
 
-    public static function fromConfig(string $identifier, array $config): Bucket
+    public static function fromConfig(array $config): Bucket
     {
         $bucket = new Bucket();
         $bucket->setIdentifier((string) $config['bucket_id']);
