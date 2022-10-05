@@ -5,11 +5,7 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Controller;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
-use Dbp\Relay\CoreBundle\Exception\ApiError;
-use Dbp\Relay\DispatchBundle\Entity\RequestFile;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Dbp\Relay\BlobBundle\Service\BlobService;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 final class CreateFileAction extends BaseBlobController

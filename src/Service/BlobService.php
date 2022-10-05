@@ -11,7 +11,6 @@ use Dbp\Relay\FormalizeBundle\Event\CreateFileAction;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Uid\Uuid;
 
 class BlobService
 {
