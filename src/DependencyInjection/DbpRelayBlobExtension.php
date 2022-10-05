@@ -65,6 +65,8 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
             ],
         ]);
 
+        $this->registerEntityManager($container, 'dbp_relay_blob_bundle');
+
         $container->prependExtensionConfig('doctrine_migrations', [
             'migrations_paths' => [
                 'Dbp\Relay\BlobBundle\Migrations' => __DIR__.'/../Migrations',
