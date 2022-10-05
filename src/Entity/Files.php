@@ -3,15 +3,14 @@
 declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Entity;
-use Doctrine\ORM\Mapping as ORM;
 
 use ApiPlatform\Core\Annotation\ApiProperty;
 use ApiPlatform\Core\Annotation\ApiResource;
-use Symfony\Component\Serializer\Annotation\Groups;
 use Dbp\Relay\BlobBundle\Controller\CreateFileAction;
 use Dbp\Relay\BlobBundle\Controller\DeleteFilesByPrefix;
 use Dbp\Relay\BlobBundle\Controller\GetFilesByPrefix;
-
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
  * @ApiResource(
@@ -27,24 +26,24 @@ use Dbp\Relay\BlobBundle\Controller\GetFilesByPrefix;
  *                     "content" = {
  *                         "multipart/form-data" = {
  *                             "schema" = {
- *                                  "type" = "object",
- *                                  "properties" = {
- *                                      "file" = {"type" = "string", "format" = "binary"},
- *                                      "prefix" = {"description" = "Prefix of the file", "type" = "string", "example" = "my-prefix/my-subprefix"},
- *                                      "fileName" = {"description" = "Friendly name of the file", "type" = "string", "example" = "myfile"},
- *                                      "bucketID" = {"description" = "ID of the bucket", "type" = "string", "example" = "1234"},
- *                                      "retentionDuration" = {"description" = "Max time in timestamp duration format from creation date when file will be deleted", "type" = "integer", "format" = "int64", "example" = "00000000200000"},
- *                                      "idleRetentionDuration" = {"description" = "Time in timestamp duration format from last access date when file will be deleted, can't be longer than retentionDuration, Format: yyyymmddhhmmss", "type" = "integer", "format" = "int64", "example" = "00000000200000"},
- *                                      "additionalMetadata" = {"description" = "Additional Metadata for the file", "type" = "object", "example" = "{""myFileData"": ""my File additional Data""}"},
- *                                  }
- *                              },
- *                              "required" = {"file", "bucketID"},
+ *                                 "type" = "object",
+ *                                 "properties" = {
+ *                                     "file" = {"type" = "string", "format" = "binary"},
+ *                                     "prefix" = {"description" = "Prefix of the file", "type" = "string", "example" = "my-prefix/my-subprefix"},
+ *                                     "fileName" = {"description" = "Friendly name of the file", "type" = "string", "example" = "myfile"},
+ *                                     "bucketID" = {"description" = "ID of the bucket", "type" = "string", "example" = "1234"},
+ *                                     "retentionDuration" = {"description" = "Max time in timestamp duration format from creation date when file will be deleted", "type" = "integer", "format" = "int64", "example" = "00000000200000"},
+ *                                     "idleRetentionDuration" = {"description" = "Time in timestamp duration format from last access date when file will be deleted, can't be longer than retentionDuration, Format: yyyymmddhhmmss", "type" = "integer", "format" = "int64", "example" = "00000000200000"},
+ *                                     "additionalMetadata" = {"description" = "Additional Metadata for the file", "type" = "object", "example" = "{""myFileData"": ""my File additional Data""}"},
+ *                                 }
+ *                             },
+ *                             "required" = {"file", "bucketID"},
  *                         }
  *                     }
  *                 },
  *             },
-*         },
-*          "get_byPrefix" = {
+ *         },
+ *         "get_byPrefix" = {
  *             "method" = "GET",
  *             "path" = "/blob/files",
  *             "pagination_client_partial" = true,
@@ -63,7 +62,7 @@ use Dbp\Relay\BlobBundle\Controller\GetFilesByPrefix;
  *                 }
  *             }
  *         },
- *          "delete_byPrefix" = {
+ *         "delete_byPrefix" = {
  *             "method" = "DELETE",
  *             "path" = "/blob/files",
  *             "controller" = DeleteFilesByPrefix::class,
@@ -208,10 +207,10 @@ class Files
      * @ORM\Column(type="text")
      * @ApiProperty(iri="https://schema.org/DataFeed")
      * @Groups({"BlobFiles:output", "BlobFiles:input"})
+     *
      * @var string
      */
     private $additionalMetadata;
-
 
     public function getIdentifier(): string
     {

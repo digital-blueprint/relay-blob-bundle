@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Tests;
 
 use ApiPlatform\Core\Bridge\Symfony\Bundle\ApiPlatformBundle;
-use Dbp\Relay\CoreBundle\DbpRelayCoreBundle;
 use Dbp\Relay\BlobBundle\DbpRelayBlobBundle;
+use Dbp\Relay\CoreBundle\DbpRelayCoreBundle;
 use Nelmio\CorsBundle\NelmioCorsBundle;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
