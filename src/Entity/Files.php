@@ -7,8 +7,11 @@ use Doctrine\ORM\Mapping as ORM;
 
 use ApiPlatform\Core\Annotation\ApiProperty;
 use ApiPlatform\Core\Annotation\ApiResource;
-use Dbp\Relay\BlobBundle\Controller\LoggedInOnly;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Dbp\Relay\BlobBundle\Controller\CreateFileAction;
+use Dbp\Relay\BlobBundle\Controller\DeleteFilesByPrefix;
+use Dbp\Relay\BlobBundle\Controller\GetFilesByPrefix;
+
 
 /**
  * @ApiResource(
@@ -260,22 +263,22 @@ class Files
         $this->lastAccess = $lastAccess;
     }
 
-    public function getRetentionDuration(): \DateTimeImmutable
+    public function getRetentionDuration(): string
     {
         return $this->retentionDuration;
     }
 
-    public function setRetentionDuration(\DateTimeImmutable $retentionDuration): void
+    public function setRetentionDuration(string $retentionDuration): void
     {
         $this->retentionDuration = $retentionDuration;
     }
 
-    public function getIdleRetentionDuration(): \DateTimeImmutable
+    public function getIdleRetentionDuration(): string
     {
         return $this->idleRetentionDuration;
     }
 
-    public function setIdleRetentionDuration(\DateTimeImmutable $idleRetentionDuration): void
+    public function setIdleRetentionDuration(string $idleRetentionDuration): void
     {
         $this->idleRetentionDuration = $idleRetentionDuration;
     }
