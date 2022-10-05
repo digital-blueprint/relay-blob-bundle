@@ -27,9 +27,9 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *                                  "type" = "object",
  *                                  "properties" = {
  *                                      "file" = {"type" = "string", "format" = "binary"},
+ *                                      "prefix" = {"description" = "Prefix of the file", "type" = "string", "example" = "my-prefix/my-subprefix"},
  *                                      "fileName" = {"description" = "Friendly name of the file", "type" = "string", "example" = "myfile"},
  *                                      "bucketID" = {"description" = "ID of the bucket", "type" = "string", "example" = "1234"},
- *                                      "prefix" = {"description" = "Prefix of the file", "type" = "string", "example" = "my-prefix/my-subprefix"},
  *                                      "retentionDuration" = {"description" = "Max time in timestamp duration format from creation date when file will be deleted", "type" = "integer", "format" = "int64", "example" = "00000000200000"},
  *                                      "idleRetentionDuration" = {"description" = "Time in timestamp duration format from last access date when file will be deleted, can't be longer than retentionDuration, Format: yyyymmddhhmmss", "type" = "integer", "format" = "int64", "example" = "00000000200000"},
  *                                      "additionalMetadata" = {"description" = "Additional Metadata for the file", "type" = "object", "example" = "{""myFileData"": ""my File additional Data""}"},
@@ -123,6 +123,15 @@ class Files
     private $identifier;
 
     /**
+     * @ORM\Column(type="string", length=255)
+     * @ApiProperty(iri="https://schema.org/Text")
+     * @Groups({"BlobFiles:output", "BlobFiles:input"})
+     *
+     * @var string
+     */
+    private $prefix;
+
+    /**
      * @ORM\Column(type="string", length=50)
      * @ApiProperty(iri="https://schema.org/name")
      * @Groups({"BlobFiles:output", "BlobFiles:input"})
@@ -163,7 +172,7 @@ class Files
      * @ApiProperty(iri="https://schema.org/duration")
      * @Groups({"BlobFiles:output", "BlobFiles:input"})
      *
-     * @var \DateTimeImmutable
+     * @var string
      */
     private $retentionDuration;
 
@@ -172,7 +181,7 @@ class Files
      * @ApiProperty(iri="https://schema.org/duration")
      * @Groups({"BlobFiles:output", "BlobFiles:input"})
      *
-     * @var \DateTimeImmutable
+     * @var string
      */
     private $idleRetentionDuration;
 
@@ -184,15 +193,6 @@ class Files
      * @var string
      */
     private $contentUrl;
-
-    /**
-     * @ORM\Column(type="string", length=255)
-     * @ApiProperty(iri="https://schema.org/Text")
-     * @Groups({"BlobFiles:output", "BlobFiles:input"})
-     *
-     * @var string
-     */
-    private $prefix;
 
     /**
      * @Groups({"BlobFiles:input"})

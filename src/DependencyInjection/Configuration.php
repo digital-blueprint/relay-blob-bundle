@@ -13,6 +13,12 @@ class Configuration implements ConfigurationInterface
     {
         $treeBuilder = new TreeBuilder('dbp_relay_blob');
 
+        $treeBuilder->getRootNode()
+            ->children()
+            ->scalarNode('database_url')->end()
+            ->end()
+            ->end();
+
         return $treeBuilder;
     }
 }
