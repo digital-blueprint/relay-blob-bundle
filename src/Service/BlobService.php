@@ -6,8 +6,6 @@ namespace Dbp\Relay\BlobBundle\Service;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
-use Dbp\Relay\FormalizeBundle\Entity\Files;
-use Dbp\Relay\FormalizeBundle\Event\CreateFileAction;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Response;
