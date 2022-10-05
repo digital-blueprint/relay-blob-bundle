@@ -46,6 +46,7 @@ class LocalDatasystemService
         } catch (\Exception $e) {
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be created!', 'blob:form-not-created', ['message' => $e->getMessage()]);
         }
+
         return $fileData;
     }
 }

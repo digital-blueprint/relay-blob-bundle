@@ -19,7 +19,6 @@ class ConfigurationService
      */
     private $urlHelper;
 
-
     public function __construct(
         UrlHelper $urlHelper
     ) {
@@ -34,9 +33,6 @@ class ConfigurationService
         $this->config = $config;
     }
 
-    /**
-     * @return array
-     */
     public function getConfig(): array
     {
         return $this->config;

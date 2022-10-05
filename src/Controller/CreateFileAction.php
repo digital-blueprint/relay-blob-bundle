@@ -20,32 +20,29 @@ final class CreateFileAction extends BaseBlobController
         $this->blobService = $blobService;
     }
 
-
     /**
      * @throws HttpException
      */
     public function __invoke(FileData $fileData): FileData
     {
-
         // Check bucketID
         // create id
 
-            // check folder
-            // create folder
-            // rename datei
-            // Uploadfile
+        // check folder
+        // create folder
+        // rename datei
+        // Uploadfile
 
         //check if file uploaded
         // if upload failed, figure aut why
 
-            // create share link
-            // save share link to database with valid unit date from config
+        // create share link
+        // save share link to database with valid unit date from config
 
         // return sharelink
-        $contentUrl = "my-url";
-        $fileDataIdentifier = "1234";
+        $contentUrl = 'my-url';
+        $fileDataIdentifier = '1234';
 
         return $this->blobService->saveFile($fileData, $fileDataIdentifier, $contentUrl);
     }
-
 }

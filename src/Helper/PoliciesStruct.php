@@ -10,36 +10,34 @@ namespace Dbp\Relay\BlobBundle\Helper;
  * open = open with an docreader is enabled (e.g. nextcloud filesharing ohne write rights)
  * download = only file download
  * rename = rename is allowed
- * work = collab working is allowed
- *
+ * work = collab working is allowed.
  */
 class PoliciesStruct
 {
     /**
-     * @var boolean
+     * @var bool
      */
     public $create = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $open = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $download = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $rename = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $work = false;
-
 
     /**
      * @param $create
@@ -47,7 +45,6 @@ class PoliciesStruct
      * @param $download
      * @param $rename
      * @param $work
-     * @return PoliciesStruct
      */
     public static function withPolicies($create, $open, $download, $rename, $work): PoliciesStruct
     {
@@ -58,6 +55,6 @@ class PoliciesStruct
         $instance->rename = $rename;
         $instance->work = $work;
 
-       return $instance;
+        return $instance;
     }
 }
