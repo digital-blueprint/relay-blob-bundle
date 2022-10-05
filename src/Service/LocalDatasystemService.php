@@ -6,12 +6,9 @@ namespace Dbp\Relay\BlobBundle\Service;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
-use Dbp\Relay\FormalizeBundle\Entity\Files;
-use Dbp\Relay\FormalizeBundle\Event\CreateFileAction;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Uid\Uuid;
 
 class LocalDatasystemService
 {
@@ -47,7 +44,7 @@ class LocalDatasystemService
             $this->em->persist($fileData);
             $this->em->flush();
         } catch (\Exception $e) {
-            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be created!', 'formalize:submission-not-created', ['message' => $e->getMessage()]);
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be created!', 'blob:form-not-created', ['message' => $e->getMessage()]);
         }
         return $fileData;
     }
