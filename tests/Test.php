@@ -12,9 +12,4 @@ class Test extends TestCase
     {
         $this->assertTrue(true);
     }
-
-    public function testExample()
-    {
-        $this->assertTrue(true);
-    }
 }
