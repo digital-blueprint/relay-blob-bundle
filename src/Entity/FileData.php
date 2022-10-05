@@ -113,7 +113,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *     }
  * )
  */
-class Files
+class FileData
 {
     /**
      * @ORM\Id
