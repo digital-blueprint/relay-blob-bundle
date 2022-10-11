@@ -6,6 +6,7 @@ namespace Dbp\Relay\BlobBundle\Controller;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 final class CreateFileAction extends BaseBlobController
@@ -23,7 +24,7 @@ final class CreateFileAction extends BaseBlobController
     /**
      * @throws HttpException
      */
-    public function __invoke(FileData $fileData): FileData
+    public function __invoke(Request $request): FileData
     {
         // Check bucketID
         // create id
@@ -42,7 +43,7 @@ final class CreateFileAction extends BaseBlobController
         // return sharelink
         $contentUrl = 'my-url';
         $fileDataIdentifier = '1234';
-
+        $fileData = new FileData();
         return $this->blobService->saveFile($fileData, $fileDataIdentifier, $contentUrl);
     }
 }
