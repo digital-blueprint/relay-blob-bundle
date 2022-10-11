@@ -22,7 +22,6 @@ class BlobService
      */
     public $configurationService; //TODO maybe private
 
-
     public function __construct(ManagerRegistry $managerRegistry, ConfigurationService $configurationService)
     {
         $manager = $managerRegistry->getManager('dbp_relay_blob_bundle');
@@ -43,16 +42,15 @@ class BlobService
         //check bucket ID exists
         //check retentionDuration & idleRetentionDuration valid durations
 
+        /*
 
-   /*
-
-        try {
-            $this->em->persist($fileData);
-            $this->em->flush();
-        } catch (\Exception $e) {
-            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be created!yuhuu', 'blob:submission-not-created', ['message' => $e->getMessage()]);
-        }
-        throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Alles doof', 'blob:alles-doof');
+             try {
+                 $this->em->persist($fileData);
+                 $this->em->flush();
+             } catch (\Exception $e) {
+                 throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be created!yuhuu', 'blob:submission-not-created', ['message' => $e->getMessage()]);
+             }
+             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Alles doof', 'blob:alles-doof');
 */
         return $fileData;
     }

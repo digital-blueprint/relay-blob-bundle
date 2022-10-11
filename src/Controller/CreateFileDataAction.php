@@ -6,11 +6,11 @@ namespace Dbp\Relay\BlobBundle\Controller;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Exception\HttpException;
-use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Uid\Uuid;
 
 final class CreateFileDataAction extends BaseBlobController
@@ -71,7 +71,6 @@ final class CreateFileDataAction extends BaseBlobController
 
         $fileData->setFile($uploadedFile);
 
-
         $fileData->setPrefix($request->get('prefix'));
         $fileData->setFileName($request->get('fileName'));
         $time = new \DateTime('now');
@@ -93,8 +92,6 @@ final class CreateFileDataAction extends BaseBlobController
         //check config
         //use given service for bucket
         //then return correct data for service
-
-
 
         return $this->blobService->createFileData($fileData, $fileDataIdentifier, $contentUrl);
     }

@@ -38,7 +38,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *                                     "idleRetentionDuration" = {"description" = "Time in timestamp duration format from last access date when file will be deleted, can't be longer than retentionDuration, Format: yyyymmddhhmmss", "type" = "integer", "format" = "int64", "example" = "00000000200000"},
  *                                     "additionalMetadata" = {"description" = "Additional Metadata for the file", "type" = "object", "example" = "{""myFileData"": ""my File additional Data""}"},
  *                                 },
- *                                "required" = {"file", "bucketID"},
+ *                                 "required" = {"file", "bucketID"},
  *                             },
  *                         }
  *                     }

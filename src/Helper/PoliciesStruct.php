@@ -64,11 +64,11 @@ class PoliciesStruct
     public static function withPoliciesArray($policies): PoliciesStruct
     {
         $instance = new self();
-        $instance->create = $policies["create"];
-        $instance->open = $policies["open"];
-        $instance->download = $policies["download"];
-        $instance->rename = $policies["rename"];
-        $instance->work = $policies["work"];
+        $instance->create = $policies['create'];
+        $instance->open = $policies['open'];
+        $instance->download = $policies['download'];
+        $instance->rename = $policies['rename'];
+        $instance->work = $policies['work'];
 
         return $instance;
     }

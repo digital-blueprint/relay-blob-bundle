@@ -7,7 +7,7 @@ namespace Dbp\Relay\BlobBundle\Migrations;
 use Doctrine\DBAL\Schema\Schema;
 
 /**
- * generate blob_files
+ * generate blob_files.
  */
 final class Version20221011110238 extends EntityManagerMigration
 {
