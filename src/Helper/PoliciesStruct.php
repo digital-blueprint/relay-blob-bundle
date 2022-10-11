@@ -57,4 +57,19 @@ class PoliciesStruct
 
         return $instance;
     }
+
+    /**
+     * @param $policies
+     */
+    public static function withPoliciesArray($policies): PoliciesStruct
+    {
+        $instance = new self();
+        $instance->create = $policies["create"];
+        $instance->open = $policies["open"];
+        $instance->download = $policies["download"];
+        $instance->rename = $policies["rename"];
+        $instance->work = $policies["work"];
+
+        return $instance;
+    }
 }

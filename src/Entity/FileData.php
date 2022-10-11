@@ -6,19 +6,21 @@ namespace Dbp\Relay\BlobBundle\Entity;
 
 use ApiPlatform\Core\Annotation\ApiProperty;
 use ApiPlatform\Core\Annotation\ApiResource;
-use Dbp\Relay\BlobBundle\Controller\CreateFileAction;
+use Dbp\Relay\BlobBundle\Controller\CreateFileDataAction;
 use Dbp\Relay\BlobBundle\Controller\DeleteFilesByPrefix;
 use Dbp\Relay\BlobBundle\Controller\GetFilesByPrefix;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
+ * @ORM\Entity
+ * @ORM\Table(name="blob_files")
  * @ApiResource(
  *     collectionOperations={
  *         "post" = {
  *             "method" = "POST",
  *             "path" = "/blob/files",
- *             "controller" = CreateFileAction::class,
+ *             "controller" = CreateFileDataAction::class,
  *             "deserialize" = false,
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},
@@ -35,9 +37,9 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *                                     "retentionDuration" = {"description" = "Max time in timestamp duration format from creation date when file will be deleted", "type" = "integer", "format" = "int64", "example" = "00000000200000"},
  *                                     "idleRetentionDuration" = {"description" = "Time in timestamp duration format from last access date when file will be deleted, can't be longer than retentionDuration, Format: yyyymmddhhmmss", "type" = "integer", "format" = "int64", "example" = "00000000200000"},
  *                                     "additionalMetadata" = {"description" = "Additional Metadata for the file", "type" = "object", "example" = "{""myFileData"": ""my File additional Data""}"},
- *                                 }
+ *                                 },
+ *                                "required" = {"file", "bucketID"},
  *                             },
- *                             "required" = {"file", "bucketID"},
  *                         }
  *                     }
  *                 },

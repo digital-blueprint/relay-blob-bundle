@@ -10,6 +10,8 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\HttpKernel\DependencyInjection\ConfigurableExtension;
+use Dbp\Relay\BlobBundle\Service\ConfigurationService;
+
 
 class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExtensionInterface
 {
@@ -24,6 +26,9 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
             new FileLocator(__DIR__.'/../Resources/config')
         );
         $loader->load('services.yaml');
+
+        $definition = $container->getDefinition(ConfigurationService::class);
+        $definition->addMethodCall('setConfig', [$mergedConfig]);
     }
 
     /**

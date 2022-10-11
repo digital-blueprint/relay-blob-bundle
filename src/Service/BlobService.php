@@ -7,7 +7,7 @@ namespace Dbp\Relay\BlobBundle\Service;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\HttpFoundation\Response;
 
 class BlobService
@@ -17,13 +17,19 @@ class BlobService
      */
     private $em;
 
-    /** @var EventDispatcherInterface */
-    private $dispatcher;
+    /**
+     * @var ConfigurationService
+     */
+    public $configurationService; //TODO maybe private
 
-    public function __construct(EntityManagerInterface $em, EventDispatcherInterface $dispatcher)
+
+    public function __construct(ManagerRegistry $managerRegistry, ConfigurationService $configurationService)
     {
-        $this->em = $em;
-        $this->dispatcher = $dispatcher;
+        $manager = $managerRegistry->getManager('dbp_relay_blob_bundle');
+        assert($manager instanceof EntityManagerInterface);
+        $this->em = $manager;
+
+        $this->configurationService = $configurationService;
     }
 
     public function checkConnection()
@@ -31,22 +37,23 @@ class BlobService
         $this->em->getConnection()->connect();
     }
 
-    public function saveFile(FileData $fileData, string $fileDataIdentifier, string $contentUrl): FileData
+    public function createFileData(FileData $fileData, string $fileDataIdentifier, string $contentUrl): FileData
     {
         //check additional metada valid json
         //check bucket ID exists
         //check retentionDuration & idleRetentionDuration valid durations
 
-        $fileData->setIdentifier($fileDataIdentifier);
-        $fileData->setContentUrl($contentUrl);
+
+   /*
 
         try {
             $this->em->persist($fileData);
             $this->em->flush();
         } catch (\Exception $e) {
-            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be created!', 'formalize:submission-not-created', ['message' => $e->getMessage()]);
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be created!yuhuu', 'blob:submission-not-created', ['message' => $e->getMessage()]);
         }
-
+        throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Alles doof', 'blob:alles-doof');
+*/
         return $fileData;
     }
 }

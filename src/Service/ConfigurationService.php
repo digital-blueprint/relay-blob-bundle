@@ -45,8 +45,12 @@ class ConfigurationService
     {
         $buckets = [];
 
-        $bucketsConfig = $this->config['buckets'];
-        foreach ($bucketsConfig as $bucket => $bucketConfig) {
+        $bucketsConfig = $this->config;
+
+        if (!$bucketsConfig["buckets"])
+            return $buckets;
+
+        foreach ($bucketsConfig["buckets"] as $bucketConfig) {
             $bucket = Bucket::fromConfig($bucketConfig);
             $buckets[] = $bucket;
         }
@@ -66,11 +70,12 @@ class ConfigurationService
         return $bucket;
     }
 
-    public function getBucketID(string $bucketID): ?Bucket
+    public function getBucketByID(string $bucketID): ?Bucket
     {
         $buckets = $this->config['buckets'];
+
         foreach ($buckets as $bucket => $bucketConfig) {
-            if (array_key_exists($bucketID, $bucketConfig['bucket_id'])) {
+            if ($bucketID == $bucketConfig['bucket_id']) {
                 return Bucket::fromConfig($bucketConfig);
             }
         }

@@ -145,6 +145,7 @@ class Bucket
 
     public static function fromConfig(array $config): Bucket
     {
+
         $bucket = new Bucket();
         $bucket->setIdentifier((string) $config['bucket_id']);
         $bucket->setService((string) $config['service']);
@@ -154,8 +155,10 @@ class Bucket
         $bucket->setQuota((int) $config['quota']);
         $bucket->setMaxRetentionDuration((int) $config['max_retention_duration']);
         $bucket->setMaxIdleRetentionDuration((int) $config['max_idle_retention_duration']);
+        dump("********************************++");
+        dump($config['policies']);
 
-        $policies = PoliciesStruct::withPolicies((bool) $config['creat'], (bool) $config['open'], (bool) $config['download'], (bool) $config['rename'], (bool) $config['work']);
+        $policies = PoliciesStruct::withPoliciesArray($config['policies']);
 
         $bucket->setPolicies($policies);
 

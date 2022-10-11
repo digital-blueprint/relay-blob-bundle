@@ -1,1 +1,14 @@
 services:
+  Dbp\Relay\BlobBundle\Service\BlobService:
+    autowire: true
+    autoconfigure: true
+
+  Dbp\Relay\BlobBundle\Controller\:
+    tags: [ 'controller.service_arguments' ]
+    resource: '../../Controller'
+    autowire: true
+    autoconfigure: true
+
+  Dbp\Relay\BlobBundle\Service\ConfigurationService:
+    autowire: true
+    autoconfigure: true
