@@ -12,3 +12,7 @@ services:
   Dbp\Relay\BlobBundle\Service\ConfigurationService:
     autowire: true
     autoconfigure: true
+
+  Dbp\Relay\BlobBundle\Service\DatasystemProviderService:
+    autowire: true
+    autoconfigure: true
