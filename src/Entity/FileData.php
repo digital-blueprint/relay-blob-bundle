@@ -19,6 +19,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *     collectionOperations={
  *         "post" = {
  *             "method" = "POST",
+ *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files",
  *             "controller" = CreateFileDataAction::class,
  *             "deserialize" = false,
@@ -47,6 +48,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *         },
  *         "get_byPrefix" = {
  *             "method" = "GET",
+ *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files",
  *             "pagination_client_partial" = true,
  *             "controller" = GetFilesByPrefix::class,
@@ -66,6 +68,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *         },
  *         "delete_byPrefix" = {
  *             "method" = "DELETE",
+ *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files",
  *             "controller" = DeleteFilesByPrefix::class,
  *             "read" = false,
@@ -85,18 +88,21 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *     },
  *     itemOperations={
  *         "get" = {
+ *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files/{identifier}",
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},
  *             },
  *         },
  *         "put" = {
+ *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files/{identifier}",
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},
  *             },
  *         },
  *         "delete" = {
+ *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files/{identifier}",
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},
