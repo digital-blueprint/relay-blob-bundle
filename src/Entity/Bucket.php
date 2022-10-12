@@ -44,11 +44,6 @@ class Bucket
     private $max_retention_duration;
 
     /**
-     * @var int
-     */
-    private $max_idle_retention_duration;
-
-    /**
      * @var PoliciesStruct
      */
     private $policies;
@@ -123,16 +118,6 @@ class Bucket
         $this->max_retention_duration = $max_retention_duration;
     }
 
-    public function getMaxIdleRetentionDuration(): int
-    {
-        return $this->max_idle_retention_duration;
-    }
-
-    public function setMaxIdleRetentionDuration(int $max_idle_retention_duration): void
-    {
-        $this->max_idle_retention_duration = $max_idle_retention_duration;
-    }
-
     public function getPolicies(): PoliciesStruct
     {
         return $this->policies;
@@ -153,7 +138,6 @@ class Bucket
         $bucket->setPath((string) $config['path']);
         $bucket->setQuota((int) $config['quota']);
         $bucket->setMaxRetentionDuration((int) $config['max_retention_duration']);
-        $bucket->setMaxIdleRetentionDuration((int) $config['max_idle_retention_duration']);
 
         $policies = PoliciesStruct::withPoliciesArray($config['policies']);
 

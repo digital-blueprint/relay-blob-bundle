@@ -36,7 +36,6 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *                                     "fileName" = {"description" = "Friendly name of the file", "type" = "string", "example" = "myfile"},
  *                                     "bucketID" = {"description" = "ID of the bucket", "type" = "string", "example" = "1234"},
  *                                     "retentionDuration" = {"description" = "Max time in timestamp duration format from creation date when file will be deleted", "type" = "integer", "format" = "int64", "example" = "00000000200000"},
- *                                     "idleRetentionDuration" = {"description" = "Time in timestamp duration format from last access date when file will be deleted, can't be longer than retentionDuration, Format: yyyymmddhhmmss", "type" = "integer", "format" = "int64", "example" = "00000000200000"},
  *                                     "additionalMetadata" = {"description" = "Additional Metadata for the file", "type" = "object", "example" = "{""myFileData"": ""my File additional Data""}"},
  *                                 },
  *                                 "required" = {"file", "bucketID"},
@@ -169,7 +168,7 @@ class FileData
      * @ApiProperty(iri="https://schema.org/dateCreated")
      * @Groups({"BlobFiles:output"})
      *
-     * @var \DateTime
+     * @var \DateTimeImmutable
      */
     private $dateCreated;
 
@@ -178,7 +177,7 @@ class FileData
      * @ApiProperty(iri="https://schema.org/dateRead")
      * @Groups({"BlobFiles:output"})
      *
-     * @var \DateTime
+     * @var \DateTimeImmutable
      */
     private $lastAccess;
 
@@ -190,15 +189,6 @@ class FileData
      * @var string
      */
     private $retentionDuration;
-
-    /**
-     * @ORM\Column(type="string", length=50)
-     * @ApiProperty(iri="https://schema.org/duration")
-     * @Groups({"BlobFiles:output", "BlobFiles:input"})
-     *
-     * @var string
-     */
-    private $idleRetentionDuration;
 
     /**
      * @ORM\Column(type="string", length=255)
@@ -265,22 +255,22 @@ class FileData
         $this->bucket = $bucket;
     }
 
-    public function getDateCreated(): \DateTime
+    public function getDateCreated(): \DateTimeImmutable
     {
         return $this->dateCreated;
     }
 
-    public function setDateCreated(\DateTime $dateCreated): void
+    public function setDateCreated(\DateTimeImmutable $dateCreated): void
     {
         $this->dateCreated = $dateCreated;
     }
 
-    public function getLastAccess(): \DateTime
+    public function getLastAccess(): \DateTimeImmutable
     {
         return $this->lastAccess;
     }
 
-    public function setLastAccess(\DateTime $lastAccess): void
+    public function setLastAccess(\DateTimeImmutable $lastAccess): void
     {
         $this->lastAccess = $lastAccess;
     }
@@ -293,16 +283,6 @@ class FileData
     public function setRetentionDuration(string $retentionDuration): void
     {
         $this->retentionDuration = $retentionDuration;
-    }
-
-    public function getIdleRetentionDuration(): string
-    {
-        return $this->idleRetentionDuration;
-    }
-
-    public function setIdleRetentionDuration(string $idleRetentionDuration): void
-    {
-        $this->idleRetentionDuration = $idleRetentionDuration;
     }
 
     public function getContentUrl(): string

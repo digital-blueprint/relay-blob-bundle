@@ -89,7 +89,6 @@ class BlobService
 
         $fileData->setBucketID($request->get('bucketID'));
         $fileData->setRetentionDuration($request->get('retentionDuration'));
-        $fileData->setIdleRetentionDuration($request->get('idleRetentionDuration'));
 
         try {
             $this->em->persist($fileData);
