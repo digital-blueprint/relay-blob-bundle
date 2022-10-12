@@ -8,7 +8,7 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Removes idle_retention_duration
+ * Removes idle_retention_duration.
  */
 final class Version20221012125458 extends AbstractMigration
 {

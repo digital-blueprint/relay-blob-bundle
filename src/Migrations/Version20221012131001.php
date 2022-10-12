@@ -8,7 +8,7 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Remove content url from table
+ * Remove content url from table.
  */
 final class Version20221012131001 extends AbstractMigration
 {
@@ -24,6 +24,6 @@ final class Version20221012131001 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
-       $this->addSql('ALTER TABLE blob_files ADD content_url VARCHAR(255) NOT NULL');
+        $this->addSql('ALTER TABLE blob_files ADD content_url VARCHAR(255) NOT NULL');
     }
 }
