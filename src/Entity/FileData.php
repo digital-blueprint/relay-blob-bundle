@@ -154,6 +154,12 @@ class FileData
     private $bucketID;
 
     /**
+     *
+     * @var Bucket
+     */
+    private $bucket;
+
+    /**
      * @ORM\Column(type="datetime_immutable")
      * @ApiProperty(iri="https://schema.org/dateCreated")
      * @Groups({"BlobFiles:output"})
@@ -242,6 +248,16 @@ class FileData
     public function setBucketID(string $bucketID): void
     {
         $this->bucketID = $bucketID;
+    }
+
+    public function getBucket(): Bucket
+    {
+        return $this->bucket;
+    }
+
+    public function setBucket(Bucket $bucket): void
+    {
+        $this->bucket = $bucket;
     }
 
     public function getDateCreated(): \DateTime
