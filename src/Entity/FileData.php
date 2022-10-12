@@ -191,7 +191,6 @@ class FileData
     private $retentionDuration;
 
     /**
-     * @ORM\Column(type="string", length=255)
      * @ApiProperty(iri="https://schema.org/url")
      * @Groups({"BlobFiles:output"})
      *

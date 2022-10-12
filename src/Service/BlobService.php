@@ -74,7 +74,7 @@ class BlobService
         $fileData->setPrefix($request->get('prefix'));
         $fileData->setFileName($request->get('fileName'));
 
-        $time = new \DateTime('now');
+        $time = new \DateTimeImmutable('now');
         $fileData->setDateCreated($time);
         $fileData->setLastAccess($time);
 
@@ -96,8 +96,6 @@ class BlobService
         } catch (\Exception $e) {
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be created!yuhuu', 'blob:submission-not-created', ['message' => $e->getMessage()]);
         }
-        throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Alles doof', 'blob:alles-doof');
-
         return $fileData;
     }
 
