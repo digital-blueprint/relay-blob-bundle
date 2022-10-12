@@ -77,7 +77,6 @@ class BlobService
         $fileData->setDateCreated($time);
         $fileData->setLastAccess($time);
 
-
         // Check if json is valid
         $metadata = $request->get('additionalMetadata');
         try {
@@ -91,21 +90,22 @@ class BlobService
         $fileData->setRetentionDuration($request->get('retentionDuration'));
         $fileData->setIdleRetentionDuration($request->get('idleRetentionDuration'));
 
-         try {
-             $this->em->persist($fileData);
-             $this->em->flush();
-         } catch (\Exception $e) {
-             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be created!yuhuu', 'blob:submission-not-created', ['message' => $e->getMessage()]);
-         }
-         throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Alles doof', 'blob:alles-doof');
+        try {
+            $this->em->persist($fileData);
+            $this->em->flush();
+        } catch (\Exception $e) {
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be created!yuhuu', 'blob:submission-not-created', ['message' => $e->getMessage()]);
+        }
+        throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Alles doof', 'blob:alles-doof');
 
         return $fileData;
     }
 
-    public function saveFile(FileData $fileData) : ?FileData
+    public function saveFile(FileData $fileData): ?FileData
     {
         $datasystemService = $this->datasystemService->getByBucket($fileData->getBucket());
         $fileData = $datasystemService->saveFile($fileData);
+
         return $fileData;
     }
 }

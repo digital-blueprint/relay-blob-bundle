@@ -54,12 +54,12 @@ final class CreateFileDataAction extends BaseBlobController
         }
 
         //check retentionDuration & idleRetentionDuration valid durations
-        if ($bucket->getMaxRetentionDuration() < $fileData->getRetentionDuration() || $fileData->getRetentionDuration() == 0) {
-            $fileData->setRetentionDuration((string)$bucket->getMaxRetentionDuration());
+        if ($bucket->getMaxRetentionDuration() < $fileData->getRetentionDuration() || $fileData->getRetentionDuration() === 0) {
+            $fileData->setRetentionDuration((string) $bucket->getMaxRetentionDuration());
         }
 
-        if ($bucket->getMaxIdleRetentionDuration() < $fileData->getIdleRetentionDuration() || $fileData->getIdleRetentionDuration() == 0) {
-            $fileData->setIdleRetentionDuration((string)$bucket->getMaxIdleRetentionDuration());
+        if ($bucket->getMaxIdleRetentionDuration() < $fileData->getIdleRetentionDuration() || $fileData->getIdleRetentionDuration() === 0) {
+            $fileData->setIdleRetentionDuration((string) $bucket->getMaxIdleRetentionDuration());
         }
 
         //TODO

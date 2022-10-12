@@ -154,7 +154,6 @@ class FileData
     private $bucketID;
 
     /**
-     *
      * @var Bucket
      */
     private $bucket;

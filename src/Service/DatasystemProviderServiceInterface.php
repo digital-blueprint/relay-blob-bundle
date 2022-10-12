@@ -21,5 +21,4 @@ interface DatasystemProviderServiceInterface
     public function removePathFromBucket(string $path, Bucket $bucket): bool;
 
     public function removeBucket(Bucket $bucket): bool;
-
 }
