@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
 
 /**
  * Remove content url from table.
  */
-final class Version20221012131001 extends AbstractMigration
+final class Version20221012131001 extends EntityManagerMigration
 {
     public function getDescription(): string
     {
