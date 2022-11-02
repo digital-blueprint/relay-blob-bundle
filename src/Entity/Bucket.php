@@ -39,7 +39,7 @@ class Bucket
     private $quota;
 
     /**
-     * @var int
+     * @var string
      */
     private $max_retention_duration;
 
@@ -108,12 +108,12 @@ class Bucket
         $this->quota = $quota;
     }
 
-    public function getMaxRetentionDuration(): int
+    public function getMaxRetentionDuration(): string
     {
         return $this->max_retention_duration;
     }
 
-    public function setMaxRetentionDuration(int $max_retention_duration): void
+    public function setMaxRetentionDuration(string $max_retention_duration): void
     {
         $this->max_retention_duration = $max_retention_duration;
     }
@@ -137,7 +137,7 @@ class Bucket
         $bucket->setPublicKey((string) $config['public_key']);
         $bucket->setPath((string) $config['path']);
         $bucket->setQuota((int) $config['quota']);
-        $bucket->setMaxRetentionDuration((int) $config['max_retention_duration']);
+        $bucket->setMaxRetentionDuration((string) $config['max_retention_duration']);
 
         $policies = PoliciesStruct::withPoliciesArray($config['policies']);
 
