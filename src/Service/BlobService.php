@@ -107,4 +107,16 @@ class BlobService
 
         return $fileData;
     }
+
+    public function getFileData(string $identifier): FileData
+    {
+        $fileData = $this->em
+            ->getRepository(FileData::class)
+            ->find($identifier);
+
+        if (!$fileData) {
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:fileData-not-found');
+        }
+        return $fileData;
+    }
 }
