@@ -112,6 +112,15 @@ class BlobService
         return $fileData;
     }
 
+    public function getLink(FileData $fileData): ?FileData
+    {
+        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
+        $fileData = $datasystemService->getLink($fileData, $fileData->getBucket()->getPolicies());
+
+        return $fileData;
+    }
+
+
     public function getFileData(string $identifier): FileData
     {
         $fileData = $this->em
@@ -123,5 +132,18 @@ class BlobService
         }
 
         return $fileData;
+    }
+
+    public function getFileDataByBucketIDAndPrefix(string $bucketID, string $prefix): array
+    {
+        $fileDatas = $this->em
+            ->getRepository(FileData::class)
+            ->findBy(['bucketID' => $bucketID, 'prefix' => $prefix]);
+
+        if (!$fileDatas) {
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileDatas was not found!', 'blob:fileDatas-not-found');
+        }
+
+        return $fileDatas;
     }
 }

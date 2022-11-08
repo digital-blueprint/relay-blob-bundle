@@ -7,6 +7,7 @@ namespace Dbp\Relay\BlobBundle\Controller;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -51,6 +52,10 @@ final class CreateFileDataAction extends BaseBlobController
         }
 
         $fileData->setBucket($bucket);
+
+        /** @var ?UploadedFile $uploadedFile */
+        $uploadedFile = $fileData->getFile();
+        $fileData->setExtension($uploadedFile->guessExtension());
 
         //then return correct data for service
         $fileData = $this->blobService->saveFile($fileData);

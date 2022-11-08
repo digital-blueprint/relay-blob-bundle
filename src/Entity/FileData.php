@@ -35,7 +35,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *                                     "prefix" = {"description" = "Prefix of the file", "type" = "string", "example" = "my-prefix/my-subprefix"},
  *                                     "fileName" = {"description" = "Friendly name of the file", "type" = "string", "example" = "myfile"},
  *                                     "bucketID" = {"description" = "ID of the bucket", "type" = "string", "example" = "1234"},
- *                                     "retentionDuration" = {"description" = "Max time in timestamp duration format from creation date when file will be deleted", "type" = "integer", "format" = "int64", "example" = "00000000200000"},
+ *                                     "retentionDuration" = {"description" = "Max time in timestamp duration in ISO 8601 format from creation date when file will be deleted", "type" = "string", "example" = "P2YT6H"},
  *                                     "additionalMetadata" = {"description" = "Additional Metadata for the file", "type" = "object", "example" = "{""myFileData"": ""my File additional Data""}"},
  *                                 },
  *                                 "required" = {"file", "bucketID"},
@@ -60,8 +60,8 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *                 "tags" = {"Blob"},
  *                 "summary" = "Get the fileshares of a specific bucket with a specific prefix",
  *                 "parameters" = {
- *                     {"name" = "bucketID", "in" = "query", "description" = "Identifier of bucket", "type" = "string", "required" = true, "example" = "12345"},
- *                     {"name" = "prefix", "in" = "query", "description" = "Prefix of a file collection", "type" = "string", "required" = true, "example" = "my-path/my-subpath"}
+ *                     {"name" = "bucketID", "in" = "query", "description" = "Identifier of bucket", "type" = "string", "required" = true, "example" = "1234"},
+ *                     {"name" = "prefix", "in" = "query", "description" = "Prefix of a file collection", "type" = "string", "required" = true, "example" = "my-prefix/my-subprefix"}
  *                 }
  *             }
  *         },
@@ -151,6 +151,13 @@ class FileData
 
     /**
      * @ORM\Column(type="string", length=50)
+     *
+     * @var string
+     */
+    private $extension;
+
+    /**
+     * @ORM\Column(type="string", length=50)
      * @ApiProperty(iri="https://schema.org/identifier")
      * @Groups({"BlobFiles:input"})
      *
@@ -232,6 +239,16 @@ class FileData
     public function setFileName(string $fileName): void
     {
         $this->fileName = $fileName;
+    }
+
+    public function getExtension(): string
+    {
+        return $this->extension;
+    }
+
+    public function setExtension(string $extension): void
+    {
+        $this->extension = $extension;
     }
 
     public function getBucketID(): string
