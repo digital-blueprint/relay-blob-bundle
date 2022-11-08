@@ -30,25 +30,10 @@ final class CreateFileDataAction extends BaseBlobController
     {
         // TODO replace this with signature check
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-        // Check bucketID
-        // create id
 
-        // check folder
-        // create folder
-        // rename datei
-        // Uploadfile
-
-        //check if file uploaded
-        // if upload failed, figure aut why
-
-        // create share link
-        // save share link to database with valid unit date from config
-
-        // return sharelink
         $fileData = $this->blobService->createFileData($request);
 
         //check bucket ID exists
-
         $bucket = $this->blobService->configurationService->getBucketByID($fileData->getBucketID());
         // bucket is not configured
         if (!$bucket) {
@@ -60,7 +45,6 @@ final class CreateFileDataAction extends BaseBlobController
             $fileData->setRetentionDuration((string) $bucket->getMaxRetentionDuration());
         }
 
-        //TODO
         //use given service for bucket
         if (!$bucket->getService()) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is no configurated', 'blob:create-file-no-bucket-service');
@@ -73,6 +57,8 @@ final class CreateFileDataAction extends BaseBlobController
         if (!$fileData) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'data upload failed', 'blob:create-file-data-upload-failed');
         }
+
+        $this->blobService->saveFileData($fileData);
 
         return $fileData;
     }

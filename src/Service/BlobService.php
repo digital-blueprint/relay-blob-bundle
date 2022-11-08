@@ -8,6 +8,7 @@ use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
+use PHPUnit\TextUI\XmlConfiguration\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -90,19 +91,22 @@ class BlobService
         $fileData->setBucketID($request->get('bucketID'));
         $fileData->setRetentionDuration($request->get('retentionDuration'));
 
+        return $fileData;
+    }
+
+    public function saveFileData(FileData $fileData): void
+    {
         try {
             $this->em->persist($fileData);
             $this->em->flush();
         } catch (\Exception $e) {
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
         }
-
-        return $fileData;
     }
 
     public function saveFile(FileData $fileData): ?FileData
     {
-        $datasystemService = $this->datasystemService->getByBucket($fileData->getBucket());
+        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
         $fileData = $datasystemService->saveFile($fileData);
 
         return $fileData;

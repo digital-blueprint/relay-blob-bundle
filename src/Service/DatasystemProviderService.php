@@ -20,7 +20,7 @@ class DatasystemProviderService
         $this->container = $container;
     }
 
-    public function getByBucket(Bucket $bucket): DatasystemProviderServiceInterface
+    public function getServiceByBucket(Bucket $bucket): DatasystemProviderServiceInterface
     {
         $service = $bucket->getService();
 
