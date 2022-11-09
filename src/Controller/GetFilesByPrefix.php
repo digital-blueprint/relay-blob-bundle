@@ -46,7 +46,7 @@ class GetFilesByPrefix extends BaseBlobController
         //create sharelinks
         foreach ($fileDatas as $fileData) {
             $fileData->setBucket($bucket);
-            $fileData = $this->blobService->getLink($fileData, $bucket);
+            $fileData = $this->blobService->getLink($fileData);
         }
 
         return $fileDatas;
