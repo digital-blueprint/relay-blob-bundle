@@ -21,12 +21,9 @@ class GetFilesByPrefix extends BaseBlobController
         $this->blobService = $blobService;
     }
 
-    /**
-     * @throws HttpException
-     */
     public function __invoke(Request $request): array
     {
-        $bucketId = $request->query->get('bucketID');
+        $bucketId = (string) $request->query->get('bucketID');
         if (!$bucketId) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is no configurated', 'blob:get-files-by-prefix-unset-bucketID');
         }
