@@ -32,7 +32,7 @@ class GetFilesByPrefix extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is no configurated', 'blob:get-files-by-prefix-unconfigurated-bucketID');
         }
 
-        $prefix = $request->query->get('prefix');
+        $prefix = (string) $request->query->get('prefix');
         if (!$prefix) {
             $prefix = '';
         }
