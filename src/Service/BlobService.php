@@ -120,7 +120,6 @@ class BlobService
         return $fileData;
     }
 
-
     public function getFileData(string $identifier): FileData
     {
         $fileData = $this->em

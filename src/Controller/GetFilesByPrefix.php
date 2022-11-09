@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Controller;
 
-use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Component\HttpFoundation\Request;
@@ -37,8 +36,9 @@ class GetFilesByPrefix extends BaseBlobController
         }
 
         $prefix = $request->query->get('prefix');
-        if(!$prefix)
+        if (!$prefix) {
             $prefix = '';
+        }
 
         if (!$bucket->getService()) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is no configurated', 'blob:get-files-by-prefix-no-bucket-service');
