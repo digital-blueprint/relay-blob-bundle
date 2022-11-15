@@ -16,3 +16,13 @@ services:
   Dbp\Relay\BlobBundle\Service\DatasystemProviderService:
     autowire: true
     autoconfigure: true
+
+  Dbp\Relay\BlobBundle\DataProvider\:
+    resource: '../../DataProvider'
+    autowire: true
+    autoconfigure: true
+
+  Dbp\Relay\BlobBundle\DataPersister\:
+    resource: '../../DataPersister'
+    autowire: true
+    autoconfigure: true

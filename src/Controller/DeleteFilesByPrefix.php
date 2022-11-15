@@ -4,28 +4,51 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Dbp\Relay\BlobBundle\Entity\FileData;
+use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\CoreBundle\Exception\ApiError;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
-class DeleteFilesByPrefix extends AbstractController
+class DeleteFilesByPrefix extends BaseBlobController
 {
     /**
-     * Request::get() is internal starting with Symfony 5.4, so we duplicate a subset of the logic we need here.
-     *
-     * @param mixed $default
-     *
-     * @return mixed
+     * @var BlobService
      */
-    public static function requestGet(Request $request, string $key, $default = null)
+    private $blobService;
+
+    public function __construct(BlobService $blobService)
     {
-        if ($request->query->has($key)) {
-            return $request->query->all()[$key];
+        $this->blobService = $blobService;
+    }
+
+    public function __invoke(Request $request)
+    {
+        $bucketId = (string) $request->query->get('bucketID');
+        if (!$bucketId) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is no configurated', 'blob:get-files-by-prefix-unset-bucketID');
+        }
+        $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
+        if (!$bucket) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is no configurated', 'blob:get-files-by-prefix-unconfigurated-bucketID');
         }
 
-        if ($request->request->has($key)) {
-            return $request->request->all()[$key];
+        $prefix = (string) $request->query->get('prefix');
+        if (!$prefix) {
+            $prefix = '';
         }
 
-        return $default;
+        if (!$bucket->getService()) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is no configurated', 'blob:get-files-by-prefix-no-bucket-service');
+        }
+
+        $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefix($bucketId, $prefix);
+
+        //create sharelinks
+        foreach ($fileDatas as $fileData) {
+            $fileData->setBucket($bucket);
+            $this->blobService->removeFileData($fileData);
+        }
     }
 }

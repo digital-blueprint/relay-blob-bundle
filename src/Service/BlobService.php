@@ -94,6 +94,17 @@ class BlobService
         return $fileData;
     }
 
+    public function setBucket(FileData $fileData) {
+        //check bucket ID exists
+        $bucket = $this->configurationService->getBucketByID($fileData->getBucketID());
+        // bucket is not configured
+        if (!$bucket) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is no configurated', 'blob:create-file-unconfigurated-bucketID');
+        }
+        $fileData->setBucket($bucket);
+        return $fileData;
+    }
+
     public function saveFileData(FileData $fileData): void
     {
         try {
@@ -122,6 +133,7 @@ class BlobService
 
     public function getFileData(string $identifier): FileData
     {
+        /** @var FileData $requestFile */
         $fileData = $this->em
             ->getRepository(FileData::class)
             ->find($identifier);
@@ -144,5 +156,24 @@ class BlobService
         }
 
         return $fileDatas;
+    }
+
+    public function removeFileData(FileData $fileData) {
+        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
+        $datasystemService->removeFile($fileData);
+
+        $this->em->remove($fileData);
+        $this->em->flush();
+    }
+
+    public function renameFileData(FileData $fileData) {
+        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
+        $datasystemService->renameFile($fileData);
+
+        $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $fileData->setLastAccess($time);
+
+        $this->em->persist($fileData);
+        $this->em->flush();
     }
 }

@@ -34,12 +34,9 @@ final class CreateFileDataAction extends BaseBlobController
 
         $fileData = $this->blobService->createFileData($request);
 
-        //check bucket ID exists
-        $bucket = $this->blobService->configurationService->getBucketByID($fileData->getBucketID());
-        // bucket is not configured
-        if (!$bucket) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is no configurated', 'blob:create-file-unconfigurated-bucketID');
-        }
+        $fileData = $this->blobService->setBucket($fileData);
+
+        $bucket = $fileData->getBucket();
 
         //check retentionDuration & idleRetentionDuration valid durations
         if ($bucket->getMaxRetentionDuration() < $fileData->getRetentionDuration() || $fileData->getRetentionDuration() === 0) {
@@ -50,8 +47,6 @@ final class CreateFileDataAction extends BaseBlobController
         if (!$bucket->getService()) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is no configurated', 'blob:create-file-no-bucket-service');
         }
-
-        $fileData->setBucket($bucket);
 
         /** @var ?UploadedFile $uploadedFile */
         $uploadedFile = $fileData->getFile();

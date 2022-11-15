@@ -79,7 +79,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *                 "tags" = {"Blob"},
  *                 "summary" = "Deletes the files of a specific bucket with a specific prefix",
  *                 "parameters" = {
- *                     {"name" = "bucketID", "in" = "query", "description" = "Identifier of bucket", "type" = "string", "required" = true, "example" = "12345"},
+ *                     {"name" = "bucketID", "in" = "query", "description" = "Identifier of bucket", "type" = "string", "required" = true, "example" = "1234"},
  *                     {"name" = "prefix", "in" = "query", "description" = "Prefix of a file collection", "type" = "string", "required" = true, "example" = "my-path/my-subpath"}
  *                 }
  *             }
@@ -98,6 +98,10 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *             "path" = "/blob/files/{identifier}",
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},
+ *             },
+ *             "denormalization_context" = {
+ *                 "jsonld_embed_context" = true,
+ *                 "groups" = {"BlobFiles:write"}
  *             },
  *         },
  *         "delete" = {
@@ -143,7 +147,7 @@ class FileData
     /**
      * @ORM\Column(type="string", length=50)
      * @ApiProperty(iri="https://schema.org/name")
-     * @Groups({"BlobFiles:output", "BlobFiles:input"})
+     * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:write"})
      *
      * @var string
      */
@@ -215,7 +219,7 @@ class FileData
     /**
      * @ORM\Column(type="text")
      * @ApiProperty(iri="https://schema.org/DataFeed")
-     * @Groups({"BlobFiles:output", "BlobFiles:input"})
+     * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:write"})
      *
      * @var string
      */
