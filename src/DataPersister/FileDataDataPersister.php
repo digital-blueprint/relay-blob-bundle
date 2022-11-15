@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\DataPersister;
 
 use ApiPlatform\Core\DataPersister\ContextAwareDataPersisterInterface;
-use ApiPlatform\Core\DataPersister\DataPersisterInterface;
-use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -29,15 +28,9 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
         return $data instanceof FileData;
     }
 
-    /**
-     * @param mixed $data
-     *
-     * @return Request
-     */
     public function persist($data, array $context = [])
     {
-        dump("-------------------------- persist");
-        if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] == "put") {
+        if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === "put") {
             $filedata = $data;
             assert($filedata instanceof FileData);
 
@@ -50,6 +43,7 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
 
             $this->blobService->renameFileData($filedata);
         }
+
         return $data;
     }
 
