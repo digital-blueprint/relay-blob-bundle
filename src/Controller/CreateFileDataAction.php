@@ -44,7 +44,7 @@ final class CreateFileDataAction extends BaseBlobController
         }
 
         // Set extits until time
-        $fileData->setExistsUntil($fileData->getDateCreated()->add( new \DateInterval($fileData->getRetentionDuration())));
+        $fileData->setExistsUntil($fileData->getDateCreated()->add(new \DateInterval($fileData->getRetentionDuration())));
 
         // Use given service for bucket
         if (!$bucket->getService()) {

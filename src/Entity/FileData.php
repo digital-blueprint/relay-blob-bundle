@@ -312,7 +312,7 @@ class FileData
     {
         $this->retentionDuration = $retentionDuration;
     }
-    
+
     public function getExistsUntil(): \DateTimeImmutable
     {
         return $this->existsUntil;
