@@ -7,8 +7,8 @@ namespace Dbp\Relay\BlobBundle\Entity;
 use ApiPlatform\Core\Annotation\ApiProperty;
 use ApiPlatform\Core\Annotation\ApiResource;
 use Dbp\Relay\BlobBundle\Controller\CreateFileDataAction;
-use Dbp\Relay\BlobBundle\Controller\DeleteFilesByPrefix;
-use Dbp\Relay\BlobBundle\Controller\GetFilesByPrefix;
+use Dbp\Relay\BlobBundle\Controller\DeleteFileDatasByPrefix;
+use Dbp\Relay\BlobBundle\Controller\GetFileDatasByPrefix;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
@@ -50,7 +50,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files",
  *             "pagination_client_partial" = true,
- *             "controller" = GetFilesByPrefix::class,
+ *             "controller" = GetFileDatasByPrefix::class,
  *             "read" = false,
  *             "normalization_context" = {
  *                 "jsonld_embed_context" = true,
@@ -69,7 +69,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *             "method" = "DELETE",
  *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files",
- *             "controller" = DeleteFilesByPrefix::class,
+ *             "controller" = DeleteFileDatasByPrefix::class,
  *             "read" = false,
  *             "normalization_context" = {
  *                 "jsonld_embed_context" = true,

@@ -9,7 +9,7 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class GetFilesByPrefix extends BaseBlobController
+class GetFileDatasByPrefix extends BaseBlobController
 {
     /**
      * @var BlobService

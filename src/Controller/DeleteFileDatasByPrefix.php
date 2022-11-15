@@ -9,7 +9,7 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class DeleteFilesByPrefix extends BaseBlobController
+class DeleteFileDatasByPrefix extends BaseBlobController
 {
     /**
      * @var BlobService
