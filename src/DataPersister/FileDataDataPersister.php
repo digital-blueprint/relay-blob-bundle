@@ -30,7 +30,7 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
 
     public function persist($data, array $context = [])
     {
-        if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === "put") {
+        if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === 'put') {
             $filedata = $data;
             assert($filedata instanceof FileData);
 

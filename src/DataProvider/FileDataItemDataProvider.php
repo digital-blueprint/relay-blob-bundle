@@ -34,7 +34,7 @@ final class FileDataItemDataProvider extends AbstractController implements ItemD
         $fileData = $this->blobService->getFileData($id);
         $fileData = $this->blobService->setBucket($fileData);
 
-        if ($operationName === "get" || $operationName === "put") {
+        if ($operationName === 'get' || $operationName === 'put') {
             $fileData = $this->blobService->getLink($fileData);
         }
 
