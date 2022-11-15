@@ -101,7 +101,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *             },
  *             "denormalization_context" = {
  *                 "jsonld_embed_context" = true,
- *                 "groups" = {"BlobFiles:write"}
+ *                 "groups" = {"BlobFiles:update"}
  *             },
  *         },
  *         "delete" = {
@@ -147,7 +147,7 @@ class FileData
     /**
      * @ORM\Column(type="string", length=50)
      * @ApiProperty(iri="https://schema.org/name")
-     * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:write"})
+     * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
      *
      * @var string
      */
@@ -219,7 +219,7 @@ class FileData
     /**
      * @ORM\Column(type="text")
      * @ApiProperty(iri="https://schema.org/DataFeed")
-     * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:write"})
+     * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
      *
      * @var string
      */
