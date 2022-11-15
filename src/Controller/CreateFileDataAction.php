@@ -38,12 +38,15 @@ final class CreateFileDataAction extends BaseBlobController
 
         $bucket = $fileData->getBucket();
 
-        //check retentionDuration & idleRetentionDuration valid durations
+        // Check retentionDuration & idleRetentionDuration valid durations
         if ($bucket->getMaxRetentionDuration() < $fileData->getRetentionDuration() || $fileData->getRetentionDuration() === 0) {
             $fileData->setRetentionDuration((string) $bucket->getMaxRetentionDuration());
         }
 
-        //use given service for bucket
+        // Set extits until time
+        $fileData->setExistsUntil($fileData->getDateCreated()->add( new \DateInterval($fileData->getRetentionDuration())));
+
+        // Use given service for bucket
         if (!$bucket->getService()) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is no configurated', 'blob:create-file-no-bucket-service');
         }
@@ -52,7 +55,7 @@ final class CreateFileDataAction extends BaseBlobController
         $uploadedFile = $fileData->getFile();
         $fileData->setExtension($uploadedFile->guessExtension());
 
-        //then return correct data for service
+        // Then return correct data for service
         $fileData = $this->blobService->saveFile($fileData);
         if (!$fileData) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'data upload failed', 'blob:create-file-data-upload-failed');

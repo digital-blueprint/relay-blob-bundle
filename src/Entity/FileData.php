@@ -193,13 +193,21 @@ class FileData
     private $lastAccess;
 
     /**
-     * @ORM\Column(type="string", length=50)
      * @ApiProperty(iri="https://schema.org/duration")
-     * @Groups({"BlobFiles:output", "BlobFiles:input"})
+     * @Groups({"BlobFiles:input"})
      *
      * @var string
      */
     private $retentionDuration;
+
+    /**
+     * @ORM\Column(type="datetime_immutable")
+     * @ApiProperty(iri="https://schema.org/expires")
+     * @Groups({"BlobFiles:output"})
+     *
+     * @var \DateTimeImmutable
+     */
+    private $existsUntil;
 
     /**
      * @ApiProperty(iri="https://schema.org/url")
@@ -303,6 +311,16 @@ class FileData
     public function setRetentionDuration(string $retentionDuration): void
     {
         $this->retentionDuration = $retentionDuration;
+    }
+    
+    public function getExistsUntil(): \DateTimeImmutable
+    {
+        return $this->existsUntil;
+    }
+
+    public function setExistsUntil(\DateTimeImmutable $existsUntil): void
+    {
+        $this->existsUntil = $existsUntil;
     }
 
     public function getContentUrl(): string
