@@ -135,7 +135,7 @@ class BlobService
 
     public function getFileData(string $identifier): FileData
     {
-        /** @var FileData $requestFile */
+        /** @var FileData $fileData */
         $fileData = $this->em
             ->getRepository(FileData::class)
             ->find($identifier);
