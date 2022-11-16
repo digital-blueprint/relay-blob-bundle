@@ -238,7 +238,7 @@ class FileData
      * @ApiProperty(iri="https://schema.org/contentSize")
      * @Groups({"BlobFiles:output"})
      *
-     * @var integer
+     * @var int
      */
     private $fileSize;
 
