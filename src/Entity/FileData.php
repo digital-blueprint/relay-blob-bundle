@@ -112,7 +112,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *             },
  *         }
  *     },
- *     iri="https://schema.org/Entity",
+ *     iri="https://schema.org/DigitalDocument",
  *     shortName="BlobFiles",
  *     normalizationContext={
  *         "groups" = {"BlobFiles:output"},
@@ -232,6 +232,15 @@ class FileData
      * @var string
      */
     private $additionalMetadata;
+
+    /**
+     * @ORM\Column(type="integer")
+     * @ApiProperty(iri="https://schema.org/contentSize")
+     * @Groups({"BlobFiles:output"})
+     *
+     * @var integer
+     */
+    private $fileSize;
 
     public function getIdentifier(): string
     {
@@ -361,5 +370,15 @@ class FileData
     public function setAdditionalMetadata($additionalMetadata): void
     {
         $this->additionalMetadata = $additionalMetadata;
+    }
+
+    public function getFileSize(): int
+    {
+        return $this->fileSize;
+    }
+
+    public function setFileSize(int $fileSize): void
+    {
+        $this->fileSize = $fileSize;
     }
 }

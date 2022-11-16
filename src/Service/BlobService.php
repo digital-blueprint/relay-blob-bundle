@@ -74,6 +74,7 @@ class BlobService
 
         $fileData->setPrefix($request->get('prefix'));
         $fileData->setFileName($request->get('fileName'));
+        $fileData->setFilesize(filesize($uploadedFile->getRealPath()));
 
         $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $fileData->setDateCreated($time);

@@ -53,6 +53,8 @@ class Configuration implements ConfigurationInterface
                                     ->isRequired()
                                     ->cannotBeEmpty()
                                 ->end()
+                                ->scalarNode('link_expire_time')
+                                ->end()
                                 ->arrayNode('policies')
                                     ->scalarPrototype()->end()
                                 ->end()

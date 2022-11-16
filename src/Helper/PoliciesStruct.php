@@ -40,16 +40,23 @@ class PoliciesStruct
     public $work = false;
 
     /**
+     * @var bool
+     */
+    public $delete = false;
+
+    /**
      * @param $create
+     * @param $delete
      * @param $open
      * @param $download
      * @param $rename
      * @param $work
      */
-    public static function withPolicies($create, $open, $download, $rename, $work): PoliciesStruct
+    public static function withPolicies($create, $delete, $open, $download, $rename, $work): PoliciesStruct
     {
         $instance = new self();
         $instance->create = $create;
+        $instance->delete = $delete;
         $instance->open = $open;
         $instance->download = $download;
         $instance->rename = $rename;
@@ -65,6 +72,7 @@ class PoliciesStruct
     {
         $instance = new self();
         $instance->create = $policies['create'];
+        $instance->delete = $policies['delete'];
         $instance->open = $policies['open'];
         $instance->download = $policies['download'];
         $instance->rename = $policies['rename'];

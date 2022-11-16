@@ -44,6 +44,11 @@ class Bucket
     private $max_retention_duration;
 
     /**
+     * @var string
+     */
+    private $linkExpireTime;
+
+    /**
      * @var PoliciesStruct
      */
     private $policies;
@@ -118,6 +123,16 @@ class Bucket
         $this->max_retention_duration = $max_retention_duration;
     }
 
+    public function getLinkExpireTime(): string
+    {
+        return $this->linkExpireTime;
+    }
+
+    public function setLinkExpireTime(string $linkExpireTime): void
+    {
+        $this->linkExpireTime = $linkExpireTime;
+    }
+
     public function getPolicies(): PoliciesStruct
     {
         return $this->policies;
@@ -138,6 +153,7 @@ class Bucket
         $bucket->setPath((string) $config['path']);
         $bucket->setQuota((int) $config['quota']);
         $bucket->setMaxRetentionDuration((string) $config['max_retention_duration']);
+        $bucket->setLinkExpireTime((string) $config['link_expire_time']);
 
         $policies = PoliciesStruct::withPoliciesArray($config['policies']);
 
