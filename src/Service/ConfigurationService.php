@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Service;
 
 use Dbp\Relay\BlobBundle\Entity\Bucket;
-use Symfony\Component\HttpFoundation\UrlHelper;
 
 class ConfigurationService
 {
@@ -14,15 +13,8 @@ class ConfigurationService
      */
     private $config = [];
 
-    /**
-     * @var UrlHelper
-     */
-    private $urlHelper;
-
-    public function __construct(
-        UrlHelper $urlHelper
-    ) {
-        $this->urlHelper = $urlHelper;
+    public function __construct()
+    {
     }
 
     /**
