@@ -4,15 +4,11 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\DataProvider;
 
-use ApiPlatform\Core\DataProvider\CollectionDataProviderInterface;
-use ApiPlatform\Core\DataProvider\RestrictedDataProviderInterface;
+use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\DataProvider\AbstractDataProvider;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
-use Dbp\Relay\CoreBundle\Helpers\ArrayFullPaginator;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
-use Dbp\Relay\BlobBundle\Entity\FileData;
 
 class FileDataCollectionDataProvider extends AbstractDataProvider
 {

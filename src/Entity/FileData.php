@@ -8,7 +8,6 @@ use ApiPlatform\Core\Annotation\ApiProperty;
 use ApiPlatform\Core\Annotation\ApiResource;
 use Dbp\Relay\BlobBundle\Controller\CreateFileDataAction;
 use Dbp\Relay\BlobBundle\Controller\DeleteFileDatasByPrefix;
-use Dbp\Relay\BlobBundle\Controller\GetFileDatasByPrefix;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
