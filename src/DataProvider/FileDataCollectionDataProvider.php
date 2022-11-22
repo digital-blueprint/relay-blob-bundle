@@ -29,7 +29,7 @@ class FileDataCollectionDataProvider extends AbstractDataProvider
 
     protected function getItemById($id, array $options = []): object
     {
-        // $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
         $fileData = $this->blobService->getFileData($id);
         $fileData = $this->blobService->setBucket($fileData);
