@@ -45,13 +45,11 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *                 },
  *             },
  *         },
- *         "get_byPrefix" = {
- *             "method" = "GET",
+ *         "get" = {
  *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
+ *             "pagination_client_partial" = true,
  *             "path" = "/blob/files",
  *             "pagination_client_partial" = true,
- *             "controller" = GetFileDatasByPrefix::class,
- *             "read" = false,
  *             "normalization_context" = {
  *                 "jsonld_embed_context" = true,
  *                 "groups" = {"BlobFiles:output"}

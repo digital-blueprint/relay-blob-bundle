@@ -35,10 +35,12 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
             assert($filedata instanceof FileData);
 
             $metadata = $filedata->getAdditionalMetadata();
-            try {
-                json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
-            } catch (\JsonException $e) {
-                throw ApiError::withDetails(Response::HTTP_UNPROCESSABLE_ENTITY, 'The addtional Metadata doesn\'t contain valid json!', 'blob:blob-service-invalid-json');
+            if ($metadata) {
+                try {
+                    json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
+                } catch (\JsonException $e) {
+                    throw ApiError::withDetails(Response::HTTP_UNPROCESSABLE_ENTITY, 'The addtional Metadata doesn\'t contain valid json!', 'blob:blob-service-invalid-json');
+                }
             }
 
             $this->blobService->renameFileData($filedata);

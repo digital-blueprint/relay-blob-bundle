@@ -2,14 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Dbp\Relay\BlobBundle\Controller;
+namespace Dbp\Relay\BlobBundle\DataProvider;
 
+use ApiPlatform\Core\DataProvider\CollectionDataProviderInterface;
+use ApiPlatform\Core\DataProvider\RestrictedDataProviderInterface;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\CoreBundle\DataProvider\AbstractDataProvider;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
-use Symfony\Component\HttpFoundation\Request;
+use Dbp\Relay\CoreBundle\Helpers\ArrayFullPaginator;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use Dbp\Relay\BlobBundle\Entity\FileData;
 
-class GetFileDatasByPrefix extends BaseBlobController
+class FileDataCollectionDataProvider extends AbstractDataProvider
 {
     /**
      * @var BlobService
@@ -21,9 +26,28 @@ class GetFileDatasByPrefix extends BaseBlobController
         $this->blobService = $blobService;
     }
 
-    public function __invoke(Request $request): array
+    protected function getResourceClass(): string
     {
-        $bucketId = (string) $request->query->get('bucketID');
+        return FileData::class;
+    }
+
+    protected function getItemById($id, array $options = []): object
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $fileData = $this->blobService->getFileData($id);
+        $fileData = $this->blobService->setBucket($fileData);
+
+        $fileData = $this->blobService->getLink($fileData);
+
+        return $fileData;
+    }
+
+    protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $bucketId = $filters['bucketID'];
         if (!$bucketId) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is no configurated', 'blob:get-files-by-prefix-unset-bucketID');
         }
@@ -32,7 +56,7 @@ class GetFileDatasByPrefix extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is no configurated', 'blob:get-files-by-prefix-unconfigurated-bucketID');
         }
 
-        $prefix = (string) $request->query->get('prefix');
+        $prefix = $filters['prefix'];
         if (!$prefix) {
             $prefix = '';
         }
