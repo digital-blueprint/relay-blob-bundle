@@ -35,6 +35,10 @@ class FileDataCollectionDataProvider extends AbstractDataProvider
         $fileData = $this->blobService->setBucket($fileData);
 
         $fileData = $this->blobService->getLink($fileData);
+        
+        if (!$fileData) {
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:fileData-not-found');
+        }
 
         return $fileData;
     }

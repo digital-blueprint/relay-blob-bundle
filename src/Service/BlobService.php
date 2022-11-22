@@ -95,7 +95,7 @@ class BlobService
         return $fileData;
     }
 
-    public function setBucket(FileData $fileData): FileData
+    public function setBucket(FileData $fileData): Filedata
     {
         //check bucket ID exists
         $bucket = $this->configurationService->getBucketByID($fileData->getBucketID());
@@ -126,7 +126,7 @@ class BlobService
         return $fileData;
     }
 
-    public function getLink(FileData $fileData): FileData
+    public function getLink(FileData $fileData): ?FileData
     {
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
         $fileData = $datasystemService->getLink($fileData, $fileData->getBucket()->getPolicies());
@@ -141,9 +141,9 @@ class BlobService
             ->getRepository(FileData::class)
             ->find($identifier);
 
-     /*   if (!$fileData) {
+        if (!$fileData) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:fileData-not-found');
-        }*/
+        }
 
         return $fileData;
     }
