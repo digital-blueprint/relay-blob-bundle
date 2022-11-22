@@ -126,7 +126,7 @@ class BlobService
         return $fileData;
     }
 
-    public function getLink(FileData $fileData): ?FileData
+    public function getLink(FileData $fileData): FileData
     {
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
         $fileData = $datasystemService->getLink($fileData, $fileData->getBucket()->getPolicies());
