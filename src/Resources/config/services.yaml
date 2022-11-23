@@ -26,3 +26,7 @@ services:
     resource: '../../DataPersister'
     autowire: true
     autoconfigure: true
+
+  Dbp\Relay\BlobBundle\Cron\CleanupCronJob:
+    autowire: true
+    autoconfigure: true

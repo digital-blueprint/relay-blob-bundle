@@ -197,4 +197,24 @@ class BlobService
         $this->em->persist($fileData);
         $this->em->flush();
     }
+
+    public function cleanUp()
+    {
+        // get all invalid filedatas
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $invalidFileDataQuery = $this->em
+            ->getRepository(FileData::class)
+            ->createQueryBuilder('f')
+            ->where('f.existsUntil < :now')
+            ->setParameter('now', $now)
+            ->getQuery();
+
+        $invalidFileDatas = $invalidFileDataQuery->getResult();
+
+        // Remove all links, files and reference
+        foreach ($invalidFileDatas as $invalidFileData) {
+            $invalidFileData = $this->setBucket($invalidFileData);
+            $this->removeFileData($invalidFileData);
+        }
+    }
 }
