@@ -171,7 +171,7 @@ class BlobService
             ->orderBy('f.dateCreated', 'ASC')
             ->setParameter('bucketID', $bucketID)
             ->setParameter('prefix', $prefix)
-            ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber-1))
+            ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber - 1))
             ->setMaxResults($maxNumItemsPerPage);
 
         return $query->getQuery()->getResult();
