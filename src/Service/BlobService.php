@@ -95,8 +95,8 @@ class BlobService
         $fileData->setBucketID($request->get('bucketID'));
 
         $retentionDuration = $request->get('retentionDuration');
-        if ($retentionDuration == null)
-            $retentionDuration = "0";
+        if ($retentionDuration === null)
+            $retentionDuration = '0';
         $fileData->setRetentionDuration($request->get('retentionDuration'));
 
         return $fileData;
