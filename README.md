@@ -1,4 +1,4 @@
-Relay-API Bundle README Template
+Relay-Blob Bundle README
 ================================
 
 <!--

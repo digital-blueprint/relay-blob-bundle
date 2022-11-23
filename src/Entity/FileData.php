@@ -193,7 +193,7 @@ class FileData
      * @ApiProperty(iri="https://schema.org/duration")
      * @Groups({"BlobFiles:input"})
      *
-     * @var string
+     * @var string|null
      */
     private $retentionDuration;
 
@@ -222,7 +222,7 @@ class FileData
     private $file;
 
     /**
-     * @ORM\Column(type="text")
+     * @ORM\Column(type="text", nullable=true)
      * @ApiProperty(iri="https://schema.org/DataFeed")
      * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
      *
@@ -309,12 +309,12 @@ class FileData
         $this->lastAccess = $lastAccess;
     }
 
-    public function getRetentionDuration(): string
+    public function getRetentionDuration(): ?string
     {
         return $this->retentionDuration;
     }
 
-    public function setRetentionDuration(string $retentionDuration): void
+    public function setRetentionDuration($retentionDuration): void
     {
         $this->retentionDuration = $retentionDuration;
     }

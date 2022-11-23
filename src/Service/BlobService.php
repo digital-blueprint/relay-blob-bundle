@@ -82,14 +82,21 @@ class BlobService
 
         // Check if json is valid
         $metadata = $request->get('additionalMetadata');
-        try {
-            json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            throw ApiError::withDetails(Response::HTTP_UNPROCESSABLE_ENTITY, 'The addtional Metadata doesn\'t contain valid json!', 'blob:blob-service-invalid-json');
+        if ($metadata !== null) {
+            try {
+                json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
+            } catch (\JsonException $e) {
+                throw ApiError::withDetails(Response::HTTP_UNPROCESSABLE_ENTITY, 'The addtional Metadata doesn\'t contain valid json!', 'blob:blob-service-invalid-json');
+            }
         }
+
         $fileData->setAdditionalMetadata($metadata);
 
         $fileData->setBucketID($request->get('bucketID'));
+
+        $retentionDuration = $request->get('retentionDuration');
+        if ($retentionDuration == null)
+            $retentionDuration = "0";
         $fileData->setRetentionDuration($request->get('retentionDuration'));
 
         return $fileData;
