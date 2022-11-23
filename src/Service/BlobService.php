@@ -161,6 +161,22 @@ class BlobService
         return $fileDatas;
     }
 
+    public function getFileDataByBucketIDAndPrefixWithPagination(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage): array
+    {
+        $query = $this->em
+            ->getRepository(FileData::class)
+            ->createQueryBuilder('f')
+            ->where('f.bucketID = :bucketID')
+            ->andWhere('f.prefix = :prefix')
+            ->orderBy('f.dateCreated', 'ASC')
+            ->setParameter('bucketID', $bucketID)
+            ->setParameter('prefix', $prefix)
+            ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber-1))
+            ->setMaxResults($maxNumItemsPerPage);
+
+        return $query->getQuery()->getResult();
+    }
+
     public function removeFileData(FileData $fileData)
     {
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());

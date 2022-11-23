@@ -65,7 +65,7 @@ class FileDataCollectionDataProvider extends AbstractDataProvider
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is no configurated', 'blob:get-files-by-prefix-no-bucket-service');
         }
 
-        $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefix($bucketId, $prefix);
+        $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixWithPagination($bucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
 
         //create sharelinks
         foreach ($fileDatas as $fileData) {
