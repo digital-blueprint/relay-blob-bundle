@@ -82,7 +82,7 @@ class BlobService
 
         // Check if json is valid
         $metadata = $request->get('additionalMetadata');
-        if ($metadata !== null) {
+        if ($metadata) {
             try {
                 json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
             } catch (\JsonException $e) {
