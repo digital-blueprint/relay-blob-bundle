@@ -62,7 +62,7 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getItemById($id, array $options = []): object
     {
-        $this->checkSignature($filters);
+        throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'Should not called!', 'blob:wrong-function');
 
         $fileData = $this->blobService->getFileData($id);
         $fileData = $this->blobService->setBucket($fileData);
