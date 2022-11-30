@@ -6,10 +6,12 @@ namespace Dbp\Relay\BlobBundle\DataPersister;
 
 use ApiPlatform\Core\DataPersister\ContextAwareDataPersisterInterface;
 use Dbp\Relay\BlobBundle\Entity\FileData;
+use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 class FileDataDataPersister extends AbstractController implements ContextAwareDataPersisterInterface
 {
@@ -18,9 +20,15 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
      */
     private $blobService;
 
-    public function __construct(BlobService $blobService)
+    /**
+     * @var RequestStack
+     */
+    private $requestStack;
+
+    public function __construct(BlobService $blobService, RequestStack $requestStack)
     {
         $this->blobService = $blobService;
+        $this->requestStack = $requestStack;
     }
 
     public function supports($data, array $context = []): bool
@@ -30,6 +38,9 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
 
     public function persist($data, array $context = [])
     {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        $this->checkSignature($this->requestStack->getCurrentRequest()->query->all(), $this->requestStack->getCurrentRequest()->getContent());
+        
         if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === 'put') {
             $filedata = $data;
             assert($filedata instanceof FileData);
@@ -57,10 +68,23 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
     public function remove($data, array $context = [])
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        $this->checkSignature($this->requestStack->getCurrentRequest()->query->all());
 
         $filedata = $data;
         assert($filedata instanceof FileData);
 
         $this->blobService->removeFileData($filedata);
+    }
+
+    private function checkSignature($filters, $payload = null): void
+    {
+        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature');
+        $uri = $this->requestStack->getCurrentRequest()->getUri();
+        
+        if (!$uri || !$sig || !key_exists('bucketID', $filters) || !key_exists('creationTime', $filters)) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:dataprovider-unset-sig-params');
+        }
+
+        DenyAccessUnlessCheckSignature::denyAccessUnlessSiganture($filters['bucketID'], $filters['creationTime'], $uri, $sig, $payload);
     }
 }

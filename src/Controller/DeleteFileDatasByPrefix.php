@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Controller;
 
+use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,6 +25,16 @@ class DeleteFileDatasByPrefix extends BaseBlobController
     public function __invoke(Request $request)
     {
         $bucketId = (string) $request->query->get('bucketID');
+        $creationTime = (string) $request->query->get('creationTime');
+        $uri = $request->getUri();
+        $sig = $request->headers->get('x-dbp-signature');
+
+        if (!$uri || !$sig || $bucketId || $creationTime) {
+           throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:deleteFilesperprefix-unset-sig-params');
+        }
+
+        DenyAccessUnlessCheckSignature::denyAccessUnlessSiganture($bucketId, $creationTime, $uri, $sig);
+
         if (!$bucketId) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is no configurated', 'blob:get-files-by-prefix-unset-bucketID');
         }

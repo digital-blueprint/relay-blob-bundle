@@ -29,9 +29,6 @@ final class CreateFileDataAction extends BaseBlobController
      */
     public function __invoke(Request $request): FileData
     {
-        // TODO replace this with signature check
-        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-
         $fileData = $this->blobService->createFileData($request);
 
         $fileData = $this->blobService->setBucket($fileData);

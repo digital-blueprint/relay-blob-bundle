@@ -359,7 +359,7 @@ class FileData
         $this->file = $file;
     }
 
-    public function getAdditionalMetadata(): string
+    public function getAdditionalMetadata(): ?string
     {
         return $this->additionalMetadata;
     }

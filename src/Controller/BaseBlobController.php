@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Controller;
 
+use Dbp\Relay\BlobBundle\Entity\FileData;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 
-abstract class BaseBlobController extends AbstractController
+class BaseBlobController extends AbstractController
 {
     /**
      * Request::get() is internal starting with Symfony 5.4, so we duplicate a subset of the logic we need here.
