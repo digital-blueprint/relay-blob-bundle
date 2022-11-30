@@ -30,7 +30,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         $sig = $request->headers->get('x-dbp-signature');
 
         if (!$uri || !$sig || $bucketId || $creationTime) {
-           throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:deleteFilesperprefix-unset-sig-params');
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:deleteFilesperprefix-unset-sig-params');
         }
 
         DenyAccessUnlessCheckSignature::denyAccessUnlessSiganture($bucketId, $creationTime, $uri, $sig);

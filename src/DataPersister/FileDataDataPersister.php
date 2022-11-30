@@ -10,8 +10,8 @@ use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Response;
 
 class FileDataDataPersister extends AbstractController implements ContextAwareDataPersisterInterface
 {
@@ -40,7 +40,7 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
         $this->checkSignature($this->requestStack->getCurrentRequest()->query->all(), $this->requestStack->getCurrentRequest()->getContent());
-        
+
         if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === 'put') {
             $filedata = $data;
             assert($filedata instanceof FileData);
@@ -80,7 +80,7 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
     {
         $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature');
         $uri = $this->requestStack->getCurrentRequest()->getUri();
-        
+
         if (!$uri || !$sig || !key_exists('bucketID', $filters) || !key_exists('creationTime', $filters)) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:dataprovider-unset-sig-params');
         }

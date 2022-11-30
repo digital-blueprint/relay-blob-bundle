@@ -60,7 +60,6 @@ class FileDataDataProvider extends AbstractDataProvider
         return $fileData;
     }
 
-
     protected function getItemById($id, array $options = []): object
     {
         $this->checkSignature($filters);
@@ -122,4 +121,3 @@ class FileDataDataProvider extends AbstractDataProvider
         DenyAccessUnlessCheckSignature::denyAccessUnlessSiganture($filters['bucketID'], $filters['creationTime'], $uri, $sig);
     }
 }
-
