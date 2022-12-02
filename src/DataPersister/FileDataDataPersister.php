@@ -78,7 +78,7 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
 
     private function checkSignature($filters, $payload = null): void
     {
-        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature');
+        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
         $uri = $this->requestStack->getCurrentRequest()->getUri();
 
         if (!$uri || !$sig || !key_exists('bucketID', $filters) || !key_exists('creationTime', $filters)) {
