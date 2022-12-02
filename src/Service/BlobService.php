@@ -72,8 +72,8 @@ class BlobService
 
         $fileData->setFile($uploadedFile);
 
-        $fileData->setPrefix($request->get('prefix'));
-        $fileData->setFileName($request->get('fileName'));
+        $fileData->setPrefix($request->get('prefix', ''));
+        $fileData->setFileName($request->get('fileName', 'no-name-file.txt'));
         $fileData->setFilesize(filesize($uploadedFile->getRealPath()));
 
         $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
@@ -81,24 +81,21 @@ class BlobService
         $fileData->setLastAccess($time);
 
         // Check if json is valid
-        $metadata = $request->get('additionalMetadata');
+        $metadata = $request->get('additionalMetadata'); // default is null
         if ($metadata) {
             try {
                 json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
             } catch (\JsonException $e) {
-                throw ApiError::withDetails(Response::HTTP_UNPROCESSABLE_ENTITY, 'The addtional Metadata doesn\'t contain valid json!', 'blob:blob-service-invalid-json');
+                throw ApiError::withDetails(Response::HTTP_UNPROCESSABLE_ENTITY, 'The additional Metadata doesn\'t contain valid json!', 'blob:blob-service-invalid-json');
             }
         }
 
         $fileData->setAdditionalMetadata($metadata);
 
-        $fileData->setBucketID($request->get('bucketID'));
+        $fileData->setBucketID($request->get('bucketID', ''));
 
-        $retentionDuration = $request->get('retentionDuration');
-        if ($retentionDuration === null) {
-            $retentionDuration = '0';
-        }
-        $fileData->setRetentionDuration($request->get('retentionDuration'));
+        $retentionDuration = $request->get('retentionDuration', '0');
+        $fileData->setRetentionDuration($retentionDuration);
 
         return $fileData;
     }
