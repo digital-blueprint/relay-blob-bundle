@@ -26,6 +26,8 @@ class FileDataDataProvider extends AbstractDataProvider
 
     public function __construct(BlobService $blobService, RequestStack $requestStack)
     {
+        parent::__construct($requestStack);
+
         $this->blobService = $blobService;
         $this->requestStack = $requestStack;
     }
@@ -62,7 +64,8 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getItemById($id, array $options = []): object
     {
-        throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'Should not called!', 'blob:wrong-function');
+        throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'Should not be called!', 'blob:wrong-function');
+        /*
         $fileData = $this->blobService->getFileData($id);
         $fileData = $this->blobService->setBucket($fileData);
         $fileData = $this->blobService->getLink($fileData);
@@ -72,6 +75,7 @@ class FileDataDataProvider extends AbstractDataProvider
         }
 
         return $fileData;
+        */
     }
 
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
@@ -80,39 +84,37 @@ class FileDataDataProvider extends AbstractDataProvider
 
         $bucketId = $filters['bucketID'];
         if (!$bucketId) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is no configurated', 'blob:get-files-by-prefix-unset-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-files-by-prefix-unset-bucketID');
         }
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
         if (!$bucket) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is no configurated', 'blob:get-files-by-prefix-unconfigurated-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-files-by-prefix-not-configured-bucketID');
         }
 
-        $prefix = $filters['prefix'];
-        if (!$prefix) {
-            $prefix = '';
-        }
+        $prefix = $filters['prefix'] ?? '';
 
         if (!$bucket->getService()) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is no configurated', 'blob:get-files-by-prefix-no-bucket-service');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is not configured', 'blob:get-files-by-prefix-no-bucket-service');
         }
 
         $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixWithPagination($bucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
 
         //create sharelinks
+        $links = [];
         foreach ($fileDatas as $fileData) {
             $fileData->setBucket($bucket);
-            $fileData = $this->blobService->getLink($fileData);
+            $links[] = $this->blobService->getLink($fileData);
         }
 
-        return $fileDatas;
+        return $links;
     }
 
     private function checkSignature($filters): void
     {
-        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature');
+        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
         $uri = $this->requestStack->getCurrentRequest()->getUri();
 
-        if (!$uri || !$sig || !key_exists('bucketID', $filters) || !key_exists('creationTime', $filters)) {
+        if (!$uri || !$sig || !array_key_exists('bucketID', $filters) || !array_key_exists('creationTime', $filters)) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:dataprovider-unset-sig-params');
         }
 

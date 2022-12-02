@@ -109,7 +109,7 @@ class BlobService
         $bucket = $this->configurationService->getBucketByID($fileData->getBucketID());
         // bucket is not configured
         if (!$bucket) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is no configurated', 'blob:create-file-unconfigurated-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:create-file-not-configured-bucketID');
         }
         $fileData->setBucket($bucket);
 

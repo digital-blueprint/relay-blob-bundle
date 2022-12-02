@@ -45,7 +45,7 @@ final class CreateFileDataAction extends BaseBlobController
 
         // Use given service for bucket
         if (!$bucket->getService()) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is no configurated', 'blob:create-file-no-bucket-service');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is not configured', 'blob:create-file-no-bucket-service');
         }
 
         /** @var ?UploadedFile $uploadedFile */
