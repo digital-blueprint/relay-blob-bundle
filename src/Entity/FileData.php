@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Entity;
 
+date_default_timezone_set('UTC');
+
 use ApiPlatform\Core\Annotation\ApiProperty;
 use ApiPlatform\Core\Annotation\ApiResource;
 use Dbp\Relay\BlobBundle\Controller\CreateFileDataAction;
