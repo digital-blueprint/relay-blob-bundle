@@ -48,7 +48,7 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getFileDataById($id, array $filters): object
     {
-       // $this->checkSignature($filters);
+        $this->checkSignature($filters);
 
         $fileData = $this->blobService->getFileData($id);
         $fileData = $this->blobService->setBucket($fileData);

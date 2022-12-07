@@ -58,7 +58,6 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
             $this->blobService->renameFileData($filedata);
         }
 
-
         if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === 'put_exists_until') {
             $filedata = $data;
             assert($filedata instanceof FileData);

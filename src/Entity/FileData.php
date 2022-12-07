@@ -109,9 +109,6 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *             "path" = "/blob/files/{identifier}/exists_until",
  *             "openapi_context" = {
  *                  "tags" = {"Blob"},
- *                  "requestBody" = {
- *                    
- *                  },
  *             },
  *             "denormalization_context" = {
  *                 "jsonld_embed_context" = true,
