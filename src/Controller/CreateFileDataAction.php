@@ -36,7 +36,7 @@ final class CreateFileDataAction extends BaseBlobController
         $bucket = $fileData->getBucket();
 
         // Check retentionDuration & idleRetentionDuration valid durations
-        if ($bucket->getMaxRetentionDuration() < $fileData->getRetentionDuration() || $fileData->getRetentionDuration() === null) {
+        if ($bucket->getMaxRetentionDuration() < $fileData->getRetentionDuration() || !$fileData->getRetentionDuration()) {
             $fileData->setRetentionDuration((string) $bucket->getMaxRetentionDuration());
         }
 
@@ -51,6 +51,15 @@ final class CreateFileDataAction extends BaseBlobController
         /** @var ?UploadedFile $uploadedFile */
         $uploadedFile = $fileData->getFile();
         $fileData->setExtension($uploadedFile->guessExtension());
+
+        // Check quota
+        $bucketsizeByte = (int) $this->blobService->getQuotaOfBucket($fileData->getBucketID())['bucketSize'];
+        $bucketQuotaByte = $fileData->getBucket()->getQuota() * 1000000;
+        $newBucketSizeByte = $bucketsizeByte + $fileData->getFileSize();
+        if ($newBucketSizeByte < $bucketQuotaByte) {
+            throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quote is reached', 'blob:create-file-bucket-quota-reached');
+            //TODO send mail
+        }
 
         // Then return correct data for service
         $fileData = $this->blobService->saveFile($fileData);

@@ -48,7 +48,7 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getFileDataById($id, array $filters): object
     {
-        $this->checkSignature($filters);
+       // $this->checkSignature($filters);
 
         $fileData = $this->blobService->getFileData($id);
         $fileData = $this->blobService->setBucket($fileData);
@@ -80,7 +80,7 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
-        $this->checkSignature($filters);
+        // $this->checkSignature($filters);
 
         $bucketId = $filters['bucketID'];
         if (!$bucketId) {
@@ -100,13 +100,12 @@ class FileDataDataProvider extends AbstractDataProvider
         $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixWithPagination($bucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
 
         //create sharelinks
-        $links = [];
         foreach ($fileDatas as $fileData) {
             $fileData->setBucket($bucket);
-            $links[] = $this->blobService->getLink($fileData);
+            $fileData = $this->blobService->getLink($fileData);
         }
 
-        return $links;
+        return $fileDatas;
     }
 
     private function checkSignature($filters): void

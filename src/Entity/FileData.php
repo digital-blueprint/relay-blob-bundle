@@ -103,6 +103,21 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *                 "groups" = {"BlobFiles:update"}
  *             },
  *         },
+ *         "put_exists_until" = {
+ *             "method" = "PUT",
+ *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
+ *             "path" = "/blob/files/{identifier}/exists_until",
+ *             "openapi_context" = {
+ *                  "tags" = {"Blob"},
+ *                  "requestBody" = {
+ *                    
+ *                  },
+ *             },
+ *             "denormalization_context" = {
+ *                 "jsonld_embed_context" = true,
+ *                 "groups" = {"BlobFiles:update:exists"}
+ *             },
+ *         },
  *         "delete" = {
  *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files/{identifier}",
@@ -154,6 +169,7 @@ class FileData
 
     /**
      * @ORM\Column(type="string", length=50)
+     * @Groups({"BlobFiles:output"})
      *
      * @var string
      */
@@ -202,7 +218,7 @@ class FileData
     /**
      * @ORM\Column(type="datetime_immutable")
      * @ApiProperty(iri="https://schema.org/expires")
-     * @Groups({"BlobFiles:output"})
+     * @Groups({"BlobFiles:output", "BlobFiles:update:exists"})
      *
      * @var \DateTimeImmutable
      */

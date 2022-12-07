@@ -182,6 +182,19 @@ class BlobService
         return $query->getQuery()->getResult();
     }
 
+    public function getQuotaOfBucket(string $bucketID): array
+    {
+        $query = $this->em
+            ->getRepository(FileData::class)
+            ->createQueryBuilder('f')
+            ->where('f.bucketID = :bucketID')
+            ->orderBy('f.dateCreated', 'ASC')
+            ->setParameter('bucketID', $bucketID)
+            ->select('SUM(f.fileSize) as bucketSize');
+
+        return $query->getQuery()->getOneOrNullResult();
+    }
+
     public function removeFileData(FileData $fileData)
     {
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
@@ -196,6 +209,15 @@ class BlobService
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
         $datasystemService->renameFile($fileData);
 
+        $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $fileData->setLastAccess($time);
+
+        $this->em->persist($fileData);
+        $this->em->flush();
+    }
+
+    public function increaseExistsUntil(FileData $fileData)
+    {
         $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $fileData->setLastAccess($time);
 
