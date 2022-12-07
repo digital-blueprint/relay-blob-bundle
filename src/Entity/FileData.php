@@ -108,7 +108,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files/{identifier}/exists_until",
  *             "openapi_context" = {
- *                  "tags" = {"Blob"},
+ *                 "tags" = {"Blob"},
  *             },
  *             "denormalization_context" = {
  *                 "jsonld_embed_context" = true,

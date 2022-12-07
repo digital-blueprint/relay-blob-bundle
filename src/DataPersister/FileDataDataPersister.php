@@ -39,9 +39,8 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
     public function persist($data, array $context = [])
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-        //$this->checkSignature($this->requestStack->getCurrentRequest()->query->all(), $this->requestStack->getCurrentRequest()->getContent());
+        $this->checkSignature($this->requestStack->getCurrentRequest()->query->all(), $this->requestStack->getCurrentRequest()->getContent());
 
-    
         if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === 'put') {
             $filedata = $data;
             assert($filedata instanceof FileData);
