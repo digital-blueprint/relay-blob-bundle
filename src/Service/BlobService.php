@@ -9,8 +9,6 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use PHPUnit\TextUI\XmlConfiguration\File;
-use Safe\DateTime;
-use Safe\DateTimeImmutable;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
