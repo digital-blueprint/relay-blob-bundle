@@ -37,6 +37,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *                                     "fileName" = {"description" = "Friendly name of the file", "type" = "string", "example" = "myfile"},
  *                                     "bucketID" = {"description" = "ID of the bucket", "type" = "string", "example" = "1234"},
  *                                     "retentionDuration" = {"description" = "Max time in timestamp duration in ISO 8601 format from creation date when file will be deleted", "type" = "string", "example" = "P2YT6H"},
+ *                                     "notifyMail" = {"description" = "An email address which gets notified before the files expires", "type" = "string", "example" = "test@test.com"},
  *                                     "additionalMetadata" = {"description" = "Additional Metadata for the file", "type" = "object", "example" = "{""myFileData"": ""my File additional Data""}"},
  *                                 },
  *                                 "required" = {"file", "bucketID"},
@@ -254,6 +255,15 @@ class FileData
      */
     private $fileSize;
 
+    /**
+     * @ORM\Column(type="string", length=255)
+     * @ApiProperty(iri="https://schema.org/email")
+     * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
+     *
+     * @var string
+     */
+    private $notifyEmail;
+
     public function getIdentifier(): string
     {
         return $this->identifier;
@@ -392,5 +402,15 @@ class FileData
     public function setFileSize(int $fileSize): void
     {
         $this->fileSize = $fileSize;
+    }
+
+    public function getNotifyEmail(): ?string
+    {
+        return $this->notifyEmail;
+    }
+
+    public function setNotifyEmail(string $notifyEmail): void
+    {
+        $this->notifyEmail = $notifyEmail;
     }
 }

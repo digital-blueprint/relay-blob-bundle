@@ -2,15 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Dbp\Relay\BlobConnectorFilesystemBundle\Migrations;
+namespace Dbp\Relay\BlobBundle\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\Migrations\AbstractMigration;
 
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20221128073704 extends AbstractMigration
+final class Version20221128073704 extends EntityManagerMigration
 {
     public function getDescription(): string
     {

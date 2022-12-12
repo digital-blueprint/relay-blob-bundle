@@ -1,30 +1,19 @@
 <html>
 <body>
 <table>
-    <tr>
-        <th>Prepared</th>
-        <td>{{ count.prepared|default(0) }}</td>
-    </tr>
-    <tr>
-        <th>Started</th>
-        <td>{{ count.started|default(0) }}</td>
-    </tr>
-    <tr>
-        <th>Completed</th>
-        <td>{{ count.completed|default(0) }}</td>
-    </tr>
-    <tr>
-        <th>Cancelled</th>
-        <td>{{ count.cancelled|default(0) }}</td>
-    </tr>
-    <tr>
-        <th>Pending</th>
-        <td>{{ count.pending|default(0) }}</td>
-    </tr>
-    <tr>
-        <th>Failed</th>
-        <td>{{ count.failed|default(0) }}</td>
-    </tr>
+    <tr><th>Weekly reporting of expiring files of bucket {{ bucketName }} ({{ bucketId }})</th></tr>
+    <tr><th>file id</th><th>filename</th> <th>prefix</th><th>date created</th><th>last access</th><th>exists until</th></tr>
+    {% for file in files %}
+        <tr>
+            <td>{{ file.id|e }}</td>
+            <td>{{ file.fileName|e }}</td>
+            <td>{{ file.prefix|e }}</td>
+            <td>{{ file.dateCreated|e }}</td>
+            <td>{{ file.lastAccess|e }}</td>
+            <td>{{ file.existsUnitl|e }}</td>
+        </tr>
+    {% endfor %}
+
 </table>
 </body>
 </html>

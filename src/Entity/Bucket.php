@@ -177,7 +177,6 @@ class Bucket
         return $this;
     }
 
-
     public static function fromConfig(array $config): Bucket
     {
         $bucket = new Bucket();

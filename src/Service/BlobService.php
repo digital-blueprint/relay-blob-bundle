@@ -203,6 +203,24 @@ class BlobService
         return $query->getQuery()->getOneOrNullResult();
     }
 
+    public function getAllExpiringFiledatasByBucket(string $bucketId): array
+    {
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $expiring = $now->add(new \DateInterval('P30D'));
+
+        $query = $this->em
+            ->getRepository(FileData::class)
+            ->createQueryBuilder('f')
+            ->where('f.bucketID = :bucketID')
+            ->andWhere('f.existsUntil <= :expiring')
+            ->orderBy('f.notifyEmail', 'ASC')
+            ->orderBy('f.existsUntil', 'ASC')
+            ->setParameter('bucketID', $bucketId)
+            ->setParameter('expiring', $expiring);
+
+        return $query->getQuery()->getResult();
+    }
+
     public function removeFileData(FileData $fileData)
     {
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
@@ -272,8 +290,60 @@ class BlobService
             'bucketId' => $name,
             'quota' => $quota,
         ];
-        
+
         $this->sendEmail($notifyQuotaConfig, $context);
+    }
+
+    public function sendReporting()
+    {
+        $buckets = $this->configurationService->getBuckets();
+        foreach ($buckets as $bucket) {
+            $this->sendReportingForBucket($bucket);
+        }
+    }
+
+    public function sendReportingForBucket(Bucket $bucket)
+    {
+        $reportingConfig = $bucket->getReportingConfig();
+
+        $id = $bucket->getIdentifier();
+        $name = $bucket->getName();
+
+        $fileDatas = $this->getAllExpiringFiledatasByBucket($bucket->getIdentifier());
+
+        if (!empty($fileDatas)) {
+            // create for each email to be notified an array with expiring filedatas
+            $notifyEmails = [];
+            foreach ($fileDatas as $fileData) {
+                /* @var ?FileData $fileData */
+                $file['id'] = $fileData->getIdentifier();
+                $file['fileName'] = $fileData->getFileName();
+                $file['prefix'] = $fileData->getPrefix();
+                $file['dateCreated'] = $fileData->getDateCreated()->format('c');
+                $file['lastAccess'] = $fileData->getLastAccess()->format('c');
+                $file['existsUnitl'] = $fileData->getExistsUntil()->format('c');
+                if (empty($notifyEmails[$fileData->getNotifyEmail()])) {
+                    $notifyEmails[$fileData->getNotifyEmail()] = [];
+                }
+                array_push($notifyEmails[$fileData->getNotifyEmail()], $file);
+            }
+
+            foreach ($notifyEmails as $email => $files) {
+                $context = [
+                    'bucketId' => $id,
+                    'bucketName' => $name,
+                    'files' => $files,
+                ];
+
+                $config = $reportingConfig;
+                // replace the default email with a given email
+                if ($email) {
+                    $config['to'] = $email;
+                }
+
+                $this->sendEmail($config, $context);
+            }
+        }
     }
 
     private function sendEmail(array $config, array $context)
@@ -292,7 +362,7 @@ class BlobService
             ->to($config['to'])
             ->subject($config['subject'])
             ->html($html);
-        
+
         $mailer->send($email);
     }
 }

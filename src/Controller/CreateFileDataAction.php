@@ -29,6 +29,8 @@ final class CreateFileDataAction extends BaseBlobController
      */
     public function __invoke(Request $request): FileData
     {
+        // TODO add check signature here
+
         $fileData = $this->blobService->createFileData($request);
 
         $fileData = $this->blobService->setBucket($fileData);
