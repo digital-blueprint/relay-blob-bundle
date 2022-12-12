@@ -228,7 +228,7 @@ class BlobService
         //Check new date is not greater than maxretentiondate from bucket
         $maxRetentionTimeFromNow = $time->add(new \DateInterval($fileData->getBucket()->getMaxRetentionDuration()));
         if ($fileData->getExistsUntil() > $maxRetentionTimeFromNow) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'The given `exists until time` is longer then the max retention time of the bucket! Enter a time between now and '.$maxRetentionTimeFromNow->format("c"), 'blob:blob-service-invalid-max-retentiontime');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'The given `exists until time` is longer then the max retention time of the bucket! Enter a time between now and '.$maxRetentionTimeFromNow->format('c'), 'blob:blob-service-invalid-max-retentiontime');
         }
 
         $this->em->persist($fileData);
