@@ -10,6 +10,7 @@
         "dbp/relay-core-bundle": "^0.1.56",
         "symfony/event-dispatcher": "^5.4",
         "symfony/framework-bundle": "^5.4",
+        "symfony/mailer": "^5.4",
         "symfony/orm-pack": "^2.2"
     },
     "require-dev": {
