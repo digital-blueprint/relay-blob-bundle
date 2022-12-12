@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Service;
 
+use Dbp\Relay\BlobBundle\Entity\Bucket;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Doctrine\ORM\EntityManagerInterface;
@@ -12,7 +13,12 @@ use PHPUnit\TextUI\XmlConfiguration\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mailer\Mailer;
+use Symfony\Component\Mailer\Transport;
+use Symfony\Component\Mime\Email;
 use Symfony\Component\Uid\Uuid;
+use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
 
 date_default_timezone_set('UTC');
 
@@ -251,5 +257,42 @@ class BlobService
             $invalidFileData = $this->setBucket($invalidFileData);
             $this->removeFileData($invalidFileData);
         }
+    }
+
+    public function sendNotifyQuota(Bucket $bucket)
+    {
+        $notifyQuotaConfig = $bucket->getNotifyQuotaConfig();
+
+        $id = $bucket->getIdentifier();
+        $name = $bucket->getName();
+        $quota = $bucket->getQuota();
+
+        $context = [
+            'bucketId' => $id,
+            'bucketId' => $name,
+            'quota' => $quota,
+        ];
+        
+        $this->sendEmail($notifyQuotaConfig, $context);
+    }
+
+    private function sendEmail(array $config, array $context)
+    {
+        $loader = new FilesystemLoader(dirname(__FILE__).'/../Resources/views/');
+        $twig = new Environment($loader);
+
+        $template = $twig->load($config['html_template']);
+        $html = $template->render($context);
+
+        $transport = Transport::fromDsn($config['dsn']);
+        $mailer = new Mailer($transport);
+
+        $email = (new Email())
+            ->from($config['from'])
+            ->to($config['to'])
+            ->subject($config['subject'])
+            ->html($html);
+        
+        $mailer->send($email);
     }
 }

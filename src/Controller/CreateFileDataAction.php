@@ -56,9 +56,9 @@ final class CreateFileDataAction extends BaseBlobController
         $bucketsizeByte = (int) $this->blobService->getQuotaOfBucket($fileData->getBucketID())['bucketSize'];
         $bucketQuotaByte = $fileData->getBucket()->getQuota() * 1000000;
         $newBucketSizeByte = $bucketsizeByte + $fileData->getFileSize();
-        if ($newBucketSizeByte < $bucketQuotaByte) {
+        if ($newBucketSizeByte > $bucketQuotaByte) {
+            $this->blobService->sendNotifyQuota($bucket);
             throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quote is reached', 'blob:create-file-bucket-quota-reached');
-            //TODO send mail
         }
 
         // Then return correct data for service

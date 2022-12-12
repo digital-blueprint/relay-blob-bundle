@@ -53,6 +53,16 @@ class Bucket
      */
     private $policies;
 
+    /**
+     * @var ?array
+     */
+    private $notifyQuotaConfig;
+
+    /**
+     * @var ?array
+     */
+    private $reportingConfig;
+
     public function getIdentifier(): string
     {
         return $this->identifier;
@@ -143,6 +153,31 @@ class Bucket
         $this->policies = $policies;
     }
 
+    public function getNotifyQuotaConfig(): ?array
+    {
+        return $this->notifyQuotaConfig;
+    }
+
+    public function setNotifyQuotaConfig(?array $notifyQuotaConfig): self
+    {
+        $this->notifyQuotaConfig = $notifyQuotaConfig;
+
+        return $this;
+    }
+
+    public function getReportingConfig(): ?array
+    {
+        return $this->reportingConfig;
+    }
+
+    public function setReportingConfig(?array $reportingConfig): self
+    {
+        $this->reportingConfig = $reportingConfig;
+
+        return $this;
+    }
+
+
     public static function fromConfig(array $config): Bucket
     {
         $bucket = new Bucket();
@@ -158,6 +193,29 @@ class Bucket
         $policies = PoliciesStruct::withPoliciesArray($config['policies']);
 
         $bucket->setPolicies($policies);
+
+        if (
+            array_key_exists('notify_quota', $config)
+            && is_array($config['notify_quota'])
+            && !empty($config['notify_quota']['dsn'])
+            && !empty($config['notify_quota']['from'])
+            && !empty($config['notify_quota']['to'])
+            && !empty($config['notify_quota']['subject'])
+            && !empty($config['notify_quota']['html_template'])
+        ) {
+            $bucket->setNotifyQuotaConfig($config['notify_quota']);
+        }
+        if (
+            array_key_exists('reporting', $config)
+            && is_array($config['reporting'])
+            && !empty($config['reporting']['dsn'])
+            && !empty($config['reporting']['from'])
+            && !empty($config['reporting']['to'])
+            && !empty($config['reporting']['subject'])
+            && !empty($config['reporting']['html_template'])
+        ) {
+            $bucket->setReportingConfig($config['reporting']);
+        }
 
         return $bucket;
     }
