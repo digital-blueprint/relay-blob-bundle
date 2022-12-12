@@ -222,7 +222,7 @@ class BlobService
     {
         $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $fileData->setLastAccess($time);
-        
+
         //Check new date is not greater than maxretentiondate from bucket
         $maxRetentionTimeFromNow = $time->add(new \DateInterval($fileData->getBucket()->getMaxRetentionDuration()));
         if ($fileData->getExistsUntil() > $maxRetentionTimeFromNow) {
