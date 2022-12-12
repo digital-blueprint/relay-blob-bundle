@@ -287,7 +287,7 @@ class BlobService
 
         $context = [
             'bucketId' => $id,
-            'bucketId' => $name,
+            'bucketName' => $name,
             'quota' => $quota,
         ];
 
