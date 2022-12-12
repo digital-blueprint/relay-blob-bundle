@@ -1,31 +1,22 @@
 Relay-Blob Bundle README
 ================================
 
+# DbpRelayBlobBundle
+
+[GitLab](https://gitlab.tugraz.at/dbp/relay/dbp-relay-blob-bundle) 
+
+The blob bundle provides an API for abstracting different shared filesystems.
+You can upload a file unauthorized via the API to a configured bucket and gets a short ephemeral link. 
+Authentication takes place via signed requests.
+The file is attached to the bucket, not to an owner.
+
+A bucket can be an application or an application space. For example you can have two buckets with a different target group for one application.
+A bucket is configured in the config file.
+
+## Requirements
+You need a DbpRelayBlobConnector bundle installed to make this bundle working. E.g. [DbpRelayBlobConnectorFilesystemBundle] (https://gitlab.tugraz.at/dbp/relay/dbp-relay-blob-connector-filesystem-bundle)
+
 <!--
-This should act as a template README.md for a new Relay-API Bundle.
-Just remove the parts that are not relevant to your bundle and
-replace placeholders like "{{Name}}" with your bundle name and so on.
-
-List of placeholders:
-- {{name}}: Name of the bundle in lowercase, like "formalize"
-- {{Name}}: Name of the bundle in camel case, like "Formalize"
-- {{NAME}}: Name of the bundle in uppercase, like "FORMALIZE"
-- {{bundle-path}}: GitLab bundle repository path, like "dbp/formalize/dbp-relay-formalize-bundle"
-- {{package-name}}: Name of the bundle for packagist, like "dbp/relay-formalize-bundle"
-- {{app-path}}: GitLab repository path of the frontend application, like "dbp/formalize/formalize"
--->
-
-# DbpRelay{{Name}}Bundle
-
-[GitLab](https://gitlab.tugraz.at/{{bundle-path}}) |
-[Packagist](https://packagist.org/packages/{{package-name}}) |
-[Frontend Application](https://gitlab.tugraz.at/{{app-path}}) |
-[{{Name}} Website](https://dbp-demo.tugraz.at/site/software/{{name}}.html)
-
-The {{name}} bundle provides an API for interacting with ...
-
-There is a corresponding frontend application that uses this API at [{{Name}} Frontend Application](https://gitlab.tugraz.at/{{app-path}}).
-
 ## Bundle installation
 
 You can install the bundle directly from [packagist.org](https://packagist.org/packages/{{package-name}}).
@@ -33,14 +24,14 @@ You can install the bundle directly from [packagist.org](https://packagist.org/p
 ```bash
 composer require {{package-name}}
 ```
-
+-->
 ## Integration into the Relay API Server
 
 * Add the bundle to your `config/bundles.php` in front of `DbpRelayCoreBundle`:
 
 ```php
 ...
-Dbp\Relay\{{Name}}Bundle\DbpRelay{{Name}}Bundle::class => ['all' => true],
+Dbp\Relay\BlobBundle\DbpRelayBlobBundle::class => ['all' => true],
 Dbp\Relay\CoreBundle\DbpRelayCoreBundle::class => ['all' => true],
 ];
 ```
@@ -52,20 +43,46 @@ as template for your Symfony application, then this should have already been gen
 
 ## Configuration
 
-The bundle has a `database_url` configuration value that you can specify in your
+The bundle has multiple configuration values that you can specify in your
 app, either by hard-coding it, or by referencing an environment variable.
 
-For this create `config/packages/dbp_relay_{{name}}.yaml` in the app with the following
+For this create `config/packages/dbp_relay_blob.yaml` in the app with the following
 content:
 
 ```yaml
-dbp_relay_{{name}}:
-  database_url: 'mysql://db:secret@mariadb:3306/db?serverVersion=mariadb-10.3.30'
-  # database_url: %env({{NAME}}_DATABASE_URL)%
+dbp_relay_blob:
+  database_url: %env(resolve:DATABASE_URL)%'
+  buckets:
+    test_bucket:
+      service: 'Dbp\Relay\BlobConnectorFilesystemBundle\Service\FilesystemService' # The path to a dbp relay blob connector service
+      bucket_id: '1234' # A given id for a bucket
+      bucket_name: 'Test bucket' # friendly name of the bucket
+      public_key: '12345' # public key for signed request
+      path: 'testpath' # path were files should be placed on the filesystem
+      quota: 500 # Max quota in MB
+      bucket_owner: 'tamara.steiwnender@tugraz.at' # Email who will be notified when quota is reached
+      max_retention_duration: 'P1Y' # Max retention duration of files in ISO 8601
+      link_expire_time: 'P7D' # Max expire time of sharelinks in ISO 8601
+      policies: # policies what can be done in the bucket
+        create: true
+        delete: true
+        open: true
+        download: true
+        rename: true
+        work: true
+      notify_quota: # Notification configuration how emails are sent when the quota is reached
+        dsn: '%env(TUGRAZ_MAILER_TRANSPORT_DSN)%'
+        from: 'noreply@tugraz.at'
+        to: 'tamara.steinwender@tugraz.at'
+        subject: 'Blob notify quota'
+        html_template: 'emails/notify-quota.html.twig'
+      reporting: # Reporting configuration how emails are sent when file expires
+        dsn: '%env(TUGRAZ_MAILER_TRANSPORT_DSN)%'
+        from: 'noreply@tugraz.at'
+        to: 'tamara.steinwender@tugraz.at' # this email is an fallback, if no email field of an file is set
+        subject: 'Blob file deletion reporting'
+        html_template: 'emails/reporting.html.twig'
 ```
-
-If you were using the [DBP API Server Template](https://gitlab.tugraz.at/dbp/relay/dbp-relay-server-template)
-as template for your Symfony application, then the configuration file should have already been generated for you.
 
 For more info on bundle configuration see <https://symfony.com/doc/current/bundles/configuration.html>.
 
@@ -81,8 +98,8 @@ For more info on bundle configuration see <https://symfony.com/doc/current/bundl
 Don't forget you need to pull down your dependencies in your main application if you are installing packages in a bundle.
 
 ```bash
-# updates and installs dependencies of {{package-name}}
-composer update {{package-name}}
+# updates and installs dependencies of dbp/relay-blob-bundle
+composer update dbp/relay-blob-bundle
 ```
 
 ## Scripts
@@ -93,69 +110,168 @@ Run this script to migrate the database. Run this script after installation of t
 after every update to adapt the database to the new source code.
 
 ```bash
-php bin/console doctrine:migrations:migrate --em=dbp_relay_{{name}}_bundle
+php bin/console doctrine:migrations:migrate --em=dbp_relay_blob_bundle
 ```
 
-## Error codes
+## Functionality & Error codes
 
-### `/{{name}}/submissions`
+### `/blob/files`
 
 #### POST
+Checks the signature in the header, if the request is allowed.
+Creates a fileData Entity, which is saved in the database. Saves the given file in the configured service of the connector bundle.
+Returns the fileData with a contentUrl. This link expires in the configured link_expire_time.
 
-| relay:errorId                       | Status code | Description                                     | relay:errorDetails | Example                          |
-|-------------------------------------|-------------|-------------------------------------------------| ------------------ |----------------------------------|
-| `{{name}}:submission-not-created`  | 500         | The submission could not be created.            | `message`          | `['message' => 'Error message']` |
-| `{{name}}:submission-invalid-json` | 422         | The dataFeedElement doesn't contain valid json. | `message`          |                                  |
+##### Parameters
 
-### `/{{name}}/submissions/{identifier}`
+- file: binary
+- prefix (optional): string
+- fileName (optional, default name of the file): string
+- bucketID: string
+- retentionDuration (optional): string ISO 8601, e.g. P2YT6H
+- notifyMail (optional): string
+- additionalMetadata (optional): object
 
-#### GET
+##### Error codes
+
+| relay:errorId                      | Status code | Description                                         | relay:errorDetails | Example                          |
+|------------------------------------|-------------|-----------------------------------------------------| ------------------ |----------------------------------|
+| `blob:dataprovider-unset-sig-params` | 403         | The in the headers signature cannot checked         | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:create-file-data-upload-failed` | 400         | Data upload failed.                                 | `message`          |                                  |
+| `blob:create-file-no-bucket-service` | 400         | BucketService is not configured.                    | `message`          |                                  |
+| `blob:create-file-missing-file` | 400         | No file with parameter key "file" was received!     | `message`          |                                  |
+| `blob:create-file-upload-error` | 400         | File upload pload went wrong.                       | `message`          |                                  |
+| `blob:create-file-empty-files-not-allowed` | 400         | Empty files cannot be added!                        | `message`          |                                  |
+| `blob:create-file-not-configured-bucketID` | 400         | BucketID is not configured                          | `message`          |                                  |
+| `blob:blob-service-invalid-json` | 422         | The additional Metadata doesn't contain valid json! | `message`          |                                  |
+| `blob:file-not-saved` | 500         | ile could not be saved!                            | `message`          |                                  |
+| `blob:create-file-bucket-quota-reached` | 507         | Bucket quote is reached.                            | `message`          |                                  |
+
+
+#### GET By prefix
+Checks the signature in the header, if the request is allowed.
+Returns fileDatas with ephemeral contentUrls of a specific prefix(path) in a given bucket.
+
+##### Parameters
+
+- bucketID: string
+- prefix: string
+- page (optional, default 1)
+- perPage (optional, default 30)
+
+##### Error codes
 
 | relay:errorId                    | Status code | Description               | relay:errorDetails | Example |
 | -------------------------------- | ----------- | ------------------------- | ------------------ | ------- |
-| `{{name}}:submission-not-found` | 404         | Submission was not found. |                    |         |
+| `blob:fileDatas-not-found` | 404         | FileData was not found! |                    |         |
+| `blob:get-files-by-prefix-unset-bucketID` | 400         | BucketID is not configured       | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:get-files-by-prefix-not-configured-bucketID` | 400         | Bucket is not configured         | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:get-files-by-prefix-no-bucket-service` | 400         | BucketService is not configured         | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:dataprovider-unset-sig-params` | 403         | The in the headers signature cannot checked         | `message`          | `['message' => 'Signature cannot checked']` |
 
-## Roles
 
-This bundle needs the role `ROLE_SCOPE_{{NAME}}` assigned to the user to get permissions to fetch data.
-To create a new submission entry the Symfony role `ROLE_SCOPE_{{NAME}}-POST` is required.
+#### DELETE by prefix
+Checks the signature in the header, if the request is allowed.
+Deletes all files in a given prefix(path) of a bucket.
 
-## Events
+##### Parameters
 
-To extend the behavior of the bundle the following event is registered:
+- bucketID: string
+- prefix: string
 
-### CreateSubmissionPostEvent
+##### Error codes
 
-This event allows you to react on submission creations.
-You can use this for example to email the submitter of the submission.
+| relay:errorId                    | Status code | Description                                                                                                                         | relay:errorDetails | Example |
+| -------------------------------- |-------------|-------------------------------------------------------------------------------------------------------------------------------------| ------------------ | ------- |
+| `blob:get-files-by-prefix-unset-bucketID` | 400         | BucketID is not configured       | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:get-files-by-prefix-not-configured-bucketID` | 400         | Bucket is not configured         | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:get-files-by-prefix-no-bucket-service` | 400         | BucketService is not configured         | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:deleteFilesperprefix-unset-sig-params` | 403         | The in the headers signature cannot checked       | `message`          | `['message' => 'Signature cannot checked']` |
 
-An event subscriber receives a `Dbp\Relay\{{Name}}Bundle\Event\CreateSubmissionPostEvent` instance
-in a service for example in `src/EventSubscriber/CreateSubmissionSubscriber.php`:
 
-```php
-<?php
 
-namespace App\EventSubscriber;
+### `/blob/files/{identifier}`
 
-use Dbp\Relay\{{Name}}Bundle\Event\CreateSubmissionPostEvent;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+#### GET
+Checks the signature in the header, if the request is allowed.
+Returns fileData with ephemeral contentUrls of a specific id.
 
-class CreateSubmissionSubscriber implements EventSubscriberInterface
+##### Parameters
+
+- identifier: string
+
+##### Error codes
+
+| relay:errorId                    | Status code | Description               | relay:errorDetails | Example |
+| -------------------------------- | ----------- | ------------------------- | ------------------ | ------- |
+| `blob:fileData-not-found` | 404         | FileData was not found! |                    |         |
+| `blob:dataprovider-unset-sig-params` | 403         | The in the headers signature cannot checked         | `message`          | `['message' => 'Signature cannot checked']` |
+
+
+#### PUT
+Checks the signature in the header, if the request is allowed.
+Can updates fileName, additionalMetadata and/or notifyEmail of a fileData.
+
+##### Parameters
+
+- identifier: string
+
+##### Request body
+
+```JSON
 {
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            CreateSubmissionPostEvent::NAME => 'onPost',
-        ];
-    }
-
-    public function onPost(CreateSubmissionPostEvent $event)
-    {
-        $submission = $event->getSubmission();
-        $dataFeedElement = $submission->getDataFeedElementDecoded();
-
-        // TODO: extract email address and send email
-        $email = $dataFeedElement['email'];
-    }
+  "fileName": "string",
+  "additionalMetadata": "string",
+  "notifyEmail": "string"
 }
 ```
+
+##### Error codes
+
+| relay:errorId                    | Status code | Description               | relay:errorDetails | Example |
+| -------------------------------- |-------------| ------------------------- | ------------------ | ------- |
+| `blob:blob-service-invalid-json` | 422         | The addtional Metadata doesn't contain valid json! |                    |         |
+| `blob:dataprovider-unset-sig-params` | 403         | The in the headers signature cannot checked        | `message`          | `['message' => 'Signature cannot checked']` |
+
+#### DELETE
+Checks the signature in the header, if the request is allowed.
+Deletes a specific file and the links and the filedatas with given identifier.
+
+##### Parameters
+
+- identifier: string
+
+##### Error codes
+
+| relay:errorId                    | Status code | Description                                                                                                                         | relay:errorDetails | Example |
+| -------------------------------- |-------------|-------------------------------------------------------------------------------------------------------------------------------------| ------------------ | ------- |
+| `blob:get-files-by-prefix-unset-bucketID` | 400         | BucketID is not configured       | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:get-files-by-prefix-not-configured-bucketID` | 400         | Bucket is not configured         | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:get-files-by-prefix-no-bucket-service` | 400         | BucketService is not configured         | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:deleteFilesperprefix-unset-sig-params` | 403         | The in the headers signature cannot checked       | `message`          | `['message' => 'Signature cannot checked']` |
+
+
+### `/blob/files/{identifier}/exists_until`
+
+#### PUT exists until
+Checks the signature in the header, if the request is allowed.
+Updates existsUntil of a file.
+
+##### Parameters
+
+- identifier: string
+
+##### Request body
+
+```JSON
+{
+  "existsUntil": "2022-12-12T15:19:01.112Z"
+}
+```
+
+| relay:errorId                    | Status code | Description                                                                                                                           | relay:errorDetails | Example |
+| -------------------------------- |-------------|---------------------------------------------------------------------------------------------------------------------------------------| ------------------ | ------- |
+| `blob:blob-service-invalid-max-retentiontime` | 400         | The given `exists until time` is longer then the max retention time of the bucket! Enter a time between now and $maxRententionFromNow |                    |         |
+
+
+## CronJobs
