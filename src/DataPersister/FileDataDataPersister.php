@@ -61,8 +61,6 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
             $filedata = $data;
             assert($filedata instanceof FileData);
 
-            dump($filedata);
-
             $this->blobService->increaseExistsUntil($filedata);
         }
 

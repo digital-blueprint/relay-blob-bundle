@@ -9,10 +9,14 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use PHPUnit\TextUI\XmlConfiguration\File;
+use Safe\DateTime;
+use Safe\DateTimeImmutable;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
+
+date_default_timezone_set('UTC');
 
 class BlobService
 {
@@ -220,6 +224,12 @@ class BlobService
     {
         $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $fileData->setLastAccess($time);
+        
+        //Check new date is not greater than maxretentiondate from bucket
+        $maxRetentionTimeFromNow = $time->add(new \DateInterval($fileData->getBucket()->getMaxRetentionDuration()));
+        if ($fileData->getExistsUntil() > $maxRetentionTimeFromNow) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'The given `exists until time` is longer then the max retention time of the bucket! Enter a time between now and '.$maxRetentionTimeFromNow->format("c"), 'blob:blob-service-invalid-max-retentiontime');
+        }
 
         $this->em->persist($fileData);
         $this->em->flush();
