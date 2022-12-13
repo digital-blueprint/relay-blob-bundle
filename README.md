@@ -136,7 +136,7 @@ Returns the fileData with a contentUrl. This link expires in the configured link
 
 | relay:errorId                      | Status code | Description                                         | relay:errorDetails | Example                          |
 |------------------------------------|-------------|-----------------------------------------------------| ------------------ |----------------------------------|
-| `blob:dataprovider-unset-sig-params` | 403         | The in the headers signature cannot checked         | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:createFileData-unset-sig-params` | 403         | The in the headers signature cannot checked         | `message`          | `['message' => 'Signature cannot checked']` |
 | `blob:create-file-data-upload-failed` | 400         | Data upload failed.                                 | `message`          |                                  |
 | `blob:create-file-no-bucket-service` | 400         | BucketService is not configured.                    | `message`          |                                  |
 | `blob:create-file-missing-file` | 400         | No file with parameter key "file" was received!     | `message`          |                                  |
