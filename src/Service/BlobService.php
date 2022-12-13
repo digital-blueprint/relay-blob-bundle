@@ -124,7 +124,7 @@ class BlobService
     {
         $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $fileData->setLastAccess($time);
-        
+
         try {
             $this->em->persist($fileData);
             $this->em->flush();

@@ -6,7 +6,6 @@ namespace Dbp\Relay\BlobBundle\DataPersister;
 
 use ApiPlatform\Core\DataPersister\ContextAwareDataPersisterInterface;
 use Dbp\Relay\BlobBundle\Entity\FileData;
-use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
