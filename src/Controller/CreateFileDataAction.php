@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Controller;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
+use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -29,7 +30,16 @@ final class CreateFileDataAction extends BaseBlobController
      */
     public function __invoke(Request $request): FileData
     {
-        // TODO add check signature here
+        $bucketId = (string) $request->query->get('bucketID', '');
+        $creationTime = (string) $request->query->get('creationTime', '');
+        $uri = $request->getUri();
+        $sig = $request->headers->get('x-dbp-signature', '');
+
+        if (!$uri || !$sig || !$bucketId || !$creationTime) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:createFileData-unset-sig-params');
+        }
+
+        DenyAccessUnlessCheckSignature::denyAccessUnlessSiganture($bucketId, $creationTime, $uri, $sig);
 
         $fileData = $this->blobService->createFileData($request);
 
@@ -56,11 +66,11 @@ final class CreateFileDataAction extends BaseBlobController
 
         // Check quota
         $bucketsizeByte = (int) $this->blobService->getQuotaOfBucket($fileData->getBucketID())['bucketSize'];
-        $bucketQuotaByte = $fileData->getBucket()->getQuota() * 1000000;
+        $bucketQuotaByte = $fileData->getBucket()->getQuota() * 1000000; // Convert mb to Byte
         $newBucketSizeByte = $bucketsizeByte + $fileData->getFileSize();
         if ($newBucketSizeByte > $bucketQuotaByte) {
             $this->blobService->sendNotifyQuota($bucket);
-            throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quote is reached', 'blob:create-file-bucket-quota-reached');
+            throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached', 'blob:create-file-bucket-quota-reached');
         }
 
         // Then return correct data for service

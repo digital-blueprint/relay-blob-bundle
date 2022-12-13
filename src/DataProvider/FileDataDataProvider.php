@@ -37,6 +37,7 @@ class FileDataDataProvider extends AbstractDataProvider
         return FileData::class;
     }
 
+    /* getItemById() is overwritten with getFileDataById() because we want filters here for checking the signature */
     public function getItem(string $resourceClass, $id, string $operationName = null, array $context = []): ?object
     {
         $this->onOperationStart(self::GET_ITEM_OPERATION);
@@ -51,13 +52,14 @@ class FileDataDataProvider extends AbstractDataProvider
         $this->checkSignature($filters);
 
         $fileData = $this->blobService->getFileData($id);
-        $fileData = $this->blobService->setBucket($fileData);
-
-        $fileData = $this->blobService->getLink($fileData);
 
         if (!$fileData) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:fileData-not-found');
         }
+
+        $fileData = $this->blobService->setBucket($fileData);
+        $fileData = $this->blobService->getLink($fileData);
+        $this->blobService->saveFileData($fileData);
 
         return $fileData;
     }
@@ -92,6 +94,7 @@ class FileDataDataProvider extends AbstractDataProvider
         foreach ($fileDatas as $fileData) {
             $fileData->setBucket($bucket);
             $fileData = $this->blobService->getLink($fileData);
+            $this->blobService->saveFileData($fileData);
         }
 
         return $fileDatas;

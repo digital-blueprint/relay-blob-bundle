@@ -110,7 +110,6 @@ class BlobService
 
     public function setBucket(FileData $fileData): Filedata
     {
-        //check bucket ID exists
         $bucket = $this->configurationService->getBucketByID($fileData->getBucketID());
         // bucket is not configured
         if (!$bucket) {
@@ -123,6 +122,9 @@ class BlobService
 
     public function saveFileData(FileData $fileData): void
     {
+        $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $fileData->setLastAccess($time);
+        
         try {
             $this->em->persist($fileData);
             $this->em->flush();
@@ -244,14 +246,14 @@ class BlobService
 
     public function increaseExistsUntil(FileData $fileData)
     {
-        $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $fileData->setLastAccess($time);
-
         //Check new date is not greater than maxretentiondate from bucket
         $maxRetentionTimeFromNow = $time->add(new \DateInterval($fileData->getBucket()->getMaxRetentionDuration()));
         if ($fileData->getExistsUntil() > $maxRetentionTimeFromNow) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'The given `exists until time` is longer then the max retention time of the bucket! Enter a time between now and '.$maxRetentionTimeFromNow->format('c'), 'blob:blob-service-invalid-max-retentiontime');
         }
+
+        $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $fileData->setLastAccess($time);
 
         $this->em->persist($fileData);
         $this->em->flush();
