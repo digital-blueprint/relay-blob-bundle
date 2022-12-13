@@ -275,3 +275,10 @@ Updates existsUntil of a file.
 
 
 ## CronJobs
+
+### Cleanup Cronjob
+`Blob File cleanup`: This cronjob is for cleanup purposes. It starts every hour and deletes old files.
+
+### Send Report Cronjob
+`Blob File send reports`: This cronjob sends reports to given email adresses. In this reports there are all files which are going to be deleted in the next 30 days. 
+The email adresse are attached to these files or there is a default in the config. This cronjob starts every Monday at 9 o'clock in the Morning.
