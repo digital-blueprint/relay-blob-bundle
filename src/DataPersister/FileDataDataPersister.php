@@ -9,7 +9,6 @@ use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
 class FileDataDataPersister extends AbstractController implements ContextAwareDataPersisterInterface
@@ -19,15 +18,9 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
      */
     private $blobService;
 
-    /**
-     * @var RequestStack
-     */
-    private $requestStack;
-
-    public function __construct(BlobService $blobService, RequestStack $requestStack)
+    public function __construct(BlobService $blobService)
     {
         $this->blobService = $blobService;
-        $this->requestStack = $requestStack;
     }
 
     public function supports($data, array $context = []): bool
@@ -37,27 +30,24 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
 
     public function persist($data, array $context = [])
     {
-        if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === 'put') {
-            $filedata = $data;
-            assert($filedata instanceof FileData);
+        // no need to check, because signature is checked by getting the data
 
-            $metadata = $filedata->getAdditionalMetadata();
+        assert($data instanceof FileData);
+
+        if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === 'put') {
+            $metadata = $data->getAdditionalMetadata();
             if ($metadata) {
                 try {
                     json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
                 } catch (\JsonException $e) {
-                    throw ApiError::withDetails(Response::HTTP_UNPROCESSABLE_ENTITY, 'The addtional Metadata doesn\'t contain valid json!', 'blob:blob-service-invalid-json');
+                    throw ApiError::withDetails(Response::HTTP_UNPROCESSABLE_ENTITY, 'The additional Metadata doesn\'t contain valid json!', 'blob:blob-service-invalid-json');
                 }
             }
-
-            $this->blobService->renameFileData($filedata);
+            $this->blobService->renameFileData($data);
         }
 
         if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === 'put_exists_until') {
-            $filedata = $data;
-            assert($filedata instanceof FileData);
-
-            $this->blobService->increaseExistsUntil($filedata);
+            $this->blobService->increaseExistsUntil($data);
         }
 
         return $data;
@@ -65,14 +55,15 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
 
     /**
      * @param mixed $data
-     *
+     * @param array $context
      * @return void
      */
-    public function remove($data, array $context = [])
+    public function remove($data, array $context = []): void
     {
-        $filedata = $data;
-        assert($filedata instanceof FileData);
+        // no need to check, because signature is checked by getting the data
 
-        $this->blobService->removeFileData($filedata);
+        assert($data instanceof FileData);
+
+        $this->blobService->removeFileData($data);
     }
 }

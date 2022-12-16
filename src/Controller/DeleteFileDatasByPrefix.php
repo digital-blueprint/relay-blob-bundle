@@ -24,26 +24,35 @@ class DeleteFileDatasByPrefix extends BaseBlobController
 
     public function __invoke(Request $request)
     {
-        $bucketId = (string) $request->query->get('bucketID', '');
-        $creationTime = (string) $request->query->get('creationTime', '');
-        $uri = $request->getUri();
         $sig = $request->headers->get('x-dbp-signature', '');
+        $bucketId = $request->query->get('bucketID', '');
+        $creationTime = $request->query->get('creationTime', '');
+        $prefix = $request->query->get('prefix', '');
 
-        if (!$uri || !$sig || !$bucketId || !$creationTime) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:deleteFilesperprefix-unset-sig-params');
+        if (!$sig || !$bucketId || !$creationTime || !$prefix) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:delete-files-per-prefix-unset-sig-params');
         }
 
-        DenyAccessUnlessCheckSignature::denyAccessUnlessSiganture($bucketId, $creationTime, $uri, $sig);
-
-        if (!$bucketId) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-files-by-prefix-unset-bucketID');
-        }
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
         if (!$bucket) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-files-by-prefix-not-configured-bucketID');
         }
 
-        $prefix = (string) $request->query->get('prefix', '');
+        $secret = $bucket->getPublicKey();
+        $data = DenyAccessUnlessCheckSignature::verify($secret, $sig);
+        dump($data);
+
+        // check if signed params are equal to request params
+        if ($data['bucketID'] !== $bucketId) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
+        }
+        if ((int)$data['creationTime'] !== (int)$creationTime) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
+        }
+        if ($data['prefix'] !== $prefix) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Prefix change forbidden', 'blob:prefix-change-forbidden');
+        }
+        // TODO check if request is NOT too old
 
         if (!$bucket->getService()) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is not configured', 'blob:get-files-by-prefix-no-bucket-service');

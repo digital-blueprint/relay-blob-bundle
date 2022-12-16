@@ -27,32 +27,49 @@ final class CreateFileDataAction extends BaseBlobController
 
     /**
      * @throws HttpException
+     * @throws \JsonException
      */
     public function __invoke(Request $request): FileData
     {
+        $sig = $request->headers->get('x-dbp-signature','');
         $bucketId = (string) $request->query->get('bucketID', '');
         $creationTime = (string) $request->query->get('creationTime', '');
-        $uri = $request->getUri();
-        $sig = $request->headers->get('x-dbp-signature', '');
+        $prefix = $request->query->get('prefix', '');
 
-        if (!$uri || !$sig || !$bucketId || !$creationTime) {
+        if (!$sig || !$bucketId || !$creationTime) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:createFileData-unset-sig-params');
         }
 
-        DenyAccessUnlessCheckSignature::denyAccessUnlessSiganture($bucketId, $creationTime, $uri, $sig);
-
         $fileData = $this->blobService->createFileData($request);
-
         $fileData = $this->blobService->setBucket($fileData);
 
         $bucket = $fileData->getBucket();
+        $secret = $bucket->getPublicKey();
+
+        $data = DenyAccessUnlessCheckSignature::verify($secret, $sig);
+        dump($data);
+
+        // check if signed params aer equal to request params
+        if ($data['bucketID'] !== $bucketId) {
+            dump($data['bucketID'], $bucketId);
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
+        }
+        if ((int)$data['creationTime'] !== (int)$creationTime) {
+            dump($data['creationTime'], $creationTime);
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
+        }
+        if ($data['prefix'] !== $prefix) {
+            dump($data['prefix'], $prefix);
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Prefix change forbidden', 'blob:prefix-change-forbidden');
+        }
+        // TODO check if request is NOT too old
 
         // Check retentionDuration & idleRetentionDuration valid durations
         if ($bucket->getMaxRetentionDuration() < $fileData->getRetentionDuration() || !$fileData->getRetentionDuration()) {
             $fileData->setRetentionDuration((string) $bucket->getMaxRetentionDuration());
         }
 
-        // Set extits until time
+        // Set exists until time
         $fileData->setExistsUntil($fileData->getDateCreated()->add(new \DateInterval($fileData->getRetentionDuration())));
 
         // Use given service for bucket
@@ -63,10 +80,17 @@ final class CreateFileDataAction extends BaseBlobController
         /** @var ?UploadedFile $uploadedFile */
         $uploadedFile = $fileData->getFile();
         $fileData->setExtension($uploadedFile->guessExtension());
+        $hash = hash('sha256', $uploadedFile->getContent());
+
+        // check hash of file
+        if ($hash !== $data['fileHash']) {
+            dump($data['fileHash'], $hash);
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:file-hash-change-forbidden');
+        }
 
         // Check quota
         $bucketsizeByte = (int) $this->blobService->getQuotaOfBucket($fileData->getBucketID())['bucketSize'];
-        $bucketQuotaByte = $fileData->getBucket()->getQuota() * 1000000; // Convert mb to Byte
+        $bucketQuotaByte = $fileData->getBucket()->getQuota() * 1024 *1024; // Convert mb to Byte
         $newBucketSizeByte = $bucketsizeByte + $fileData->getFileSize();
         if ($newBucketSizeByte > $bucketQuotaByte) {
             $this->blobService->sendNotifyQuota($bucket);

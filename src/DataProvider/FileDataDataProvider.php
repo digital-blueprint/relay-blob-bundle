@@ -32,6 +32,10 @@ class FileDataDataProvider extends AbstractDataProvider
         $this->requestStack = $requestStack;
     }
 
+    protected function onOperationStart(int $operation)
+    {
+    }
+
     protected function getResourceClass(): string
     {
         return FileData::class;
@@ -49,7 +53,17 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getFileDataById($id, array $filters): object
     {
-        $this->checkSignature($filters);
+        $bucketId = $filters['bucketID'] ?? '';
+        if (!$bucketId) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-files-by-prefix-missing-bucketID');
+        }
+        $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
+        if (!$bucket) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-files-by-prefix-not-configured-bucketID');
+        }
+
+        $secret = $bucket->getPublicKey();
+        $this->checkSignature($secret, $filters);
 
         $fileData = $this->blobService->getFileData($id);
 
@@ -71,16 +85,17 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
-        $this->checkSignature($filters);
-
-        $bucketId = $filters['bucketID'];
+        $bucketId = $filters['bucketID'] ?? '';
         if (!$bucketId) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-files-by-prefix-unset-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-files-by-prefix-missing-bucketID');
         }
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
         if (!$bucket) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-files-by-prefix-not-configured-bucketID');
         }
+
+        $secret = $bucket->getPublicKey();
+        $this->checkSignature($secret, $filters);
 
         $prefix = $filters['prefix'] ?? '';
 
@@ -92,6 +107,7 @@ class FileDataDataProvider extends AbstractDataProvider
 
         //create sharelinks
         foreach ($fileDatas as $fileData) {
+            assert($fileData instanceof FileData);
             $fileData->setBucket($bucket);
             $fileData = $this->blobService->getLink($fileData);
             $this->blobService->saveFileData($fileData);
@@ -100,15 +116,36 @@ class FileDataDataProvider extends AbstractDataProvider
         return $fileDatas;
     }
 
-    private function checkSignature($filters): void
+    /**
+     * Check dbp-signature on GET request
+     *
+     * @param string $secret
+     * @param array $filters
+     * @throws \JsonException
+     */
+    private function checkSignature(string $secret, array $filters): void
     {
-        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
-        $uri = $this->requestStack->getCurrentRequest()->getUri();
+        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature','');
+        $bucketId = $filters['bucketID'] ?? '';
+        $creationTime = $filters['creationTime'] ?? '0';
 
-        if (!$uri || !$sig || !array_key_exists('bucketID', $filters) || !array_key_exists('creationTime', $filters)) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:dataprovider-unset-sig-params');
+        if (!$sig || !$bucketId || !$creationTime) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature parameter missing', 'blob:dataprovider-missing-signature-params');
         }
 
-        DenyAccessUnlessCheckSignature::denyAccessUnlessSiganture($filters['bucketID'], $filters['creationTime'], $uri, $sig);
+        $data = DenyAccessUnlessCheckSignature::verify($secret, $sig);
+        dump($data);
+
+        // check if signed params aer equal to request params
+        if ($data['bucketID'] !== $bucketId) {
+            dump($data['bucketID'], $bucketId);
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
+        }
+        if ((int)$data['creationTime'] !== (int)$creationTime) {
+            dump($data['creationTime'], $creationTime);
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
+        }
+        // TODO check if request is NOT too old
+
     }
 }

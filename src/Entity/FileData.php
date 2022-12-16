@@ -20,7 +20,6 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *     collectionOperations={
  *         "post" = {
  *             "method" = "POST",
- *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files",
  *             "controller" = CreateFileDataAction::class,
  *             "deserialize" = false,
@@ -48,7 +47,6 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *             },
  *         },
  *         "get" = {
- *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "pagination_client_partial" = true,
  *             "path" = "/blob/files",
  *             "pagination_client_partial" = true,
@@ -67,7 +65,6 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *         },
  *         "delete_byPrefix" = {
  *             "method" = "DELETE",
- *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files",
  *             "controller" = DeleteFileDatasByPrefix::class,
  *             "read" = false,
@@ -87,14 +84,12 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *     },
  *     itemOperations={
  *         "get" = {
- *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files/{identifier}",
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},
  *             },
  *         },
  *         "put" = {
- *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files/{identifier}",
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},
@@ -117,7 +112,6 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *             },
  *         },
  *         "delete" = {
- *             "security" = "is_granted('IS_AUTHENTICATED_FULLY')",
  *             "path" = "/blob/files/{identifier}",
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},
@@ -336,7 +330,7 @@ class FileData
 
     public function getRetentionDuration(): ?string
     {
-        return $this->retentionDuration;
+        return $this->retentionDuration ?: 'P7D';
     }
 
     public function setRetentionDuration($retentionDuration): void
