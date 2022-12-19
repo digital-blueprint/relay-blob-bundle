@@ -53,6 +53,10 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getFileDataById($id, array $filters): object
     {
+        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature','');
+        if (!$sig) {
+            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+        }
         $bucketId = $filters['bucketID'] ?? '';
         if (!$bucketId) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-files-by-prefix-missing-bucketID');
@@ -85,6 +89,10 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
+        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature','');
+        if (!$sig) {
+            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+        }
         $bucketId = $filters['bucketID'] ?? '';
         if (!$bucketId) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-files-by-prefix-missing-bucketID');
@@ -126,10 +134,13 @@ class FileDataDataProvider extends AbstractDataProvider
     private function checkSignature(string $secret, array $filters): void
     {
         $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature','');
+        if (!$sig) {
+            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+        }
         $bucketId = $filters['bucketID'] ?? '';
         $creationTime = $filters['creationTime'] ?? '0';
 
-        if (!$sig || !$bucketId || !$creationTime) {
+        if (!$bucketId || !$creationTime) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature parameter missing', 'blob:dataprovider-missing-signature-params');
         }
 

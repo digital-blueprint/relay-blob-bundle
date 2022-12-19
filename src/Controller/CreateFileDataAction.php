@@ -32,11 +32,14 @@ final class CreateFileDataAction extends BaseBlobController
     public function __invoke(Request $request): FileData
     {
         $sig = $request->headers->get('x-dbp-signature','');
+        if (!$sig) {
+            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+        }
         $bucketId = (string) $request->query->get('bucketID', '');
         $creationTime = (string) $request->query->get('creationTime', '');
         $prefix = $request->query->get('prefix', '');
 
-        if (!$sig || !$bucketId || !$creationTime) {
+        if (!$bucketId || !$creationTime) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:createFileData-unset-sig-params');
         }
 

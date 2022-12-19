@@ -25,11 +25,14 @@ class DeleteFileDatasByPrefix extends BaseBlobController
     public function __invoke(Request $request)
     {
         $sig = $request->headers->get('x-dbp-signature', '');
+        if (!$sig) {
+            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+        }
         $bucketId = $request->query->get('bucketID', '');
         $creationTime = $request->query->get('creationTime', '');
         $prefix = $request->query->get('prefix', '');
 
-        if (!$sig || !$bucketId || !$creationTime || !$prefix) {
+        if (!$bucketId || !$creationTime || !$prefix) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:delete-files-per-prefix-unset-sig-params');
         }
 
