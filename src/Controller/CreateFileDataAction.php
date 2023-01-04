@@ -72,6 +72,7 @@ final class CreateFileDataAction extends BaseBlobController
         // TODO check if request is NOT too old
 
         // Check retentionDuration & idleRetentionDuration valid durations
+        $fileData->setRetentionDuration($data['retentionDuration'] ?? '');
         if ($bucket->getMaxRetentionDuration() < $fileData->getRetentionDuration() || !$fileData->getRetentionDuration()) {
             $fileData->setRetentionDuration((string) $bucket->getMaxRetentionDuration());
         }
