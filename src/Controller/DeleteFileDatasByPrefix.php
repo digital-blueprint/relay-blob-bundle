@@ -28,9 +28,12 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
+
         $bucketId = $request->query->get('bucketID', '');
-        $creationTime = $request->query->get('creationTime', '');
+        assert(is_string($bucketId));
+        $creationTime = $request->query->get('creationTime', 0);
         $prefix = $request->query->get('prefix', '');
+        assert(is_string($prefix));
 
         if (!$bucketId || !$creationTime || !$prefix) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:delete-files-per-prefix-unset-sig-params');
@@ -43,13 +46,13 @@ class DeleteFileDatasByPrefix extends BaseBlobController
 
         $secret = $bucket->getPublicKey();
         $data = DenyAccessUnlessCheckSignature::verify($secret, $sig);
-        dump($data);
+//        dump($data);
 
         // check if signed params are equal to request params
         if ($data['bucketID'] !== $bucketId) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
         }
-        if ((int)$data['creationTime'] !== (int)$creationTime) {
+        if ((int) $data['creationTime'] !== (int) $creationTime) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
         }
         if ($data['prefix'] !== $prefix) {

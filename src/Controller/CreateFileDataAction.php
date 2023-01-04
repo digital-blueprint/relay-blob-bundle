@@ -23,6 +23,7 @@ final class CreateFileDataAction extends BaseBlobController
     public function __construct(BlobService $blobService)
     {
         $this->blobService = $blobService;
+//        dump('CreateFileDataAction::__construct()');
     }
 
     /**
@@ -31,13 +32,16 @@ final class CreateFileDataAction extends BaseBlobController
      */
     public function __invoke(Request $request): FileData
     {
-        $sig = $request->headers->get('x-dbp-signature','');
+//        dump('CreateFileDataAction::invoke()');
+        $sig = $request->headers->get('x-dbp-signature', '');
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
-        $bucketId = (string) $request->query->get('bucketID', '');
-        $creationTime = (string) $request->query->get('creationTime', '');
+        $bucketId = $request->query->get('bucketID', '');
+        assert(is_string($bucketId));
+        $creationTime = $request->query->get('creationTime', 0);
         $prefix = $request->query->get('prefix', '');
+        assert(is_string($prefix));
 
         if (!$bucketId || !$creationTime) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:createFileData-unset-sig-params');
@@ -50,14 +54,14 @@ final class CreateFileDataAction extends BaseBlobController
         $secret = $bucket->getPublicKey();
 
         $data = DenyAccessUnlessCheckSignature::verify($secret, $sig);
-        dump($data);
+//        dump($data);
 
         // check if signed params aer equal to request params
         if ($data['bucketID'] !== $bucketId) {
             dump($data['bucketID'], $bucketId);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
         }
-        if ((int)$data['creationTime'] !== (int)$creationTime) {
+        if ((int) $data['creationTime'] !== (int) $creationTime) {
             dump($data['creationTime'], $creationTime);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
         }
@@ -74,6 +78,10 @@ final class CreateFileDataAction extends BaseBlobController
 
         // Set exists until time
         $fileData->setExistsUntil($fileData->getDateCreated()->add(new \DateInterval($fileData->getRetentionDuration())));
+        // Set everything else...
+        $fileData->setFileName($data['fileName']);
+        $fileData->setNotifyEmail($data['notifyEmail'] ?? '');
+        $fileData->setAdditionalMetadata($data['additionalMetadata'] ?? '');
 
         // Use given service for bucket
         if (!$bucket->getService()) {
@@ -82,7 +90,7 @@ final class CreateFileDataAction extends BaseBlobController
 
         /** @var ?UploadedFile $uploadedFile */
         $uploadedFile = $fileData->getFile();
-        $fileData->setExtension($uploadedFile->guessExtension());
+        $fileData->setExtension($uploadedFile->guessExtension() ?? substr($fileData->getFileName(), -3, 3));
         $hash = hash('sha256', $uploadedFile->getContent());
 
         // check hash of file
@@ -93,7 +101,7 @@ final class CreateFileDataAction extends BaseBlobController
 
         // Check quota
         $bucketsizeByte = (int) $this->blobService->getQuotaOfBucket($fileData->getBucketID())['bucketSize'];
-        $bucketQuotaByte = $fileData->getBucket()->getQuota() * 1024 *1024; // Convert mb to Byte
+        $bucketQuotaByte = $fileData->getBucket()->getQuota() * 1024 * 1024; // Convert mb to Byte
         $newBucketSizeByte = $bucketsizeByte + $fileData->getFileSize();
         if ($newBucketSizeByte > $bucketQuotaByte) {
             $this->blobService->sendNotifyQuota($bucket);

@@ -53,11 +53,12 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getFileDataById($id, array $filters): object
     {
-        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature','');
+        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
         $bucketId = $filters['bucketID'] ?? '';
+        assert(is_string($bucketId));
         if (!$bucketId) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-files-by-prefix-missing-bucketID');
         }
@@ -89,11 +90,12 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
-        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature','');
+        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
         $bucketId = $filters['bucketID'] ?? '';
+        assert(is_string($bucketId));
         if (!$bucketId) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-files-by-prefix-missing-bucketID');
         }
@@ -125,15 +127,13 @@ class FileDataDataProvider extends AbstractDataProvider
     }
 
     /**
-     * Check dbp-signature on GET request
+     * Check dbp-signature on GET request.
      *
-     * @param string $secret
-     * @param array $filters
      * @throws \JsonException
      */
     private function checkSignature(string $secret, array $filters): void
     {
-        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature','');
+        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
@@ -145,18 +145,17 @@ class FileDataDataProvider extends AbstractDataProvider
         }
 
         $data = DenyAccessUnlessCheckSignature::verify($secret, $sig);
-        dump($data);
+//        dump($data);
 
         // check if signed params aer equal to request params
         if ($data['bucketID'] !== $bucketId) {
             dump($data['bucketID'], $bucketId);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
         }
-        if ((int)$data['creationTime'] !== (int)$creationTime) {
+        if ((int) $data['creationTime'] !== (int) $creationTime) {
             dump($data['creationTime'], $creationTime);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
         }
         // TODO check if request is NOT too old
-
     }
 }

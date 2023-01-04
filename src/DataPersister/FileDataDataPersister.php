@@ -28,6 +28,11 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
         return $data instanceof FileData;
     }
 
+    /**
+     * @param Filedata $data
+     *
+     * @return FileData|void
+     */
     public function persist($data, array $context = [])
     {
         // no need to check, because signature is checked by getting the data
@@ -55,8 +60,6 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
 
     /**
      * @param mixed $data
-     * @param array $context
-     * @return void
      */
     public function remove($data, array $context = []): void
     {

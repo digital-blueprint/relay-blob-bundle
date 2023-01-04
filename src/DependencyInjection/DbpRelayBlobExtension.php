@@ -50,7 +50,7 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
             'dbal' => [
                 'connections' => [
                     'dbp_relay_blob_bundle' => [
-                        'url' => $config['database_url'] ?? '',
+                        'url' => $config['database_url'] ?? 'sqlite:///var/dbp_relay_blob_test.db',
                     ],
                 ],
             ],

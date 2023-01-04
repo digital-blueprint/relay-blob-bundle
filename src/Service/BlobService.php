@@ -7,8 +7,8 @@ namespace Dbp\Relay\BlobBundle\Service;
 use Dbp\Relay\BlobBundle\Entity\Bucket;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\Persistence\ManagerRegistry;
 use PHPUnit\TextUI\XmlConfiguration\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
@@ -39,13 +39,15 @@ class BlobService
      */
     private $datasystemService;
 
-    public function __construct(ManagerRegistry $managerRegistry, ConfigurationService $configurationService, DatasystemProviderService $datasystemService)
+    public function __construct(EntityManagerInterface $em, ConfigurationService $configurationService, DatasystemProviderService $datasystemService)
     {
-        $manager = $managerRegistry->getManager('dbp_relay_blob_bundle');
-        assert($manager instanceof EntityManagerInterface);
-        $this->em = $manager;
-
+        $this->em = $em;
         $this->configurationService = $configurationService;
+        $this->datasystemService = $datasystemService;
+    }
+
+    public function setDatasystemService(DatasystemProviderService $datasystemService): void
+    {
         $this->datasystemService = $datasystemService;
     }
 
@@ -126,6 +128,7 @@ class BlobService
         $fileData->setLastAccess($time);
 
         try {
+//            dump($fileData);
             $this->em->persist($fileData);
             $this->em->flush();
         } catch (\Exception $e) {
@@ -350,7 +353,7 @@ class BlobService
 
     private function sendEmail(array $config, array $context)
     {
-        $loader = new FilesystemLoader(dirname(__FILE__).'/../Resources/views/');
+        $loader = new FilesystemLoader(__DIR__ . '/../Resources/views/');
         $twig = new Environment($loader);
 
         $template = $twig->load($config['html_template']);

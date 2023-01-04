@@ -1,0 +1,29 @@
+services:
+  Dbp\Relay\BlobConnectorFilesystemBundle\Cron\CleanupCronJob:
+    autowire: true
+    autoconfigure: true
+
+  Dbp\Relay\BlobConnectorFilesystemBundle\Service\FilesystemService:
+    autowire: true
+    autoconfigure: true
+    public: true
+
+  Dbp\Relay\BlobConnectorFilesystemBundle\Service\ShareLinkPersistenceService:
+    autowire: true
+    autoconfigure: true
+    public: true
+
+  Dbp\Relay\BlobConnectorFilesystemBundle\Service\ConfigurationService:
+    autowire: true
+    autoconfigure: true
+
+  Dbp\Relay\BlobConnectorFilesystemBundle\Controller\:
+    tags: [ 'controller.service_arguments' ]
+    resource: '../../../../relay-blob-connector-filesystem-bundle/src/Controller/'
+    autowire: true
+    autoconfigure: true
+
+  Dbp\Relay\BlobBundle\Tests\DummyFileSystemService:
+    autowire: true
+    autoconfigure: true
+    public: true

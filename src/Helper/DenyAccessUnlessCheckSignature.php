@@ -18,10 +18,11 @@ use Symfony\Component\HttpFoundation\Response;
 class DenyAccessUnlessCheckSignature
 {
     /**
-     * Create a JWS token
+     * Create a JWS token.
      *
-     * @param string $secret to create the (symmetric) JWK from
-     * @param array $payload to create the token from
+     * @param string $secret  to create the (symmetric) JWK from
+     * @param array  $payload to create the token from
+     *
      * @throws \JsonException
      */
     public static function create(string $secret, array $payload): string
@@ -32,11 +33,13 @@ class DenyAccessUnlessCheckSignature
     }
 
     /**
-     * Verify a JWS token
+     * Verify a JWS token.
      *
      * @param string $secret to create the (symmetric) JWK from
-     * @param string $token to verify
+     * @param string $token  to verify
+     *
      * @return array extracted payload from token
+     *
      * @throws \JsonException
      * @throws ApiError
      */
@@ -46,6 +49,7 @@ class DenyAccessUnlessCheckSignature
         $payload = [];
 
         if (!self::verifyToken($jwk, $token, $payload)) {
+            dump(['token' => $token, 'payload' => $payload, 'secret' => $secret]);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature invalid', 'blob:signature-invalid');
         }
 
@@ -56,7 +60,6 @@ class DenyAccessUnlessCheckSignature
      * Create the JWK from a shared secret.
      *
      * @param string $secret to create the (symmetric) JWK from
-     * @return JWK
      */
     public static function createJWK(string $secret): JWK
     {
@@ -72,9 +75,11 @@ class DenyAccessUnlessCheckSignature
     /**
      * Generate the token.
      *
-     * @param JWK $jwk json web key
+     * @param JWK   $jwk     json web key
      * @param array $payload as json string to secure
+     *
      * @return string secure token
+     *
      * @throws \JsonException
      */
     public static function generateToken(JWK $jwk, array $payload): string
@@ -94,10 +99,10 @@ class DenyAccessUnlessCheckSignature
     /**
      * Verify a JWS token.
      *
-     * @param JWK $jwk
-     * @param string $token the JWS token as string
-     * @param array $payload to extract from token on success
+     * @param string $token   the JWS token as string
+     * @param array  $payload to extract from token on success
      * @return bool
+     *
      * @throws \JsonException
      */
     public static function verifyToken(JWK $jwk, string $token, array &$payload): bool
@@ -110,6 +115,9 @@ class DenyAccessUnlessCheckSignature
         if ($ok = $jwsVerifier->verifyWithKey($jws, $jwk, 0)) {
             $payload = json_decode($jws->getPayload(), true, 512, JSON_THROW_ON_ERROR);
         }
+//        $ok = $jwsVerifier->verifyWithKey($jws, $jwk, 0);
+//        $payload = json_decode($jws->getPayload(), true, 512, JSON_THROW_ON_ERROR);
+
         return $ok;
     }
 }

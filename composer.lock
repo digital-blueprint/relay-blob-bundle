@@ -9192,6 +9192,78 @@
             "time": "2022-02-24T20:20:32+00:00"
         },
         {
+            "name": "dbp/relay-blob-connector-filesystem-bundle",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "git@gitlab.tugraz.at:dbp/relay/dbp-relay-blob-connector-filesystem-bundle.git",
+                "reference": "d948924db59ad807c0544f35aaa4984a7ef2a94b"
+            },
+            "require": {
+                "api-platform/core": "^2.6",
+                "dbp/relay-blob-bundle": "dev-main",
+                "dbp/relay-core-bundle": "^v0.1.56",
+                "ext-json": "*",
+                "php": ">=7.3",
+                "symfony/framework-bundle": "^5.4"
+            },
+            "require-dev": {
+                "ext-pdo_sqlite": "*",
+                "friendsofphp/php-cs-fixer": "^3.0",
+                "phpstan/phpstan": "^1.0.0",
+                "phpstan/phpstan-phpunit": "^1.0.0",
+                "phpstan/phpstan-symfony": "^1.2",
+                "phpunit/phpunit": "^9",
+                "symfony/browser-kit": "^5.4",
+                "symfony/http-client": "^5.4",
+                "symfony/monolog-bundle": "^3.7",
+                "symfony/phpunit-bridge": "^5.4",
+                "vimeo/psalm": "^4.2.1"
+            },
+            "default-branch": true,
+            "type": "symfony-bundle",
+            "autoload": {
+                "psr-4": {
+                    "Dbp\\Relay\\BlobConnectorFilesystemBundle\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Dbp\\Relay\\BlobConnectorFilesystemBundle\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "@php vendor/bin/phpunit"
+                ],
+                "phpstan": [
+                    "@php vendor/bin/phpstan analyze --ansi"
+                ],
+                "psalm": [
+                    "@php vendor/bin/psalm"
+                ],
+                "lint": [
+                    "@composer run cs",
+                    "@composer run phpstan",
+                    "@composer run psalm"
+                ],
+                "cs-fix": [
+                    "@php vendor/bin/php-cs-fixer --ansi fix"
+                ],
+                "cs": [
+                    "@php vendor/bin/php-cs-fixer --ansi fix --dry-run --diff"
+                ],
+                "coverage": [
+                    "@php -dxdebug.mode=coverage vendor/bin/phpunit --coverage-html _coverage"
+                ]
+            },
+            "license": [
+                "AGPL-3.0-or-later"
+            ],
+            "description": "A template bundle for the Relay API gateway",
+            "time": "2022-12-19T00:08:14+00:00"
+        },
+        {
             "name": "dnoegel/php-xdg-base-dir",
             "version": "v0.1.1",
             "source": {
@@ -12310,7 +12382,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "dbp/relay-blob-connector-filesystem-bundle": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {

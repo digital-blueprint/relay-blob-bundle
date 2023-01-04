@@ -10,8 +10,8 @@
         "dbp/relay-core-bundle": "^0.1.56",
         "fgrosse/phpasn1": "^2.0",
         "symfony/event-dispatcher": "^5.4",
-        "symfony/framework-bundle": "^5.4",
         "symfony/mailer": "^5.4",
+        "symfony/mime": "^5.4",
         "symfony/orm-pack": "^2.2",
         "web-token/jwt-checker": "^2.1",
         "web-token/jwt-core": "^2.1",
@@ -72,5 +72,11 @@
         "coverage": [
             "@php -dxdebug.mode=coverage vendor/bin/phpunit --coverage-html _coverage"
         ]
-    }
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@gitlab.tugraz.at:dbp/relay/dbp-relay-blob-connector-filesystem-bundle.git"
+        }
+    ]
 }

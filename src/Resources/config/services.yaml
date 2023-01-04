@@ -2,6 +2,8 @@ services:
   Dbp\Relay\BlobBundle\Service\BlobService:
     autowire: true
     autoconfigure: true
+    arguments:
+      $em: '@doctrine.orm.dbp_relay_blob_bundle_entity_manager'
 
   Dbp\Relay\BlobBundle\Controller\:
     tags: [ 'controller.service_arguments' ]
