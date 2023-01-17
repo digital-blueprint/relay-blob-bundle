@@ -18,6 +18,10 @@
     {
       "matchPackageNames": ["friendsofphp/php-cs-fixer"],
       "allowedVersions": "<3.5"
+    },
+    {
+      "matchPackagePrefixes": ["web-token/"],
+      "allowedVersions": "<3"
     }
   ]
 }
