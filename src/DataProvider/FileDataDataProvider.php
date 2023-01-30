@@ -53,6 +53,7 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getFileDataById($id, array $filters): object
     {
+//        echo "     FileDataProvider::getFileDataById($id, filters)\n";
         $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
@@ -77,8 +78,10 @@ class FileDataDataProvider extends AbstractDataProvider
         }
 
         $fileData = $this->blobService->setBucket($fileData);
-        $fileData = $this->blobService->getLink($fileData);
-        $this->blobService->saveFileData($fileData);
+        if ($this->requestStack->getCurrentRequest()->getMethod() !== 'DELETE') {
+            $fileData = $this->blobService->getLink($fileData);
+            $this->blobService->saveFileData($fileData);
+        }
 
         return $fileData;
     }
@@ -120,7 +123,7 @@ class FileDataDataProvider extends AbstractDataProvider
             assert($fileData instanceof FileData);
             $fileData->setBucket($bucket);
             $fileData = $this->blobService->getLink($fileData);
-            $this->blobService->saveFileData($fileData);
+//            $this->blobService->saveFileData($fileData);
         }
 
         return $fileDatas;
@@ -149,10 +152,12 @@ class FileDataDataProvider extends AbstractDataProvider
 
         // check if signed params aer equal to request params
         if ($data['bucketID'] !== $bucketId) {
+            /** @noinspection ForgottenDebugOutputInspection */
             dump($data['bucketID'], $bucketId);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
         }
         if ((int) $data['creationTime'] !== (int) $creationTime) {
+            /** @noinspection ForgottenDebugOutputInspection */
             dump($data['creationTime'], $creationTime);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
         }

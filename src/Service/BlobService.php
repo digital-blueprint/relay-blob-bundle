@@ -58,9 +58,16 @@ class BlobService
 
     public function createFileData(Request $request): FileData
     {
-        $fileData = new FileData();
+        echo "    BlobService::createFileData()\n";
 
-        $fileData->setIdentifier((string) Uuid::v4());
+        if ($identifier = $request->get('identifier')) {
+            $fileData = $this->em->find(FileData::class, $identifier);
+            echo "    load from store.\n";
+        } else {
+            $fileData = new FileData();
+            $fileData->setIdentifier((string)Uuid::v4());
+            echo "    create new.\n";
+        }
 
         /** @var ?UploadedFile $uploadedFile */
         $uploadedFile = $request->files->get('file');
@@ -132,12 +139,16 @@ class BlobService
             $this->em->persist($fileData);
             $this->em->flush();
         } catch (\Exception $e) {
+            echo "    error: {$e->getMessage()}\n";
+            echo "    fileData =" . print_r($fileData, true)."\n";
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
         }
     }
 
     public function saveFile(FileData $fileData): ?FileData
     {
+        $i = $fileData->getIdentifier();
+        echo "    BlobService::saveFile(identifier: $i)\n";
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
         $fileData = $datasystemService->saveFile($fileData);
 
@@ -154,6 +165,7 @@ class BlobService
 
     public function getFileData(string $identifier): FileData
     {
+        echo "    BlobService::getFileData($identifier)\n";
         /** @var FileData $fileData */
         $fileData = $this->em
             ->getRepository(FileData::class)
@@ -168,6 +180,7 @@ class BlobService
 
     public function getFileDataByBucketIDAndPrefix(string $bucketID, string $prefix): array
     {
+        echo "    BlobService::getFileDataByBucketIDAndPrefix($bucketID, $prefix)\n";
         $fileDatas = $this->em
             ->getRepository(FileData::class)
             ->findBy(['bucketID' => $bucketID, 'prefix' => $prefix]);
@@ -228,6 +241,8 @@ class BlobService
 
     public function removeFileData(FileData $fileData)
     {
+//        $i = $fileData->getIdentifier();
+//        echo "    BlobService::removeFileData(identifier: {$i})\n";
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
         $datasystemService->removeFile($fileData);
 

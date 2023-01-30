@@ -112,9 +112,14 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *             },
  *         },
  *         "delete" = {
+ *             "method" = "DELETE",
  *             "path" = "/blob/files/{identifier}",
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},
+ *             },
+ *             "denormalization_context" = {
+ *                 "jsonld_embed_context" = true,
+ *                 "groups" = {"BlobFiles:exists"}
  *             },
  *         }
  *     },

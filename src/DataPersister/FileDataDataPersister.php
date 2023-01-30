@@ -64,6 +64,8 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
     public function remove($data, array $context = []): void
     {
         // no need to check, because signature is checked by getting the data
+//        $i = $data->getIdentifier();
+//        echo "    FileDataPersister::remove(identifier: $i)\n";
 
         assert($data instanceof FileData);
 

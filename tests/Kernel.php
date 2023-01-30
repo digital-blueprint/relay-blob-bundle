@@ -54,6 +54,7 @@ class Kernel extends BaseKernel
 
         $container->extension('dbp_relay_blob', [
             'database_url' => 'sqlite:///var/dbp_relay_blob_test.db',
+//            'database_url' => 'sqlite:///:memory:',
             'buckets' => [
                 'test_bucket' => [
                     'service' => 'Dbp\Relay\BlobBundle\Tests\DummyFileSystemService',

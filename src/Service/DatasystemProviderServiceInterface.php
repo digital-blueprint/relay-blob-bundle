@@ -9,11 +9,11 @@ use Dbp\Relay\BlobBundle\Helper\PoliciesStruct;
 
 interface DatasystemProviderServiceInterface
 {
-    public function saveFile(FileData &$fileData): ?FileData;
+    public function saveFile(FileData $fileData): ?FileData;
 
-    public function renameFile(FileData &$fileData): ?FileData;
+    public function renameFile(FileData $fileData): ?FileData;
 
-    public function getLink(FileData &$fileData, PoliciesStruct $policiesStruct): ?FileData;
+    public function getLink(FileData $fileData, PoliciesStruct $policiesStruct): ?FileData;
 
-    public function removeFile(FileData &$fileData): bool;
+    public function removeFile(FileData $fileData): bool;
 }
