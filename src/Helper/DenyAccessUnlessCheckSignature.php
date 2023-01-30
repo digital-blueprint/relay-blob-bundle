@@ -49,6 +49,7 @@ class DenyAccessUnlessCheckSignature
         $payload = [];
 
         if (!self::verifyToken($jwk, $token, $payload)) {
+            /* @noinspection ForgottenDebugOutputInspection */
             dump(['token' => $token, 'payload' => $payload, 'secret' => $secret]);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature invalid', 'blob:signature-invalid');
         }
@@ -101,7 +102,6 @@ class DenyAccessUnlessCheckSignature
      *
      * @param string $token   the JWS token as string
      * @param array  $payload to extract from token on success
-     * @return bool
      *
      * @throws \JsonException
      */

@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Tests;
 
@@ -26,8 +28,8 @@ use function uuid_is_valid;
 
 class DummyFileSystemService implements DatasystemProviderServiceInterface
 {
-    static $fd = [];
-    static $data = [];
+    public static $fd = [];
+    public static $data = [];
 
     public function saveFile(FileData $fileData): ?FileData
     {
@@ -47,8 +49,9 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
     public function getLink(FileData $fileData, PoliciesStruct $policiesStruct): ?FileData
     {
         $identifier = $fileData->getIdentifier();
-        if(!isset(self::$fd[$identifier])) {
+        if (!isset(self::$fd[$identifier])) {
             echo "    DummyFileSystemService::getLink($identifier): not found!\n";
+
             return null;
         }
 
@@ -68,10 +71,10 @@ class CurlGetTest extends ApiTestCase
 {
     use UserAuthTrait;
 
-    /** @var EntityManagerInterface $entityManager */
+    /** @var EntityManagerInterface */
     private $entityManager;
 
-    /** @var array[] $files */
+    /** @var array[] */
     private $files;
 
     /**
@@ -97,7 +100,7 @@ class CurlGetTest extends ApiTestCase
         $this->files = [
             0 => [
                 'name' => $n = 'Test.php',
-                'path' => $p = __DIR__ . '/' . $n,
+                'path' => $p = __DIR__.'/'.$n,
                 'content' => $c = file_get_contents($p),
                 'hash' => hash('sha256', $c),
                 'size' => strlen($c),
@@ -106,7 +109,7 @@ class CurlGetTest extends ApiTestCase
             ],
             1 => [
                 'name' => $n = 'Kernel.php',
-                'path' => $p = __DIR__ . '/' . $n,
+                'path' => $p = __DIR__.'/'.$n,
                 'content' => $c = file_get_contents($p),
                 'hash' => hash('sha256', $c),
                 'size' => strlen($c),
@@ -145,7 +148,7 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /** @noinspection PhpInternalEntityUsedInspection */
+            /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects();
 
             /** @var Response $response */
@@ -158,7 +161,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertArrayHasKey('hydra:member', $data);
             $this->assertCount(0, $data['hydra:member'], 'More files than expected');
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString() . "\n";
+            echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
         }
     }
@@ -170,9 +173,8 @@ class CurlGetTest extends ApiTestCase
      *  - create blob no 2
      *  - get all blobs: two blobs are available
      *  - delete all blobs for the prefix: no entries in database
-     *  - get all blobs: no blobs available
+     *  - get all blobs: no blobs available.
      *
-     * @return void
      * @throws \Doctrine\DBAL\Exception
      * @throws \JsonException
      * @throws ClientExceptionInterface
@@ -183,7 +185,6 @@ class CurlGetTest extends ApiTestCase
     public function testPostGetDelete(): void
     {
         try {
-
             $client = static::createClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
@@ -218,7 +219,7 @@ class CurlGetTest extends ApiTestCase
 
             $requestPost = Request::create($url, 'POST', [], [],
                 [
-                    'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime'])
+                    'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
                 [
                     'HTTP_ACCEPT' => 'application/ld+json',
@@ -226,15 +227,15 @@ class CurlGetTest extends ApiTestCase
                     'HTTP_X_DBP_SIGNATURE' => $token,
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
-                    . "HTTP_X_DBP_SIGNATURE: $token\r\n\r\n"
-                    . "file=" . base64_encode($this->files[0]['content'])
-                    . "&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                    ."HTTP_X_DBP_SIGNATURE: $token\r\n\r\n"
+                    .'file='.base64_encode($this->files[0]['content'])
+                    ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
             );
             $c = new CreateFileDataAction($blobService);
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
-                echo $e->getTraceAsString() . "\n";
+                echo $e->getTraceAsString()."\n";
                 $this->fail($e->getMessage());
             }
 
@@ -260,13 +261,13 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /** @noinspection PhpInternalEntityUsedInspection */
+            /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects();
 
             /** @var \ApiPlatform\Core\Bridge\Symfony\Bundle\Test\Response $response */
             $response = $client->request('GET', $url, $options);
             if ($response->getStatusCode() !== 200) {
-                echo $response->getContent() . "\n";
+                echo $response->getContent()."\n";
             }
             $this->assertEquals(200, $response->getStatusCode());
 
@@ -302,7 +303,7 @@ class CurlGetTest extends ApiTestCase
 
             $requestPost = Request::create($url, 'POST', [], [],
                 [
-                    'file' => new UploadedFile($this->files[1]['path'], $this->files[1]['name'], $this->files[1]['mime'])
+                    'file' => new UploadedFile($this->files[1]['path'], $this->files[1]['name'], $this->files[1]['mime']),
                 ],
                 [
                     'HTTP_ACCEPT' => 'application/ld+json',
@@ -310,15 +311,15 @@ class CurlGetTest extends ApiTestCase
                     'HTTP_X_DBP_SIGNATURE' => $token,
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
-                    . "HTTP_X_DBP_SIGNATURE: $token\r\n\r\n"
-                    . "file=" . base64_encode($this->files[1]['content'])
-                    . "&fileName={$this->files[1]['name']}&prefix=$prefix&bucketID=$bucketId"
+                    ."HTTP_X_DBP_SIGNATURE: $token\r\n\r\n"
+                    .'file='.base64_encode($this->files[1]['content'])
+                    ."&fileName={$this->files[1]['name']}&prefix=$prefix&bucketID=$bucketId"
             );
             $c = new CreateFileDataAction($blobService);
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
-                echo $e->getTraceAsString() . "\n";
+                echo $e->getTraceAsString()."\n";
                 $this->fail($e->getMessage());
             }
 
@@ -344,7 +345,7 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /** @noinspection PhpInternalEntityUsedInspection */
+            /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects();
 
             /** @var Response $response */
@@ -388,13 +389,13 @@ class CurlGetTest extends ApiTestCase
                     'HTTP_X_DBP_SIGNATURE' => $token,
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
-                . "HTTP_X_DBP_SIGNATURE: $token\r\n\r\n"
+                ."HTTP_X_DBP_SIGNATURE: $token\r\n\r\n"
             );
             $d = new DeleteFileDatasByPrefix($blobService);
             try {
                 $d->__invoke($requestDelete);
             } catch (\Throwable $e) {
-                echo $e->getTraceAsString() . "\n";
+                echo $e->getTraceAsString()."\n";
                 $this->fail($e->getMessage());
             }
 
@@ -419,9 +420,8 @@ class CurlGetTest extends ApiTestCase
             $this->assertArrayHasKey('hydra:view', $data);
             $this->assertArrayHasKey('hydra:member', $data);
             $this->assertCount(0, $data['hydra:member'], 'More files than expected');
-
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString() . "\n";
+            echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
         }
     }
@@ -429,7 +429,6 @@ class CurlGetTest extends ApiTestCase
     public function testGetDeleteById()
     {
         try {
-
 //            $client = $this->withUser('foobar');
             $client = static::createClient();
             /** @var BlobService $blobService */
@@ -465,7 +464,7 @@ class CurlGetTest extends ApiTestCase
 
             $requestPost = Request::create($url, 'POST', [], [],
                 [
-                    'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime'])
+                    'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
                 [
                     'HTTP_ACCEPT' => 'application/ld+json',
@@ -473,15 +472,15 @@ class CurlGetTest extends ApiTestCase
                     'HTTP_X_DBP_SIGNATURE' => $token,
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
-                . "HTTP_X_DBP_SIGNATURE: $token\r\n\r\n"
-                . "file=" . base64_encode($this->files[0]['content'])
-                . "&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."HTTP_X_DBP_SIGNATURE: $token\r\n\r\n"
+                .'file='.base64_encode($this->files[0]['content'])
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
             );
             $c = new CreateFileDataAction($blobService);
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
-                echo $e->getTraceAsString() . "\n";
+                echo $e->getTraceAsString()."\n";
                 $this->fail($e->getMessage());
             }
 
@@ -507,12 +506,12 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /** @noinspection PhpInternalEntityUsedInspection */
+            /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects();
 
             $this->assertArrayHasKey($this->files[0]['uuid'], DummyFileSystemService::$fd, 'File data not in dummy store.');
             /** @var Response $response */
-            $response = $client->request('GET', $url . "/{$this->files[0]['uuid']}", $options);
+            $response = $client->request('GET', $url."/{$this->files[0]['uuid']}", $options);
 
             $this->assertEquals(200, $response->getStatusCode());
             // TODO: further checks...
@@ -530,7 +529,7 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /** @noinspection PhpInternalEntityUsedInspection */
+            /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects(false);
 
             $url = "/blob/files/{$this->files[0]['uuid']}?prefix=$prefix&bucketID=$bucketId&creationTime=$creationTime";
@@ -538,7 +537,7 @@ class CurlGetTest extends ApiTestCase
             $response = $client->request('DELETE', $url, $options);
 
             if ($response->getStatusCode() !== 200) {
-                echo $response->getContent() . "\n";
+                echo $response->getContent()."\n";
             }
             $this->assertEquals(204, $response->getStatusCode());
             // TODO: further checks...
@@ -555,7 +554,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files\n";
 
-            /** @noinspection PhpInternalEntityUsedInspection */
+            /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects();
 
             $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime";
@@ -568,9 +567,8 @@ class CurlGetTest extends ApiTestCase
             $this->assertArrayHasKey('hydra:view', $data);
             $this->assertArrayHasKey('hydra:member', $data);
             $this->assertCount(0, $data['hydra:member'], 'More files than expected');
-
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString() . "\n";
+            echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
         }
     }

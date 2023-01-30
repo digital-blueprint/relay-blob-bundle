@@ -152,12 +152,12 @@ class FileDataDataProvider extends AbstractDataProvider
 
         // check if signed params aer equal to request params
         if ($data['bucketID'] !== $bucketId) {
-            /** @noinspection ForgottenDebugOutputInspection */
+            /* @noinspection ForgottenDebugOutputInspection */
             dump($data['bucketID'], $bucketId);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
         }
         if ((int) $data['creationTime'] !== (int) $creationTime) {
-            /** @noinspection ForgottenDebugOutputInspection */
+            /* @noinspection ForgottenDebugOutputInspection */
             dump($data['creationTime'], $creationTime);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
         }

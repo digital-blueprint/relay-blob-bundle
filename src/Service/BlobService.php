@@ -7,7 +7,6 @@ namespace Dbp\Relay\BlobBundle\Service;
 use Dbp\Relay\BlobBundle\Entity\Bucket;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
-use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\TextUI\XmlConfiguration\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -65,7 +64,7 @@ class BlobService
             echo "    load from store.\n";
         } else {
             $fileData = new FileData();
-            $fileData->setIdentifier((string)Uuid::v4());
+            $fileData->setIdentifier((string) Uuid::v4());
             echo "    create new.\n";
         }
 
@@ -140,7 +139,7 @@ class BlobService
             $this->em->flush();
         } catch (\Exception $e) {
             echo "    error: {$e->getMessage()}\n";
-            echo "    fileData =" . print_r($fileData, true)."\n";
+            echo '    fileData ='.print_r($fileData, true)."\n";
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
         }
     }
@@ -368,7 +367,7 @@ class BlobService
 
     private function sendEmail(array $config, array $context)
     {
-        $loader = new FilesystemLoader(__DIR__ . '/../Resources/views/');
+        $loader = new FilesystemLoader(__DIR__.'/../Resources/views/');
         $twig = new Environment($loader);
 
         $template = $twig->load($config['html_template']);
