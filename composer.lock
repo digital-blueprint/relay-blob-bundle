@@ -9199,7 +9199,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.tugraz.at:dbp/relay/dbp-relay-blob-connector-filesystem-bundle.git",
-                "reference": "d948924db59ad807c0544f35aaa4984a7ef2a94b"
+                "reference": "45aacdb83843d351befdddf15131fa5eb765a1d7"
             },
             "require": {
                 "api-platform/core": "^2.6",
@@ -9263,7 +9263,7 @@
                 "AGPL-3.0-or-later"
             ],
             "description": "A template bundle for the Relay API gateway",
-            "time": "2022-12-19T00:08:14+00:00"
+            "time": "2023-01-30T14:34:02+00:00"
         },
         {
             "name": "dnoegel/php-xdg-base-dir",
