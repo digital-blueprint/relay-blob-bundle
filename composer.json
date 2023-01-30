@@ -17,7 +17,8 @@
         "web-token/jwt-core": "^2.1",
         "web-token/jwt-key-mgmt": "^2.1",
         "web-token/jwt-signature": "^2.1",
-        "web-token/jwt-signature-algorithm-hmac": "^2.1"
+        "web-token/jwt-signature-algorithm-hmac": "^2.1",
+        "doctrine/dbal": "^3.3"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.4",
@@ -30,7 +31,8 @@
         "symfony/monolog-bundle": "^3.8",
         "symfony/phpunit-bridge": "^5.4.17",
         "vimeo/psalm": "^4.30.0",
-        "ext-curl": "*"
+        "ext-curl": "*",
+        "dbp/relay-blob-connector-filesystem-bundle": "dev-main"
     },
     "autoload": {
         "psr-4": {
