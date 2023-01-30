@@ -29,7 +29,7 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
     }
 
     /**
-     * @param Filedata $data
+     * @param mixed $data
      *
      * @return FileData|void
      */
