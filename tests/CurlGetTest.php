@@ -20,10 +20,7 @@ use Exception;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+use Symfony\Component\Uid\Uuid;
 use function uuid_is_valid;
 
 class DummyFileSystemService implements DatasystemProviderServiceInterface
@@ -119,6 +116,9 @@ class CurlGetTest extends ApiTestCase
         ];
     }
 
+    /**
+     * Integration test for get all for a prefix with empty result
+     */
     public function testGet(): void
     {
         try {
@@ -174,13 +174,6 @@ class CurlGetTest extends ApiTestCase
      *  - get all blobs: two blobs are available
      *  - delete all blobs for the prefix: no entries in database
      *  - get all blobs: no blobs available.
-     *
-     * @throws \Doctrine\DBAL\Exception
-     * @throws \JsonException
-     * @throws ClientExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws TransportExceptionInterface
      */
     public function testPostGetDelete(): void
     {
@@ -426,7 +419,14 @@ class CurlGetTest extends ApiTestCase
         }
     }
 
-    public function testGetDeleteById()
+    /**
+     * Integration test for a full life cycle: create, use by id and destroy by id
+     *  - create blob no 1
+     *  - get blob no 1 by id: blob no 1 is available
+     *  - delete blob no 1: no entries in database
+     *  - get all blobs: no blobs available.
+     */
+    public function testGetDeleteById(): void
     {
         try {
 //            $client = $this->withUser('foobar');
@@ -612,6 +612,80 @@ class CurlGetTest extends ApiTestCase
             $response = $client->request('GET', $url, $options);
 
             $this->assertEquals(403, $response->getStatusCode());
+        } catch (\Throwable $e) {
+            echo $e->getTraceAsString()."\n";
+            $this->fail($e->getMessage());
+        }
+    }
+
+
+    /**
+     * Integration test: get and delete blob with unknown id
+     */
+    public function testGetDeleteByUnknownId(): void
+    {
+        try {
+            $client = static::createClient();
+            /** @var BlobService $blobService */
+            $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getPublicKey();
+            $bucketId = $bucket->getIdentifier();
+            $creationTime = date('U');
+            $prefix = 'playground';
+            $uuid = Uuid::v4();
+
+            $payload = [
+                'bucketID' => $bucketId,
+                'creationTime' => $creationTime,
+                'prefix' => $prefix,
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            // =======================================================
+            // GET a file by unknown id
+            // =======================================================
+            echo "GET a file by unknown id\n";
+
+            $url = "/blob/files/{$uuid}?prefix=$prefix&bucketID=$bucketId&creationTime=$creationTime";
+            $options = [
+                'headers' => [
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                    'x-dbp-signature' => $token,
+                ],
+            ];
+
+            /* @noinspection PhpInternalEntityUsedInspection */
+            $client->getKernelBrowser()->followRedirects();
+
+            /** @var Response $response */
+            $response = $client->request('GET', "$url/{$uuid}", $options);
+
+            $this->assertEquals(404, $response->getStatusCode());
+
+            // =======================================================
+            // DELETE a file by unknown id
+            // =======================================================
+            echo "DELETE a file by unknown id\n";
+
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                    'x-dbp-signature' => $token,
+                ],
+            ];
+
+            /* @noinspection PhpInternalEntityUsedInspection */
+            $client->getKernelBrowser()->followRedirects(false);
+
+            $url = "/blob/files/{$uuid}?prefix=$prefix&bucketID=$bucketId&creationTime=$creationTime";
+            /** @var Response $response */
+            $response = $client->request('DELETE', $url, $options);
+
+            $this->assertEquals(404, $response->getStatusCode());
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
