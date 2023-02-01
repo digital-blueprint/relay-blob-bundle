@@ -161,6 +161,11 @@ class FileDataDataProvider extends AbstractDataProvider
             dump($data['creationTime'], $creationTime);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
         }
-        // TODO check if request is NOT too old
+        // check if request is expired
+        if ((int) $data['creationTime'] < $tooOld = strtotime('-5 min')) {
+            /* @noinspection ForgottenDebugOutputInspection */
+            dump((int) $data['creationTime'], $tooOld);
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:creationtime-too-old');
+        }
     }
 }

@@ -572,4 +572,49 @@ class CurlGetTest extends ApiTestCase
             $this->fail($e->getMessage());
         }
     }
+
+    /**
+     * Integration test: get all with expired token creation time
+     */
+    public function testGetExpired(): void
+    {
+        try {
+            $client = static::createClient();
+            $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getPublicKey();
+            $bucketId = $bucket->getIdentifier();
+            $creationTime = strtotime('-1 hour');
+            $prefix = 'playground';
+            $payload = [
+                'bucketID' => $bucketId,
+                'creationTime' => $creationTime,
+                'prefix' => $prefix,
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime";
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                    'x-dbp-signature' => $token,
+                    'HTTP_X_DBP_SIGNATURE' => $token,
+                ],
+            ];
+
+            /* @noinspection PhpInternalEntityUsedInspection */
+            $client->getKernelBrowser()->followRedirects();
+
+            /** @var Response $response */
+            $response = $client->request('GET', $url, $options);
+
+            $this->assertEquals(403, $response->getStatusCode());
+        } catch (\Throwable $e) {
+            echo $e->getTraceAsString()."\n";
+            $this->fail($e->getMessage());
+        }
+    }
 }
