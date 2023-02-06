@@ -79,6 +79,7 @@ class FileDataDataProvider extends AbstractDataProvider
 
         $fileData = $this->blobService->setBucket($fileData);
         if ($this->requestStack->getCurrentRequest()->getMethod() !== 'DELETE') {
+            // create shareLink
             $fileData = $this->blobService->getLink($fileData);
             $this->blobService->saveFileData($fileData);
         }
@@ -118,12 +119,13 @@ class FileDataDataProvider extends AbstractDataProvider
 
         $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixWithPagination($bucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
 
-        //create sharelinks
-        foreach ($fileDatas as $fileData) {
+        assertNotNull($this->blobService, 'blob service not initialized');
+        // create sharelinks
+        foreach ($fileDatas as &$fileData) {
             assert($fileData instanceof FileData);
             $fileData->setBucket($bucket);
             $fileData = $this->blobService->getLink($fileData);
-//            $this->blobService->saveFileData($fileData);
+            $this->blobService->saveFileData($fileData);
         }
 
         return $fileDatas;

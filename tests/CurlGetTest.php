@@ -52,6 +52,9 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
             return null;
         }
 
+        $fileData->setContentUrl("https://localhost.lan/link/$identifier");
+        self::$fd[$identifier] = $fileData;
+
         return self::$fd[$identifier];
     }
 
@@ -117,7 +120,7 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test for get all for a prefix with empty result
+     * Integration test for get all for a prefix with empty result.
      */
     public function testGet(): void
     {
@@ -574,13 +577,18 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test: get all with expired token creation time
+     * Integration test: get all with expired token creation time.
      */
     public function testGetExpired(): void
     {
         try {
             $client = static::createClient();
             $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            // =======================================================
+            // GET a file with expired token
+            // =======================================================
+            echo "GET a file with expired token\n";
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getPublicKey();
@@ -620,7 +628,7 @@ class CurlGetTest extends ApiTestCase
 
 
     /**
-     * Integration test: get and delete blob with unknown id
+     * Integration test: get and delete blob with unknown id.
      */
     public function testGetDeleteByUnknownId(): void
     {
@@ -661,7 +669,7 @@ class CurlGetTest extends ApiTestCase
             $client->getKernelBrowser()->followRedirects();
 
             /** @var Response $response */
-            $response = $client->request('GET', "$url/{$uuid}", $options);
+            $response = $client->request('GET', $url, $options);
 
             $this->assertEquals(404, $response->getStatusCode());
 
