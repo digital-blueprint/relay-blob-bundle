@@ -9,6 +9,7 @@ use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\DataProvider\AbstractDataProvider;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
+use function PHPUnit\Framework\assertNotNull;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -168,6 +169,16 @@ class FileDataDataProvider extends AbstractDataProvider
             /* @noinspection ForgottenDebugOutputInspection */
             dump((int) $data['creationTime'], $tooOld);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:creationtime-too-old');
+        }
+        // check action/method
+        $method = $this->requestStack->getCurrentRequest()->getMethod();
+        $action = $data['action'] ?? '';
+        echo "    FileDataProvider::checkSignature(): method=$method, action=$action\n";
+        if (($method === 'GET' && $action !== 'GETONE' && $action !== 'GETALL')
+            || ($method === 'DELETE' && $action !== 'DELETEONE' && $action !== 'DELETEALL')
+            || ($method === 'POST' && $action !== 'CREATEONE')
+        ) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature not suitable', 'blob:dataprovider-signature-not-suitable');
         }
     }
 }

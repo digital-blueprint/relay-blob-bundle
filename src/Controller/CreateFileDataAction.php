@@ -58,18 +58,33 @@ final class CreateFileDataAction extends BaseBlobController
 
         // check if signed params aer equal to request params
         if ($data['bucketID'] !== $bucketId) {
+            /* @noinspection ForgottenDebugOutputInspection */
             dump($data['bucketID'], $bucketId);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
         }
         if ((int) $data['creationTime'] !== (int) $creationTime) {
+            /* @noinspection ForgottenDebugOutputInspection */
             dump($data['creationTime'], $creationTime);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
         }
         if ($data['prefix'] !== $prefix) {
+            /* @noinspection ForgottenDebugOutputInspection */
             dump($data['prefix'], $prefix);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Prefix change forbidden', 'blob:prefix-change-forbidden');
         }
-        // TODO check if request is NOT too old
+        // check if request is expired
+        if ((int) $data['creationTime'] < $tooOld = strtotime('-5 min')) {
+            /* @noinspection ForgottenDebugOutputInspection */
+            dump((int) $data['creationTime'], $tooOld);
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:creationtime-too-old');
+        }
+        // check action/method
+        $method = $request->getMethod();
+        $action = $data['action'] ?? '';
+        echo "    CreateFileDataAction::__invoke(): method=$method, action=$action\n";
+        if ($method !== 'POST' || $action !== 'CREATEONE') {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature not suitable', 'blob:dataprovider-signature-not-suitable');
+        }
 
         // Check retentionDuration & idleRetentionDuration valid durations
         $fileData->setRetentionDuration($data['retentionDuration'] ?? '');
@@ -96,6 +111,7 @@ final class CreateFileDataAction extends BaseBlobController
 
         // check hash of file
         if ($hash !== $data['fileHash']) {
+            /** @noinspection ForgottenDebugOutputInspection */
             dump($data['fileHash'], $hash);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:file-hash-change-forbidden');
         }

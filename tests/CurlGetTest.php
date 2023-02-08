@@ -13,6 +13,7 @@ use Dbp\Relay\BlobBundle\Helper\PoliciesStruct;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\BlobBundle\Service\DatasystemProviderServiceInterface;
+use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\TestUtils\UserAuthTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
@@ -137,6 +138,7 @@ class CurlGetTest extends ApiTestCase
                 'bucketID' => $bucketId,
                 'creationTime' => $creationTime,
                 'prefix' => $prefix,
+                'action' => 'GETALL',
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
@@ -189,16 +191,16 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getPublicKey();
             $bucketId = $bucket->getIdentifier();
-            $creationTime = date('U');
-            $prefix = 'playground';
-            $notifyEmail = 'eugen.neuber@tugraz.at';
-
-            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime";
 
             // =======================================================
             // POST a file
             // =======================================================
             echo "POST file[0]\n";
+
+            $creationTime = date('U');
+            $prefix = 'playground';
+            $notifyEmail = 'eugen.neuber@tugraz.at';
+            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime";
 
             $payload = [
                 'bucketID' => $bucketId,
@@ -209,6 +211,7 @@ class CurlGetTest extends ApiTestCase
                 'notifyEmail' => $notifyEmail,
                 'retentionDuration' => $this->files[0]['retention'],
                 'additionalMetadata' => '',
+                'action' => 'CREATEONE',
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
@@ -250,6 +253,20 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files (only 0)\n";
 
+            $creationTime = date('U');
+            $prefix = 'playground';
+            $notifyEmail = 'eugen.neuber@tugraz.at';
+            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime";
+
+            $payload = [
+                'bucketID' => $bucketId,
+                'creationTime' => $creationTime,
+                'prefix' => $prefix,
+                'action' => 'GETALL',
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
             $options = [
                 'headers' => [
                     'HTTP_ACCEPT' => 'application/ld+json',
@@ -284,6 +301,10 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "POST file [1]\n";
 
+            $creationTime = date('U');
+            $prefix = 'playground';
+            $notifyEmail = 'eugen.neuber@tugraz.at';
+            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime";
             $payload = [
                 'bucketID' => $bucketId,
                 'creationTime' => $creationTime,
@@ -293,6 +314,7 @@ class CurlGetTest extends ApiTestCase
                 'notifyEmail' => $notifyEmail,
                 'retentionDuration' => $this->files[1]['retention'],
                 'additionalMetadata' => '',
+                'action' => 'CREATEONE',
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
@@ -334,6 +356,18 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files (0 and 1)\n";
 
+            $creationTime = date('U');
+            $prefix = 'playground';
+            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime";
+
+            $payload = [
+                'bucketID' => $bucketId,
+                'creationTime' => $creationTime,
+                'prefix' => $prefix,
+                'action' => 'GETALL',
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
             $options = [
                 'headers' => [
                     'HTTP_ACCEPT' => 'application/ld+json',
@@ -379,6 +413,19 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "DELETE all files (0 and 1)\n";
 
+            $creationTime = date('U');
+            $prefix = 'playground';
+            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime";
+
+            $payload = [
+                'bucketID' => $bucketId,
+                'creationTime' => $creationTime,
+                'prefix' => $prefix,
+                'action' => 'DELETEALL',
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
             $requestDelete = Request::create($url, 'DELETE', [], [], [],
                 [
                     'HTTP_ACCEPT' => 'application/ld+json',
@@ -407,6 +454,25 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files (empty)\n";
 
+            $creationTime = date('U');
+            $prefix = 'playground';
+            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime";
+
+            $payload = [
+                'bucketID' => $bucketId,
+                'creationTime' => $creationTime,
+                'prefix' => $prefix,
+                'action' => 'GETALL',
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $options = [
+                'headers' => [
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                    'x-dbp-signature' => $token,
+                ],
+            ];
+
             /** @var Response $response */
             $response = $client->request('GET', $url, $options);
 
@@ -417,7 +483,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertArrayHasKey('hydra:member', $data);
             $this->assertCount(0, $data['hydra:member'], 'More files than expected');
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
+//            echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
         }
     }
@@ -461,6 +527,7 @@ class CurlGetTest extends ApiTestCase
                 'notifyEmail' => $notifyEmail,
                 'retentionDuration' => $this->files[0]['retention'],
                 'additionalMetadata' => '',
+                'action' => 'CREATEONE',
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
@@ -502,6 +569,15 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET a file by id (0)\n";
 
+            $payload = [
+                'bucketID' => $bucketId,
+                'creationTime' => $creationTime,
+                'prefix' => $prefix,
+                'action' => 'GETONE',
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
             $options = [
                 'headers' => [
                     'HTTP_ACCEPT' => 'application/ld+json',
@@ -523,6 +599,15 @@ class CurlGetTest extends ApiTestCase
             // DELETE a file by id
             // =======================================================
             echo "DELETE a file by id\n";
+
+            $payload = [
+                'bucketID' => $bucketId,
+                'creationTime' => $creationTime,
+                'prefix' => $prefix,
+                'action' => 'DELETEONE',
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -556,6 +641,23 @@ class CurlGetTest extends ApiTestCase
             // GET all files
             // =======================================================
             echo "GET all files\n";
+
+            $payload = [
+                'bucketID' => $bucketId,
+                'creationTime' => $creationTime,
+                'prefix' => $prefix,
+                'action' => 'GETALL',
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                    'x-dbp-signature' => $token,
+                ],
+            ];
 
             /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects();
@@ -599,6 +701,7 @@ class CurlGetTest extends ApiTestCase
                 'bucketID' => $bucketId,
                 'creationTime' => $creationTime,
                 'prefix' => $prefix,
+                'action' => 'GETALL',
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
@@ -626,7 +729,6 @@ class CurlGetTest extends ApiTestCase
         }
     }
 
-
     /**
      * Integration test: get and delete blob with unknown id.
      */
@@ -644,18 +746,19 @@ class CurlGetTest extends ApiTestCase
             $prefix = 'playground';
             $uuid = Uuid::v4();
 
-            $payload = [
-                'bucketID' => $bucketId,
-                'creationTime' => $creationTime,
-                'prefix' => $prefix,
-            ];
-
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
-
             // =======================================================
             // GET a file by unknown id
             // =======================================================
             echo "GET a file by unknown id\n";
+
+            $payload = [
+                'bucketID' => $bucketId,
+                'creationTime' => $creationTime,
+                'prefix' => $prefix,
+                'action' => 'GETONE',
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
             $url = "/blob/files/{$uuid}?prefix=$prefix&bucketID=$bucketId&creationTime=$creationTime";
             $options = [
@@ -678,6 +781,15 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "DELETE a file by unknown id\n";
 
+            $payload = [
+                'bucketID' => $bucketId,
+                'creationTime' => $creationTime,
+                'prefix' => $prefix,
+                'action' => 'DELETEONE',
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
             $options = [
                 'headers' => [
                     'Accept' => 'application/ld+json',
@@ -694,6 +806,176 @@ class CurlGetTest extends ApiTestCase
             $response = $client->request('DELETE', $url, $options);
 
             $this->assertEquals(404, $response->getStatusCode());
+        } catch (\Throwable $e) {
+            echo $e->getTraceAsString()."\n";
+            $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * Integration test: create with wrong action.
+     */
+    public function testPostWithWrongAction(): void
+    {
+        try {
+            $client = static::createClient();
+            /** @var BlobService $blobService */
+            $blobService = $client->getContainer()->get(BlobService::class);
+            $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getPublicKey();
+            $bucketId = $bucket->getIdentifier();
+            $creationTime = date('U');
+            $prefix = 'playground';
+            $notifyEmail = 'eugen.neuber@tugraz.at';
+
+            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime";
+
+            // =======================================================
+            // POST a file
+            // =======================================================
+            echo "POST file 0 with wrong action\n";
+
+            $payload = [
+                'bucketID' => $bucketId,
+                'creationTime' => $creationTime,
+                'prefix' => $prefix,
+                'fileName' => $this->files[0]['name'],
+                'fileHash' => $this->files[0]['hash'],
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $this->files[0]['retention'],
+                'additionalMetadata' => '',
+                'action' => 'GETONE',
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $requestPost = Request::create($url, 'POST', [], [],
+                [
+                    'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
+                ],
+                [
+                    'HTTP_ACCEPT' => 'application/ld+json',
+//                    'x-dbp-signature' => $token,
+                    'HTTP_X_DBP_SIGNATURE' => $token,
+                ],
+                "HTTP_ACCEPT: application/ld+json\r\n"
+                ."HTTP_X_DBP_SIGNATURE: $token\r\n\r\n"
+                .'file='.base64_encode($this->files[0]['content'])
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+            );
+            $c = new CreateFileDataAction($blobService);
+            $fileData = $c->__invoke($requestPost);
+
+            $this->fail('    FileData incorrectly saved: ' . $fileData->getIdentifier());
+        } catch (ApiError $e) {
+            $this->assertEquals($e->getStatusCode(), 403);
+        } catch (\Throwable $e) {
+            echo $e->getTraceAsString()."\n";
+            $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * Integration test: get all with wrong action.
+     */
+    public function testGetAllWithWrongAction(): void
+    {
+        try {
+            $client = static::createClient();
+            /** @var BlobService $blobService */
+            $blobService = $client->getContainer()->get(BlobService::class);
+            $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getPublicKey();
+            $bucketId = $bucket->getIdentifier();
+            $creationTime = date('U');
+            $prefix = 'playground';
+
+            // =======================================================
+            // GET all files
+            // =======================================================
+            echo "GET all files with wrong action\n";
+
+            $payload = [
+                'bucketID' => $bucketId,
+                'creationTime' => $creationTime,
+                'prefix' => $prefix,
+                'action' => 'DELETEONE',
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime";
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                    'x-dbp-signature' => $token,
+                    'HTTP_X_DBP_SIGNATURE' => $token,
+                ],
+            ];
+
+            /* @noinspection PhpInternalEntityUsedInspection */
+            $client->getKernelBrowser()->followRedirects();
+
+            /** @var Response $response */
+            $response = $client->request('GET', $url, $options);
+
+            $this->assertEquals(403, $response->getStatusCode());
+        } catch (\Throwable $e) {
+            echo $e->getTraceAsString()."\n";
+            $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * Integration test: delete all with wrong action.
+     */
+    public function testDeleteAllWithWrongAction(): void
+    {
+        try {
+            $client = static::createClient();
+            /** @var BlobService $blobService */
+            $blobService = $client->getContainer()->get(BlobService::class);
+            $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getPublicKey();
+            $bucketId = $bucket->getIdentifier();
+            $creationTime = date('U');
+            $prefix = 'playground';
+
+            // =======================================================
+            // DELETE all files
+            // =======================================================
+            echo "DELETE all files with wrong action\n";
+
+            $payload = [
+                'bucketID' => $bucketId,
+                'creationTime' => $creationTime,
+                'prefix' => $prefix,
+                'action' => 'GETONE',
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime";
+            $requestDelete = Request::create($url, 'DELETE', [], [], [],
+                [
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                    'HTTP_X_DBP_SIGNATURE' => $token,
+                ],
+                "HTTP_ACCEPT: application/ld+json\r\n"
+                ."HTTP_X_DBP_SIGNATURE: $token\r\n\r\n"
+            );
+            $d = new DeleteFileDatasByPrefix($blobService);
+            $d->__invoke($requestDelete);
+            $this->fail('    Delete by prefix incorrectly succeeded');
+        } catch (ApiError $e) {
+            $this->assertEquals($e->getStatusCode(), 403);
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
