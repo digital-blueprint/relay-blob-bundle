@@ -868,7 +868,7 @@ class CurlGetTest extends ApiTestCase
             $c = new CreateFileDataAction($blobService);
             $fileData = $c->__invoke($requestPost);
 
-            $this->fail('    FileData incorrectly saved: ' . $fileData->getIdentifier());
+            $this->fail('    FileData incorrectly saved: '.$fileData->getIdentifier());
         } catch (ApiError $e) {
             $this->assertEquals($e->getStatusCode(), 403);
         } catch (\Throwable $e) {
