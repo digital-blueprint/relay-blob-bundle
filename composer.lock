@@ -9477,13 +9477,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.tugraz.at:dbp/relay/dbp-relay-blob-connector-filesystem-bundle.git",
-                "reference": "695718d95a01f29583ce679926e0d2d726c3e79b"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://gitlab.tugraz.at/api/v4/projects/dbp%2Frelay%2Fdbp-relay-blob-connector-filesystem-bundle/repository/archive.zip?sha=695718d95a01f29583ce679926e0d2d726c3e79b",
-                "reference": "695718d95a01f29583ce679926e0d2d726c3e79b",
-                "shasum": ""
+                "reference": "aa342e5e7b8c0c44408eceaccb9cf88a4c56735a"
             },
             "require": {
                 "api-platform/core": "^2.6",
@@ -9548,11 +9542,7 @@
                 "AGPL-3.0-or-later"
             ],
             "description": "A template bundle for the Relay API gateway",
-            "support": {
-                "source": "https://gitlab.tugraz.at/dbp/relay/dbp-relay-blob-connector-filesystem-bundle/-/tree/main",
-                "issues": "https://gitlab.tugraz.at/dbp/relay/dbp-relay-blob-connector-filesystem-bundle/-/issues"
-            },
-            "time": "2023-02-13T01:07:47+01:00"
+            "time": "2023-03-20T00:09:00+00:00"
         },
         {
             "name": "dnoegel/php-xdg-base-dir",
