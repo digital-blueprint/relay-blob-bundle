@@ -7,7 +7,7 @@
         "php": ">=7.3",
         "ext-json": "*",
         "api-platform/core": "^2.6",
-        "dbp/relay-core-bundle": "^0.1.56",
+        "dbp/relay-core-bundle": "^0.1.91",
         "fgrosse/phpasn1": "^2.0",
         "symfony/event-dispatcher": "^5.4",
         "symfony/mailer": "^5.4",

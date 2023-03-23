@@ -27,14 +27,8 @@ class FileDataDataProvider extends AbstractDataProvider
 
     public function __construct(BlobService $blobService, RequestStack $requestStack)
     {
-        parent::__construct($requestStack);
-
         $this->blobService = $blobService;
         $this->requestStack = $requestStack;
-    }
-
-    protected function onOperationStart(int $operation)
-    {
     }
 
     protected function getResourceClass(): string
@@ -42,13 +36,13 @@ class FileDataDataProvider extends AbstractDataProvider
         return FileData::class;
     }
 
-    /* getItemById() is overwritten with getFileDataById() because we want filters here for checking the signature */
-    public function getItem(string $resourceClass, $id, string $operationName = null, array $context = []): ?object
+    protected function isUserGrantedOperationAccess(int $operation): bool
     {
-        $this->onOperationStart(self::GET_ITEM_OPERATION);
+        return true;
+    }
 
-        $filters = $context['filters'] ?? [];
-
+    protected function getItemById($id, array $filters = [], array $options = []): object
+    {
         return $this->getFileDataById($id, $filters);
     }
 
@@ -86,11 +80,6 @@ class FileDataDataProvider extends AbstractDataProvider
         }
 
         return $fileData;
-    }
-
-    protected function getItemById($id, array $options = []): object
-    {
-        throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'Should not be called!', 'blob:wrong-function');
     }
 
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
