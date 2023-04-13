@@ -31,8 +31,7 @@
         "symfony/monolog-bundle": "^3.8",
         "symfony/phpunit-bridge": "^5.4.17",
         "vimeo/psalm": "^4.30.0",
-        "ext-curl": "*",
-        "dbp/relay-blob-connector-filesystem-bundle": "dev-main"
+        "ext-curl": "*"
     },
     "autoload": {
         "psr-4": {
