@@ -3,7 +3,7 @@ Relay-Blob Bundle README
 
 # DbpRelayBlobBundle
 
-[GitLab](https://gitlab.tugraz.at/dbp/relay/dbp-relay-blob-bundle) 
+[GitHub](https://github.com/digital-blueprint/relay-blob-bundle) 
 
 The blob bundle provides an API for abstracting different shared filesystems.
 You can upload a file unauthorized via the API to a configured bucket and gets a short ephemeral link. 
@@ -14,7 +14,7 @@ A bucket can be an application or an application space. For example you can have
 A bucket is configured in the config file.
 
 ## Requirements
-You need a DbpRelayBlobConnector bundle installed to make this bundle working. E.g. [DbpRelayBlobConnectorFilesystemBundle] (https://gitlab.tugraz.at/dbp/relay/dbp-relay-blob-connector-filesystem-bundle)
+You need a DbpRelayBlobConnector bundle installed to make this bundle working. E.g. [DbpRelayBlobConnectorFilesystemBundle](https://github.com/digital-blueprint/relay-blob-connector-filesystem-bundle)
 
 <!--
 ## Bundle installation
@@ -36,7 +36,7 @@ Dbp\Relay\CoreBundle\DbpRelayCoreBundle::class => ['all' => true],
 ];
 ```
 
-If you were using the [DBP API Server Template](https://gitlab.tugraz.at/dbp/relay/dbp-relay-server-template)
+If you were using the [DBP API Server Template](https://github.com/digital-blueprint/relay-server-template)
 as template for your Symfony application, then this should have already been generated for you.
 
 * Run `composer install` to clear caches
