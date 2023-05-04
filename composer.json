@@ -73,11 +73,5 @@
         "coverage": [
             "@php -dxdebug.mode=coverage vendor/bin/phpunit --coverage-html _coverage"
         ]
-    },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/digital-blueprint/relay-blob-connector-filesystem-bundle.git"
-        }
-    ]
+    }
 }
