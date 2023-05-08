@@ -49,9 +49,14 @@ class FileDataDataProvider extends AbstractDataProvider
     protected function getFileDataById($id, array $filters): object
     {
 //        echo "     FileDataProvider::getFileDataById($id, filters)\n";
-        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
+        $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
+        // dump($sig);
         if (!$sig) {
-            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+            // TODO remove signature from header. For now, it is supported in both url and header
+            $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
+            if (!$sig) {
+                throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+            }
         }
         $bucketId = $filters['bucketID'] ?? '';
         assert(is_string($bucketId));
@@ -84,9 +89,14 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
-        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
+        $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
+        // dump($sig);
         if (!$sig) {
-            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+            // TODO remove signature from header. For now, it is supported in both url and header
+            $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
+            if (!$sig) {
+                throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+            }
         }
         $bucketId = $filters['bucketID'] ?? '';
         assert(is_string($bucketId));
@@ -128,9 +138,14 @@ class FileDataDataProvider extends AbstractDataProvider
      */
     private function checkSignature(string $secret, array $filters): void
     {
-        $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
+        $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
+        // dump($sig);
         if (!$sig) {
-            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+            // TODO remove signature from header. For now, it is supported in both url and header
+            $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
+            if (!$sig) {
+                throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+            }
         }
         $bucketId = $filters['bucketID'] ?? '';
         $creationTime = $filters['creationTime'] ?? '0';
@@ -145,24 +160,26 @@ class FileDataDataProvider extends AbstractDataProvider
         // check if signed params aer equal to request params
         if ($data['bucketID'] !== $bucketId) {
             /* @noinspection ForgottenDebugOutputInspection */
-            dump($data['bucketID'], $bucketId);
+            // dump($data['bucketID'], $bucketId);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
         }
         if ((int) $data['creationTime'] !== (int) $creationTime) {
             /* @noinspection ForgottenDebugOutputInspection */
-            dump($data['creationTime'], $creationTime);
+            //dump($data['creationTime'], $creationTime);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
         }
         // check if request is expired
         if ((int) $data['creationTime'] < $tooOld = strtotime('-5 min')) {
             /* @noinspection ForgottenDebugOutputInspection */
-            dump((int) $data['creationTime'], $tooOld);
+            // dump((int) $data['creationTime'], $tooOld);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:creationtime-too-old');
         }
         // check action/method
         $method = $this->requestStack->getCurrentRequest()->getMethod();
         $action = $data['action'] ?? '';
-        echo "    FileDataProvider::checkSignature(): method=$method, action=$action\n";
+        //echo "    FileDataProvider::checkSignature(): method=$method, action=$action\n";
+
+        // dump($method);
         if (($method === 'GET' && $action !== 'GETONE' && $action !== 'GETALL')
             || ($method === 'DELETE' && $action !== 'DELETEONE' && $action !== 'DELETEALL')
             || ($method === 'POST' && $action !== 'CREATEONE')

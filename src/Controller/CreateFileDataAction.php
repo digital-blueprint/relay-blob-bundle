@@ -33,9 +33,13 @@ final class CreateFileDataAction extends BaseBlobController
     public function __invoke(Request $request): FileData
     {
 //        dump('CreateFileDataAction::invoke()');
+        // TODO remove signature from header. For now, header and url are supported
         $sig = $request->headers->get('x-dbp-signature', '');
         if (!$sig) {
-            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+            $sig = $request->query->get('sig', '');
+            if (!$sig) {
+                throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+            }
         }
         $bucketId = $request->query->get('bucketID', '');
         assert(is_string($bucketId));
@@ -59,29 +63,29 @@ final class CreateFileDataAction extends BaseBlobController
         // check if signed params aer equal to request params
         if ($data['bucketID'] !== $bucketId) {
             /* @noinspection ForgottenDebugOutputInspection */
-            dump($data['bucketID'], $bucketId);
+            // dump($data['bucketID'], $bucketId);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
         }
         if ((int) $data['creationTime'] !== (int) $creationTime) {
             /* @noinspection ForgottenDebugOutputInspection */
-            dump($data['creationTime'], $creationTime);
+            // dump($data['creationTime'], $creationTime);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
         }
         if ($data['prefix'] !== $prefix) {
             /* @noinspection ForgottenDebugOutputInspection */
-            dump($data['prefix'], $prefix);
+            // dump($data['prefix'], $prefix);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Prefix change forbidden', 'blob:prefix-change-forbidden');
         }
         // check if request is expired
         if ((int) $data['creationTime'] < $tooOld = strtotime('-5 min')) {
             /* @noinspection ForgottenDebugOutputInspection */
-            dump((int) $data['creationTime'], $tooOld);
+            // dump((int) $data['creationTime'], $tooOld);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:creationtime-too-old');
         }
         // check action/method
         $method = $request->getMethod();
         $action = $data['action'] ?? '';
-        echo "    CreateFileDataAction::__invoke(): method=$method, action=$action\n";
+        // echo "    CreateFileDataAction::__invoke(): method=$method, action=$action\n";
         if ($method !== 'POST' || $action !== 'CREATEONE') {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature not suitable', 'blob:dataprovider-signature-not-suitable');
         }
@@ -112,7 +116,7 @@ final class CreateFileDataAction extends BaseBlobController
         // check hash of file
         if ($hash !== $data['fileHash']) {
             /** @noinspection ForgottenDebugOutputInspection */
-            dump($data['fileHash'], $hash);
+            // dump($data['fileHash'], $hash);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:file-hash-change-forbidden');
         }
 
