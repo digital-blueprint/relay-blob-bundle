@@ -138,10 +138,12 @@ class FileDataDataProvider extends AbstractDataProvider
      */
     private function checkSignature(string $secret, array $filters): void
     {
+        /** @var string */
         $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
         // dump($sig);
         if (!$sig) {
             // TODO remove signature from header. For now, it is supported in both url and header
+            /** @var string */
             $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
             if (!$sig) {
                 throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');

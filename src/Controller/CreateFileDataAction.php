@@ -34,8 +34,11 @@ final class CreateFileDataAction extends BaseBlobController
     {
 //        dump('CreateFileDataAction::invoke()');
         // TODO remove signature from header. For now, header and url are supported
+
+        /** @var string */
         $sig = $request->headers->get('x-dbp-signature', '');
         if (!$sig) {
+            /** @var string */
             $sig = $request->query->get('sig', '');
             if (!$sig) {
                 throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
