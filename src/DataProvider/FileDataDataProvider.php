@@ -9,7 +9,6 @@ use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\DataProvider\AbstractDataProvider;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
-use function PHPUnit\Framework\assertNotNull;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -119,7 +118,6 @@ class FileDataDataProvider extends AbstractDataProvider
 
         $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixWithPagination($bucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
 
-        assertNotNull($this->blobService, 'blob service not initialized');
         // create sharelinks
         foreach ($fileDatas as &$fileData) {
             assert($fileData instanceof FileData);
