@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Service;
 
+use Cron\FieldFactory;
 use Dbp\Relay\BlobBundle\Entity\Bucket;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
@@ -137,6 +138,8 @@ class BlobService
 //            dump($fileData);
             $this->em->persist($fileData);
             $this->em->flush();
+            dump($fileData->getIdentifier());
+            dump($fileData->getContentUrl());
         } catch (\Exception $e) {
             echo "    error: {$e->getMessage()}\n";
             echo '    fileData ='.print_r($fileData, true)."\n";
@@ -147,9 +150,12 @@ class BlobService
     public function saveFile(FileData $fileData): ?FileData
     {
         $i = $fileData->getIdentifier();
-        echo "    BlobService::saveFile(identifier: $i)\n";
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
         $fileData = $datasystemService->saveFile($fileData);
+
+        dump("save file");
+        dump($fileData->getIdentifier());
+        dump($fileData->getContentUrl());
 
         return $fileData;
     }
@@ -162,9 +168,16 @@ class BlobService
         return $fileData;
     }
 
+    public function getChecksum(FileData $fileData): ?string
+    {
+        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
+        $cs = $datasystemService->generateChecksum($fileData);
+        return $cs;
+    }
+
     public function getFileData(string $identifier): FileData
     {
-        echo "    BlobService::getFileData($identifier)\n";
+        //echo "    BlobService::getFileData($identifier)\n";
         /** @var FileData $fileData */
         $fileData = $this->em
             ->getRepository(FileData::class)
@@ -179,7 +192,7 @@ class BlobService
 
     public function getFileDataByBucketIDAndPrefix(string $bucketID, string $prefix): array
     {
-        echo "    BlobService::getFileDataByBucketIDAndPrefix($bucketID, $prefix)\n";
+        //echo "    BlobService::getFileDataByBucketIDAndPrefix($bucketID, $prefix)\n";
         $fileDatas = $this->em
             ->getRepository(FileData::class)
             ->findBy(['bucketID' => $bucketID, 'prefix' => $prefix]);
@@ -242,6 +255,9 @@ class BlobService
     {
 //        $i = $fileData->getIdentifier();
 //        echo "    BlobService::removeFileData(identifier: {$i})\n";
+        $bucket = $this->configurationService->getBucketByID($fileData->getBucketID());
+        $fileData->setBucket($bucket);
+        
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
         $datasystemService->removeFile($fileData);
 

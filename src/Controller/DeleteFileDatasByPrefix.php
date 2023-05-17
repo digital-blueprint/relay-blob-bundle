@@ -46,7 +46,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
 
         $secret = $bucket->getPublicKey();
         $data = DenyAccessUnlessCheckSignature::verify($secret, $sig);
-//        dump($data);
+
 
         // check if signed params are equal to request params
         if ($data['bucketID'] !== $bucketId) {

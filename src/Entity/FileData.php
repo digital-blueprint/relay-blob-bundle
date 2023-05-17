@@ -229,6 +229,7 @@ class FileData
      */
     private $contentUrl;
 
+
     /**
      * @Groups({"BlobFiles:input"})
      *
@@ -353,7 +354,7 @@ class FileData
         $this->existsUntil = $existsUntil;
     }
 
-    public function getContentUrl(): string
+    public function getContentUrl(): ?string
     {
         return $this->contentUrl;
     }

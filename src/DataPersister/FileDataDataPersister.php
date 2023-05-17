@@ -38,6 +38,9 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
         // no need to check, because signature is checked by getting the data
 
         assert($data instanceof FileData);
+        dump("persist");
+        dump($data->getIdentifier());
+        dump($data->getContentUrl());
 
         if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === 'put') {
             $metadata = $data->getAdditionalMetadata();
@@ -70,5 +73,10 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
         assert($data instanceof FileData);
 
         $this->blobService->removeFileData($data);
+    }
+
+    private function generateChecksum($pathInfo, $validUntil, $path, $secret): string
+    {
+        return hash('sha256', $pathInfo.'?'.'validUntil='.str_replace(" ", "+", $validUntil).'&path='.$path.$secret);
     }
 }
