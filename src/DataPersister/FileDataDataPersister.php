@@ -38,9 +38,6 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
         // no need to check, because signature is checked by getting the data
 
         assert($data instanceof FileData);
-        dump("persist");
-        dump($data->getIdentifier());
-        dump($data->getContentUrl());
 
         if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === 'put') {
             $metadata = $data->getAdditionalMetadata();

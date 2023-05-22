@@ -138,9 +138,6 @@ final class CreateFileDataAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'data upload failed', 'blob:create-file-data-upload-failed');
         }
 
-        dump("create data action");
-        dump($fileData->getContentUrl());
-
         $this->blobService->saveFileData($fileData);
 
         return $fileData;

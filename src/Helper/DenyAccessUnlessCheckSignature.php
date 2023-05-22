@@ -50,7 +50,7 @@ class DenyAccessUnlessCheckSignature
 
         if (!self::verifyToken($jwk, $token, $payload)) {
             /* @noinspection ForgottenDebugOutputInspection */
-            dump(['token' => $token, 'payload' => $payload, 'secret' => $secret]);
+            //dump(['token' => $token, 'payload' => $payload, 'secret' => $secret]);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature invalid', 'blob:signature-invalid');
         }
 

@@ -138,8 +138,6 @@ class BlobService
 //            dump($fileData);
             $this->em->persist($fileData);
             $this->em->flush();
-            dump($fileData->getIdentifier());
-            dump($fileData->getContentUrl());
         } catch (\Exception $e) {
             echo "    error: {$e->getMessage()}\n";
             echo '    fileData ='.print_r($fileData, true)."\n";
@@ -152,10 +150,6 @@ class BlobService
         $i = $fileData->getIdentifier();
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
         $fileData = $datasystemService->saveFile($fileData);
-
-        dump("save file");
-        dump($fileData->getIdentifier());
-        dump($fileData->getContentUrl());
 
         return $fileData;
     }
@@ -257,7 +251,7 @@ class BlobService
 //        echo "    BlobService::removeFileData(identifier: {$i})\n";
         $bucket = $this->configurationService->getBucketByID($fileData->getBucketID());
         $fileData->setBucket($bucket);
-        
+
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
         $datasystemService->removeFile($fileData);
 

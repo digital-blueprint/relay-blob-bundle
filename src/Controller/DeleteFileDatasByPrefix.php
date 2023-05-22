@@ -60,14 +60,12 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         }
         // check if request is expired
         if ((int) $data['creationTime'] < $tooOld = strtotime('-5 min')) {
-            /* @noinspection ForgottenDebugOutputInspection */
-            dump((int) $data['creationTime'], $tooOld);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:creationtime-too-old');
         }
         // check action/method
         $method = $request->getMethod();
         $action = $data['action'] ?? '';
-        echo "    DeleteFileDataByPrefix::__invoke(): method=$method, action=$action\n";
+        //echo "    DeleteFileDataByPrefix::__invoke(): method=$method, action=$action\n";
         if (($method !== 'DELETE' || $action !== 'DELETEALL')) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature not suitable', 'blob:dataprovider-signature-not-suitable');
         }

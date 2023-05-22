@@ -47,8 +47,6 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getFileDataById($id, array $filters): object
     {
-        dump("getFileDataById");
-//        echo "     FileDataProvider::getFileDataById($id, filters)\n";
         $cs = $this->requestStack->getCurrentRequest()->query->get('checksum', '');
         // dump($sig);
         if (!$cs) {
@@ -77,7 +75,6 @@ class FileDataDataProvider extends AbstractDataProvider
         if ($this->requestStack->getCurrentRequest()->getMethod() !== 'DELETE') {
             // create shareLink
             $fileData = $this->blobService->getLink($fileData);
-            dump("get link");
             //$this->blobService->saveFileData($fileData);
         }
 
@@ -87,11 +84,9 @@ class FileDataDataProvider extends AbstractDataProvider
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
         $cs = $this->requestStack->getCurrentRequest()->query->get('checksum', '');
-        dump($cs);
         if (!$cs) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
-        dump("checksum found");
         $bucketId = $filters['bucketID'] ?? '';
         assert(is_string($bucketId));
         if (!$bucketId) {
@@ -121,7 +116,7 @@ class FileDataDataProvider extends AbstractDataProvider
 
             //$this->blobService->saveFileData($fileData);
         }
-        dump($fileDatas);
+        //dump($fileDatas);
 
         return $fileDatas;
     }
@@ -149,9 +144,6 @@ class FileDataDataProvider extends AbstractDataProvider
         $action = $this->requestStack->getCurrentRequest()->query->get('action', '');
         $hash = $this->generateChecksum($this->requestStack->getCurrentRequest()->getPathInfo(), $bucketId, $creationTime, $prefix, $action, $secret, $id);
 
-        dump($cs);
-        dump($hash);
-
         // check if checksum is correct
         if ($cs !== $hash) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum is not correct', 'blob:dataprovider-signature-not-suitable');
@@ -178,7 +170,6 @@ class FileDataDataProvider extends AbstractDataProvider
         $action = $this->requestStack->getCurrentRequest()->query->get('action', '');
         //echo "    FileDataProvider::checkSignature(): method=$method, action=$action\n";
 
-        dump($method);
         if (($method === 'GET' && $action !== 'GETONE' && $action !== 'GETALL')
             || ($method === 'DELETE' && $action !== 'DELETEONE' && $action !== 'DELETEALL')
             || ($method === 'POST' && $action !== 'CREATEONE')
@@ -248,7 +239,6 @@ class FileDataDataProvider extends AbstractDataProvider
 
     private function generateChecksum($pathInfo, $bucketId, $creationTime, $prefix, $action, $secret, $id=''): string
     {
-        dump($pathInfo.'?'.'bucketID='.$bucketId.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action='.$action.'&secret='.$secret);
         return hash('sha256', $pathInfo.'?'.'bucketID='.$bucketId.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action='.$action.'&secret='.$secret);
     }
 }
