@@ -139,8 +139,6 @@ class BlobService
             $this->em->persist($fileData);
             $this->em->flush();
         } catch (\Exception $e) {
-            echo "    error: {$e->getMessage()}\n";
-            echo '    fileData ='.print_r($fileData, true)."\n";
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
         }
     }
