@@ -15,7 +15,7 @@ interface DatasystemProviderServiceInterface
 
     public function getLink(FileData $fileData, PoliciesStruct $policiesStruct): ?FileData;
 
-    public function generateChecksum(FileData $fileData): ?string;
+    public function generateChecksumFromFileData(FileData $fileData): ?string;
 
     public function removeFile(FileData $fileData): bool;
 }

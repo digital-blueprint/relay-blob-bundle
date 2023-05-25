@@ -160,10 +160,10 @@ class BlobService
         return $fileData;
     }
 
-    public function getChecksum(FileData $fileData): ?string
+    public function getChecksumFromFileData(FileData $fileData): ?string
     {
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
-        $cs = $datasystemService->generateChecksum($fileData);
+        $cs = $datasystemService->generateChecksumFromFileData($fileData);
         return $cs;
     }
 

@@ -239,6 +239,6 @@ class FileDataDataProvider extends AbstractDataProvider
 
     private function generateChecksum($pathInfo, $bucketId, $creationTime, $prefix, $action, $secret, $id=''): string
     {
-        return hash('sha256', $pathInfo.'?'.'bucketID='.$bucketId.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action='.$action.'&secret='.$secret);
+        return hash_hmac('sha256', $pathInfo.'?'.'bucketID='.$bucketId.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action='.$action, $secret);
     }
 }
