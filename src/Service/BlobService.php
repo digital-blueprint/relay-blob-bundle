@@ -136,6 +136,8 @@ class BlobService
 
         try {
 //            dump($fileData);
+
+            //throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
             $this->em->persist($fileData);
             $this->em->flush();
         } catch (\Exception $e) {
@@ -154,6 +156,8 @@ class BlobService
 
     public function getLink(FileData $fileData): ?FileData
     {
+        dump($fileData);
+        $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
         $fileData = $datasystemService->getLink($fileData, $fileData->getBucket()->getPolicies());
 

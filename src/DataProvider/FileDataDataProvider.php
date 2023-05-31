@@ -47,9 +47,9 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getFileDataById($id, array $filters): object
     {
-        $cs = $this->requestStack->getCurrentRequest()->query->get('checksum', '');
-        // dump($sig);
-        if (!$cs) {
+        $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
+        dump($id);
+        if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
         $bucketId = $filters['bucketID'] ?? '';
@@ -63,7 +63,8 @@ class FileDataDataProvider extends AbstractDataProvider
         }
 
         $secret = $bucket->getPublicKey();
-        $this->checkChecksum($secret, $filters, $id);
+        //$this->checkChecksum($secret, $filters, $id);
+        $this->checkSignature($secret, $filters);
 
         $fileData = $this->blobService->getFileData($id);
 
@@ -83,8 +84,8 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
-        $cs = $this->requestStack->getCurrentRequest()->query->get('checksum', '');
-        if (!$cs) {
+        $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
+        if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
         $bucketId = $filters['bucketID'] ?? '';
@@ -98,7 +99,8 @@ class FileDataDataProvider extends AbstractDataProvider
         }
 
         $secret = $bucket->getPublicKey();
-        $this->checkChecksum($secret, $filters);
+        //$this->checkChecksum($secret, $filters);
+        $this->checkSignature($secret, $filters);
 
         $prefix = $filters['prefix'] ?? '';
 
@@ -239,6 +241,8 @@ class FileDataDataProvider extends AbstractDataProvider
 
     private function generateChecksum($pathInfo, $bucketId, $creationTime, $prefix, $action, $secret, $id=''): string
     {
-        return hash_hmac('sha256', $pathInfo.'?'.'bucketID='.$bucketId.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action='.$action, $secret);
+        $url = $pathInfo.'?bucketID='.$bucketId.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action='.$action;
+        dump("provider: ".$url."&checksum=".hash_hmac('sha256', $url, $secret));
+        return hash_hmac('sha256', $url, $secret);
     }
 }

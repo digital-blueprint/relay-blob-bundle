@@ -39,6 +39,8 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
 
         assert($data instanceof FileData);
 
+        dump("presist");
+
         if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === 'put') {
             $metadata = $data->getAdditionalMetadata();
             if ($metadata) {
@@ -48,6 +50,7 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
                     throw ApiError::withDetails(Response::HTTP_UNPROCESSABLE_ENTITY, 'The additional Metadata doesn\'t contain valid json!', 'blob:blob-service-invalid-json');
                 }
             }
+            dump("rename");
             $this->blobService->renameFileData($data);
         }
 
