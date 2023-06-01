@@ -14,6 +14,7 @@ use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Request;
 
 class DenyAccessUnlessCheckSignature
 {
@@ -55,6 +56,48 @@ class DenyAccessUnlessCheckSignature
         }
 
         return $payload;
+    }
+
+    /**
+     * Verify a JWS token and the checksum inside the signature.
+     *
+     * @param string $secret to create the (symmetric) JWK from
+     * @param string $token  to verify
+     * @param string $request incoming request
+     *
+     * @return array extracted payload from token
+     *
+     * @throws \JsonException
+     * @throws ApiError
+     */
+    public static function verifyChecksumAndSignature(string $secret, string $token, Request $request): array
+    {
+        $data = self::verify($secret, $token);
+
+        // check checksum
+        if ($data['cs'] !== self::generateSha256($request)) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum invalid', 'blob:signature-invalid');
+        }
+
+        return $data;
+    }
+
+    public static function generateHmacSha256(Request $request, string $secret): string
+    {
+        // remove signature part of uri
+        $url = explode("&sig=", $request->getRequestUri());
+
+        // generate hmac sha256 hash over the uri except the signature part
+        return hash_hmac("sha256", $url[0], $secret);
+    }
+
+    public static function generateSha256(Request $request): string
+    {
+        // remove signature part of uri
+        $url = explode("&sig=", $request->getRequestUri());
+
+        // generate hmac sha256 hash over the uri except the signature part
+        return hash("sha256", $url[0]);
     }
 
     /**

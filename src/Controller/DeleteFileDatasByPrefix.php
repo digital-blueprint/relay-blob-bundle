@@ -24,48 +24,39 @@ class DeleteFileDatasByPrefix extends BaseBlobController
 
     public function __invoke(Request $request)
     {
-        $sig = $request->headers->get('x-dbp-signature', '');
+        // check if signature is present
+        $sig = $request->query->get('sig', '');
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
-
+        // get params
+        // get required params
         $bucketId = $request->query->get('bucketID', '');
-        assert(is_string($bucketId));
         $creationTime = $request->query->get('creationTime', 0);
         $prefix = $request->query->get('prefix', '');
+        $action = $request->query->get('action', '');
+        assert(is_string($bucketId));
         assert(is_string($prefix));
 
-        if (!$bucketId || !$creationTime || !$prefix) {
+        // check if the minimal required params are present
+        if (!$bucketId || !$creationTime || !$prefix || !$action) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:delete-files-per-prefix-unset-sig-params');
         }
 
+        // check if bucketID is correct
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
         if (!$bucket) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-files-by-prefix-not-configured-bucketID');
         }
 
+        // verify signature and checksum
         $secret = $bucket->getPublicKey();
-        $data = DenyAccessUnlessCheckSignature::verify($secret, $sig);
+        $data = DenyAccessUnlessCheckSignature::verifyChecksumAndSignature($secret, $sig, $request);
 
+        // now, after checksum and signature check, it is safe to do stuff
 
-        // check if signed params are equal to request params
-        if ($data['bucketID'] !== $bucketId) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
-        }
-        if ((int) $data['creationTime'] !== (int) $creationTime) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
-        }
-        if ($data['prefix'] !== $prefix) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Prefix change forbidden', 'blob:prefix-change-forbidden');
-        }
-        // check if request is expired
-        if ((int) $data['creationTime'] < $tooOld = strtotime('-5 min')) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:creationtime-too-old');
-        }
         // check action/method
         $method = $request->getMethod();
-        $action = $data['action'] ?? '';
-        //echo "    DeleteFileDataByPrefix::__invoke(): method=$method, action=$action\n";
         if (($method !== 'DELETE' || $action !== 'DELETEALL')) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature not suitable', 'blob:dataprovider-signature-not-suitable');
         }

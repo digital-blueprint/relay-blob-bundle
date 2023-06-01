@@ -32,63 +32,64 @@ final class CreateFileDataAction extends BaseBlobController
      */
     public function __invoke(Request $request): FileData
     {
-        dump('CreateFileDataAction::invoke()');
-        // TODO remove signature from header. For now, header and url are supported
 
         /** @var string */
         $sig = $request->query->get('sig', '');
+        // check if signature is present in url
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
+
+        // get request params
+        // get necessary params
         $bucketId = $request->query->get('bucketID', '');
-        assert(is_string($bucketId));
         $creationTime = $request->query->get('creationTime', 0);
         $prefix = $request->query->get('prefix', '');
         $action = $request->query->get('action', '');
+        $fileName = $request->query->get('fileName', '');
+
+        // get optional params
+        $fileHash = $request->query->get('fileHash', '');
+        $notifyEmail = $request->query->get('notifyEmail', '');
+        $retentionDuration = $request->query->get('retentionDuration','');
+        $additionalMetadata = $request->query->get('additionalMetadata','');
+
+        // get request method
+        $method = $request->getMethod();
+
+        // check types of params
+        assert(is_string($bucketId));
         assert(is_string($prefix));
 
-        if (!$bucketId || !$creationTime) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:createFileData-unset-sig-params');
+        // check if the minimal needed url params are present
+        if (!$bucketId || !$creationTime || !$prefix || !$action || !$fileName) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot be checked', 'blob:createFileData-unset-sig-params');
+        }
+
+        // check if correct method and action is specified
+        if ($method !== 'POST' || $action !== 'CREATEONE') {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature not suitable', 'blob:dataprovider-signature-not-suitable');
+        }
+
+        // check if request is expired
+        if ((int) $creationTime < $tooOld = strtotime('-5 min')) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:creationtime-too-old');
         }
 
         $fileData = $this->blobService->createFileData($request);
         $fileData = $this->blobService->setBucket($fileData);
 
+        // get bucket secret
         $bucket = $fileData->getBucket();
         $secret = $bucket->getPublicKey();
 
-        $data = DenyAccessUnlessCheckSignature::verify($secret, $sig);
+        // check signature and checksum that is stored in signature
+        DenyAccessUnlessCheckSignature::verifyChecksumAndSignature($secret, $sig, $request);
 
-        // check if signed params aer equal to request params
-        if ($data['bucketID'] !== $bucketId) {
-            // dump($data['bucketID'], $bucketId);
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
-        }
-        if ((int) $data['creationTime'] !== (int) $creationTime) {
-            // dump($data['creationTime'], $creationTime);
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
-        }
-        if ($data['prefix'] !== $prefix) {
-            // dump($data['prefix'], $prefix);
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Prefix change forbidden', 'blob:prefix-change-forbidden');
-        }
-        // check if request is expired
-        if ((int) $data['creationTime'] < $tooOld = strtotime('-5 min')) {
-            // dump((int) $data['creationTime'], $tooOld);
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:creationtime-too-old');
-        }
-
-        // check action/method
-        $action = $data['action'] ?? '';
-
-        $method = $request->getMethod();
-
-        if ($method !== 'POST' || $action !== 'CREATEONE') {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature not suitable', 'blob:dataprovider-signature-not-suitable');
-        }
+        // now, after check of signature and checksum it is safe to do computations
 
         // Check retentionDuration & idleRetentionDuration valid durations
-        $fileData->setRetentionDuration($data['retentionDuration'] ?? '');
+        $fileData->setRetentionDuration($retentionDuration);
         if ($bucket->getMaxRetentionDuration() < $fileData->getRetentionDuration() || !$fileData->getRetentionDuration()) {
             $fileData->setRetentionDuration((string) $bucket->getMaxRetentionDuration());
         }
@@ -96,9 +97,9 @@ final class CreateFileDataAction extends BaseBlobController
         // Set exists until time
         $fileData->setExistsUntil($fileData->getDateCreated()->add(new \DateInterval($fileData->getRetentionDuration())));
         // Set everything else...
-        $fileData->setFileName($data['fileName']);
-        $fileData->setNotifyEmail($data['notifyEmail'] ?? '');
-        $fileData->setAdditionalMetadata($data['additionalMetadata'] ?? '');
+        $fileData->setFileName($fileName);
+        $fileData->setNotifyEmail($notifyEmail);
+        $fileData->setAdditionalMetadata($additionalMetadata);
 
         // Use given service for bucket
         if (!$bucket->getService()) {
@@ -111,9 +112,7 @@ final class CreateFileDataAction extends BaseBlobController
         $hash = hash('sha256', $uploadedFile->getContent());
 
         // check hash of file
-        if ($hash !== $data['fileHash']) {
-            /** @noinspection ForgottenDebugOutputInspection */
-            // dump($data['fileHash'], $hash);
+        if ($hash !== $request->query->get('fileHash','')) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:file-hash-change-forbidden');
         }
 
@@ -140,7 +139,6 @@ final class CreateFileDataAction extends BaseBlobController
     private function generateChecksum($pathInfo, $bucketId, $creationTime, $prefix, $action, $secret): string
     {
         $url = '/blob/files/?'.'bucketID='.$bucketId.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action='.$action;
-        dump("provider: ".$url."&checksum=".hash_hmac('sha256', $url, $secret));
         return hash_hmac('sha256', $url, $secret);
     }
 }

@@ -48,7 +48,6 @@ class FileDataDataProvider extends AbstractDataProvider
     protected function getFileDataById($id, array $filters): object
     {
         $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
-        dump($id);
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
@@ -76,7 +75,11 @@ class FileDataDataProvider extends AbstractDataProvider
         if ($this->requestStack->getCurrentRequest()->getMethod() !== 'DELETE') {
             // create shareLink
             $fileData = $this->blobService->getLink($fileData);
-            //$this->blobService->saveFileData($fileData);
+
+            if ($this->requestStack->getCurrentRequest()->getMethod() === 'PUT') {
+                $fileData->setFileName($this->requestStack->getCurrentRequest()->query->get('fileName', ''));
+                $this->blobService->saveFileData($fileData);
+            }
         }
 
         return $fileData;
@@ -84,30 +87,35 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
+        // check if signature is presennt
         $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
         $bucketId = $filters['bucketID'] ?? '';
+        $prefix = $filters['prefix'] ?? '';
         assert(is_string($bucketId));
+
+        // check if bucketID is present
         if (!$bucketId) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-files-by-prefix-missing-bucketID');
         }
+
+        // check if bucketID is correct
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
         if (!$bucket) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-files-by-prefix-not-configured-bucketID');
         }
 
+        // check if signature and checksum is correct
         $secret = $bucket->getPublicKey();
-        //$this->checkChecksum($secret, $filters);
         $this->checkSignature($secret, $filters);
-
-        $prefix = $filters['prefix'] ?? '';
 
         if (!$bucket->getService()) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is not configured', 'blob:get-files-by-prefix-no-bucket-service');
         }
 
+        // get file data of bucket for current page
         $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixWithPagination($bucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
 
         // create sharelinks
@@ -118,7 +126,6 @@ class FileDataDataProvider extends AbstractDataProvider
 
             //$this->blobService->saveFileData($fileData);
         }
-        //dump($fileDatas);
 
         return $fileDatas;
     }
@@ -187,50 +194,34 @@ class FileDataDataProvider extends AbstractDataProvider
      */
     private function checkSignature(string $secret, array $filters): void
     {
+        // check if signature is present
         /** @var string */
         $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
-        // dump($sig);
         if (!$sig) {
-            // TODO remove signature from header. For now, it is supported in both url and header
-            /** @var string */
-            $sig = $this->requestStack->getCurrentRequest()->headers->get('x-dbp-signature', '');
-            if (!$sig) {
-                throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
-            }
+            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
         $bucketId = $filters['bucketID'] ?? '';
         $creationTime = $filters['creationTime'] ?? '0';
+        $action = $filters['action'] ?? '';
 
-        if (!$bucketId || !$creationTime) {
+        // check if the minimal params are present
+        if (!$bucketId || !$creationTime || !$action) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature parameter missing', 'blob:dataprovider-missing-signature-params');
         }
 
-        $data = DenyAccessUnlessCheckSignature::verify($secret, $sig);
-//        dump($data);
+        // verify signature and checksum
+        DenyAccessUnlessCheckSignature::verifyChecksumAndSignature($secret, $sig, $this->requestStack->getCurrentRequest());
 
-        // check if signed params aer equal to request params
-        if ($data['bucketID'] !== $bucketId) {
-            /* @noinspection ForgottenDebugOutputInspection */
-            // dump($data['bucketID'], $bucketId);
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
-        }
-        if ((int) $data['creationTime'] !== (int) $creationTime) {
-            /* @noinspection ForgottenDebugOutputInspection */
-            //dump($data['creationTime'], $creationTime);
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
-        }
+        // now, after the signature and checksum check it is safe to to something
+
         // check if request is expired
-        if ((int) $data['creationTime'] < $tooOld = strtotime('-5 min')) {
-            /* @noinspection ForgottenDebugOutputInspection */
-            // dump((int) $data['creationTime'], $tooOld);
+        if ((int) $creationTime < $tooOld = strtotime('-5 min')) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:creationtime-too-old');
         }
         // check action/method
         $method = $this->requestStack->getCurrentRequest()->getMethod();
-        $action = $data['action'] ?? '';
-        //echo "    FileDataProvider::checkSignature(): method=$method, action=$action\n";
 
-        // dump($method);
+        // check if the provided method and action is suitable
         if (($method === 'GET' && $action !== 'GETONE' && $action !== 'GETALL')
             || ($method === 'DELETE' && $action !== 'DELETEONE' && $action !== 'DELETEALL')
             || ($method === 'POST' && $action !== 'CREATEONE')
@@ -242,7 +233,6 @@ class FileDataDataProvider extends AbstractDataProvider
     private function generateChecksum($pathInfo, $bucketId, $creationTime, $prefix, $action, $secret, $id=''): string
     {
         $url = $pathInfo.'?bucketID='.$bucketId.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action='.$action;
-        dump("provider: ".$url."&checksum=".hash_hmac('sha256', $url, $secret));
         return hash_hmac('sha256', $url, $secret);
     }
 }

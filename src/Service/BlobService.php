@@ -156,7 +156,6 @@ class BlobService
 
     public function getLink(FileData $fileData): ?FileData
     {
-        dump($fileData);
         $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
         $fileData = $datasystemService->getLink($fileData, $fileData->getBucket()->getPolicies());
@@ -268,6 +267,7 @@ class BlobService
 
         $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $fileData->setLastAccess($time);
+        
 
         $this->em->persist($fileData);
         $this->em->flush();

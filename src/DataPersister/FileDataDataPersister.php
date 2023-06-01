@@ -38,22 +38,7 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
         // no need to check, because signature is checked by getting the data
 
         assert($data instanceof FileData);
-
-        dump("presist");
-
-        if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === 'put') {
-            $metadata = $data->getAdditionalMetadata();
-            if ($metadata) {
-                try {
-                    json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
-                } catch (\JsonException $e) {
-                    throw ApiError::withDetails(Response::HTTP_UNPROCESSABLE_ENTITY, 'The additional Metadata doesn\'t contain valid json!', 'blob:blob-service-invalid-json');
-                }
-            }
-            dump("rename");
-            $this->blobService->renameFileData($data);
-        }
-
+        
         if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === 'put_exists_until') {
             $this->blobService->increaseExistsUntil($data);
         }
