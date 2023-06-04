@@ -30,7 +30,7 @@
         "symfony/http-client": "^5.4.17",
         "symfony/monolog-bundle": "^3.8",
         "symfony/phpunit-bridge": "^5.4.17",
-        "vimeo/psalm": "^4.30.0",
+        "vimeo/psalm": "^5.0.0",
         "ext-curl": "*"
     },
     "autoload": {
