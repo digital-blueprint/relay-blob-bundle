@@ -32,7 +32,6 @@ final class CreateFileDataAction extends BaseBlobController
      */
     public function __invoke(Request $request): FileData
     {
-
         /** @var string */
         $sig = $request->query->get('sig', '');
         // check if signature is present in url
@@ -46,13 +45,15 @@ final class CreateFileDataAction extends BaseBlobController
         $creationTime = $request->query->get('creationTime', 0);
         $prefix = $request->query->get('prefix', '');
         $action = $request->query->get('action', '');
+        /** @var string */
         $fileName = $request->query->get('fileName', '');
 
         // get optional params
         $fileHash = $request->query->get('fileHash', '');
+        /** @var string */
         $notifyEmail = $request->query->get('notifyEmail', '');
-        $retentionDuration = $request->query->get('retentionDuration','');
-        $additionalMetadata = $request->query->get('additionalMetadata','');
+        $retentionDuration = $request->query->get('retentionDuration', '');
+        $additionalMetadata = $request->query->get('additionalMetadata', '');
 
         // get request method
         $method = $request->getMethod();
@@ -60,6 +61,9 @@ final class CreateFileDataAction extends BaseBlobController
         // check types of params
         assert(is_string($bucketId));
         assert(is_string($prefix));
+        assert(is_string($fileName));
+        assert(is_string($notifyEmail));
+        assert(is_string($sig));
 
         // check if the minimal needed url params are present
         if (!$bucketId || !$creationTime || !$prefix || !$action || !$fileName) {
@@ -112,7 +116,7 @@ final class CreateFileDataAction extends BaseBlobController
         $hash = hash('sha256', $uploadedFile->getContent());
 
         // check hash of file
-        if ($hash !== $request->query->get('fileHash','')) {
+        if ($hash !== $request->query->get('fileHash', '')) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:file-hash-change-forbidden');
         }
 
@@ -139,6 +143,7 @@ final class CreateFileDataAction extends BaseBlobController
     private function generateChecksum($pathInfo, $bucketId, $creationTime, $prefix, $action, $secret): string
     {
         $url = '/blob/files/?'.'bucketID='.$bucketId.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action='.$action;
+
         return hash_hmac('sha256', $url, $secret);
     }
 }

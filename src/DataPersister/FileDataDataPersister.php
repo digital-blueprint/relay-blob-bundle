@@ -7,9 +7,7 @@ namespace Dbp\Relay\BlobBundle\DataPersister;
 use ApiPlatform\Core\DataPersister\ContextAwareDataPersisterInterface;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
-use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Response;
 
 class FileDataDataPersister extends AbstractController implements ContextAwareDataPersisterInterface
 {
@@ -38,7 +36,7 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
         // no need to check, because signature is checked by getting the data
 
         assert($data instanceof FileData);
-        
+
         if (array_key_exists('item_operation_name', $context) && $context['item_operation_name'] === 'put_exists_until') {
             $this->blobService->increaseExistsUntil($data);
         }
@@ -62,6 +60,6 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
 
     private function generateChecksum($pathInfo, $validUntil, $path, $secret): string
     {
-        return hash_hmac('sha256', $pathInfo.'?'.'validUntil='.str_replace(" ", "+", $validUntil), $secret);
+        return hash_hmac('sha256', $pathInfo.'?'.'validUntil='.str_replace(' ', '+', $validUntil), $secret);
     }
 }

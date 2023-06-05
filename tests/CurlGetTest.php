@@ -67,8 +67,15 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         return true;
     }
 
-    public function generateChecksumFromFileData(FileData $fileData, string $validUntil): ?string
+    public function generateChecksumFromFileData(FileData $fileData, string $validUntil = ''): ?string
     {
+        // if no validUntil is given, use bucket link expiry time per default
+        if ($validUntil === '') {
+            $now = new \DateTimeImmutable('now', new DateTimeZone('UTC'));
+            $now = $now->add(new \DateInterval($fileData->getBucket()->getLinkExpireTime()));
+            $validUntil = $now->format('c');
+        }
+
         // create url to hash
         $contentUrl = '/blob/filesystem/'.$fileData->getIdentifier().'?validUntil='.$validUntil;
 
@@ -153,8 +160,6 @@ class CurlGetTest extends ApiTestCase
                 'action' => $action,
             ];
 
-
-
             //$token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
             $url = "/blob/files?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action";
@@ -165,7 +170,6 @@ class CurlGetTest extends ApiTestCase
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
             $url = $url.'&sig='.$token;
-            dump($url);
             $options = [
                 'headers' => [
                     'Accept' => 'application/ld+json',
@@ -233,8 +237,7 @@ class CurlGetTest extends ApiTestCase
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-
-            $requestPost = Request::create($url."&sig=".$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -270,7 +273,7 @@ class CurlGetTest extends ApiTestCase
             $creationTime = date('U');
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
-            $action = "GETALL";
+            $action = 'GETALL';
             $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=$action";
 
             $payload = [
@@ -289,7 +292,7 @@ class CurlGetTest extends ApiTestCase
             $client->getKernelBrowser()->followRedirects();
 
             /** @var \ApiPlatform\Core\Bridge\Symfony\Bundle\Test\Response $response */
-            $response = $client->request('GET', $url."&sig=".$token, $options);
+            $response = $client->request('GET', $url.'&sig='.$token, $options);
             if ($response->getStatusCode() !== 200) {
                 echo $response->getContent()."\n";
             }
@@ -323,12 +326,12 @@ class CurlGetTest extends ApiTestCase
             $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $payload = [
-                "cs" => $this->generateSha256ChecksumFromUrl($url),
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
-            $requestPost = Request::create($url."&sig=".$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
                 [
                     'file' => new UploadedFile($this->files[1]['path'], $this->files[1]['name'], $this->files[1]['mime']),
                 ],
@@ -381,7 +384,7 @@ class CurlGetTest extends ApiTestCase
             $client->getKernelBrowser()->followRedirects();
 
             /** @var Response $response */
-            $response = $client->request('GET', $url."&sig=".$token, $options);
+            $response = $client->request('GET', $url.'&sig='.$token, $options);
 
             $this->assertEquals(200, $response->getStatusCode());
 
@@ -426,7 +429,7 @@ class CurlGetTest extends ApiTestCase
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
-            $requestDelete = Request::create($url."&sig=".$token, 'DELETE', [], [], [],
+            $requestDelete = Request::create($url.'&sig='.$token, 'DELETE', [], [], [],
                 [
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
@@ -469,7 +472,7 @@ class CurlGetTest extends ApiTestCase
             ];
 
             /** @var Response $response */
-            $response = $client->request('GET', $url."&sig=".$token, $options);
+            $response = $client->request('GET', $url.'&sig='.$token, $options);
 
             $this->assertEquals(200, $response->getStatusCode());
 
@@ -505,7 +508,7 @@ class CurlGetTest extends ApiTestCase
             $creationTime = date('U');
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
-            $action = "CREATEONE";
+            $action = 'CREATEONE';
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
             $retentionDuration = $this->files[0]['retention'];
@@ -523,7 +526,7 @@ class CurlGetTest extends ApiTestCase
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
-            $requestPost = Request::create($url."&sig=".$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -559,7 +562,7 @@ class CurlGetTest extends ApiTestCase
 
             $creationTime = date('U');
 
-            $url = "/blob/files/".$this->files[0]['uuid']."?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETONE";
+            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETONE";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -578,7 +581,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertArrayHasKey($this->files[0]['uuid'], DummyFileSystemService::$fd, 'File data not in dummy store.');
             /** @var Response $response */
-            $response = $client->request('GET', $url."&sig=".$token, $options);
+            $response = $client->request('GET', $url.'&sig='.$token, $options);
 
             $this->assertEquals(200, $response->getStatusCode());
             // TODO: further checks...
@@ -607,7 +610,7 @@ class CurlGetTest extends ApiTestCase
             $client->getKernelBrowser()->followRedirects(false);
 
             /** @var Response $response */
-            $response = $client->request('DELETE', $url."&sig=".$token, $options);
+            $response = $client->request('DELETE', $url.'&sig='.$token, $options);
 
             if ($response->getStatusCode() !== 200) {
                 echo $response->getContent()."\n";
@@ -646,7 +649,7 @@ class CurlGetTest extends ApiTestCase
             $client->getKernelBrowser()->followRedirects();
 
             /** @var Response $response */
-            $response = $client->request('GET', $url."&sig=".$token, $options);
+            $response = $client->request('GET', $url.'&sig='.$token, $options);
 
             $this->assertEquals(200, $response->getStatusCode());
 
@@ -683,11 +686,10 @@ class CurlGetTest extends ApiTestCase
             $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETALL";
 
             $payload = [
-                'cs' => $this->generateSha256ChecksumFromUrl($url)
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
-
 
             $options = [
                 'headers' => [
@@ -700,7 +702,7 @@ class CurlGetTest extends ApiTestCase
             $client->getKernelBrowser()->followRedirects();
 
             /** @var Response $response */
-            $response = $client->request('GET', $url."&sig=".$token, $options);
+            $response = $client->request('GET', $url.'&sig='.$token, $options);
 
             $this->assertEquals(403, $response->getStatusCode());
         } catch (\Throwable $e) {
@@ -749,7 +751,7 @@ class CurlGetTest extends ApiTestCase
             $client->getKernelBrowser()->followRedirects();
 
             /** @var Response $response */
-            $response = $client->request('GET', $url."&sig=".$token, $options);
+            $response = $client->request('GET', $url.'&sig='.$token, $options);
 
             $this->assertEquals(404, $response->getStatusCode());
 
@@ -776,9 +778,8 @@ class CurlGetTest extends ApiTestCase
             /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects(false);
 
-
             /** @var Response $response */
-            $response = $client->request('DELETE', $url."&sig=".$token, $options);
+            $response = $client->request('DELETE', $url.'&sig='.$token, $options);
 
             $this->assertEquals(404, $response->getStatusCode());
         } catch (\Throwable $e) {
@@ -815,7 +816,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "POST file 0 with wrong action\n";
 
-            $action = "GETONE";
+            $action = 'GETONE';
 
             $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
@@ -825,7 +826,7 @@ class CurlGetTest extends ApiTestCase
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
-            $requestPost = Request::create($url."&sig=".$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -878,7 +879,6 @@ class CurlGetTest extends ApiTestCase
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
-
             $options = [
                 'headers' => [
                     'Accept' => 'application/ld+json',
@@ -890,7 +890,7 @@ class CurlGetTest extends ApiTestCase
             $client->getKernelBrowser()->followRedirects();
 
             /** @var Response $response */
-            $response = $client->request('GET', $url."&sig=".$token, $options);
+            $response = $client->request('GET', $url.'&sig='.$token, $options);
 
             $this->assertEquals(403, $response->getStatusCode());
         } catch (\Throwable $e) {
@@ -929,8 +929,7 @@ class CurlGetTest extends ApiTestCase
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
-
-            $requestDelete = Request::create($url."&sig=".$token, 'DELETE', [], [], [],
+            $requestDelete = Request::create($url.'&sig='.$token, 'DELETE', [], [], [],
                 [
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],

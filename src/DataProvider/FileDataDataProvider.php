@@ -48,6 +48,7 @@ class FileDataDataProvider extends AbstractDataProvider
     protected function getFileDataById($id, array $filters): object
     {
         $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
+        assert(is_string($sig));
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
@@ -65,7 +66,11 @@ class FileDataDataProvider extends AbstractDataProvider
         //$this->checkChecksum($secret, $filters, $id);
         $this->checkSignature($secret, $filters);
 
+        /** @var FileData $fileData */
         $fileData = $this->blobService->getFileData($id);
+
+        // check if filedata is null
+        assert(!is_null($fileData));
 
         if (!$fileData) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:fileData-not-found');
@@ -74,10 +79,17 @@ class FileDataDataProvider extends AbstractDataProvider
         //$fileData = $this->blobService->setBucket($fileData);
         if ($this->requestStack->getCurrentRequest()->getMethod() !== 'DELETE') {
             // create shareLink
+            /** @var FileData $fileData */
             $fileData = $this->blobService->getLink($fileData);
 
+            // check if filedata is null
+            assert(!is_null($fileData));
+
             if ($this->requestStack->getCurrentRequest()->getMethod() === 'PUT') {
-                $fileData->setFileName($this->requestStack->getCurrentRequest()->query->get('fileName', ''));
+                /** @var string */
+                $fileName = $this->requestStack->getCurrentRequest()->query->get('fileName', '');
+                assert(is_string($fileName));
+                $fileData->setFileName($fileName);
                 $this->blobService->saveFileData($fileData);
             }
         }
@@ -135,7 +147,7 @@ class FileDataDataProvider extends AbstractDataProvider
      *
      * @throws \JsonException
      */
-    private function checkChecksum(string $secret, array $filters, string $id=''): void
+    private function checkChecksum(string $secret, array $filters, string $id = ''): void
     {
         /** @var string */
         $cs = $this->requestStack->getCurrentRequest()->query->get('checksum', '');
@@ -230,9 +242,10 @@ class FileDataDataProvider extends AbstractDataProvider
         }
     }
 
-    private function generateChecksum($pathInfo, $bucketId, $creationTime, $prefix, $action, $secret, $id=''): string
+    private function generateChecksum($pathInfo, $bucketId, $creationTime, $prefix, $action, $secret, $id = ''): string
     {
         $url = $pathInfo.'?bucketID='.$bucketId.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action='.$action;
+
         return hash_hmac('sha256', $url, $secret);
     }
 }

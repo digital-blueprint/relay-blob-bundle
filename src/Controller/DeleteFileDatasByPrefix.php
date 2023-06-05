@@ -25,6 +25,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
     public function __invoke(Request $request)
     {
         // check if signature is present
+        /** @var string $sig */
         $sig = $request->query->get('sig', '');
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
@@ -37,6 +38,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         $action = $request->query->get('action', '');
         assert(is_string($bucketId));
         assert(is_string($prefix));
+        assert(is_string($sig));
 
         // check if the minimal required params are present
         if (!$bucketId || !$creationTime || !$prefix || !$action) {

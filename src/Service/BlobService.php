@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Service;
 
-use Cron\FieldFactory;
 use Dbp\Relay\BlobBundle\Entity\Bucket;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
@@ -154,11 +153,15 @@ class BlobService
         return $fileData;
     }
 
-    public function getLink(FileData $fileData): ?FileData
+    public function getLink(FileData $fileData): FileData
     {
         $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
         $fileData = $datasystemService->getLink($fileData, $fileData->getBucket()->getPolicies());
+
+        if (!$fileData) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:filedata-invalid');
+        }
 
         return $fileData;
     }
@@ -167,6 +170,7 @@ class BlobService
     {
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
         $cs = $datasystemService->generateChecksumFromFileData($fileData);
+
         return $cs;
     }
 
@@ -267,7 +271,6 @@ class BlobService
 
         $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $fileData->setLastAccess($time);
-        
 
         $this->em->persist($fileData);
         $this->em->flush();

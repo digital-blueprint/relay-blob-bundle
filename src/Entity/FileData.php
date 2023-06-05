@@ -229,7 +229,6 @@ class FileData
      */
     private $contentUrl;
 
-
     /**
      * @Groups({"BlobFiles:input"})
      *
