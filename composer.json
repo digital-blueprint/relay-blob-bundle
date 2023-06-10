@@ -13,11 +13,11 @@
         "symfony/mailer": "^5.4",
         "symfony/mime": "^5.4",
         "symfony/orm-pack": "^2.2",
-        "web-token/jwt-checker": "^2.1",
+        "web-token/jwt-checker": "^3.0",
         "web-token/jwt-core": "^2.1",
-        "web-token/jwt-key-mgmt": "^2.1",
-        "web-token/jwt-signature": "^2.1",
-        "web-token/jwt-signature-algorithm-hmac": "^2.1",
+        "web-token/jwt-key-mgmt": "^3.0",
+        "web-token/jwt-signature": "^3.0",
+        "web-token/jwt-signature-algorithm-hmac": "^3.0",
         "doctrine/dbal": "^3.3"
     },
     "require-dev": {
