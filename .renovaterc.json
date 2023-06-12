@@ -15,6 +15,10 @@
     {
       "matchPackagePrefixes": ["symfony/"],
       "allowedVersions": "<6"
+    },
+    {
+      "matchPackagePrefixes": ["web-token/"],
+      "allowedVersions": "<3"
     }
   ]
 }
