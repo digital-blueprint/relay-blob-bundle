@@ -9,6 +9,7 @@ use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\DataProvider\AbstractDataProvider;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -50,6 +51,7 @@ class FileDataDataProvider extends AbstractDataProvider
         $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
         assert(is_string($sig));
         if (!$sig) {
+            return $this->blobService->getFileData($id);
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
         $bucketId = $filters['bucketID'] ?? '';
@@ -62,8 +64,10 @@ class FileDataDataProvider extends AbstractDataProvider
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-files-by-prefix-not-configured-bucketID');
         }
 
+        // get secret of bucket
         $secret = $bucket->getPublicKey();
-        //$this->checkChecksum($secret, $filters, $id);
+
+        // check if signature is valid
         $this->checkSignature($secret, $filters);
 
         /** @var FileData $fileData */
@@ -85,12 +89,25 @@ class FileDataDataProvider extends AbstractDataProvider
             // check if filedata is null
             assert(!is_null($fileData));
 
+            // check if put request
             if ($this->requestStack->getCurrentRequest()->getMethod() === 'PUT') {
                 /** @var string */
                 $fileName = $this->requestStack->getCurrentRequest()->query->get('fileName', '');
                 assert(is_string($fileName));
                 $fileData->setFileName($fileName);
                 $this->blobService->saveFileData($fileData);
+            }
+
+            // check if get request
+            if ($this->requestStack->getCurrentRequest()->getMethod() === 'GET') {
+                // check if binary parameter is set
+                /** @var string */
+                $binary = $this->requestStack->getCurrentRequest()->query->get('binary', '');
+                if ($binary && $binary === '1') {
+                    $response = new RedirectResponse($fileData->getContentUrl(), 302);
+
+                    return $response;
+                }
             }
         }
 
@@ -136,7 +153,7 @@ class FileDataDataProvider extends AbstractDataProvider
             $fileData->setBucket($bucket);
             $fileData = $this->blobService->getLink($fileData);
 
-            //$this->blobService->saveFileData($fileData);
+            $fileData->setContentUrl($this->blobService->generateGETONELink($fileData));
         }
 
         return $fileDatas;
@@ -171,19 +188,13 @@ class FileDataDataProvider extends AbstractDataProvider
         }
         // check if signed params aer equal to request params
         if ($this->requestStack->getCurrentRequest()->query->get('bucketID', '') !== $bucketId) {
-            /* @noinspection ForgottenDebugOutputInspection */
-            // dump($data['bucketID'], $bucketId);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
         }
         if ((int) $this->requestStack->getCurrentRequest()->query->get('creationTime', '') !== (int) $creationTime) {
-            /* @noinspection ForgottenDebugOutputInspection */
-            //dump($data['creationTime'], $creationTime);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
         }
         // check if request is expired
         if ((int) $this->requestStack->getCurrentRequest()->query->get('creationTime', '') < $tooOld = strtotime('-5 min')) {
-            /* @noinspection ForgottenDebugOutputInspection */
-            // dump((int) $data['creationTime'], $tooOld);
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:creationtime-too-old');
         }
         // check action/method

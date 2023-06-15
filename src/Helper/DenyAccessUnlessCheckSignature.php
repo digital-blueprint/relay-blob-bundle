@@ -75,11 +75,23 @@ class DenyAccessUnlessCheckSignature
         $data = self::verify($secret, $token);
 
         // check checksum
-        if ($data['cs'] !== self::generateSha256($request)) {
+        if (!array_key_exists('cs', $data) || $data['cs'] !== self::generateSha256($request)) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum invalid', 'blob:signature-invalid');
         }
 
         return $data;
+    }
+
+    public static function checkNeededParamsAndMethod(Request $request, string $method)
+    {
+        $bucketId = $request->query->get('bucketID', '');
+        $creationTime = $request->query->get('creationTime', 0);
+        $action = $request->query->get('action', '');
+        $sig = $request->query->get('sig', '');
+        // check checksum
+        if (!$bucketId || !$creationTime || !$action || !$sig || $request->getMethod() !== $method) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketID, creationTime or action missing!', 'blob:signature-invalid');
+        }
     }
 
     public static function generateHmacSha256(Request $request, string $secret): string

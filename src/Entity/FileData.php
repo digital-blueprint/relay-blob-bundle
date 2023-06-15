@@ -84,6 +84,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *     },
  *     itemOperations={
  *         "get" = {
+ *             "method" = "GET",
  *             "path" = "/blob/files/{identifier}",
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},

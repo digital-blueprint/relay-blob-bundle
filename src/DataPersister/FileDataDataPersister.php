@@ -57,9 +57,4 @@ class FileDataDataPersister extends AbstractController implements ContextAwareDa
 
         $this->blobService->removeFileData($data);
     }
-
-    private function generateChecksum($pathInfo, $validUntil, $path, $secret): string
-    {
-        return hash_hmac('sha256', $pathInfo.'?'.'validUntil='.str_replace(' ', '+', $validUntil), $secret);
-    }
 }

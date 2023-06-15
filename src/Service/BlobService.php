@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Service;
 
+use DateTimeZone;
 use Dbp\Relay\BlobBundle\Entity\Bucket;
 use Dbp\Relay\BlobBundle\Entity\FileData;
+use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\TextUI\XmlConfiguration\File;
@@ -57,15 +59,11 @@ class BlobService
 
     public function createFileData(Request $request): FileData
     {
-        echo "    BlobService::createFileData()\n";
-
         if ($identifier = $request->get('identifier')) {
             $fileData = $this->em->find(FileData::class, $identifier);
-            echo "    load from store.\n";
         } else {
             $fileData = new FileData();
             $fileData->setIdentifier((string) Uuid::v4());
-            echo "    create new.\n";
         }
 
         /** @var ?UploadedFile $uploadedFile */
@@ -166,10 +164,39 @@ class BlobService
         return $fileData;
     }
 
-    public function getChecksumFromFileData(FileData $fileData): ?string
+    public function generateGETONELink(FileData $fileData): string
     {
-        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
-        $cs = $datasystemService->generateChecksumFromFileData($fileData);
+        if (!$fileData) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:filedata-invalid');
+        }
+
+        $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
+
+        // get time now
+        $now = new \DateTimeImmutable('now', new DateTimeZone('UTC'));
+
+        $payload = [
+            'cs' => $this->generateChecksumFromFileData($fileData, 'GETONE', $now),
+        ];
+
+        // set content url
+        $filePath = $this->generateSignedContentUrl($fileData, 'GETONE', $now, DenyAccessUnlessCheckSignature::create($fileData->getBucket()->getPublicKey(), $payload));
+
+        return $this->configurationService->getLinkUrl().substr($filePath, 1);
+    }
+
+    public function generateSignedContentUrl($fileData, $action, $now, $sig): string
+    {
+        return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&action='.$action.'&sig='.$sig;
+    }
+
+    public function generateChecksumFromFileData($fileData, $action, $now): ?string
+    {
+        // create url to hash
+        $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&action='.$action;
+
+        // create sha256 hash
+        $cs = hash('sha256', $contentUrl);
 
         return $cs;
     }

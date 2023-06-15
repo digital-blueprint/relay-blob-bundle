@@ -139,11 +139,4 @@ final class CreateFileDataAction extends BaseBlobController
 
         return $fileData;
     }
-
-    private function generateChecksum($pathInfo, $bucketId, $creationTime, $prefix, $action, $secret): string
-    {
-        $url = '/blob/files/?'.'bucketID='.$bucketId.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action='.$action;
-
-        return hash_hmac('sha256', $url, $secret);
-    }
 }
