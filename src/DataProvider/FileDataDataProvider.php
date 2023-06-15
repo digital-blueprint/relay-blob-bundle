@@ -51,7 +51,6 @@ class FileDataDataProvider extends AbstractDataProvider
         $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
         assert(is_string($sig));
         if (!$sig) {
-            return $this->blobService->getFileData($id);
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
         $bucketId = $filters['bucketID'] ?? '';
