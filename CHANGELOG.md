@@ -1,3 +1,9 @@
+# v0.1.5
+* Add concrete implementation for /files/{identifier} endpoint
+  * A request to /files/{identifier} returns metadata of the file
+  * A request to /files/{identifier} with an parameter binary=1 returns a 302 redirect to the file binary download
+* Code cleanup
+
 # v0.1.3
 * Retrieve link expire time from config 
 * GET requests are now validated by signature in url, and validUntil date
