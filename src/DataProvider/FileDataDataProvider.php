@@ -139,6 +139,9 @@ class FileDataDataProvider extends AbstractDataProvider
         $secret = $bucket->getPublicKey();
         $this->checkSignature($secret, $filters);
 
+        $binary = $filters['binary'] ?? '';
+        assert(is_string($bucketId));
+
         if (!$bucket->getService()) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is not configured', 'blob:get-files-by-prefix-no-bucket-service');
         }
@@ -152,7 +155,7 @@ class FileDataDataProvider extends AbstractDataProvider
             $fileData->setBucket($bucket);
             $fileData = $this->blobService->getLink($fileData);
 
-            $fileData->setContentUrl($this->blobService->generateGETONELink($fileData));
+            $fileData->setContentUrl($this->blobService->generateGETONELink($fileData, $binary));
         }
 
         return $fileDatas;
