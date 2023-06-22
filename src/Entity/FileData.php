@@ -336,7 +336,7 @@ class FileData
 
     public function getRetentionDuration(): ?string
     {
-        return $this->retentionDuration ?: 'P7D';
+        return $this->retentionDuration;
     }
 
     public function setRetentionDuration($retentionDuration): void

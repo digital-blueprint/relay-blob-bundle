@@ -271,7 +271,7 @@ class BlobService
     public function getAllExpiringFiledatasByBucket(string $bucketId): array
     {
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $expiring = $now->add(new \DateInterval('P30D'));
+        $expiring = $now->add(new \DateInterval($configurationService->getReportTime()));
 
         $query = $this->em
             ->getRepository(FileData::class)
