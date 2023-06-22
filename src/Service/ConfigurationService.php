@@ -80,14 +80,4 @@ class ConfigurationService
     {
         return $this->config['link_url'];
     }
-
-    public function getReportTime(): string
-    {
-        return $this->config['report_when_expiry_in'];
-    }
-
-    public function getQuotaNotifiyCap(): string
-    {
-        return $this->config['notify_when_quota_over'];
-    }
 }

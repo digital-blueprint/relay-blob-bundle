@@ -26,6 +26,11 @@ class Bucket
     /**
      * @var string
      */
+    private $reportExpiryWhenIn;
+
+    /**
+     * @var string
+     */
     private $publicKey;
 
     /**
@@ -91,6 +96,16 @@ class Bucket
     public function setName(string $name): void
     {
         $this->name = $name;
+    }
+
+    public function getReportExpiryWhenIn(): string
+    {
+        return $this->reportExpiryWhenIn;
+    }
+
+    public function setReportExpiryWhenIn(string $reportExpiryWhenIn): void
+    {
+        $this->reportExpiryWhenIn = $reportExpiryWhenIn;
     }
 
     public function getPublicKey(): string
@@ -183,6 +198,7 @@ class Bucket
         $bucket->setIdentifier((string) $config['bucket_id']);
         $bucket->setService((string) $config['service']);
         $bucket->setName((string) $config['bucket_name']);
+        $bucket->setReportExpiryWhenIn((string) $config['report_when_expiry_in']);
         $bucket->setPublicKey((string) $config['public_key']);
         $bucket->setPath((string) $config['path']);
         $bucket->setQuota((int) $config['quota']);

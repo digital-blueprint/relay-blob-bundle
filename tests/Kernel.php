@@ -68,7 +68,9 @@ class Kernel extends BaseKernel
                     'public_key' => '08d848fd868d83646778b87dd0695b10f59c78e23b286e9884504d1bb43cce93',
                     'path' => 'testpath',
                     'quota' => 500, // in MB
-                    'bucket_owner' => 'tamara.steiwnender@tugraz.at',
+                    'notify_when_quota_over' => 400, // in MB
+                    'report_when_expiry_in' => 'P62D', // in Days, 62 = two 31 day months
+                    'bucket_owner' => 'manuel.kocher@tugraz.at',
                     'max_retention_duration' => 'P1Y',
                     'link_expire_time' => 'P7D',
                     'policies' => [

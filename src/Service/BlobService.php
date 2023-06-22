@@ -164,7 +164,7 @@ class BlobService
         return $fileData;
     }
 
-    public function generateGETONELink(FileData $fileData, string $binary=''): string
+    public function generateGETONELink(FileData $fileData, string $binary = ''): string
     {
         if (!$fileData) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:filedata-invalid');
@@ -188,17 +188,17 @@ class BlobService
     public function generateSignedContentUrl($fileData, $action, $now, $binary, $sig): string
     {
         if ($binary) {
-            return '/blob/files/' . $fileData->getIdentifier() . '?bucketID=' . $fileData->getBucketID() . '&creationTime=' . strtotime($now->format('c')) . '&binary=1' . '&action=' . $action . '&sig=' . $sig;
+            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&binary=1'.'&action='.$action.'&sig='.$sig;
         } else {
-            return '/blob/files/' . $fileData->getIdentifier() . '?bucketID=' . $fileData->getBucketID() . '&creationTime=' . strtotime($now->format('c')) . '&action=' . $action . '&sig=' . $sig;
+            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&action='.$action.'&sig='.$sig;
         }
     }
 
-    public function generateChecksumFromFileData($fileData, $binary='', $action, $now): ?string
+    public function generateChecksumFromFileData($fileData, $binary = '', $action, $now): ?string
     {
         if (!$binary) {
             // create url to hash
-            $contentUrl = '/blob/files/' . $fileData->getIdentifier() . '?bucketID=' . $fileData->getBucketID() . '&creationTime=' . strtotime($now->format('c')) . '&action=' . $action;
+            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&action='.$action;
         } else {
             // create url to hash
             $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&binary=1'.'&action='.$action;
@@ -271,7 +271,7 @@ class BlobService
     public function getAllExpiringFiledatasByBucket(string $bucketId): array
     {
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $expiring = $now->add(new \DateInterval($configurationService->getReportTime()));
+        $expiring = $now->add(new \DateInterval($this->configurationService->getBucketByID($bucketId)->getReportExpiryWhenIn()));
 
         $query = $this->em
             ->getRepository(FileData::class)
@@ -361,7 +361,7 @@ class BlobService
             'quota' => $quota,
         ];
 
-        $this->sendEmail($notifyQuotaConfig, $context);
+        //$this->sendEmail($notifyQuotaConfig, $context);
     }
 
     public function sendReporting()
@@ -378,7 +378,6 @@ class BlobService
 
         $id = $bucket->getIdentifier();
         $name = $bucket->getName();
-
         $fileDatas = $this->getAllExpiringFiledatasByBucket($bucket->getIdentifier());
 
         if (!empty($fileDatas)) {
