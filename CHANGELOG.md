@@ -1,3 +1,7 @@
+# v0.1.6
+* Add "binary" option to GETALL action, which returns 302 redirect links to the binary 
+* Introduce new config options for email reporting
+
 # v0.1.5
 * Add concrete implementation for /files/{identifier} endpoint
   * A request to /files/{identifier} returns metadata of the file
