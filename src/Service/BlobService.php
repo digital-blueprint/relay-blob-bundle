@@ -176,7 +176,7 @@ class BlobService
         $now = new \DateTimeImmutable('now', new DateTimeZone('UTC'));
 
         $payload = [
-            'cs' => $this->generateChecksumFromFileData($fileData, $binary, 'GETONE', $now),
+            'cs' => $this->generateChecksumFromFileData($fileData, 'GETONE', $now, $binary),
         ];
 
         // set content url
@@ -194,7 +194,7 @@ class BlobService
         }
     }
 
-    public function generateChecksumFromFileData($fileData, $binary = '', $action, $now): ?string
+    public function generateChecksumFromFileData($fileData, $action, $now, $binary = ''): ?string
     {
         if (!$binary) {
             // create url to hash

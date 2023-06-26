@@ -67,7 +67,7 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         return true;
     }
 
-    public function generateChecksumFromFileData(FileData $fileData, string $validUntil = ''): ?string
+    public function generateChecksumFromFileData($fileData, $validUntil = ''): ?string
     {
         // if no validUntil is given, use bucket link expiry time per default
         if ($validUntil === '') {
@@ -79,8 +79,11 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         // create url to hash
         $contentUrl = '/blob/filesystem/'.$fileData->getIdentifier().'?validUntil='.$validUntil;
 
+        // create hmac sha256 keyed hash
+        //$cs = hash_hmac('sha256', $contentUrl, $fileData->getBucket()->getPublicKey());
+
         // create sha256 hash
-        $cs = hash_hmac('sha256', $contentUrl, $fileData->getBucket()->getPublicKey());
+        $cs = hash('sha256', $contentUrl);
 
         return $cs;
     }
@@ -946,25 +949,25 @@ class CurlGetTest extends ApiTestCase
         }
     }
 
-    private function generateChecksumForGet($pathInfo, $bucketId, $creationTime, $prefix, $action, $secret): string
+    public function generateChecksumFromFileData($fileData, $validUntil = ''): ?string
     {
-        return hash_hmac('sha256', $pathInfo.'?'.'bucketID='.$bucketId.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action='.$action, $secret);
-    }
+        // if no validUntil is given, use bucket link expiry time per default
+        if ($validUntil === '') {
+            $now = new \DateTimeImmutable('now', new DateTimeZone('UTC'));
+            $now = $now->add(new \DateInterval($fileData->getBucket()->getLinkExpireTime()));
+            $validUntil = $now->format('c');
+        }
 
-    public function generateChecksumFromFileData($fileData, $validUntil): ?string
-    {
         // create url to hash
         $contentUrl = '/blob/filesystem/'.$fileData->getIdentifier().'?validUntil='.$validUntil;
 
+        // create hmac sha256 keyed hash
+        //$cs = hash_hmac('sha256', $contentUrl, $fileData->getBucket()->getPublicKey());
+
         // create sha256 hash
-        $cs = hash_hmac('sha256', $contentUrl, $fileData->getBucket()->getPublicKey());
+        $cs = hash('sha256', $contentUrl);
 
         return $cs;
-    }
-
-    private function generateChecksumFromUrl($url, $secret): string
-    {
-        return hash_hmac('sha256', $url, $secret);
     }
 
     private function generateSha256ChecksumFromUrl($url): string
