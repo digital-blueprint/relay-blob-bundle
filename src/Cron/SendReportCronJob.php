@@ -27,7 +27,7 @@ class SendReportCronJob implements CronJobInterface
 
     public function getInterval(): string
     {
-        return '0 12 * * MON'; // At 12:00 on Monday.
+        return '0 14 * * MON'; // At 14:00 on Monday.
     }
 
     public function run(CronOptions $options): void
