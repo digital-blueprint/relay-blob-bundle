@@ -164,7 +164,7 @@ class BlobService
         return $fileData;
     }
 
-    public function generateGETONELink(FileData $fileData, string $binary = ''): string
+    public function generateGETONELink(string $baseUrl, FileData $fileData, string $binary = ''): string
     {
         if (!$fileData) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:filedata-invalid');
@@ -182,7 +182,7 @@ class BlobService
         // set content url
         $filePath = $this->generateSignedContentUrl($fileData, 'GETONE', $now, $binary, DenyAccessUnlessCheckSignature::create($fileData->getBucket()->getPublicKey(), $payload));
 
-        return $this->configurationService->getLinkUrl().substr($filePath, 1);
+        return $baseUrl."/".substr($filePath, 1);
     }
 
     public function generateSignedContentUrl($fileData, $action, $now, $binary, $sig): string

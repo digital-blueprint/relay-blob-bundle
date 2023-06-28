@@ -117,6 +117,7 @@ class FileDataDataProvider extends AbstractDataProvider
     {
         // check if signature is presennt
         $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
+        $baseUrl = $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost();
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
         }
@@ -155,7 +156,7 @@ class FileDataDataProvider extends AbstractDataProvider
             $fileData->setBucket($bucket);
             $fileData = $this->blobService->getLink($fileData);
 
-            $fileData->setContentUrl($this->blobService->generateGETONELink($fileData, $binary));
+            $fileData->setContentUrl($this->blobService->generateGETONELink($baseUrl, $fileData, $binary));
         }
 
         return $fileDatas;

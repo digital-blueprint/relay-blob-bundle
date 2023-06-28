@@ -80,4 +80,8 @@ class ConfigurationService
     {
         return $this->config['link_url'];
     }
+
+    public function getReportingInterval() {
+        return $this->config['reporting_interval'];
+    }
 }
