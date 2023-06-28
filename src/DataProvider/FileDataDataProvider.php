@@ -162,57 +162,6 @@ class FileDataDataProvider extends AbstractDataProvider
     }
 
     /**
-     * Check dbp-checksum on GET request.
-     *
-     * @throws \JsonException
-     */
-    private function checkChecksum(string $secret, array $filters, string $id = ''): void
-    {
-        /** @var string */
-        $cs = $this->requestStack->getCurrentRequest()->query->get('checksum', '');
-
-        if (!$cs) {
-            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
-        }
-        $bucketId = $filters['bucketID'] ?? '';
-        $creationTime = $filters['creationTime'] ?? '0';
-
-        if (!$bucketId || !$creationTime) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature parameter missing', 'blob:dataprovider-missing-signature-params');
-        }
-        $prefix = $this->requestStack->getCurrentRequest()->query->get('prefix', '');
-        $action = $this->requestStack->getCurrentRequest()->query->get('action', '');
-        $hash = $this->generateChecksum($this->requestStack->getCurrentRequest()->getPathInfo(), $bucketId, $creationTime, $prefix, $action, $secret, $id);
-
-        // check if checksum is correct
-        if ($cs !== $hash) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum is not correct', 'blob:dataprovider-signature-not-suitable');
-        }
-        // check if signed params aer equal to request params
-        if ($this->requestStack->getCurrentRequest()->query->get('bucketID', '') !== $bucketId) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketId change forbidden', 'blob:bucketid-change-forbidden');
-        }
-        if ((int) $this->requestStack->getCurrentRequest()->query->get('creationTime', '') !== (int) $creationTime) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time change forbidden', 'blob:creationtime-change-forbidden');
-        }
-        // check if request is expired
-        if ((int) $this->requestStack->getCurrentRequest()->query->get('creationTime', '') < $tooOld = strtotime('-5 min')) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:creationtime-too-old');
-        }
-        // check action/method
-        $method = $this->requestStack->getCurrentRequest()->getMethod();
-        $action = $this->requestStack->getCurrentRequest()->query->get('action', '');
-        //echo "    FileDataProvider::checkSignature(): method=$method, action=$action\n";
-
-        if (($method === 'GET' && $action !== 'GETONE' && $action !== 'GETALL')
-            || ($method === 'DELETE' && $action !== 'DELETEONE' && $action !== 'DELETEALL')
-            || ($method === 'POST' && $action !== 'CREATEONE')
-        ) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature not suitable', 'blob:dataprovider-signature-not-suitable');
-        }
-    }
-
-    /**
      * Check dbp-signature on GET request.
      *
      * @throws \JsonException
@@ -243,6 +192,7 @@ class FileDataDataProvider extends AbstractDataProvider
         if ((int) $creationTime < $tooOld = strtotime('-5 min')) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:creationtime-too-old');
         }
+
         // check action/method
         $method = $this->requestStack->getCurrentRequest()->getMethod();
 
@@ -253,12 +203,5 @@ class FileDataDataProvider extends AbstractDataProvider
         ) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature not suitable', 'blob:dataprovider-signature-not-suitable');
         }
-    }
-
-    private function generateChecksum($pathInfo, $bucketId, $creationTime, $prefix, $action, $secret, $id = ''): string
-    {
-        $url = $pathInfo.'?bucketID='.$bucketId.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action='.$action;
-
-        return hash_hmac('sha256', $url, $secret);
     }
 }

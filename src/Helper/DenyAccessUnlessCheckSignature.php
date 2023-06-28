@@ -94,15 +94,6 @@ class DenyAccessUnlessCheckSignature
         }
     }
 
-    public static function generateHmacSha256(Request $request, string $secret): string
-    {
-        // remove signature part of uri
-        $url = explode('&sig=', $request->getRequestUri());
-
-        // generate hmac sha256 hash over the uri except the signature part
-        return hash_hmac('sha256', $url[0], $secret);
-    }
-
     public static function generateSha256(Request $request): string
     {
         // remove signature part of uri
