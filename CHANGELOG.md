@@ -1,3 +1,9 @@
+# v0.1.7
+* Move reporting interval to bucket config
+* Remove unnecessary config options (config cleanup)
+* Add more requires and default values in the config
+* Code cleanup
+
 # v0.1.6
 * Add "binary" option to GETALL action, which returns 302 redirect links to the binary 
 * Introduce new config options for email reporting
