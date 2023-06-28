@@ -59,6 +59,7 @@ class Kernel extends BaseKernel
         $container->extension('dbp_relay_blob', [
             'database_url' => 'sqlite:///var/dbp_relay_blob_test.db',
             'link_url' => 'http://127.0.0.1:8000/',
+            'reporting_interval' => '0 9 * * MON',
 //            'database_url' => 'sqlite:///:memory:',
             'buckets' => [
                 'test_bucket' => [

@@ -34,7 +34,7 @@ class SendReportCronJob implements CronJobInterface
 
     public function getInterval(): string
     {
-        return $this->configService->getReportingInterval();; // At 14:00 on Monday.
+        return $this->configService->getReportingInterval(); // At 14:00 on Monday.
     }
 
     public function run(CronOptions $options): void

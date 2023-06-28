@@ -182,7 +182,7 @@ class BlobService
         // set content url
         $filePath = $this->generateSignedContentUrl($fileData, 'GETONE', $now, $binary, DenyAccessUnlessCheckSignature::create($fileData->getBucket()->getPublicKey(), $payload));
 
-        return $baseUrl."/".substr($filePath, 1);
+        return $baseUrl.'/'.substr($filePath, 1);
     }
 
     public function generateSignedContentUrl($fileData, $action, $now, $binary, $sig): string
