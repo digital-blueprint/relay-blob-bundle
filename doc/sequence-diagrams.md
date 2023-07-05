@@ -6,7 +6,7 @@ Storing and retrieving files from a *blob* storage service requires some well de
 
 On page *ABC* the user want to store a file in the context of the page.
 
-```mermaidjs
+```mermaid
 sequenceDiagram
     autonumber
     title: Page ABC
@@ -27,7 +27,7 @@ sequenceDiagram
 
 On page *DEF* the user wants to get a list of all files in the context of this page.
 
-```mermaidjs
+```mermaid
 sequenceDiagram
     autonumber
     title: Page DEF
