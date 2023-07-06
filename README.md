@@ -57,9 +57,10 @@ dbp_relay_blob:
       service: 'Dbp\Relay\BlobConnectorFilesystemBundle\Service\FilesystemService' # The path to a dbp relay blob connector service
       bucket_id: '1234' # A given id for a bucket
       bucket_name: 'Test bucket' # friendly name of the bucket
-      public_key: '12345' # public key for signed request
-      path: 'testpath' # path were files should be placed on the filesystem
+      key: '12345' # public key for signed request
       quota: 500 # Max quota in MB
+      notify_when_quota_over: 70 # percent of quota when the bucket owner should be notified that the storage is running out
+      report_when_expiry_in: 'P30D' # duration of how much in advance a bucket owner or user should be warned about the deletion of files
       bucket_owner: 'tamara.steiwnender@tugraz.at' # Email who will be notified when quota is reached
       max_retention_duration: 'P1Y' # Max retention duration of files in ISO 8601
       link_expire_time: 'P7D' # Max expire time of sharelinks in ISO 8601

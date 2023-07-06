@@ -14,8 +14,7 @@ parameters:
           service: 'Dbp\Relay\BlobConnectorFilesystemBundle\Service\FilesystemService' # service implementation of the installed connector 
           bucket_id: '4242' # ID of bucket 
           bucket_name: 'Bucket Name'
-          public_key: '<your-key>' # should be at least 256 bit (hex encoded)
-          path: '<subpath-where-files-get-stored>'
+          key: '<your-key>' # should be at least 256 bit (hex encoded)
           quota: 500 # in MB
           notify_when_quota_over: 70 # in percent of the quota
           report_when_expiry_in: 'P30D' # in Days
