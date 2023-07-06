@@ -24,6 +24,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
 
     public function __invoke(Request $request)
     {
+        dump("DELETE ALL");
         // check if signature is present
         /** @var string $sig */
         $sig = $request->query->get('sig', '');
@@ -42,7 +43,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
 
         // check if the minimal required params are present
         if (!$bucketId || !$creationTime || !$prefix || !$action) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot checked', 'blob:delete-files-per-prefix-unset-sig-params');
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot be checked', 'blob:delete-files-per-prefix-unset-sig-params');
         }
 
         // check if bucketID is correct
@@ -52,7 +53,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         }
 
         // verify signature and checksum
-        $secret = $bucket->getPublicKey();
+        $secret = $bucket->getKey();
         $data = DenyAccessUnlessCheckSignature::verifyChecksumAndSignature($secret, $sig, $request);
 
         // now, after checksum and signature check, it is safe to do stuff

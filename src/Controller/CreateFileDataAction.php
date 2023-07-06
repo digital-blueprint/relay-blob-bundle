@@ -85,7 +85,7 @@ final class CreateFileDataAction extends BaseBlobController
 
         // get bucket secret
         $bucket = $fileData->getBucket();
-        $secret = $bucket->getPublicKey();
+        $secret = $bucket->getKey();
 
         // check signature and checksum that is stored in signature
         DenyAccessUnlessCheckSignature::verifyChecksumAndSignature($secret, $sig, $request);

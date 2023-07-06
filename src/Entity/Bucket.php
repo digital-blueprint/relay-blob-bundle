@@ -108,24 +108,14 @@ class Bucket
         $this->reportExpiryWhenIn = $reportExpiryWhenIn;
     }
 
-    public function getPublicKey(): string
+    public function getKey(): string
     {
-        return $this->publicKey;
+        return $this->key;
     }
 
-    public function setPublicKey(string $publicKey): void
+    public function setKey(string $key): void
     {
-        $this->publicKey = $publicKey;
-    }
-
-    public function getPath(): string
-    {
-        return $this->path;
-    }
-
-    public function setPath(string $path): void
-    {
-        $this->path = $path;
+        $this->key = $key;
     }
 
     public function getQuota(): int
@@ -199,8 +189,7 @@ class Bucket
         $bucket->setService((string) $config['service']);
         $bucket->setName((string) $config['bucket_name']);
         $bucket->setReportExpiryWhenIn((string) $config['report_when_expiry_in']);
-        $bucket->setPublicKey((string) $config['public_key']);
-        $bucket->setPath((string) $config['path']);
+        $bucket->setKey((string) $config['key']);
         $bucket->setQuota((int) $config['quota']);
         $bucket->setMaxRetentionDuration((string) $config['max_retention_duration']);
         $bucket->setLinkExpireTime((string) $config['link_expire_time']);

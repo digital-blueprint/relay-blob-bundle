@@ -59,7 +59,11 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *                 "summary" = "Get the fileshares of a specific bucket with a specific prefix",
  *                 "parameters" = {
  *                     {"name" = "bucketID", "in" = "query", "description" = "Identifier of bucket", "type" = "string", "required" = true, "example" = "1234"},
- *                     {"name" = "prefix", "in" = "query", "description" = "Prefix of a file collection", "type" = "string", "required" = true, "example" = "my-prefix/my-subprefix"}
+ *                     {"name" = "creationTime", "in" = "query", "description" = "Current timestamp in seconds", "type" = "string", "required" = true, "example" = "1688636927"},
+ *                     {"name" = "prefix", "in" = "query", "description" = "Prefix of a file collection", "type" = "string", "required" = true, "example" = "my-prefix/my-subprefix"},
+ *                     {"name" = "action", "in" = "query", "description" = "Action that gets executed", "type" = "string", "required" = true, "example" = "GETALL"},
+ *                     {"name" = "binary", "in" = "query", "description" = "If the returned link redirects to the binary or not", "type" = "string", "required" = false, "example" = "1"},
+ *                     {"name" = "sig", "in" = "query", "description" = "Signature containing the checksum required for the check", "type" = "string", "required" = true, "example" = ""}
  *                 }
  *             }
  *         },
@@ -77,7 +81,10 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *                 "summary" = "Deletes the files of a specific bucket with a specific prefix",
  *                 "parameters" = {
  *                     {"name" = "bucketID", "in" = "query", "description" = "Identifier of bucket", "type" = "string", "required" = true, "example" = "1234"},
- *                     {"name" = "prefix", "in" = "query", "description" = "Prefix of a file collection", "type" = "string", "required" = true, "example" = "my-path/my-subpath"}
+ *                     {"name" = "creationTime", "in" = "query", "description" = "Current timestamp in seconds", "type" = "string", "required" = true, "example" = "1688636927"},
+ *                     {"name" = "prefix", "in" = "query", "description" = "Prefix of a file collection", "type" = "string", "required" = true, "example" = "my-prefix/my-subprefix"},
+ *                     {"name" = "action", "in" = "query", "description" = "Action that gets executed", "type" = "string", "required" = true, "example" = "DELTEALL"},
+ *                     {"name" = "sig", "in" = "query", "description" = "Signature containing the checksum required for the check", "type" = "string", "required" = true, "example" = ""}
  *                 }
  *             }
  *         }
@@ -88,12 +95,30 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *             "path" = "/blob/files/{identifier}",
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},
+ *                 "summary" = "Get the fileshare of a specific bucket with a specific prefix and a specific id",
+ *                 "parameters" = {
+ *                     {"name" = "bucketID", "in" = "query", "description" = "Identifier of bucket", "type" = "string", "required" = true, "example" = "1234"},
+ *                     {"name" = "creationTime", "in" = "query", "description" = "Current timestamp in seconds", "type" = "string", "required" = true, "example" = "1688636927"},
+ *                     {"name" = "prefix", "in" = "query", "description" = "Prefix of a file collection", "type" = "string", "required" = true, "example" = "my-prefix/my-subprefix"},
+ *                     {"name" = "action", "in" = "query", "description" = "Action that gets executed", "type" = "string", "required" = true, "example" = "GETONE"},
+ *                     {"name" = "binary", "in" = "query", "description" = "If the returned link redirects to the binary or not", "type" = "string", "required" = false, "example" = "1"},
+ *                     {"name" = "sig", "in" = "query", "description" = "Signature containing the checksum required for the check", "type" = "string", "required" = true, "example" = ""}
+ *                 }
  *             },
  *         },
  *         "put" = {
  *             "path" = "/blob/files/{identifier}",
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},
+ *                 "summary" = "Change the filename of a fileshare of a specific bucket with a specific prefix and a specific id",
+ *                 "parameters" = {
+ *                     {"name" = "bucketID", "in" = "query", "description" = "Identifier of bucket", "type" = "string", "required" = true, "example" = "1234"},
+ *                     {"name" = "creationTime", "in" = "query", "description" = "Current timestamp in seconds", "type" = "string", "required" = true, "example" = "1688636927"},
+ *                     {"name" = "prefix", "in" = "query", "description" = "Prefix of a file collection", "type" = "string", "required" = true, "example" = "my-prefix/my-subprefix"},
+ *                     {"name" = "action", "in" = "query", "description" = "Action that gets executed", "type" = "string", "required" = true, "example" = "PUTONE"},
+ *                     {"name" = "fileName", "in" = "query", "description" = "New filename", "type" = "string", "required" = true, "example" = ""},
+ *                     {"name" = "sig", "in" = "query", "description" = "Signature containing the checksum required for the check", "type" = "string", "required" = true, "example" = ""}
+ *                 }
  *             },
  *             "denormalization_context" = {
  *                 "jsonld_embed_context" = true,
@@ -117,6 +142,14 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *             "path" = "/blob/files/{identifier}",
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},
+ *                 "summary" = "Delete a fileshare of a specific bucket with a specific prefix and a specific id",
+ *                 "parameters" = {
+ *                     {"name" = "bucketID", "in" = "query", "description" = "Identifier of bucket", "type" = "string", "required" = true, "example" = "1234"},
+ *                     {"name" = "creationTime", "in" = "query", "description" = "Current timestamp in seconds", "type" = "string", "required" = true, "example" = "1688636927"},
+ *                     {"name" = "prefix", "in" = "query", "description" = "Prefix of a file collection", "type" = "string", "required" = true, "example" = "my-prefix/my-subprefix"},
+ *                     {"name" = "action", "in" = "query", "description" = "Action that gets executed", "type" = "string", "required" = true, "example" = "DELETEONE"},
+ *                     {"name" = "sig", "in" = "query", "description" = "Signature containing the checksum required for the check", "type" = "string", "required" = true, "example" = ""}
+ *                 }
  *             },
  *             "denormalization_context" = {
  *                 "jsonld_embed_context" = true,

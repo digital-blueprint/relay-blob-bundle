@@ -64,7 +64,7 @@ class FileDataDataProvider extends AbstractDataProvider
         }
 
         // get secret of bucket
-        $secret = $bucket->getPublicKey();
+        $secret = $bucket->getKey();
 
         // check if signature is valid
         $this->checkSignature($secret, $filters);
@@ -123,11 +123,22 @@ class FileDataDataProvider extends AbstractDataProvider
         }
         $bucketId = $filters['bucketID'] ?? '';
         $prefix = $filters['prefix'] ?? '';
+        $creationTime = $filters['creationTime'] ?? '';
+        $action = $filters['action'] ?? '';
         assert(is_string($bucketId));
+        assert(is_string($prefix));
+        assert(is_string($creationTime));
+        assert(is_string($action));
 
         // check if bucketID is present
         if (!$bucketId) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-files-by-prefix-missing-bucketID');
+        }
+        if (!$creationTime) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'creationTime is missing', 'blob:get-files-by-prefix-missing-bucketID');
+        }
+        if (!$action) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'action is missing', 'blob:get-files-by-prefix-missing-bucketID');
         }
 
         // check if bucketID is correct
@@ -137,7 +148,7 @@ class FileDataDataProvider extends AbstractDataProvider
         }
 
         // check if signature and checksum is correct
-        $secret = $bucket->getPublicKey();
+        $secret = $bucket->getKey();
         $this->checkSignature($secret, $filters);
 
         $binary = $filters['binary'] ?? '';
@@ -200,6 +211,7 @@ class FileDataDataProvider extends AbstractDataProvider
         // check if the provided method and action is suitable
         if (($method === 'GET' && $action !== 'GETONE' && $action !== 'GETALL')
             || ($method === 'DELETE' && $action !== 'DELETEONE' && $action !== 'DELETEALL')
+            || ($method === 'PUT' && $action !== 'PUTONE')
             || ($method === 'POST' && $action !== 'CREATEONE')
         ) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature not suitable', 'blob:dataprovider-signature-not-suitable');
