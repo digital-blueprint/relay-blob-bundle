@@ -62,6 +62,13 @@ class FileDataDataProvider extends AbstractDataProvider
         if (!$bucket) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-files-by-prefix-not-configured-bucketID');
         }
+        $method = $this->requestStack->getCurrentRequest()->getMethod();
+        $action = $filters['action'] ?? '';
+        assert(is_string($action));
+
+        if (!$action || ($method == 'GET' && $action !== 'GETONE') || ($method == 'DELETE' && $action !== 'DELETEONE')) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Action is missing or wrong', 'blob:get-files-by-prefix-missing-bucketID');
+        }
 
         // get secret of bucket
         $secret = $bucket->getKey();
