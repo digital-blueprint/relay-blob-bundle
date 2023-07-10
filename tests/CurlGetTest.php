@@ -1012,6 +1012,114 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
+     * Integration test: get one with wrong action.
+     */
+    public function testPutOneWithWrongAction(): void
+    {
+        try {
+            $client = static::createClient();
+            /** @var BlobService $blobService */
+            $blobService = $client->getContainer()->get(BlobService::class);
+            $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getKey();
+            $bucketId = $bucket->getIdentifier();
+            $creationTime = date('U');
+            $prefix = 'playground';
+
+            // =======================================================
+            // PUT one file
+            // =======================================================
+            echo "PUT one file with wrong actions\n";
+
+            $actions = ['GETALL', 'DELETEONE', 'DELETEALL', 'GETONE', 'CREATEONE'];
+
+            // =======================================================
+            // POST a file
+            // =======================================================
+            echo "POST file (0)\n";
+
+            $creationTime = date('U');
+            $prefix = 'playground';
+            $fileName = $this->files[0]['name'];
+            $fileHash = $this->files[0]['hash'];
+            $notifyEmail = 'eugen.neuber@tugraz.at';
+            $retentionDuration = $this->files[0]['retention'];
+            $action = 'CREATEONE';
+
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+
+            $data = [
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+
+            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+                [
+                    'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
+                ],
+                [
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+                "HTTP_ACCEPT: application/ld+json\r\n"
+                .'file='.base64_encode($this->files[0]['content'])
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+            );
+            $c = new CreateFileDataAction($blobService);
+            try {
+                $fileData = $c->__invoke($requestPost);
+            } catch (\Throwable $e) {
+                echo $e->getTraceAsString()."\n";
+                $this->fail($e->getMessage());
+            }
+
+            $this->assertNotNull($fileData);
+            $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
+            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertTrue(uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
+            $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
+            $this->files[0]['uuid'] = $fileData->getIdentifier();
+            $this->files[0]['created'] = $fileData->getDateCreated();
+            $this->files[0]['until'] = $fileData->getExistsUntil();
+
+            // =======================================================
+            // PUT one file with wrong action
+            // =======================================================
+
+            foreach ($actions as $action) {
+                echo "PUT one file with wrong action ".$action."\n";
+                $url = "/blob/files/".$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=".$action."&fileName=test1.txt";
+
+                $payload = [
+                    'cs' => $this->generateSha256ChecksumFromUrl($url),
+                ];
+
+                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+                $options = [
+                    'headers' => [
+                        'Accept' => 'application/ld+json',
+                        'HTTP_ACCEPT' => 'application/ld+json',
+                    ],
+                ];
+
+                /* @noinspection PhpInternalEntityUsedInspection */
+                $client->getKernelBrowser()->followRedirects();
+
+                /** @var Response $response */
+                $response = $client->request('PUT', $url . '&sig=' . $token, $options); 
+
+                $this->assertEquals(403, $response->getStatusCode());
+            }
+        } catch (\Throwable $e) {
+            echo $e->getTraceAsString()."\n";
+            $this->fail($e->getMessage());
+        }
+    }
+
+    /**
      * Integration test: delete all with wrong action.
      */
     public function testDeleteAllWithWrongAction(): void
