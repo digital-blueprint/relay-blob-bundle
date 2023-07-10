@@ -31,7 +31,7 @@ class Bucket
     /**
      * @var string
      */
-    private $publicKey;
+    private $key;
 
     /**
      * @var string

@@ -24,7 +24,6 @@ class DeleteFileDatasByPrefix extends BaseBlobController
 
     public function __invoke(Request $request)
     {
-        dump("DELETE ALL");
         // check if signature is present
         /** @var string $sig */
         $sig = $request->query->get('sig', '');
