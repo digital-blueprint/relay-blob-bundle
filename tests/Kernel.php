@@ -66,8 +66,7 @@ class Kernel extends BaseKernel
                     'service' => 'Dbp\Relay\BlobBundle\Tests\DummyFileSystemService',
                     'bucket_id' => '1234',
                     'bucket_name' => 'Test bucket',
-                    'public_key' => '08d848fd868d83646778b87dd0695b10f59c78e23b286e9884504d1bb43cce93',
-                    'path' => 'testpath',
+                    'key' => '08d848fd868d83646778b87dd0695b10f59c78e23b286e9884504d1bb43cce93',
                     'quota' => 500, // in MB
                     'notify_when_quota_over' => 400, // in MB
                     'report_when_expiry_in' => 'P62D', // in Days, 62 = two 31 day months
