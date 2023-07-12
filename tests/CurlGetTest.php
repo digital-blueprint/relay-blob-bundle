@@ -1112,7 +1112,7 @@ class CurlGetTest extends ApiTestCase
                 /** @var Response $response */
                 $response = $client->request('PUT', $url.'&sig='.$token, $options);
 
-                $this->assertEquals(403, $response->getStatusCode());
+                $this->assertEquals(400, $response->getStatusCode());
             }
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
