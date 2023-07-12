@@ -66,7 +66,7 @@ class FileDataDataProvider extends AbstractDataProvider
         $action = $filters['action'] ?? '';
         assert(is_string($action));
 
-        if (!$action || ($method == 'GET' && $action !== 'GETONE') || ($method == 'DELETE' && $action !== 'DELETEONE')) {
+        if (!$action || ($method === 'GET' && $action !== 'GETONE') || ($method === 'DELETE' && $action !== 'DELETEONE')) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Action is missing or wrong', 'blob:get-files-by-prefix-missing-bucketID');
         }
 

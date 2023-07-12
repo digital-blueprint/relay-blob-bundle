@@ -981,8 +981,8 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
 
             foreach ($actions as $action) {
-                echo "GET one file with wrong action ".$action."\n";
-                $url = "/blob/files/".$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&action=".$action;
+                echo 'GET one file with wrong action '.$action.'\n';
+                $url = '/blob/files/".$fileData->getIdentifier()'.'?bucketID=$bucketId&creationTime=$creationTime&action='.$action;
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1001,7 +1001,7 @@ class CurlGetTest extends ApiTestCase
                 $client->getKernelBrowser()->followRedirects();
 
                 /** @var Response $response */
-                $response = $client->request('GET', $url . '&sig=' . $token, $options);
+                $response = $client->request('GET', $url.'&sig='.$token, $options);
 
                 $this->assertEquals(400, $response->getStatusCode());
             }
@@ -1089,8 +1089,8 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
 
             foreach ($actions as $action) {
-                echo "PUT one file with wrong action ".$action."\n";
-                $url = "/blob/files/".$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=".$action."&fileName=test1.txt";
+                echo 'PUT one file with wrong action '.$action."\n";
+                $url = '/blob/files/'.$fileData->getIdentifier().'?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action='.$action.'&fileName=test1.txt';
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1102,6 +1102,7 @@ class CurlGetTest extends ApiTestCase
                     'headers' => [
                         'Accept' => 'application/ld+json',
                         'HTTP_ACCEPT' => 'application/ld+json',
+                        'Content-Type' => 'application/json',
                     ],
                 ];
 
@@ -1109,7 +1110,7 @@ class CurlGetTest extends ApiTestCase
                 $client->getKernelBrowser()->followRedirects();
 
                 /** @var Response $response */
-                $response = $client->request('PUT', $url . '&sig=' . $token, $options); 
+                $response = $client->request('PUT', $url.'&sig='.$token, $options);
 
                 $this->assertEquals(403, $response->getStatusCode());
             }
