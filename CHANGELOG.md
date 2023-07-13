@@ -1,3 +1,11 @@
+# v0.1.8
+* Introduce new config options `notify_when_quota_over` and `report_when_expiry_in`
+* Rename config option `public_key` to `key` and remove config option `path`
+* Add first version of documentation, primarly endpoint documentation
+* Introduce better error handling and response codes
+* Add missing openapi_context for better api frontend usability
+* Add more testcases
+
 # v0.1.7
 * Move reporting interval to bucket config
 * Remove unnecessary config options (config cleanup)
