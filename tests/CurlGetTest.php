@@ -981,7 +981,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
 
             foreach ($actions as $action) {
-                echo 'GET one file with wrong action '.$action.'\n';
+                echo 'GET one file with wrong action '.$action."\n";
                 $url = '/blob/files/".$fileData->getIdentifier()'.'?bucketID=$bucketId&creationTime=$creationTime&action='.$action;
 
                 $payload = [
@@ -1008,7 +1008,9 @@ class CurlGetTest extends ApiTestCase
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
+            echo "\n";
         }
+        echo "\n";
     }
 
     /**
@@ -1090,7 +1092,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($actions as $action) {
                 echo 'PUT one file with wrong action '.$action."\n";
-                $url = '/blob/files/'.$fileData->getIdentifier().'?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action='.$action.'&fileName=test1.txt';
+                $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1111,13 +1113,15 @@ class CurlGetTest extends ApiTestCase
 
                 /** @var Response $response */
                 $response = $client->request('PUT', $url.'&sig='.$token, $options);
-
-                $this->assertEquals(400, $response->getStatusCode());
+                echo $url."\n";
+                $this->assertEquals(403, $response->getStatusCode());
             }
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
+            echo "\n";
         }
+        echo "\n";
     }
 
     /**
