@@ -1228,7 +1228,7 @@ class CurlGetTest extends ApiTestCase
             $response = $client->request('PUT', $url.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
 
-            $action = "GETONE";
+            $action = 'GETONE';
             $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&action=$action";
 
             $payload = [
@@ -1253,7 +1253,6 @@ class CurlGetTest extends ApiTestCase
             $this->assertEquals(200, $response->getStatusCode());
             // check if fileName was indeed changed
             $this->assertEquals(json_decode($response->getContent())->fileName, $newFileName);
-
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
@@ -1278,7 +1277,6 @@ class CurlGetTest extends ApiTestCase
             $bucketId = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
-
 
             $actions = ['GETALL', 'DELETEONE', 'DELETEALL', 'GETONE', 'CREATEONE', 'PUTONE'];
             $methods = ['GET', 'POST', 'DELETE', 'PUT'];
@@ -1337,7 +1335,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($methods as $method) {
                 foreach ($actions as $action) {
-                    if ($method === substr($action, 0, strlen($method)) || ($method === 'POST' && substr($action, 0, 6) === "CREATE")) {
+                    if ($method === substr($action, 0, strlen($method)) || ($method === 'POST' && substr($action, 0, 6) === 'CREATE')) {
                         continue;
                     }
                     echo $method.' file with wrong action '.$action."\n";
@@ -1361,7 +1359,7 @@ class CurlGetTest extends ApiTestCase
                     $client->getKernelBrowser()->followRedirects();
 
                     /** @var Response $response */
-                    $response = $client->request($method, $url . '&sig=' . $token, $options);
+                    $response = $client->request($method, $url.'&sig='.$token, $options);
                     $this->assertEquals(405, $response->getStatusCode());
                 }
             }
@@ -1374,7 +1372,7 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test: other prefix should remain when deleting one prefix
+     * Integration test: other prefix should remain when deleting one prefix.
      */
     public function testDeletePrefixOtherPrefixShouldRemain(): void
     {
@@ -1394,7 +1392,7 @@ class CurlGetTest extends ApiTestCase
             // POST two files
             // =======================================================
 
-            for ($i = 0; $i < 2; $i++) {
+            for ($i = 0; $i < 2; ++$i) {
                 $creationTime = date('U');
                 $fileName = $this->files[$i]['name'];
                 $fileHash = $this->files[$i]['hash'];
@@ -1410,7 +1408,7 @@ class CurlGetTest extends ApiTestCase
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-                $requestPost = Request::create($url . '&sig=' . $token, 'POST', [], [],
+                $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
                     [
                         'file' => new UploadedFile($this->files[$i]['path'], $this->files[$i]['name'], $this->files[$i]['mime']),
                     ],
@@ -1418,14 +1416,14 @@ class CurlGetTest extends ApiTestCase
                         'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                     "HTTP_ACCEPT: application/ld+json\r\n"
-                    . 'file=' . base64_encode($this->files[$i]['content'])
-                    . "&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketId"
+                    .'file='.base64_encode($this->files[$i]['content'])
+                    ."&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketId"
                 );
                 $c = new CreateFileDataAction($blobService);
                 try {
                     $fileData = $c->__invoke($requestPost);
                 } catch (\Throwable $e) {
-                    echo $e->getTraceAsString() . "\n";
+                    echo $e->getTraceAsString()."\n";
                     $this->fail($e->getMessage());
                 }
 
@@ -1532,7 +1530,7 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test: param binary=1 should lead to a 302 redirect
+     * Integration test: param binary=1 should lead to a 302 redirect.
      */
     public function testRedirectToBinary(): void
     {
@@ -1552,7 +1550,7 @@ class CurlGetTest extends ApiTestCase
             // POST two files
             // =======================================================
 
-            for ($i = 0; $i < 2; $i++) {
+            for ($i = 0; $i < 2; ++$i) {
                 $creationTime = date('U');
                 $fileName = $this->files[$i]['name'];
                 $fileHash = $this->files[$i]['hash'];
@@ -1568,7 +1566,7 @@ class CurlGetTest extends ApiTestCase
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-                $requestPost = Request::create($url . '&sig=' . $token, 'POST', [], [],
+                $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
                     [
                         'file' => new UploadedFile($this->files[$i]['path'], $this->files[$i]['name'], $this->files[$i]['mime']),
                     ],
@@ -1576,14 +1574,14 @@ class CurlGetTest extends ApiTestCase
                         'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                     "HTTP_ACCEPT: application/ld+json\r\n"
-                    . 'file=' . base64_encode($this->files[$i]['content'])
-                    . "&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketId"
+                    .'file='.base64_encode($this->files[$i]['content'])
+                    ."&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketId"
                 );
                 $c = new CreateFileDataAction($blobService);
                 try {
                     $fileData = $c->__invoke($requestPost);
                 } catch (\Throwable $e) {
-                    echo $e->getTraceAsString() . "\n";
+                    echo $e->getTraceAsString()."\n";
                     $this->fail($e->getMessage());
                 }
 
