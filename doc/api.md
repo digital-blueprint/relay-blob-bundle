@@ -14,6 +14,7 @@ The bundle provides GET endpoints for retrieving file metadata, file binary data
 | `/blob/files`              | POST   | Used to create a file                                                     | `bucketID`, `creationTime`, `prefix`, `action`, `fileName`, `sig` | `notifyEmail`, `retentionDuration`, `additionalMetadata`, `fileHash` | `file`, `prefix`, `fileName`, `bucketID`  |
 | `/blob/files`              | GET    | Used to GET a collection of files                                         | `bucketID`, `creationTime`, `prefix`, `sig`                       | `binary`                                                             | -                                         |
 | `/blob/files/{identifier}` | DELETE | Used to DELETE the file with given {id}                                   | `bucketID`, `creationTime`, `prefix`, `action`, `sig`             |                                                                      | -                                         |
+| `/blob/files`              | DELETE | Used to DELETE the file with given prefix                                 | `bucketID`, `creationTime`, `prefix`, `action`, `sig`             |                                                                      | -                                         |
 
 In general, the parameters have to be given in the specified order while optional parameters can be selectively left out for the computation of the checksum. The only exception is the `sig` parameter, which always has to be the last parameter.
 

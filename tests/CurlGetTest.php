@@ -1014,7 +1014,7 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test: get one with wrong action.
+     * Integration test: put one with wrong action.
      */
     public function testPutOneWithWrongAction(): void
     {
@@ -1125,7 +1125,145 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test: get one with wrong action.
+     * Integration test: put one.
+     */
+    public function testPutOne(): void
+    {
+        try {
+            $client = static::createClient();
+            /** @var BlobService $blobService */
+            $blobService = $client->getContainer()->get(BlobService::class);
+            $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getKey();
+            $bucketId = $bucket->getIdentifier();
+            $creationTime = date('U');
+            $prefix = 'playground';
+
+            // =======================================================
+            // PUT one file
+            // =======================================================
+            echo "PUT one file\n";
+
+            $actions = ['GETALL', 'DELETEONE', 'DELETEALL', 'GETONE', 'CREATEONE'];
+
+            // =======================================================
+            // POST a file
+            // =======================================================
+            echo "POST file (0)\n";
+
+            $creationTime = date('U');
+            $prefix = 'playground';
+            $fileName = $this->files[0]['name'];
+            $fileHash = $this->files[0]['hash'];
+            $notifyEmail = 'eugen.neuber@tugraz.at';
+            $retentionDuration = $this->files[0]['retention'];
+            $action = 'CREATEONE';
+
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+
+            $data = [
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+
+            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+                [
+                    'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
+                ],
+                [
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+                "HTTP_ACCEPT: application/ld+json\r\n"
+                .'file='.base64_encode($this->files[0]['content'])
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+            );
+            $c = new CreateFileDataAction($blobService);
+            try {
+                $fileData = $c->__invoke($requestPost);
+            } catch (\Throwable $e) {
+                echo $e->getTraceAsString()."\n";
+                $this->fail($e->getMessage());
+            }
+
+            $this->assertNotNull($fileData);
+            $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
+            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertTrue(uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
+            $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
+            $this->files[0]['uuid'] = $fileData->getIdentifier();
+            $this->files[0]['created'] = $fileData->getDateCreated();
+            $this->files[0]['until'] = $fileData->getExistsUntil();
+
+            // =======================================================
+            // PUT one file
+            // =======================================================
+            $action = 'PUTONE';
+            $newFileName = 'Test1.php';
+            echo 'PUT one file with action '.$action."\n";
+
+            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$newFileName";
+
+            $payload = [
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                    'Content-Type' => 'application/json',
+                ],
+                'body' => '{}',
+            ];
+
+            /* @noinspection PhpInternalEntityUsedInspection */
+            $client->getKernelBrowser()->followRedirects();
+
+            /** @var Response $response */
+            $response = $client->request('PUT', $url.'&sig='.$token, $options);
+            $this->assertEquals(200, $response->getStatusCode());
+
+            $action = "GETONE";
+            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&action=$action";
+
+            $payload = [
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                    'Content-Type' => 'application/json',
+                ],
+            ];
+
+            /* @noinspection PhpInternalEntityUsedInspection */
+            $client->getKernelBrowser()->followRedirects();
+
+            /** @var Response $response */
+            $response = $client->request('GET', $url.'&sig='.$token, $options);
+            $this->assertEquals(200, $response->getStatusCode());
+            // check if fileName was indeed changed
+            $this->assertEquals(json_decode($response->getContent())->fileName, $newFileName);
+
+        } catch (\Throwable $e) {
+            echo $e->getTraceAsString()."\n";
+            $this->fail($e->getMessage());
+            echo "\n";
+        }
+        echo "\n";
+    }
+
+    /**
+     * Integration test: try to call all actions with wrong methods.
      */
     public function testAllMethodsWithWrongActions(): void
     {
@@ -1236,6 +1374,268 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
+     * Integration test: other prefix should remain when deleting one prefix
+     */
+    public function testDeletePrefixOtherPrefixShouldRemain(): void
+    {
+        try {
+            $client = static::createClient();
+            /** @var BlobService $blobService */
+            $blobService = $client->getContainer()->get(BlobService::class);
+            $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getKey();
+            $bucketId = $bucket->getIdentifier();
+            $creationTime = date('U');
+            $prefix = 'playground';
+
+            // =======================================================
+            // POST two files
+            // =======================================================
+
+            for ($i = 0; $i < 2; $i++) {
+                $creationTime = date('U');
+                $fileName = $this->files[$i]['name'];
+                $fileHash = $this->files[$i]['hash'];
+                $notifyEmail = 'eugen.neuber@tugraz.at';
+                $retentionDuration = $this->files[$i]['retention'];
+                $action = 'CREATEONE';
+
+                $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+
+                $data = [
+                    'cs' => $this->generateSha256ChecksumFromUrl($url),
+                ];
+
+                $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+
+                $requestPost = Request::create($url . '&sig=' . $token, 'POST', [], [],
+                    [
+                        'file' => new UploadedFile($this->files[$i]['path'], $this->files[$i]['name'], $this->files[$i]['mime']),
+                    ],
+                    [
+                        'HTTP_ACCEPT' => 'application/ld+json',
+                    ],
+                    "HTTP_ACCEPT: application/ld+json\r\n"
+                    . 'file=' . base64_encode($this->files[$i]['content'])
+                    . "&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketId"
+                );
+                $c = new CreateFileDataAction($blobService);
+                try {
+                    $fileData = $c->__invoke($requestPost);
+                } catch (\Throwable $e) {
+                    echo $e->getTraceAsString() . "\n";
+                    $this->fail($e->getMessage());
+                }
+
+                $this->assertNotNull($fileData);
+                $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
+                $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+                $this->assertTrue(uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
+                $this->assertEquals($this->files[$i]['name'], $fileData->getFileName(), 'File name not correct.');
+                $this->files[$i]['uuid'] = $fileData->getIdentifier();
+                $this->files[$i]['created'] = $fileData->getDateCreated();
+                $this->files[$i]['until'] = $fileData->getExistsUntil();
+
+                $prefix = $prefix.$i;
+            }
+
+            // =======================================================
+            // DELETE all files in prefix playground
+            // =======================================================
+            echo "DELETE all files with prefix playground\n";
+            $prefix = 'playground';
+            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=DELETEALL";
+
+            $payload = [
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+            ];
+
+            /* @noinspection PhpInternalEntityUsedInspection */
+            $client->getKernelBrowser()->followRedirects(false);
+
+            /** @var Response $response */
+            $response = $client->request('DELETE', $url.'&sig='.$token, $options);
+            $this->assertEquals(204, $response->getStatusCode());
+
+            // =======================================================
+            // GET all files in prefix playground0
+            // =======================================================
+            echo "GET all files with prefix playground0\n";
+            $prefix = 'playground0';
+            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETALL";
+
+            $payload = [
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+            ];
+
+            /* @noinspection PhpInternalEntityUsedInspection */
+            $client->getKernelBrowser()->followRedirects(false);
+
+            /** @var Response $response */
+            $response = $client->request('GET', $url.'&sig='.$token, $options);
+            $this->assertEquals(200, $response->getStatusCode());
+            // check if the one created element is there
+            $this->assertEquals(1, count(json_decode($response->getContent(), true)['hydra:member']));
+
+            // =======================================================
+            // GET all files in prefix playground
+            // =======================================================
+            echo "GET all files with prefix playground\n";
+            $prefix = 'playground';
+            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETALL";
+
+            $payload = [
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+            ];
+
+            /* @noinspection PhpInternalEntityUsedInspection */
+            $client->getKernelBrowser()->followRedirects(false);
+
+            /** @var Response $response */
+            $response = $client->request('GET', $url.'&sig='.$token, $options);
+            $this->assertEquals(200, $response->getStatusCode());
+            // check if the created elements were properly deleted
+            $this->assertEquals(0, count(json_decode($response->getContent(), true)['hydra:member']));
+        } catch (\Throwable $e) {
+            echo $e->getTraceAsString()."\n";
+            $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * Integration test: param binary=1 should lead to a 302 redirect
+     */
+    public function testRedirectToBinary(): void
+    {
+        try {
+            $client = static::createClient();
+            /** @var BlobService $blobService */
+            $blobService = $client->getContainer()->get(BlobService::class);
+            $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getKey();
+            $bucketId = $bucket->getIdentifier();
+            $creationTime = date('U');
+            $prefix = 'playground';
+
+            // =======================================================
+            // POST two files
+            // =======================================================
+
+            for ($i = 0; $i < 2; $i++) {
+                $creationTime = date('U');
+                $fileName = $this->files[$i]['name'];
+                $fileHash = $this->files[$i]['hash'];
+                $notifyEmail = 'eugen.neuber@tugraz.at';
+                $retentionDuration = $this->files[$i]['retention'];
+                $action = 'CREATEONE';
+
+                $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+
+                $data = [
+                    'cs' => $this->generateSha256ChecksumFromUrl($url),
+                ];
+
+                $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+
+                $requestPost = Request::create($url . '&sig=' . $token, 'POST', [], [],
+                    [
+                        'file' => new UploadedFile($this->files[$i]['path'], $this->files[$i]['name'], $this->files[$i]['mime']),
+                    ],
+                    [
+                        'HTTP_ACCEPT' => 'application/ld+json',
+                    ],
+                    "HTTP_ACCEPT: application/ld+json\r\n"
+                    . 'file=' . base64_encode($this->files[$i]['content'])
+                    . "&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketId"
+                );
+                $c = new CreateFileDataAction($blobService);
+                try {
+                    $fileData = $c->__invoke($requestPost);
+                } catch (\Throwable $e) {
+                    echo $e->getTraceAsString() . "\n";
+                    $this->fail($e->getMessage());
+                }
+
+                $this->assertNotNull($fileData);
+                $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
+                $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+                $this->assertTrue(uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
+                $this->assertEquals($this->files[$i]['name'], $fileData->getFileName(), 'File name not correct.');
+                $this->files[$i]['uuid'] = $fileData->getIdentifier();
+                $this->files[$i]['created'] = $fileData->getDateCreated();
+                $this->files[$i]['until'] = $fileData->getExistsUntil();
+            }
+
+            // =======================================================
+            // GET all files in prefix playground
+            // =======================================================
+            echo "GET all files with prefix playground\n";
+            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&binary=1&action=GETALL";
+
+            $payload = [
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+            ];
+
+            /* @noinspection PhpInternalEntityUsedInspection */
+            $client->getKernelBrowser()->followRedirects(false);
+
+            /** @var Response $response */
+            $response = $client->request('GET', $url.'&sig='.$token, $options);
+            $this->assertEquals(200, $response->getStatusCode());
+            // check if the one created element is there
+            $members = json_decode($response->getContent(), true)['hydra:member'];
+            $this->assertEquals(2, count($members));
+
+            $response = $client->request('GET', $members[0]['contentUrl'], $options);
+            // check if response is a redirect
+            $this->assertEquals(302, $response->getStatusCode());
+        } catch (\Throwable $e) {
+            echo $e->getTraceAsString()."\n";
+            $this->fail($e->getMessage());
+        }
+    }
+
+    /**
      * Integration test: delete all with wrong action.
      */
     public function testDeleteAllWithWrongAction(): void
@@ -1255,7 +1655,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // DELETE all files
             // =======================================================
-            echo "DELETE all files with wrong action\n";
+            echo "DELETE all files\n";
 
             $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETONE";
 
