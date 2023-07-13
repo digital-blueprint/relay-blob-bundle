@@ -211,7 +211,7 @@ Returns fileData with ephemeral contentUrls of a specific id.
 
 #### PUT
 Checks the signature in the header, if the request is allowed.
-Can updates fileName, additionalMetadata and/or notifyEmail of a fileData.
+Can update fileName, additionalMetadata and/or notifyEmail of a fileData.
 
 ##### Parameters
 
