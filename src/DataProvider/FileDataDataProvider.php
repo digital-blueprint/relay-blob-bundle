@@ -67,7 +67,7 @@ class FileDataDataProvider extends AbstractDataProvider
         assert(is_string($action));
 
         if (!$action || ($method === 'GET' && $action !== 'GETONE') || ($method === 'DELETE' && $action !== 'DELETEONE')) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Action is missing or wrong', 'blob:get-files-by-prefix-missing-bucketID');
+            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Action is missing or wrong', 'blob:get-files-by-prefix-missing-bucketID');
         }
 
         // get secret of bucket
@@ -221,7 +221,7 @@ class FileDataDataProvider extends AbstractDataProvider
             || ($method === 'PUT' && $action !== 'PUTONE')
             || ($method === 'POST' && $action !== 'CREATEONE')
         ) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature not suitable', 'blob:dataprovider-signature-not-suitable');
+            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:dataprovider-method-not-suitable');
         }
     }
 }

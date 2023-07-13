@@ -60,7 +60,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         // check action/method
         $method = $request->getMethod();
         if (($method !== 'DELETE' || $action !== 'DELETEALL')) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature not suitable', 'blob:dataprovider-signature-not-suitable');
+            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:dataprovider-method-not-suitable');
         }
 
         if (!$bucket->getService()) {

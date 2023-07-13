@@ -72,7 +72,7 @@ final class CreateFileDataAction extends BaseBlobController
 
         // check if correct method and action is specified
         if ($method !== 'POST' || $action !== 'CREATEONE') {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature not suitable', 'blob:dataprovider-signature-not-suitable');
+            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:dataprovider-method-not-suitable');
         }
 
         // check if request is expired

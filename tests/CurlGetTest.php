@@ -846,7 +846,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->fail('    FileData incorrectly saved: '.$fileData->getIdentifier());
         } catch (ApiError $e) {
-            $this->assertEquals($e->getStatusCode(), 403);
+            $this->assertEquals(405, $e->getStatusCode());
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
@@ -896,7 +896,7 @@ class CurlGetTest extends ApiTestCase
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
 
-            $this->assertEquals(403, $response->getStatusCode());
+            $this->assertEquals(405, $response->getStatusCode());
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
@@ -1114,7 +1114,118 @@ class CurlGetTest extends ApiTestCase
                 /** @var Response $response */
                 $response = $client->request('PUT', $url.'&sig='.$token, $options);
                 echo $url."\n";
-                $this->assertEquals(403, $response->getStatusCode());
+                $this->assertEquals(405, $response->getStatusCode());
+            }
+        } catch (\Throwable $e) {
+            echo $e->getTraceAsString()."\n";
+            $this->fail($e->getMessage());
+            echo "\n";
+        }
+        echo "\n";
+    }
+
+    /**
+     * Integration test: get one with wrong action.
+     */
+    public function testAllMethodsWithWrongActions(): void
+    {
+        try {
+            $client = static::createClient();
+            /** @var BlobService $blobService */
+            $blobService = $client->getContainer()->get(BlobService::class);
+            $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getKey();
+            $bucketId = $bucket->getIdentifier();
+            $creationTime = date('U');
+            $prefix = 'playground';
+
+
+            $actions = ['GETALL', 'DELETEONE', 'DELETEALL', 'GETONE', 'CREATEONE', 'PUTONE'];
+            $methods = ['GET', 'POST', 'DELETE', 'PUT'];
+
+            // =======================================================
+            // POST a file
+            // =======================================================
+
+            $creationTime = date('U');
+            $prefix = 'playground';
+            $fileName = $this->files[0]['name'];
+            $fileHash = $this->files[0]['hash'];
+            $notifyEmail = 'eugen.neuber@tugraz.at';
+            $retentionDuration = $this->files[0]['retention'];
+            $action = 'CREATEONE';
+
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+
+            $data = [
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+
+            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+                [
+                    'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
+                ],
+                [
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+                "HTTP_ACCEPT: application/ld+json\r\n"
+                .'file='.base64_encode($this->files[0]['content'])
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+            );
+            $c = new CreateFileDataAction($blobService);
+            try {
+                $fileData = $c->__invoke($requestPost);
+            } catch (\Throwable $e) {
+                echo $e->getTraceAsString()."\n";
+                $this->fail($e->getMessage());
+            }
+
+            $this->assertNotNull($fileData);
+            $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
+            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertTrue(uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
+            $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
+            $this->files[0]['uuid'] = $fileData->getIdentifier();
+            $this->files[0]['created'] = $fileData->getDateCreated();
+            $this->files[0]['until'] = $fileData->getExistsUntil();
+
+            // =======================================================
+            // Test methods with wrong action
+            // =======================================================
+
+            foreach ($methods as $method) {
+                foreach ($actions as $action) {
+                    if ($method === substr($action, 0, strlen($method)) || ($method === 'POST' && substr($action, 0, 6) === "CREATE")) {
+                        continue;
+                    }
+                    echo $method.' file with wrong action '.$action."\n";
+                    $url = "/blob/files?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName";
+
+                    $payload = [
+                        'cs' => $this->generateSha256ChecksumFromUrl($url),
+                    ];
+
+                    $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+                    $options = [
+                        'headers' => [
+                            'Accept' => 'application/ld+json',
+                            'HTTP_ACCEPT' => 'application/ld+json',
+                            'Content-Type' => 'application/json',
+                        ],
+                    ];
+
+                    /* @noinspection PhpInternalEntityUsedInspection */
+                    $client->getKernelBrowser()->followRedirects();
+
+                    /** @var Response $response */
+                    $response = $client->request($method, $url . '&sig=' . $token, $options);
+                    $this->assertEquals(405, $response->getStatusCode());
+                }
             }
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
@@ -1164,7 +1275,7 @@ class CurlGetTest extends ApiTestCase
             $d->__invoke($requestDelete);
             $this->fail('    Delete by prefix incorrectly succeeded');
         } catch (ApiError $e) {
-            $this->assertEquals($e->getStatusCode(), 403);
+            $this->assertEquals(405, $e->getStatusCode());
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
