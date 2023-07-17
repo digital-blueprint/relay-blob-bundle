@@ -89,7 +89,7 @@ Setting:
 Imagine that you have uploaded a file and got back the identifier `de1aaf61-bc52-4c91-a679-bef2f24e3cf7`. Therefore, you know that you can access the file using the `/blob/files/de1aaf61-bc52-4c91-a679-bef2f24e3cf7` endpoint.
 However, you also need to specify the `bucketID`, `creationTime`, `action` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
 `creationTime` is the creation time of the request, thus this is a timestamp of the current time. At the time of writing, it is the 17.07.2023 15:57:25, thus the current timestamp is `1689602245`.
-`action` is the action you want the endpoint to perform. For get requests, this could be `GETONE` or `GETALL` depending on if you want to get a collection of resources or a single resource. The endpoint `/blob/files/{identifier}` is used to get one resource, therefore the correct action to use is `GETONE`, all other would fail.
+`action` is the action you want the endpoint to perform. For GET requests, this could be `GETONE` or `GETALL` depending on if you want to get a collection of resources or a single resource. The endpoint `/blob/files/{identifier}` is used to get one resource, therefore the correct action to use is `GETONE`, all other would fail.
 
 Assuming the above mentioned setting, the url part so far would look like this:
 ```
