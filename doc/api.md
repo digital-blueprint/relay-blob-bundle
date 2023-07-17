@@ -42,8 +42,36 @@ In general, the parameters have to be given in the specified order while optiona
     The key should be kept confidential and safe and should NOT be leaked into the frontend or the user! The key has to remain secret!
 
 The signatures are JWTs created with the algorithm `HS256` and are sent as a string. The only signed data is a `SHA-256` checksum that was generated using the url. 
-everything beginning from and including `/blob` has to be included when generating the checksum. The signature then has to be appended at the and of the url using the `sig` parameter.
+Everything beginning from and including `/blob` has to be included when generating the checksum. The signature then has to be appended at the and of the url using the `sig` parameter.
 The key used for signing and verifying the checksum has to be defined in the blob bucket config and the other backend system communicating with blob.
+A JWT generated using this system could look like this:
+```
+eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
+```
+The decoded JWT payload and header for this signature look like this:
+Header:
+```json
+{
+  "alg": "HS256"
+}
+```
+Body:
+```json
+{
+  "cs": "c8c103b727a27b9912597378eeeaa641a4800d08f0a3cc1006646f07fdab189d"
+}
+```
+As seen in the example, the body consists of only one parameter `cs` which is the SHA-256 checksum of the request url (beginning from and including `/blob`).
+In this case, the checksum `cs` was created using the following input:
+```
+/blob/filesystem/de1aaf61-bc52-4c91-a679-bef2f24e3cf7?validUntil=2023-07-17T07:50:14+00:00
+```
+To compute the request the signature has to be appended to the url using the `sig` parameter
+The url (without origin) the looks like this :
+```
+/blob/filesystem/de1aaf61-bc52-4c91-a679-bef2f24e3cf7?validUntil=2023-07-17T07:50:14+00:00&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
+```
+Note: This example uses an url from the `relay-blob-connector-filesystem-bundle`, but this doesnt make any difference while generating the signature.
 
 ## Error codes and descriptions
 
