@@ -79,6 +79,38 @@ Note: This example uses an url from the `relay-blob-connector-filesystem-bundle`
 By default, blob verifies the url by generating the signature of the urlencoded url using [RFC3986](https://datatracker.ietf.org/doc/html/rfc3986]). This means that, among other things, `space` get converted to `%20`!
 This means that systems communicating with blob have to also generate their checksum this way. It is not possible to just urlencode the whole url, since this would mean that valid symbols like `/` or `&` would be encoded too. Therefore, it is necessary to urlenode each parameter value separately before appending them in the url. 
 
+## Example Requests
+Examples of the API is use can be found in the [common-activities](https://github.com/digital-blueprint/common-activities/tree/main/activity-showcase/src/Blob) repository and the [tests](https://github.com/digital-blueprint/relay-blob-bundle/blob/main/tests/CurlGetTest.php) directory of the [relay-blob-bundle](https://github.com/digital-blueprint/relay-blob-bundle/blob/main/tests/CurlGetTest.php) repository. 
+
+Furthermore, below are some examples of how to implement communication with blob in php.
+
+### GET
+Setting:
+Imagine that you have uploaded a file and got back the identifier `de1aaf61-bc52-4c91-a679-bef2f24e3cf7`. Therefore, you know that you can access the file using the `/blob/files/de1aaf61-bc52-4c91-a679-bef2f24e3cf7` endpoint.
+However, you also need to specify the `bucketID`, `creationTime`, `action` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
+`creationTime` is the creation time of the request, thus this is a timestamp of the current time. At the time of writing, it is the 17.07.2023 15:57:25, thus the current timestamp is `1689602245`.
+`action` is the action you want the endpoint to perform. For get requests, this could be `GETONE` or `GETALL` depending on if you want to get a collection of resources or a single resource. The endpoint `/blob/files/{identifier}` is used to get one resource, therefore the correct action to use is `GETONE`, all other would fail.
+
+Assuming the above mentioned setting, the url part so far would look like this:
+```
+/blob/files/de1aaf61-bc52-4c91-a679-bef2f24e3cf7?bucketID=1248&creationTime=1689602245&action=GETONE
+```
+This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `cs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
+Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `acf1a1aa8269438e3127cf863b531856c575a0cc4165cc75f7c865e39d2e9cce`. This checksum then has to be added to a json with the key `cs`.
+This then has to be signed using the secret key, and appended to the url. The result will look something like this:
+```
+/blob/files/de1aaf61-bc52-4c91-a679-bef2f24e3cf7?bucketID=1248&creationTime=1689602245&action=GETONE&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
+```
+Note: the signature in this case is faked, your signature will have another value, but the basic syntax will look the same.
+### POST
+
+### PUT
+!!! warning "Currently in development"
+
+    TODO
+
+### DELETE
+
 ## Error codes and descriptions
 
 !!! warning "Currently in development"
