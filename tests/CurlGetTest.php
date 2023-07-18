@@ -59,6 +59,25 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         return self::$fd[$identifier];
     }
 
+    public function getBinaryData(FileData $fileData, PoliciesStruct $policiesStruct): FileData
+    {
+        $identifier = $fileData->getIdentifier();
+        if (!isset(self::$fd[$identifier])) {
+            echo "    DummyFileSystemService::getLink($identifier): not found!\n";
+        }
+
+        // build binary response
+        $file = file_get_contents(self::$data[$identifier]->getRealPath());
+        $mimeType = self::$data[$identifier]->getMimeType();
+
+        $filename = $fileData->getFileName();
+
+        $fileData->setContentUrl('data:'.$mimeType.';base64,'.base64_encode($file));
+        self::$fd[$identifier] = $fileData;
+
+        return self::$fd[$identifier];
+    }
+
     public function removeFile(FileData $fileData): bool
     {
         unset(self::$fd[$fileData->getIdentifier()]);
@@ -1625,8 +1644,8 @@ class CurlGetTest extends ApiTestCase
             $this->assertEquals(2, count($members));
 
             $response = $client->request('GET', $members[0]['contentUrl'], $options);
-            // check if response is a redirect
-            $this->assertEquals(302, $response->getStatusCode());
+            // check if response is valid
+            $this->assertEquals(200, $response->getStatusCode());
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
