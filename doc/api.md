@@ -20,20 +20,20 @@ In general, the parameters have to be given in the specified order while optiona
 
 ## Parameters
 
-| Parameter            | Description                                                                 | Type   | Possible values                                          |
-|----------------------|-----------------------------------------------------------------------------|--------|----------------------------------------------------------|
-| `bucketID`           | ID of the bucket in which the file(s) are located.                          | int    | all valid bucket IDs                                     |
-| `creationTime`       | Current time (UTC) in seconds                                               | int    | all valid integers                                       |
-| `prefix`             | prefix which the file(s) have                                               | string | all valid prefixes                                       |
-| `action`             | action that is performed, e.g. `GETALL` to get all files                    | string | `GETONE`,`GETALL`, `CREATEONE`, `DELETEONE`, `DELETEALL` |
-| `sig`                | signature string of the checksum `cs`                                       | string | all valid signature strings                              |
-| `fileName`           | original filename of the file                                               | string | all valid strings                                        |
-| `fileHash`           | the fileHash of the binary file                                             | string | all valid hash strings                                   |
-| `binary`             | defines whether a 302 redirect to the binary data should be returned or not | int    | `0` or `1`                                               |
-| `notifyEmail`        | email address of a person that wants to be notified before deletion         | string | all valid email addresses                                |
-| `retentionDuration`  | defines the lifespan of the file                                            | int    | all non-negative int durations                           |
-| `additionalMetadata` | some additional data the uploader want to add                               | string | all valid strings                                        |
-| `file`               | the file to upload                                                          | file   |                                                          |
+| Parameter            | Description                                                                                         | Type   | Possible values                                          |
+|----------------------|-----------------------------------------------------------------------------------------------------|--------|----------------------------------------------------------|
+| `bucketID`           | ID of the bucket in which the file(s) are located.                                                  | int    | all valid bucket IDs                                     |
+| `creationTime`       | Current time (UTC) in seconds                                                                       | int    | all valid integers                                       |
+| `prefix`             | prefix which the file(s) have                                                                       | string | all valid prefixes                                       |
+| `action`             | action that is performed, e.g. `GETALL` to get all files                                            | string | `GETONE`,`GETALL`, `CREATEONE`, `DELETEONE`, `DELETEALL` |
+| `sig`                | signature string of the checksum `cs`                                                               | string | all valid signature strings                              |
+| `fileName`           | original filename of the file                                                                       | string | all valid strings                                        |
+| `fileHash`           | the fileHash of the binary file                                                                     | string | all valid hash strings                                   |
+| `binary`             | defines whether the base64 encoded binary data should be returned (=1) or a link to the binary data | int    | `0` or `1`                                               |
+| `notifyEmail`        | email address of a person that wants to be notified before deletion                                 | string | all valid email addresses                                |
+| `retentionDuration`  | defines the lifespan of the file                                                                    | int    | all non-negative int durations                           |
+| `additionalMetadata` | some additional data the uploader want to add                                                       | string | all valid strings                                        |
+| `file`               | the file to upload                                                                                  | file   |                                                          |
 
 ## Signature
 

@@ -1,3 +1,9 @@
+# v0.1.9
+* Change meaning of `binary` GET parameter
+  * before it meant that a 302 redirect should be the answer
+  * now it means that the base64 encoded data gets sent in the `contentUrl`
+* Add more documentation
+
 # v0.1.8
 * Introduce new config options `notify_when_quota_over` and `report_when_expiry_in`
 * Rename config option `public_key` to `key` and remove config option `path`
