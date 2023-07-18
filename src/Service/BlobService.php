@@ -164,6 +164,19 @@ class BlobService
         return $fileData;
     }
 
+    public function getBinaryData(FileData $fileData): FileData
+    {
+        $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
+        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
+        $fileData = $datasystemService->getBinaryData($fileData, $fileData->getBucket()->getPolicies());
+
+        if (!$fileData) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:filedata-invalid');
+        }
+
+        return $fileData;
+    }
+
     public function generateGETONELink(string $baseUrl, FileData $fileData, string $binary = ''): string
     {
         if (!$fileData) {
