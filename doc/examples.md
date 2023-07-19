@@ -291,7 +291,7 @@ composer require web-token/jwt-core
 composer require web-token/jwt-key-mgmt
 composer require web-token/jwt-signature-algorithm-hmac
 ```
-The following script is a simple example of how to communicate with blob using CREATEONE. Make sure to replace the base url with your blob base url and the bucketID, prefix, fileName and secretKey with your values.
+The following script is a simple example of how to communicate with blob using CREATEONE. Make sure to replace the base url with your blob base url and the bucketID, prefix, fileName and secretKey with your values. Also dont forget to replace the path to the file you want to upload.
 ```php
 <?php
 require __DIR__ .'/vendor/autoload.php';
