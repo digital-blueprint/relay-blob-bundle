@@ -27,6 +27,7 @@ class FileDataDataProvider extends AbstractDataProvider
 
     public function __construct(BlobService $blobService, RequestStack $requestStack)
     {
+        parent::__construct();
         $this->blobService = $blobService;
         $this->requestStack = $requestStack;
     }
