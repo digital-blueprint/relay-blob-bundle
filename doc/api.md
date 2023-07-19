@@ -85,7 +85,10 @@ Examples of the API is use can be found in the [common-activities](https://githu
 Furthermore, below are some examples of how to implement communication with blob in php.
 
 ### GET
+GET can mean get a collection of items (GETALL) or get a single item (GETONE), thus this section is separated into two subesections.
+#### GETONE
 Setting:
+
 Imagine that you have uploaded a file and got back the identifier `de1aaf61-bc52-4c91-a679-bef2f24e3cf7`. Therefore, you know that you can access the file using the `/blob/files/de1aaf61-bc52-4c91-a679-bef2f24e3cf7` endpoint.
 However, you also need to specify the `bucketID`, `creationTime`, `action` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
 `creationTime` is the creation time of the request, thus this is a timestamp of the current time. At the time of writing, it is the 17.07.2023 15:57:25, thus the current timestamp is `1689602245`.
@@ -102,14 +105,281 @@ This then has to be signed using the secret key, and appended to the url. The re
 /blob/files/de1aaf61-bc52-4c91-a679-bef2f24e3cf7?bucketID=1248&creationTime=1689602245&action=GETONE&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
 ```
 Note: the signature in this case is faked, your signature will have another value, but the basic syntax will look the same.
+
+
+##### Javascript Code Example
+```javascript
+    createSha256HexForUrl(payload) {
+        return crypto.subtle.digest('SHA-256', new TextEncoder().encode(payload))
+            .then(hashArray => {
+                return  Array.from(new Uint8Array(hashArray)).map(b => b.toString(16).padStart(2, '0')).join('');
+            });
+    }
+    
+    createSignature(payload) {
+        // not for production use!
+        // secret keys shouldnt be leaked into the frontend!
+        // this code is for demo purposes only.
+        const apiKey = "<your-secret-key>";
+    
+        const pHeader = { alg: 'HS256' };
+        const sHeader = JSON.stringify(pHeader);
+    
+        return jws.JWS.sign(
+            pHeader.alg,
+            sHeader,
+            JSON.stringify(payload),
+            this.hexEncode(apiKey),
+        );
+    }
+    async sendGetOneFileRequest(id, binary) {
+        let now = Math.floor(new Date().valueOf()/1000);
+        let params = {};
+
+        // if binary == 1, request binary file immediately
+        if (binary == 1) {
+            params = {
+                bucketID: 1248,
+                creationTime: now,
+                binary: 1,
+                action: 'GETONE',
+            };
+        }
+        // else get metadata
+        else {
+            params = {
+                bucketID: 1248,
+                creationTime: now,
+                action: 'GETONE',
+            };
+        }
+
+        // in our example id is de1aaf61-bc52-4c91-a679-bef2f24e3cf7
+        // id = "de1aaf61-bc52-4c91-a679-bef2f24e3cf7";
+
+        params = {
+            cs: await this.createSha256HexForUrl("/blob/files/" + id + "?" + new URLSearchParams(params)),
+        };
+
+        const sig = this.createSignature(params);
+
+        // if binary == 1, request binary file immediately
+        if (binary == 1) {
+            params = {
+                bucketID: 1248,
+                creationTime: now,
+                binary: 1,
+                action: 'GETONE',
+                sig: sig,
+            };
+        }
+        // else get metadata
+        else {
+            params = {
+                bucketID: 1248,
+                creationTime: now,
+                action: 'GETONE',
+                sig: sig,
+            };
+        }
+
+        const urlParams = new URLSearchParams(params);
+
+        const options = {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/ld+json',
+            },
+        };
+
+        return await this.httpGetAsync(this.entryPointUrl + '/blob/files/' + id + '?' + urlParams, options);
+    }
+```
+##### PHP Code Example
+This php example uses PHP 8.1 with composer and guzzlehttp/guzzle 7.7.0, web-token/jwt-core 2.2.11, web-token/jwt-key-mgmt 2.2.11, and web-token/jwt-signature-algorithm-hmac 2.2.11
+They can be installed using composer like this:
+```cmd
+composer require guzzlehttp/guzzle
+composer require web-token/jwt-core
+composer require web-token/jwt-key-mgmt
+composer require web-token/jwt-signature-algorithm-hmac
+```
+The following script is a simple example of how to communicate with blob using GETONE. Make sure to replace the base url with your blob base url and the identitifer, bucketID, prefix and secretKey with your values.
+```php
+<?php
+require __DIR__ .'/vendor/autoload.php';
+
+use GuzzleHttp\Client;
+use Jose\Component\Core\AlgorithmManager;
+use Jose\Component\Core\JWK;
+use Jose\Component\KeyManagement\JWKFactory;
+use Jose\Component\Signature\Algorithm\HS256;
+use Jose\Component\Signature\JWSBuilder;
+use Jose\Component\Signature\Serializer\CompactSerializer;
+
+// create guzzle client with localhost api as base url
+$client = new Client([
+    'base_uri' => 'http://127.0.0.1:8000',
+    'timeout'  => 2.0,
+]);
+
+// define identifier, bucketID, creationTime and prefix
+$id = 'de1aaf61-bc52-4c91-a679-bef2f24e3cf7';
+$bucketID = '1248';
+$creationTime = time(); // get current timestamp using time()
+$prefix = 'myData';
+
+// create SHA-256 checksum of request parameters
+$cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action=GETONE');
+
+// create payload for signature
+$payload = [
+    'cs' => $cs
+];
+
+// 32 byte key required
+// you should have gotten your key by your blob bucket owner
+// an example key can be generated using php -r 'echo bin2hex(random_bytes(32))."\n";'
+$secretKey = "your-key"; // replace this
+
+// create JWK
+$jwk = JWKFactory::createFromSecret(
+    $secretKey,
+    [
+        'alg' => 'HS256',
+        'use' => 'sig',
+    ]
+);
+// create algorithm manager with HS256 (HMAC with SHA-256)
+$algorithmManager = new AlgorithmManager([new HS256()]);
+// create signature builder
+$jwsBuilder = new JWSBuilder($algorithmManager);
+
+// build jws out of payload (cs) using HS256
+$jws = $jwsBuilder
+    ->create()
+    ->withPayload(json_encode($payload, JSON_THROW_ON_ERROR))
+    ->addSignature($jwk, ['alg' => 'HS256'])
+    ->build();
+
+// serialize jws
+$sig = (new CompactSerializer())->serialize($jws, 0);
+
+// define parameter needed for valid request
+$params = [
+    'query' => [
+        'bucketID' => $bucketID,
+        'creationTime' => $creationTime,
+        'prefix' => $prefix,
+        'action' => 'GETONE',
+        'sig' => $sig,
+    ]
+];
+// send request using the defined parameters
+$response = $client->request('GET', '/blob/files/'.$id, $params);
+
+// print response body
+echo $response->getBody()."\n";
+```
+#### GETALL
 ### POST
+#### CREATEONE
+!!! warning "Currently in development"
+
+    TODO
 
 ### PUT
+#### PUTONE
 !!! warning "Currently in development"
 
     TODO
 
 ### DELETE
+#### DELETEONE
+Setting:
+
+Imagine that you have uploaded a file and got back the identifier `4da14ef0-d552-4e27-975e-e1f3db5a0e81`. Therefore, you know that you can delete the file using the `/blob/files/4da14ef0-d552-4e27-975e-e1f3db5a0e81` endpoint.
+However, you also need to specify the `bucketID`, `creationTime`, `prefix`, `action` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
+`creationTime` is the creation time of the request, thus this is a timestamp of the current time. At the time of writing, it is the 17.07.2023 15:57:25, thus the current timestamp is `1689602245`.
+`prefix` is the prefix that the data is stored in. Different prefixes store different items, therefore prefixes are a way to easily group up data that belongs together. Assume that the prefix our file was created with is `myData`.
+`action` is the action you want the endpoint to perform. For DELETE requests, this could be `DELETEONE` or `DELETEALL` depending on if you want to delete a collection of resources or a single resource. The endpoint `/blob/files/{identifier}` is used to delete one resource, therefore the correct action to use is `DELETEONE`, all other would fail.
+
+Assuming the above mentioned setting, the url part so far would look like this:
+```
+/blob/files/4da14ef0-d552-4e27-975e-e1f3db5a0e81?bucketID=1248&creationTime=1689602245&prefix=myData&action=DELETEONE
+```
+This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `cs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
+Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `619999459eb90e6bbf00362f7963cd741ed71f8848437e434b087b4fa1e87b3e`. This checksum then has to be added to a json with the key `cs`.
+This then has to be signed using the secret key, and appended to the url. The result will look something like this:
+```
+/blob/files/4da14ef0-d552-4e27-975e-e1f3db5a0e81?bucketID=1248&creationTime=1689602245&action=DELETEONE&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
+```
+Note: the signature in this case is faked, your signature will have another value, but the basic syntax will look the same.
+
+##### Javascript Code Example
+```javascript
+    createSha256HexForUrl(payload) {
+        return crypto.subtle.digest('SHA-256', new TextEncoder().encode(payload))
+            .then(hashArray => {
+                return  Array.from(new Uint8Array(hashArray)).map(b => b.toString(16).padStart(2, '0')).join('');
+            });
+    }
+
+    createSignature(payload) {
+        // not for production use!
+        // secret keys shouldnt be leaked into the frontend!
+        // this code is for demo purposes only.
+        const apiKey = "<your-secret-key>";
+    
+        const pHeader = { alg: 'HS256' };
+        const sHeader = JSON.stringify(pHeader);
+    
+        return jws.JWS.sign(
+            pHeader.alg,
+            sHeader,
+            JSON.stringify(payload),
+            this.hexEncode(apiKey),
+        );
+    }
+
+    async sendDeleteFileRequest(id) {
+        let creationtime = Math.floor(new Date().valueOf()/1000);
+        let params = {
+            bucketID: 1248,
+            creationTime: creationtime,
+            prefix: 'myData',
+            action: 'DELETEONE',
+        };
+        
+        // in our example id is 4da14ef0-d552-4e27-975e-e1f3db5a0e81
+        // id = "4da14ef0-d552-4e27-975e-e1f3db5a0e81";
+
+        params = {
+            cs: await this.createSha256HexForUrl("/blob/files/" + id + "?" + new URLSearchParams(params)),
+        };
+
+        const sig = this.createSignature(params);
+
+        params = {
+            bucketID: 1248,
+            creationTime: creationtime,
+            prefix: 'myData',
+            action: 'DELETEONE',
+            sig: sig,
+        };
+
+        const urlParams = new URLSearchParams(params);
+
+        const options = {
+            method: 'DELETE',
+        };
+        return await this.httpGetAsync("<your-blob-url>" + '/blob/files/' + id + '?' + urlParams, options);
+    }
+```
+
+##### PHP Code Example
+
+#### DELETEALL
 
 ## Error codes and descriptions
 
