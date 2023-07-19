@@ -13,7 +13,7 @@ The bundle provides GET endpoints for retrieving file metadata, file binary data
 | `/blob/files/{identifier}` | GET    | Used to retrieve file metadata or file binary data of the file with {id}. | `bucketID`, `creationTime`, `action`, `sig`                       | `binary`                                                             | -                                         |
 | `/blob/files`              | POST   | Used to create a file                                                     | `bucketID`, `creationTime`, `prefix`, `action`, `fileName`, `sig` | `notifyEmail`, `retentionDuration`, `additionalMetadata`, `fileHash` | `file`, `prefix`, `fileName`, `bucketID`  |
 | `/blob/files`              | GET    | Used to GET a collection of files                                         | `bucketID`, `creationTime`, `prefix`, `sig`                       | `binary`                                                             | -                                         |
-| `/blob/files/{identifier}` | DELETE | Used to DELETE the file with given {id}                                   | `bucketID`, `creationTime`, `prefix`, `action`, `sig`             |                                                                      | -                                         |
+| `/blob/files/{identifier}` | DELETE | Used to DELETE the file with given {id}                                   | `bucketID`, `creationTime`, `action`, `sig`                       |                                                                      | -                                         |
 | `/blob/files`              | DELETE | Used to DELETE the files with given prefix                                | `bucketID`, `creationTime`, `prefix`, `action`, `sig`             |                                                                      | -                                         |
 
 In general, the parameters have to be given in the specified order while optional parameters can be selectively left out for the computation of the checksum. The only exception is the `sig` parameter, which always has to be the last parameter.
@@ -99,6 +99,7 @@ Assuming the above mentioned setting, the url part so far would look like this:
 /blob/files/de1aaf61-bc52-4c91-a679-bef2f24e3cf7?bucketID=1248&creationTime=1689602245&action=GETONE
 ```
 This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `cs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
+
 Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `acf1a1aa8269438e3127cf863b531856c575a0cc4165cc75f7c865e39d2e9cce`. This checksum then has to be added to a json with the key `cs`.
 This then has to be signed using the secret key, and appended to the url. The result will look something like this:
 ```
@@ -204,7 +205,7 @@ composer require web-token/jwt-core
 composer require web-token/jwt-key-mgmt
 composer require web-token/jwt-signature-algorithm-hmac
 ```
-The following script is a simple example of how to communicate with blob using GETONE. Make sure to replace the base url with your blob base url and the identitifer, bucketID, prefix and secretKey with your values.
+The following script is a simple example of how to communicate with blob using GETONE. Make sure to replace the base url with your blob base url and the identitifer, bucketID and secretKey with your values.
 ```php
 <?php
 require __DIR__ .'/vendor/autoload.php';
@@ -223,14 +224,14 @@ $client = new Client([
     'timeout'  => 2.0,
 ]);
 
-// define identifier, bucketID, creationTime and prefix
+// define identifier, bucketID, creationTime and binary
 $id = 'de1aaf61-bc52-4c91-a679-bef2f24e3cf7';
 $bucketID = '1248';
 $creationTime = time(); // get current timestamp using time()
-$prefix = 'myData';
+$binary = 1;
 
 // create SHA-256 checksum of request parameters
-$cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action=GETONE');
+$cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.$creationTime.'&action=GETONE'.'&binary='.$binary);
 
 // create payload for signature
 $payload = [
@@ -270,8 +271,8 @@ $params = [
     'query' => [
         'bucketID' => $bucketID,
         'creationTime' => $creationTime,
-        'prefix' => $prefix,
         'action' => 'GETONE',
+        'binary' => $binary,
         'sig' => $sig,
     ]
 ];
@@ -282,6 +283,117 @@ $response = $client->request('GET', '/blob/files/'.$id, $params);
 echo $response->getBody()."\n";
 ```
 #### GETALL
+Setting:
+
+Imagine that you have uploaded multiple files with the same `prefix` and you want to retrieve all files with this prefix. Therefore, you know that you can access the file using the `/blob/files` endpoint.
+However, you also need to specify the `bucketID`, `creationTime`, `prefix`, `action` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
+`creationTime` is the creation time of the request, thus this is a timestamp of the current time. At the time of writing, it is the 17.07.2023 15:57:25, thus the current timestamp is `1689602245`.
+`prefix` is the prefix you specified when uploading the files, lets assume this is `myData`.
+`action` is the action you want the endpoint to perform. For GET requests, this could be `GETONE` or `GETALL` depending on if you want to get a collection of resources or a single resource. The endpoint `/blob/files` is used to get a collection of resources, therefore the correct action to use is `GETALL`, all other would fail.
+
+Assuming the above mentioned setting, the url part so far would look like this:
+```
+/blob/files?bucketID=1248&creationTime=1689602245&prefix=myData&action=GETALL
+```
+This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `cs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
+
+Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `a03381ce2c8fa73851d1d26cb5d0a5b5a73fbf2ca9e67d66e4f471ae11a4075e`. This checksum then has to be added to a json with the key `cs`.
+This then has to be signed using the secret key, and appended to the url. The result will look something like this:
+```
+/blob/files?bucketID=1248&creationTime=1689602245&prefix=myData&action=GETALL&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
+```
+Note: the signature in this case is faked, your signature will have another value, but the basic syntax will look the same.
+
+##### Javascript Code Example
+
+##### PHP Code Example
+This php example uses PHP 8.1 with composer and guzzlehttp/guzzle 7.7.0, web-token/jwt-core 2.2.11, web-token/jwt-key-mgmt 2.2.11, and web-token/jwt-signature-algorithm-hmac 2.2.11
+They can be installed using composer like this:
+```cmd
+composer require guzzlehttp/guzzle
+composer require web-token/jwt-core
+composer require web-token/jwt-key-mgmt
+composer require web-token/jwt-signature-algorithm-hmac
+```
+The following script is a simple example of how to communicate with blob using GETALL. Make sure to replace the base url with your blob base url and the bucketID, prefix and secretKey with your values.
+```php
+<?php
+require __DIR__ .'/vendor/autoload.php';
+
+use GuzzleHttp\Client;
+use Jose\Component\Core\AlgorithmManager;
+use Jose\Component\Core\JWK;
+use Jose\Component\KeyManagement\JWKFactory;
+use Jose\Component\Signature\Algorithm\HS256;
+use Jose\Component\Signature\JWSBuilder;
+use Jose\Component\Signature\Serializer\CompactSerializer;
+
+// create guzzle client with localhost api as base url
+$client = new Client([
+    'base_uri' => 'http://127.0.0.1:8000',
+    'timeout'  => 2.0,
+]);
+
+// define bucketID, creationTime, prefix and binary
+$bucketID = '1248';
+$creationTime = time(); // get current timestamp using time()
+$prefix = 'myData';
+$binary = 1;
+
+// create SHA-256 checksum of request parameters
+$cs = hash('sha256', '/blob/files?bucketID='.$bucketID.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action=GETALL'.'&binary='.$binary);
+
+// create payload for signature
+$payload = [
+    'cs' => $cs
+];
+
+// 32 byte key required
+// you should have gotten your key by your blob bucket owner
+// an example key can be generated using php -r 'echo bin2hex(random_bytes(32))."\n";'
+$secretKey = 'your-key'; // replace this
+
+// create JWK
+$jwk = JWKFactory::createFromSecret(
+    $secretKey,
+    [
+        'alg' => 'HS256',
+        'use' => 'sig',
+    ]
+);
+// create algorithm manager with HS256 (HMAC with SHA-256)
+$algorithmManager = new AlgorithmManager([new HS256()]);
+// create signature builder
+$jwsBuilder = new JWSBuilder($algorithmManager);
+
+// build jws out of payload (cs) using HS256
+$jws = $jwsBuilder
+    ->create()
+    ->withPayload(json_encode($payload, JSON_THROW_ON_ERROR))
+    ->addSignature($jwk, ['alg' => 'HS256'])
+    ->build();
+
+// serialize jws
+$sig = (new CompactSerializer())->serialize($jws, 0);
+
+// define parameter needed for valid request
+$params = [
+    'query' => [
+        'bucketID' => $bucketID,
+        'creationTime' => $creationTime,
+        'prefix' => $prefix,
+        'action' => 'GETALL',
+        'binary' => $binary,
+        'sig' => $sig,
+    ]
+];
+// send request using the defined parameters
+$response = $client->request('GET', '/blob/files', $params);
+
+// print response body
+echo $response->getBody()."\n";
+
+```
 ### POST
 #### CREATEONE
 !!! warning "Currently in development"
@@ -378,8 +490,177 @@ Note: the signature in this case is faked, your signature will have another valu
 ```
 
 ##### PHP Code Example
+This php example uses PHP 8.1 with composer and guzzlehttp/guzzle 7.7.0, web-token/jwt-core 2.2.11, web-token/jwt-key-mgmt 2.2.11, and web-token/jwt-signature-algorithm-hmac 2.2.11
+They can be installed using composer like this:
+```cmd
+composer require guzzlehttp/guzzle
+composer require web-token/jwt-core
+composer require web-token/jwt-key-mgmt
+composer require web-token/jwt-signature-algorithm-hmac
+```
+The following script is a simple example of how to communicate with blob using DELETEONE. Make sure to replace the base url with your blob base url and the identitifer, bucketID and secretKey with your values.
+```php
+<?php
+require __DIR__ .'/vendor/autoload.php';
 
+use GuzzleHttp\Client;
+use Jose\Component\Core\AlgorithmManager;
+use Jose\Component\Core\JWK;
+use Jose\Component\KeyManagement\JWKFactory;
+use Jose\Component\Signature\Algorithm\HS256;
+use Jose\Component\Signature\JWSBuilder;
+use Jose\Component\Signature\Serializer\CompactSerializer;
+
+// create guzzle client with localhost api as base url
+$client = new Client([
+    'base_uri' => 'http://127.0.0.1:8000',
+    'timeout'  => 2.0,
+]);
+
+// define identifier, bucketID, creationTime and binary
+$id = '4da14ef0-d552-4e27-975e-e1f3db5a0e81';
+$bucketID = '1248';
+$creationTime = time(); // get current timestamp using time()
+
+// create SHA-256 checksum of request parameters
+$cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.$creationTime.'&action=DELETEONE');
+
+// create payload for signature
+$payload = [
+    'cs' => $cs
+];
+
+// 32 byte key required
+// you should have gotten your key by your blob bucket owner
+// an example key can be generated using php -r 'echo bin2hex(random_bytes(32))."\n";'
+$secretKey = "your-key"; // replace this
+
+// create JWK
+$jwk = JWKFactory::createFromSecret(
+    $secretKey,
+    [
+        'alg' => 'HS256',
+        'use' => 'sig',
+    ]
+);
+// create algorithm manager with HS256 (HMAC with SHA-256)
+$algorithmManager = new AlgorithmManager([new HS256()]);
+// create signature builder
+$jwsBuilder = new JWSBuilder($algorithmManager);
+
+// build jws out of payload (cs) using HS256
+$jws = $jwsBuilder
+    ->create()
+    ->withPayload(json_encode($payload, JSON_THROW_ON_ERROR))
+    ->addSignature($jwk, ['alg' => 'HS256'])
+    ->build();
+
+// serialize jws
+$sig = (new CompactSerializer())->serialize($jws, 0);
+
+// define parameter needed for valid request
+$params = [
+    'query' => [
+        'bucketID' => $bucketID,
+        'creationTime' => $creationTime,
+        'action' => 'DELETEONE',
+        'sig' => $sig,
+    ]
+];
+// send request using the defined parameters
+$response = $client->request('DELETE', '/blob/files/'.$id, $params);
+
+// print response body
+echo $response->getBody()."\n";
+```
 #### DELETEALL
+
+
+##### PHP Code Example
+This php example uses PHP 8.1 with composer and guzzlehttp/guzzle 7.7.0, web-token/jwt-core 2.2.11, web-token/jwt-key-mgmt 2.2.11, and web-token/jwt-signature-algorithm-hmac 2.2.11
+They can be installed using composer like this:
+```cmd
+composer require guzzlehttp/guzzle
+composer require web-token/jwt-core
+composer require web-token/jwt-key-mgmt
+composer require web-token/jwt-signature-algorithm-hmac
+```
+The following script is a simple example of how to communicate with blob using DELETEALL. Make sure to replace the base url with your blob base url and the bucketID, prefix and secretKey with your values.
+```php
+<?php
+require __DIR__ .'/vendor/autoload.php';
+
+use GuzzleHttp\Client;
+use Jose\Component\Core\AlgorithmManager;
+use Jose\Component\Core\JWK;
+use Jose\Component\KeyManagement\JWKFactory;
+use Jose\Component\Signature\Algorithm\HS256;
+use Jose\Component\Signature\JWSBuilder;
+use Jose\Component\Signature\Serializer\CompactSerializer;
+
+// create guzzle client with localhost api as base url
+$client = new Client([
+    'base_uri' => 'http://127.0.0.1:8000',
+    'timeout'  => 2.0,
+]);
+
+// define bucketID, creationTime and prefix
+$bucketID = '1248';
+$creationTime = time(); // get current timestamp using time()
+$prefix = 'myData';
+
+// create SHA-256 checksum of request parameters
+$cs = hash('sha256', '/blob/files?bucketID='.$bucketID.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action=DELETEALL');
+
+// create payload for signature
+$payload = [
+    'cs' => $cs
+];
+
+// 32 byte key required
+// you should have gotten your key by your blob bucket owner
+// an example key can be generated using php -r 'echo bin2hex(random_bytes(32))."\n";'
+$secretKey = 'your-key'; // replace this
+
+// create JWK
+$jwk = JWKFactory::createFromSecret(
+    $secretKey,
+    [
+        'alg' => 'HS256',
+        'use' => 'sig',
+    ]
+);
+// create algorithm manager with HS256 (HMAC with SHA-256)
+$algorithmManager = new AlgorithmManager([new HS256()]);
+// create signature builder
+$jwsBuilder = new JWSBuilder($algorithmManager);
+
+// build jws out of payload (cs) using HS256
+$jws = $jwsBuilder
+    ->create()
+    ->withPayload(json_encode($payload, JSON_THROW_ON_ERROR))
+    ->addSignature($jwk, ['alg' => 'HS256'])
+    ->build();
+
+// serialize jws
+$sig = (new CompactSerializer())->serialize($jws, 0);
+
+// define parameter needed for valid request
+$params = [
+    'query' => [
+        'bucketID' => $bucketID,
+        'creationTime' => $creationTime,
+        'prefix' => $prefix,
+        'action' => 'DELETEALL',
+        'sig' => $sig,
+    ]
+];
+// send request using the defined parameters
+$response = $client->request('DELETE', '/blob/files', $params);
+
+// print response body
+echo $response->getBody()."\n";
+```
 
 ## Error codes and descriptions
 
