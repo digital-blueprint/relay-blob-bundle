@@ -96,7 +96,7 @@ class FileDataDataProvider extends AbstractDataProvider
             // check if filedata is null
             assert(!is_null($fileData));
 
-            // check if put request
+            // check if PUT request was used
             if ($this->requestStack->getCurrentRequest()->getMethod() === 'PUT') {
                 /** @var string */
                 $fileName = $this->requestStack->getCurrentRequest()->query->get('fileName', '');
@@ -105,7 +105,7 @@ class FileDataDataProvider extends AbstractDataProvider
                 $this->blobService->saveFileData($fileData);
             }
 
-            // check if get request
+            // check if GET request was used
             if ($this->requestStack->getCurrentRequest()->getMethod() === 'GET') {
                 // check if binary parameter is set
                 /** @var string */
@@ -123,7 +123,7 @@ class FileDataDataProvider extends AbstractDataProvider
 
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
-        // check if signature is presennt
+        // check if signature is present
         $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
         $baseUrl = $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost();
         if (!$sig) {
