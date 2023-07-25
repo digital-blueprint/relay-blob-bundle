@@ -25,6 +25,18 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *             "deserialize" = false,
  *             "openapi_context" = {
  *                 "tags" = {"Blob"},
+ *                 "parameters" = {
+ *                     {"name" = "bucketID", "in" = "query", "description" = "Identifier of bucket", "type" = "string", "required" = true, "example" = "1234"},
+ *                     {"name" = "creationTime", "in" = "query", "description" = "Current timestamp in seconds", "type" = "string", "required" = true, "example" = "1688636927"},
+ *                     {"name" = "prefix", "in" = "query", "description" = "Prefix of a file collection", "type" = "string", "required" = true, "example" = "my-prefix/my-subprefix"},
+ *                     {"name" = "action", "in" = "query", "description" = "Action that gets executed", "type" = "string", "required" = true, "example" = "GETALL"},
+ *                     {"name" = "fileName", "in" = "query", "description" = "Name of the file to upload", "type" = "string", "required" = true, "example" = "test.txt"},
+ *                     {"name" = "fileHash", "in" = "query", "description" = "Hash of the file to upload", "type" = "string", "required" = true, "example" = ""},
+ *                     {"name" = "sig", "in" = "query", "description" = "Signature containing the checksum required for the check", "type" = "string", "required" = true, "example" = ""},
+ *                     {"name" = "retentionDuration", "in" = "query", "description" = "Max time in timestamp duration in ISO 8601 format from creation date when file will be deleted", "type" = "string", "required" = false, "example" = "P2YT6H"},
+ *                     {"name" = "notifyEmail", "in" = "query", "description" = "An email address which gets notified before the files expires", "type" = "string", "required" = false, "example" = "test@test.com"},
+ *                     {"name" = "additionalMetadata", "in" = "query", "description" = "Additional Metadata for the file", "type" = "object", "required" = false, "example" = "my File additional Data"}
+ *                 },
  *                 "requestBody" = {
  *                     "content" = {
  *                         "multipart/form-data" = {
@@ -34,10 +46,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  *                                     "file" = {"type" = "string", "format" = "binary"},
  *                                     "prefix" = {"description" = "Prefix of the file", "type" = "string", "example" = "my-prefix/my-subprefix"},
  *                                     "fileName" = {"description" = "Friendly name of the file", "type" = "string", "example" = "myfile"},
- *                                     "bucketID" = {"description" = "ID of the bucket", "type" = "string", "example" = "1234"},
- *                                     "retentionDuration" = {"description" = "Max time in timestamp duration in ISO 8601 format from creation date when file will be deleted", "type" = "string", "example" = "P2YT6H"},
- *                                     "notifyMail" = {"description" = "An email address which gets notified before the files expires", "type" = "string", "example" = "test@test.com"},
- *                                     "additionalMetadata" = {"description" = "Additional Metadata for the file", "type" = "object", "example" = "{""myFileData"": ""my File additional Data""}"},
+ *                                     "bucketID" = {"description" = "ID of the bucket", "type" = "string", "example" = "1234"}
  *                                 },
  *                                 "required" = {"file", "bucketID"},
  *                             },
@@ -173,7 +182,7 @@ class FileData
 {
     /**
      * @ORM\Id
-     * @ORM\Column(type="string", length=50)
+     * @ORM\Column(type="string", length=128)
      *
      * @ApiProperty(identifier=true)
      * @Groups({"BlobFiles:output", "BlobFiles:input"})
@@ -181,7 +190,7 @@ class FileData
     private $identifier;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=512)
      * @ApiProperty(iri="https://schema.org/Text")
      * @Groups({"BlobFiles:output", "BlobFiles:input"})
      *
@@ -190,7 +199,7 @@ class FileData
     private $prefix;
 
     /**
-     * @ORM\Column(type="string", length=50)
+     * @ORM\Column(type="string", length=512)
      * @ApiProperty(iri="https://schema.org/name")
      * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
      *
@@ -199,7 +208,7 @@ class FileData
     private $fileName;
 
     /**
-     * @ORM\Column(type="string", length=50)
+     * @ORM\Column(type="string", length=64)
      * @Groups({"BlobFiles:output"})
      *
      * @var string

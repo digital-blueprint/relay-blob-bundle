@@ -54,6 +54,7 @@ content:
 ```yaml
 dbp_relay_blob:
   database_url: %env(resolve:DATABASE_URL)%'
+  reporting_interval: "0 11 * * MON" # when notification cronjob should run
   buckets:
     test_bucket:
       service: 'Dbp\Relay\BlobConnectorFilesystemBundle\Service\FilesystemService' # The path to a dbp relay blob connector service
@@ -121,19 +122,40 @@ php bin/console doctrine:migrations:migrate --em=dbp_relay_blob_bundle
 ### `/blob/files`
 
 #### POST
-Checks the signature in the header, if the request is allowed.
+Checks the signature to determine if the request is allowed.
 Creates a fileData Entity, which is saved in the database. Saves the given file in the configured service of the connector bundle.
 Returns the fileData with a contentUrl. This link expires in the configured link_expire_time.
 
 ##### Parameters
 
-- file: binary
+- bucketID: string
+- creationTime: int
+- action: string
 - prefix (optional): string
 - fileName (optional, default name of the file): string
-- bucketID: string
 - retentionDuration (optional): string ISO 8601, e.g. P2YT6H
 - notifyMail (optional): string
 - additionalMetadata (optional): object
+- sig: string
+
+##### Request body parameters
+
+- file: string (binary)
+- bucketID: string
+- notifyMail (optional): string
+- additionalMetadata (optional): object
+
+##### Request body
+
+```JSON
+{
+  "file": "string",
+  "bucketID": "string",
+  "additionalMetadata": "string",
+  "notifyEmail": "string"
+}
+```
+
 
 ##### Error codes
 
@@ -158,9 +180,12 @@ Returns fileDatas with ephemeral contentUrls of a specific prefix(path) in a giv
 ##### Parameters
 
 - bucketID: string
+- creationTime: int
+- action: string
 - prefix: string
 - page (optional, default 1)
 - perPage (optional, default 30)
+- sig: string
 
 ##### Error codes
 
@@ -180,7 +205,10 @@ Deletes all files in a given prefix(path) of a bucket.
 ##### Parameters
 
 - bucketID: string
+- creationTime: int
+- action: string
 - prefix: string
+- sig: string
 
 ##### Error codes
 
@@ -202,6 +230,9 @@ Returns fileData with ephemeral contentUrls of a specific id.
 ##### Parameters
 
 - identifier: string
+- creationTime: int
+- action: string
+- sig: string
 
 ##### Error codes
 
@@ -218,6 +249,10 @@ Can update fileName, additionalMetadata and/or notifyEmail of a fileData.
 ##### Parameters
 
 - identifier: string
+- creationTime: int
+- action: string
+- fileName: string
+- sig: string
 
 ##### Request body
 
@@ -243,6 +278,9 @@ Deletes a specific file and the links and the filedatas with given identifier.
 ##### Parameters
 
 - identifier: string
+- creationTime: int
+- action: string
+- sig: string
 
 ##### Error codes
 
@@ -283,5 +321,5 @@ Updates existsUntil of a file.
 `Blob File cleanup`: This cronjob is for cleanup purposes. It starts every hour and deletes old files.
 
 ### Send Report Cronjob
-`Blob File send reports`: This cronjob sends reports to given email adresses. In this reports there are all files which are going to be deleted in the next 30 days. 
-The email adresse are attached to these files or there is a default in the config. This cronjob starts every Monday at 9 o'clock in the Morning.
+`Blob File send reports`: This cronjob sends reports to given email adresses, or the bucket owner. In this reports there are all files which are going to be deleted in the timeframe specified in the config. 
+The email adresse are attached to these files or there is a default in the config. This cronjob starts every Monday at 9 o'clock in the Morning (UTC).
