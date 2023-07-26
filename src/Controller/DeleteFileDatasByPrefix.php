@@ -28,7 +28,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         /** @var string $sig */
         $sig = $request->query->get('sig', '');
         if (!$sig) {
-            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:deleteFileDataByPrefix-missing-sig');
         }
         // get params
         // get required params
@@ -42,29 +42,34 @@ class DeleteFileDatasByPrefix extends BaseBlobController
 
         // check if the minimal required params are present
         if (!$bucketId || !$creationTime || !$prefix || !$action) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot be checked', 'blob:delete-files-per-prefix-unset-sig-params');
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot be checked', 'blob:deleteFileDataByPrefix-unset-sig-params');
         }
 
         // check if bucketID is correct
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
         if (!$bucket) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-files-by-prefix-not-configured-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:deleteFileDataByPrefix-bucketID-not-configured');
         }
 
-        // verify signature and checksum
-        $secret = $bucket->getKey();
-        $data = DenyAccessUnlessCheckSignature::verifyChecksumAndSignature($secret, $sig, $request);
-
-        // now, after checksum and signature check, it is safe to do stuff
+        // check if request is expired
+        if ((int) $creationTime < strtotime('-5 min')) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:deleteFileDataByPrefix-creationtime-too-old');
+        }
 
         // check action/method
         $method = $request->getMethod();
         if (($method !== 'DELETE' || $action !== 'DELETEALL')) {
-            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:dataprovider-method-not-suitable');
+            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:deleteFileDataByPrefix-method-not-suitable');
         }
 
+        // verify signature and checksum
+        $secret = $bucket->getKey();
+        DenyAccessUnlessCheckSignature::verifyChecksumAndSignature($secret, $sig, $request);
+
+        // now, after checksum and signature check, it is safe to do stuff
+
         if (!$bucket->getService()) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is not configured', 'blob:get-files-by-prefix-no-bucket-service');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is not configured', 'blob:deleteFileDataByPrefix-no-bucket-service');
         }
 
         $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefix($bucketId, $prefix);

@@ -52,23 +52,24 @@ class FileDataDataProvider extends AbstractDataProvider
         $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
         assert(is_string($sig));
         if (!$sig) {
-            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:getFileDataByID-missing-sig');
         }
         $bucketId = $filters['bucketID'] ?? '';
+
         assert(is_string($bucketId));
         if (!$bucketId) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-files-by-prefix-missing-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:getFileDataByID-missing-bucketID');
         }
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
         if (!$bucket) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-files-by-prefix-not-configured-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:getFileDataByID-bucketID-not-configured');
         }
         $method = $this->requestStack->getCurrentRequest()->getMethod();
         $action = $filters['action'] ?? '';
         assert(is_string($action));
 
         if (!$action || ($method === 'GET' && $action !== 'GETONE') || ($method === 'DELETE' && $action !== 'DELETEONE')) {
-            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Action is missing or wrong', 'blob:get-files-by-prefix-missing-bucketID');
+            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Action is missing or wrong', 'blob:getFileDataByID-method-not-suitable');
         }
 
         // get secret of bucket
@@ -84,7 +85,7 @@ class FileDataDataProvider extends AbstractDataProvider
         assert(!is_null($fileData));
 
         if (!$fileData) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:fileData-not-found');
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:getFileDataByID-fileData-not-found');
         }
 
         //$fileData = $this->blobService->setBucket($fileData);
@@ -121,13 +122,16 @@ class FileDataDataProvider extends AbstractDataProvider
         return $fileData;
     }
 
+    /**
+     * @throws \JsonException
+     */
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
         // check if signature is present
         $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
         $baseUrl = $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost();
         if (!$sig) {
-            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:getFileDataCollection-missing-sig');
         }
         $bucketId = $filters['bucketID'] ?? '';
         $prefix = $filters['prefix'] ?? '';
@@ -138,21 +142,23 @@ class FileDataDataProvider extends AbstractDataProvider
         assert(is_string($creationTime));
         assert(is_string($action));
 
+        $bucketId = $this->requestStack->getCurrentRequest()->query->get('bucketID', '');
+
         // check if bucketID is present
         if (!$bucketId) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-files-by-prefix-missing-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:getFileDataCollection-missing-bucketID');
         }
         if (!$creationTime) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'creationTime is missing', 'blob:get-files-by-prefix-missing-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'creationTime is missing', 'blob:getFileDataCollection-missing-creationTime');
         }
         if (!$action) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'action is missing', 'blob:get-files-by-prefix-missing-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'action is missing', 'blob:getFileDataCollection-missing-method');
         }
 
         // check if bucketID is correct
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
         if (!$bucket) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-files-by-prefix-not-configured-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:getFileDataCollection-bucketID-not-configured');
         }
 
         // check if signature and checksum is correct
@@ -163,7 +169,7 @@ class FileDataDataProvider extends AbstractDataProvider
         assert(is_string($bucketId));
 
         if (!$bucket->getService()) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is not configured', 'blob:get-files-by-prefix-no-bucket-service');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is not configured', 'blob:getFileDataCollection-no-bucket-service');
         }
 
         // get file data of bucket for current page
@@ -192,25 +198,26 @@ class FileDataDataProvider extends AbstractDataProvider
         /** @var string */
         $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
         if (!$sig) {
-            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:checkSignature-missing-sig');
         }
+
         $bucketId = $filters['bucketID'] ?? '';
         $creationTime = $filters['creationTime'] ?? '0';
         $action = $filters['action'] ?? '';
 
         // check if the minimal params are present
         if (!$bucketId || !$creationTime || !$action) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature parameter missing', 'blob:dataprovider-missing-signature-params');
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature parameter missing', 'blob:checkSignature-missing-signature-params');
         }
 
         // verify signature and checksum
         DenyAccessUnlessCheckSignature::verifyChecksumAndSignature($secret, $sig, $this->requestStack->getCurrentRequest());
 
-        // now, after the signature and checksum check it is safe to to something
+        // now, after the signature and checksum check it is safe to something
 
         // check if request is expired
-        if ((int) $creationTime < $tooOld = strtotime('-5 min')) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:creationtime-too-old');
+        if ((int) $creationTime < strtotime('-5 min')) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:checkSignature-creationtime-too-old');
         }
 
         // check action/method
@@ -222,7 +229,7 @@ class FileDataDataProvider extends AbstractDataProvider
             || ($method === 'PUT' && $action !== 'PUTONE')
             || ($method === 'POST' && $action !== 'CREATEONE')
         ) {
-            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:dataprovider-method-not-suitable');
+            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:checkSignature-method-not-suitable');
         }
     }
 }

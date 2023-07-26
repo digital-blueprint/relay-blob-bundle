@@ -159,22 +159,27 @@ Returns the fileData with a contentUrl. This link expires in the configured link
 
 ##### Error codes
 
-| relay:errorId                      | Status code | Description                                         | relay:errorDetails | Example                          |
-|------------------------------------|-------------|-----------------------------------------------------| ------------------ |----------------------------------|
-| `blob:createFileData-unset-sig-params` | 403         | The in the headers signature cannot checked         | `message`          | `['message' => 'Signature cannot checked']` |
-| `blob:create-file-data-upload-failed` | 400         | Data upload failed.                                 | `message`          |                                  |
-| `blob:create-file-no-bucket-service` | 400         | BucketService is not configured.                    | `message`          |                                  |
-| `blob:create-file-missing-file` | 400         | No file with parameter key "file" was received!     | `message`          |                                  |
-| `blob:create-file-upload-error` | 400         | File upload pload went wrong.                       | `message`          |                                  |
-| `blob:create-file-empty-files-not-allowed` | 400         | Empty files cannot be added!                        | `message`          |                                  |
-| `blob:create-file-not-configured-bucketID` | 400         | BucketID is not configured                          | `message`          |                                  |
-| `blob:blob-service-invalid-json` | 422         | The additional Metadata doesn't contain valid json! | `message`          |                                  |
-| `blob:file-not-saved` | 500         | ile could not be saved!                            | `message`          |                                  |
-| `blob:create-file-bucket-quota-reached` | 507         | Bucket quote is reached.                            | `message`          |                                  |
-
+| relay:errorId                                     | Status code | Description                                                                                                                               | relay:errorDetails | Example                          |
+|---------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------|--------------------|----------------------------------|
+| `blob:createFileData-missing-sig`                 | 401         | The signature parameter `sig` is missing                                                                                               | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:createFileData-unset-sig-params`            | 403         | One or multiple of the required url parameters are missing                                                                                | `message`          |                                             |
+| `blob:createFileData-method-not-suitable`         | 405         | The method used is not compatible with the method/action specified in the url                                                             | `message`          |                                             |
+| `blob:createFileData-creationtime-too-old`        | 403         | The parameter `creationTime` is too old, therefore the request timed out and a new request has to be created, signed and sent             | `message`          |                                             |
+| `blob:createFileData-file-hash-change-forbidden`  | 403         | The parameter `fileHash` does not match with the hash of the uploaded file                                                                | `message`          |                                             |
+| `blob:createFileData-data-upload-failed`          | 400         | Data upload failed.                                                                                                                       | `message`          |                                  |
+| `blob:createFileData-no-bucket-service`           | 400         | BucketService is not configured.                                                                                                          | `message`          |                                  |
+| `blob:createFileData-missing-file`                | 400         | No file with parameter key "file" was received!                                                                                           | `message`          |                                  |
+| `blob:createFileData-upload-error`                | 400         | File upload pload went wrong.                                                                                                             | `message`          |                                  |
+| `blob:createFileData-empty-files-not-allowed`     | 400         | Empty files cannot be added!                                                                                                              | `message`          |                                  |
+| `blob:createFileData-not-configured-bucketID`     | 400         | BucketID is not configured                                                                                                                | `message`          |                                  |
+| `blob:blob-service-invalid-json`                  | 422         | The additional Metadata doesn't contain valid json!                                                                                       | `message`          |                                  |
+| `blob:file-not-saved`                             | 500         | File could not be saved!                                                                                                                  | `message`          |                                  |
+| `blob:createFileData-bucket-quota-reached`        | 507         | Bucket quote is reached.                                                                                                                  | `message`          |                                  |
+| `blob:signature-invalid`                          | 403         | The signature is invalid, e.g. by using a wrong key                                                                                       | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:checksum-invalid`                           | 403         | The checksum sent in the signature is invalid, e.g. by changing some params, using the wrong hash algorithm or forgetting some characters | `message`          |                                             |
 
 #### GET By prefix
-Checks the signature in the header, if the request is allowed.
+Checks the signature if the request is allowed.
 Returns fileDatas with ephemeral contentUrls of a specific prefix(path) in a given bucket.
 
 ##### Parameters
@@ -189,17 +194,22 @@ Returns fileDatas with ephemeral contentUrls of a specific prefix(path) in a giv
 
 ##### Error codes
 
-| relay:errorId                    | Status code | Description               | relay:errorDetails | Example |
-| -------------------------------- | ----------- | ------------------------- | ------------------ | ------- |
-| `blob:fileDatas-not-found` | 404         | FileData was not found! |                    |         |
-| `blob:get-files-by-prefix-unset-bucketID` | 400         | BucketID is not configured       | `message`          | `['message' => 'Signature cannot checked']` |
-| `blob:get-files-by-prefix-not-configured-bucketID` | 400         | Bucket is not configured         | `message`          | `['message' => 'Signature cannot checked']` |
-| `blob:get-files-by-prefix-no-bucket-service` | 400         | BucketService is not configured         | `message`          | `['message' => 'Signature cannot checked']` |
-| `blob:dataprovider-unset-sig-params` | 403         | The in the headers signature cannot checked         | `message`          | `['message' => 'Signature cannot checked']` |
+| relay:errorId                                        | Status code | Description                                                                                                                   | relay:errorDetails | Example |
+|------------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------|--------------------| ------- |
+| `blob:getFileDataCollection-missing-sig`             | 401         | The signature parameter `sig` is missing                                                                                      | `message`          |         |
+| `blob:getFileDataCollection-missing-bucketID`        | 400         | The bucketID parameter `bucketID` is missing                                                                                  | `message`          |         |
+| `blob:getFileDataCollection-missing-creationTime`    | 400         | The creation time parameter `creationTime` is missing                                                                         | `message`          |         |
+| `blob:getFileDataCollection-missing-method`          | 400         | The action/method parameter `method` is missing                                                                               | `message`          |         |
+| `blob:getFileDataCollection-bucketID-not-configured` | 400         | Bucket with given `bucketID` is not configured                                                                                | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:getFileDataCollection-no-bucket-service`       | 400         | BucketService is not configured                                                                                               | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:checkSignature-missing-sig`                    | 401         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
+| `blob:checkSignature-missing-signature-params`       | 403         | One or multiple of the required url parameters are missing                                                                    | `message`          |         |
+| `blob:checkSignature-creationtime-too-old`           | 403         | The parameter `creationTime` is too old, therefore the request timed out and a new request has to be created, signed and sent | `message`          |         |
+| `blob:checkSignature-method-not-suitable`            | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
 
 
 #### DELETE by prefix
-Checks the signature in the header, if the request is allowed.
+Checks the signature if the request is allowed.
 Deletes all files in a given prefix(path) of a bucket.
 
 ##### Parameters
@@ -212,19 +222,24 @@ Deletes all files in a given prefix(path) of a bucket.
 
 ##### Error codes
 
-| relay:errorId                    | Status code | Description                                                                                                                         | relay:errorDetails | Example |
-| -------------------------------- |-------------|-------------------------------------------------------------------------------------------------------------------------------------| ------------------ | ------- |
-| `blob:get-files-by-prefix-unset-bucketID` | 400         | BucketID is not configured       | `message`          | `['message' => 'Signature cannot checked']` |
-| `blob:get-files-by-prefix-not-configured-bucketID` | 400         | Bucket is not configured         | `message`          | `['message' => 'Signature cannot checked']` |
-| `blob:get-files-by-prefix-no-bucket-service` | 400         | BucketService is not configured         | `message`          | `['message' => 'Signature cannot checked']` |
-| `blob:deleteFilesperprefix-unset-sig-params` | 403         | The in the headers signature cannot checked       | `message`          | `['message' => 'Signature cannot checked']` |
+| relay:errorId                                         | Status code | Description                                                                                                                               | relay:errorDetails | Example |
+|-------------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------|--------------------| ------- |
+| `blob:deleteFileDataByPrefix-missing-sig`             | 401         | The signature in parameter `sig` is missing                                                                                               | `message`          |         |
+| `blob:deleteFileDataByPrefix-unset-sig-params`        | 403         | One or multiple of the required url parameters are missing                                                                                | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:deleteFileDataByPrefix-bucketID-not-configured` | 400         | Bucket is not configured                                                                                                                  | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:deleteFileDataByPrefix-no-bucket-service`       | 400         | BucketService is not configured                                                                                                           | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:deleteFileDataByPrefix-method-not-suitable`     | 405         | The method used is not compatible with the method/action specified in the url                                                             | `message`          |                                             |
+| `blob:deleteFileDataByPrefix-creationtime-too-old`    | 403         | The parameter `creationTime` is too old, therefore the request timed out and a new request has to be created, signed and sent             | `message`          |                                             |
+| `blob:signature-invalid`                              | 403         | The signature is invalid, e.g. by using a wrong key                                                                                       | `message`          | `['message' => 'Signature cannot checked']` |
+| `blob:checksum-invalid`                               | 403         | The checksum sent in the signature is invalid, e.g. by changing some params, using the wrong hash algorithm or forgetting some characters | `message`          |                                             |
+| `blob:fileData-not-found`                             | 404         | No data was found for the specified bucketID and prefix combination                                                                       | `message`          |                                             |
 
 
 
 ### `/blob/files/{identifier}`
 
 #### GET
-Checks the signature in the header, if the request is allowed.
+Checks the signature if the request is allowed.
 Returns fileData with ephemeral contentUrls of a specific id.
 
 ##### Parameters
@@ -236,14 +251,20 @@ Returns fileData with ephemeral contentUrls of a specific id.
 
 ##### Error codes
 
-| relay:errorId                    | Status code | Description               | relay:errorDetails | Example |
-| -------------------------------- | ----------- | ------------------------- | ------------------ | ------- |
-| `blob:fileData-not-found` | 404         | FileData was not found! |                    |         |
-| `blob:dataprovider-unset-sig-params` | 403         | The in the headers signature cannot checked         | `message`          | `['message' => 'Signature cannot checked']` |
-
+| relay:errorId                                  | Status code | Description                                                                                                                   | relay:errorDetails | Example |
+|------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------|--------------------| ------- |
+| `blob:getFileDataByID-missing-sig`             | 401         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
+| `blob:getFileDataByID-missing-bucketID`        | 400         | The parameter `bucketID` is missing                                                                                           | `message`          |         |
+| `blob:getFileDataByID-bucketID-not-configured` | 400         | The bucket with given `bucketID` is not configured                                                                            | `message`          |         |
+| `blob:getFileDataByID-method-not-suitable`     | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
+| `blob:getFileDataByID-fileData-not-found`      | 404         | No FileData for the given identifier was not found!                                                                           | `message`          |         |
+| `blob:checkSignature-missing-sig`              | 401         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
+| `blob:checkSignature-missing-signature-params` | 403         | One or multiple of the required url parameters are missing                                                                    | `message`          |         |
+| `blob:checkSignature-creationtime-too-old`     | 403         | The parameter `creationTime` is too old, therefore the request timed out and a new request has to be created, signed and sent | `message`          |         |
+| `blob:checkSignature-method-not-suitable`      | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
 
 #### PUT
-Checks the signature in the header, if the request is allowed.
+Checks the signature if the request is allowed.
 Can update fileName, additionalMetadata and/or notifyEmail of a fileData.
 
 ##### Parameters
@@ -266,14 +287,22 @@ Can update fileName, additionalMetadata and/or notifyEmail of a fileData.
 
 ##### Error codes
 
-| relay:errorId                    | Status code | Description               | relay:errorDetails | Example |
-| -------------------------------- |-------------| ------------------------- | ------------------ | ------- |
-| `blob:blob-service-invalid-json` | 422         | The addtional Metadata doesn't contain valid json! |                    |         |
-| `blob:dataprovider-unset-sig-params` | 403         | The in the headers signature cannot checked        | `message`          | `['message' => 'Signature cannot checked']` |
+| relay:errorId                                   | Status code | Description                                                                                                                   | relay:errorDetails | Example |
+|-------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------|--------------------| ------- |
+| `blob:getFileDataByID-missing-sig`              | 401         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
+| `blob:getFileDataByID-missing-bucketID`         | 400         | The parameter `bucketID` is missing                                                                                           | `message`          |         |
+| `blob:getFileDataByID-bucketID-not-configured`  | 400         | The bucket with given `bucketID` is not configured                                                                            | `message`          |         |
+| `blob:getFileDataByID-method-not-suitable`      | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
+| `blob:getFileDataByID-fileData-not-found`       | 404         | No FileData for the given identifier was not found!                                                                           | `message`          |         |
+| `blob:checkSignature-missing-sig`               | 401         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
+| `blob:checkSignature-missing-signature-params`  | 403         | One or multiple of the required url parameters are missing                                                                    | `message`          |         |
+| `blob:checkSignature-creationtime-too-old`      | 403         | The parameter `creationTime` is too old, therefore the request timed out and a new request has to be created, signed and sent | `message`          |         |
+| `blob:checkSignature-method-not-suitable`       | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
+| `blob:file-not-saved`                           | 500         | File could not be saved!                                                                                                      | `message`          |         |
 
 #### DELETE
-Checks the signature in the header, if the request is allowed.
-Deletes a specific file and the links and the filedatas with given identifier.
+Checks the signature if the request is allowed.
+Deletes a specific file and the links and the filedata with given identifier.
 
 ##### Parameters
 
@@ -284,18 +313,24 @@ Deletes a specific file and the links and the filedatas with given identifier.
 
 ##### Error codes
 
-| relay:errorId                    | Status code | Description                                                                                                                         | relay:errorDetails | Example |
-| -------------------------------- |-------------|-------------------------------------------------------------------------------------------------------------------------------------| ------------------ | ------- |
-| `blob:get-files-by-prefix-unset-bucketID` | 400         | BucketID is not configured       | `message`          | `['message' => 'Signature cannot checked']` |
-| `blob:get-files-by-prefix-not-configured-bucketID` | 400         | Bucket is not configured         | `message`          | `['message' => 'Signature cannot checked']` |
-| `blob:get-files-by-prefix-no-bucket-service` | 400         | BucketService is not configured         | `message`          | `['message' => 'Signature cannot checked']` |
-| `blob:deleteFilesperprefix-unset-sig-params` | 403         | The in the headers signature cannot checked       | `message`          | `['message' => 'Signature cannot checked']` |
+| relay:errorId                                   | Status code | Description                                                                                                                   | relay:errorDetails | Example |
+|-------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------|--------------------| ------- |
+| `blob:getFileDataByID-missing-sig`              | 401         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
+| `blob:getFileDataByID-missing-bucketID`         | 400         | The parameter `bucketID` is missing                                                                                           | `message`          |         |
+| `blob:getFileDataByID-bucketID-not-configured`  | 400         | The bucket with given `bucketID` is not configured                                                                            | `message`          |         |
+| `blob:getFileDataByID-method-not-suitable`      | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
+| `blob:getFileDataByID-fileData-not-found`       | 404         | No FileData for the given identifier was not found!                                                                           | `message`          |         |
+| `blob:checkSignature-missing-sig`               | 401         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
+| `blob:checkSignature-missing-signature-params`  | 403         | One or multiple of the required url parameters are missing                                                                    | `message`          |         |
+| `blob:checkSignature-creationtime-too-old`      | 403         | The parameter `creationTime` is too old, therefore the request timed out and a new request has to be created, signed and sent | `message`          |         |
+| `blob:checkSignature-method-not-suitable`       | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
+| `blob:file-not-saved`                           | 500         | File could not be saved!                                                                                                      | `message`          |         |
 
 
 ### `/blob/files/{identifier}/exists_until`
 
 #### PUT exists until
-Checks the signature in the header, if the request is allowed.
+Checks the signature if the request is allowed.
 Updates existsUntil of a file.
 
 ##### Parameters

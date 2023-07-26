@@ -63,7 +63,7 @@ class DenyAccessUnlessCheckSignature
 
         // check checksum
         if (!array_key_exists('cs', $data) || $data['cs'] !== self::generateSha256($request)) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum invalid', 'blob:signature-invalid');
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum invalid', 'blob:checksum-invalid');
         }
 
         return $data;
