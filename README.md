@@ -324,7 +324,6 @@ Deletes a specific file and the links and the filedata with given identifier.
 | `blob:checkSignature-missing-signature-params`  | 403         | One or multiple of the required url parameters are missing                                                                    | `message`          |         |
 | `blob:checkSignature-creationtime-too-old`      | 403         | The parameter `creationTime` is too old, therefore the request timed out and a new request has to be created, signed and sent | `message`          |         |
 | `blob:checkSignature-method-not-suitable`       | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
-| `blob:file-not-saved`                           | 500         | File could not be saved!                                                                                                      | `message`          |         |
 
 
 ### `/blob/files/{identifier}/exists_until`
