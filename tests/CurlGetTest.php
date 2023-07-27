@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Tests;
 
-use ApiPlatform\Core\Bridge\Symfony\Bundle\Test\ApiTestCase;
+use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use Dbp\Relay\BlobBundle\Controller\CreateFileDataAction;
 use Dbp\Relay\BlobBundle\Controller\DeleteFileDatasByPrefix;
 use Dbp\Relay\BlobBundle\Entity\FileData;
@@ -313,7 +313,7 @@ class CurlGetTest extends ApiTestCase
             /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects();
 
-            /** @var \ApiPlatform\Core\Bridge\Symfony\Bundle\Test\Response $response */
+            /** @var \ApiPlatform\Symfony\Bundle\Test\Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
             if ($response->getStatusCode() !== 200) {
                 echo $response->getContent()."\n";

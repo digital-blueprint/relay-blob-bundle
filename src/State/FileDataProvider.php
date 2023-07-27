@@ -2,18 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Dbp\Relay\BlobBundle\DataProvider;
+namespace Dbp\Relay\BlobBundle\State;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
-use Dbp\Relay\CoreBundle\DataProvider\AbstractDataProvider;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
-use Symfony\Component\HttpFoundation\RedirectResponse;
+use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
-class FileDataDataProvider extends AbstractDataProvider
+class FileDataProvider extends AbstractDataProvider
 {
     /**
      * @var BlobService
@@ -32,17 +31,12 @@ class FileDataDataProvider extends AbstractDataProvider
         $this->requestStack = $requestStack;
     }
 
-    protected function getResourceClass(): string
-    {
-        return FileData::class;
-    }
-
     protected function isUserGrantedOperationAccess(int $operation): bool
     {
         return true;
     }
 
-    protected function getItemById($id, array $filters = [], array $options = []): object
+    protected function getItemById(string $id, array $filters = [], array $options = []): ?object
     {
         return $this->getFileDataById($id, $filters);
     }

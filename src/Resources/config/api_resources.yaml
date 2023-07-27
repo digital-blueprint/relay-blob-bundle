@@ -1,0 +1,364 @@
+resources:
+  Dbp\Relay\BlobBundle\Entity\FileData:
+    types: ['https://schema.org/DigitalDocument']
+    shortName: "BlobFiles"
+    routePrefix: "/blob"
+    normalizationContext:
+      groups: ["BlobFiles:output"]
+      jsonld_embed_context: true
+    denormalizationContext:
+      groups: ["BlobFiles:input"]
+
+    operations:
+
+      ApiPlatform\Metadata\GetCollection:
+        provider: Dbp\Relay\BlobBundle\State\FileDataProvider
+        uriTemplate: "/files"
+        normalizationContext:
+          groups: ["BlobFiles:output"]
+          jsonld_embed_context: true
+        openapiContext:
+          tags: ["Blob"]
+          summary: "Get the fileshares of a specific bucket with a specific prefix"
+          parameters:
+            - name: bucketID
+              in: query
+              description: 'Identifier of bucket'
+              type: string
+              required: true
+              example: "1234"
+            - name: creationTime
+              in: query
+              description: 'Current timestamp in seconds'
+              type: string
+              required: true
+              example: "1688636927"
+            - name: prefix
+              in: query
+              description: 'Prefix of a file collection'
+              type: string
+              required: true
+              example: "my-prefix/my-subprefix"
+            - name: action
+              in: query
+              description: 'Action that gets executed'
+              type: string
+              required: true
+              example: "GETALL"
+            - name: binary
+              in: query
+              description: 'If the returned link redirects to the binary or not'
+              type: string
+              required: false
+              example: "1"
+            - name: sig
+              in: query
+              description: 'Signature containing the checksum required for the check'
+              type: string
+              required: true
+              example: ""
+
+      ApiPlatform\Metadata\Get:
+        provider: Dbp\Relay\BlobBundle\State\FileDataProvider
+        uriTemplate: "/files/{identifier}"
+        openapiContext:
+          tags: ["Blob"]
+          summary: "Get the fileshare of a specific bucket with a specific prefix and a specific id"
+          parameters:
+            - name: bucketID
+              in: query
+              description: 'Identifier of bucket'
+              type: string
+              required: true
+              example: "1234"
+            - name: creationTime
+              in: query
+              description: 'Current timestamp in seconds'
+              type: string
+              required: true
+              example: "1688636927"
+            - name: prefix
+              in: query
+              description: 'Prefix of a file collection'
+              type: string
+              required: true
+              example: "my-prefix/my-subprefix"
+            - name: action
+              in: query
+              description: 'Action that gets executed'
+              type: string
+              required: true
+              example: "GETONE"
+            - name: binary
+              in: query
+              description: 'If the returned link redirects to the binary or not'
+              type: string
+              required: false
+              example: "1"
+            - name: sig
+              in: query
+              description: 'Signature containing the checksum required for the check'
+              type: string
+              required: true
+              example: ""
+
+      ApiPlatform\Metadata\Delete:
+        provider: Dbp\Relay\BlobBundle\State\FileDataProvider
+        processor: Dbp\Relay\BlobBundle\State\FileDataProcessor
+        uriTemplate: "/files/{identifier}"
+        denormalizationContext:
+          groups: ["BlobFiles:exists"]
+        openapiContext:
+          tags: ["Blob"]
+          summary: "Delete a fileshare of a specific bucket with a specific prefix and a specific id"
+          parameters:
+            - name: bucketID
+              in: query
+              description: 'Identifier of bucket'
+              type: string
+              required: true
+              example: "1234"
+            - name: creationTime
+              in: query
+              description: 'Current timestamp in seconds'
+              type: string
+              required: true
+              example: "1688636927"
+            - name: prefix
+              in: query
+              description: 'Prefix of a file collection'
+              type: string
+              required: true
+              example: "my-prefix/my-subprefix"
+            - name: action
+              in: query
+              description: 'Action that gets executed'
+              type: string
+              required: true
+              example: "DELETEONE"
+            - name: sig
+              in: query
+              description: 'Signature containing the checksum required for the check'
+              type: string
+              required: true
+              example: ""
+
+      put_exists_until:
+        security: "is_granted('IS_AUTHENTICATED_FULLY')"
+        class: ApiPlatform\Metadata\Put
+        method: PUT
+        provider: Dbp\Relay\BlobBundle\State\FileDataProvider
+        processor: Dbp\Relay\BlobBundle\State\FileDataProcessor
+        uriTemplate: "/files/{identifier}/exists_until"
+        openapiContext:
+          tags: ["Blob"]
+        denormalizationContext:
+          groups: ["BlobFiles:update:exists"]
+
+      ApiPlatform\Metadata\Put:
+        provider: Dbp\Relay\BlobBundle\State\FileDataProvider
+        processor: Dbp\Relay\BlobBundle\State\FileDataProcessor
+        uriTemplate: "/files/{identifier}"
+        denormalizationContext:
+          groups: ["BlobFiles:update"]
+
+        openapiContext:
+          tags: ["Blob"]
+          parameters:
+            - name: bucketID
+              in: query
+              description: 'Identifier of bucket'
+              type: string
+              required: true
+              example: "1234"
+            - name: creationTime
+              in: query
+              description: 'Current timestamp in seconds'
+              type: string
+              required: true
+              example: "1688636927"
+            - name: prefix
+              in: query
+              description: 'Prefix of a file collection'
+              type: string
+              required: true
+              example: "my-prefix/my-subprefix"
+            - name: action
+              in: query
+              description: 'Action that gets executed'
+              type: string
+              required: true
+              example: "PUTONE"
+            - name: fileName
+              in: query
+              description: 'New filename'
+              type: string
+              required: true
+              example: ""
+            - name: sig
+              in: query
+              description: 'Signature containing the checksum required for the check'
+              type: string
+              required: true
+              example: ""
+
+      ApiPlatform\Metadata\Post:
+        controller: Dbp\Relay\BlobBundle\Controller\CreateFileDataAction
+        uriTemplate: "/files"
+        deserialize: false
+        openapiContext:
+          tags: ["Blob"]
+          parameters:
+            - name: bucketID
+              in: query
+              description: 'Identifier of bucket'
+              type: string
+              required: true
+              example: "1234"
+            - name: creationTime
+              in: query
+              description: 'Current timestamp in seconds'
+              type: string
+              required: true
+              example: "1688636927"
+            - name: prefix
+              in: query
+              description: 'Prefix of a file collection'
+              type: string
+              required: true
+              example: "my-prefix/my-subprefix"
+            - name: action
+              in: query
+              description: 'Action that gets executed'
+              type: string
+              required: true
+              example: "GETALL"
+            - name: fileName
+              in: query
+              description: 'Name of the file to upload'
+              type: string
+              required: true
+              example: "test.txt"
+            - name: fileHash
+              in: query
+              description: 'Hash of the file to upload'
+              type: string
+              required: true
+              example: ""
+            - name: sig
+              in: query
+              description: 'Signature containing the checksum required for the check'
+              type: string
+              required: true
+              example: ""
+            - name: retentionDuration
+              in: query
+              description: 'Max time in timestamp duration in ISO 8601 format from creation date when file will be deleted'
+              type: string
+              required: false
+              example: "P2YT6H"
+            - name: notifyEmail
+              in: query
+              description: 'An email address which gets notified before the files expires'
+              type: string
+              required: false
+              example: "test@test.com"
+            - name: additionalMetadata
+              in: query
+              description: 'Additional Metadata for the file'
+              type: object
+              required: false
+              example: "my File additional Data"
+          requestBody:
+            content:
+              multipart/form-data:
+                schema:
+                  type: "object"
+                  required: ["file", "bucketID"]
+                  properties:
+                    file:
+                      type: "string"
+                      format: "binary"
+                    prefix:
+                      description: "Prefix of the file"
+                      type: "string"
+                      example: "my-prefix/my-subprefix"
+                    fileName:
+                      description: "Friendly name of the file"
+                      type: "string"
+                      example: "myfile"
+                    bucketID:
+                      description: "ID of the bucket"
+                      type: "string"
+                      example: "1234"
+
+      delete_byPrefix:
+        class: ApiPlatform\Metadata\Delete
+        method: DELETE
+        controller: Dbp\Relay\BlobBundle\Controller\DeleteFileDatasByPrefix
+        uriTemplate: "/files"
+        normalizationContext:
+          groups: ["BlobFiles:output"]
+          jsonld_embed_context: true
+        read: false
+        openapiContext:
+          tags: ["Blob"]
+          summary: "Deletes the files of a specific bucket with a specific prefix"
+          parameters:
+            - name: bucketID
+              in: query
+              description: 'Identifier of bucket'
+              type: string
+              required: true
+              example: "1234"
+            - name: creationTime
+              in: query
+              description: 'Current timestamp in seconds'
+              type: string
+              required: true
+              example: "1688636927"
+            - name: prefix
+              in: query
+              description: 'Prefix of a file collection'
+              type: string
+              required: true
+              example: "my-prefix/my-subprefix"
+            - name: action
+              in: query
+              description: 'Action that gets executed'
+              type: string
+              required: true
+              example: "DELTEALL"
+            - name: sig
+              in: query
+              description: 'Signature containing the checksum required for the check'
+              type: string
+              required: true
+              example: ""
+
+    properties:
+      identifier:
+        identifier: true
+        iri: "http://schema.org/identifier"
+      prefix:
+        iri: "https://schema.org/Text"
+      fileName:
+        iri: "https://schema.org/name"
+      bucketID:
+        iri: "https://schema.org/identifier"
+      dateCreated:
+        iri: "https://schema.org/dateCreated"
+      lastAccess:
+        iri: "https://schema.org/dateRead"
+      retentionDuration:
+        iri: "https://schema.org/duration"
+      existsUntil:
+        iri: "https://schema.org/expires"
+      contentUrl:
+        iri: "https://schema.org/url"
+      additionalMetadata:
+        iri: "https://schema.org/DataFeed"
+      fileSize:
+        iri: "https://schema.org/contentSize"
+      notifyEmail:
+        iri: "https://schema.org/email"
