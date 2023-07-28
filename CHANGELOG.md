@@ -1,6 +1,8 @@
-# v0.1.10
+# v0.1.11
 * Use `dbp/relay-blob-library` and move some code from `\Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature`
   to `\Dbp\Relay\BlobLibrary\Helpers\SignatureTools`
+
+# v0.1.10
 
 # v0.1.9
 * Change meaning of `binary` GET parameter
