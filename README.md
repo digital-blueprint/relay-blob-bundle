@@ -3,7 +3,9 @@ Relay-Blob Bundle README
 
 # DbpRelayBlobBundle
 
-[GitHub](https://github.com/digital-blueprint/relay-blob-bundle) 
+[GitHub](https://github.com/digital-blueprint/relay-blob-bundle) |
+[Packagist](https://packagist.org/packages/dbp/relay-blob-bundle) |
+[Changelog](https://github.com/digital-blueprint/relay-blob-bundle/blob/main/CHANGELOG.md) 
 
 The blob bundle provides an API for abstracting different shared filesystems.
 You can upload a file unauthorized via the API to a configured bucket and gets a short ephemeral link. 
