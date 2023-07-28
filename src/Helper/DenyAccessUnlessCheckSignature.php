@@ -6,7 +6,6 @@ namespace Dbp\Relay\BlobBundle\Helper;
 
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
-use Jose\Component\Core\JWK;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
