@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c922d9673ad01c28e2b18f22fdb6f3d1",
+    "content-hash": "ee8845326d12e19f9d28f950d230b554",
     "packages": [
         {
             "name": "api-platform/core",
@@ -234,6 +234,62 @@
                 }
             ],
             "time": "2021-08-15T20:50:18+00:00"
+        },
+        {
+            "name": "dbp/relay-blob-library",
+            "version": "v0.1.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/digital-blueprint/relay-blob-library.git",
+                "reference": "6fc2fb9288121d45de171e665e919e0e58c5f8e7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/digital-blueprint/relay-blob-library/zipball/6fc2fb9288121d45de171e665e919e0e58c5f8e7",
+                "reference": "6fc2fb9288121d45de171e665e919e0e58c5f8e7",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "guzzlehttp/guzzle": "^7.0",
+                "php": ">=7.3",
+                "web-token/jwt-key-mgmt": "^2.2",
+                "web-token/jwt-signature": "^2.2",
+                "web-token/jwt-signature-algorithm-hmac": "^2.2"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.0",
+                "phpstan/phpstan": "^1.0.0",
+                "phpstan/phpstan-phpunit": "^1.0.0",
+                "phpstan/phpstan-symfony": "^1.2",
+                "phpunit/phpunit": "^9",
+                "symfony/browser-kit": "^5.4",
+                "symfony/http-client": "^5.4",
+                "symfony/phpunit-bridge": "^5.2",
+                "vimeo/psalm": "^4.2.1"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Dbp\\Relay\\BlobLibrary\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "AGPL-3.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Patrizio Bekerle",
+                    "homepage": "https://github.com/pbek"
+                }
+            ],
+            "description": "PHP helper library for interaction with the relay-blob-bundle.",
+            "support": {
+                "issues": "https://github.com/digital-blueprint/relay-blob-library/issues",
+                "source": "https://github.com/digital-blueprint/relay-blob-library/tree/v0.1.3"
+            },
+            "time": "2023-07-28T07:52:01+00:00"
         },
         {
             "name": "dbp/relay-core-bundle",
