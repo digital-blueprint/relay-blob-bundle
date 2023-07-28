@@ -6,14 +6,7 @@ namespace Dbp\Relay\BlobBundle\Helper;
 
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
-use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
-use Jose\Component\KeyManagement\JWKFactory;
-use Jose\Component\Signature\Algorithm\HS256;
-use Jose\Component\Signature\JWSBuilder;
-use Jose\Component\Signature\JWSVerifier;
-use Jose\Component\Signature\Serializer\CompactSerializer;
-use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
