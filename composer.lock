@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ee8845326d12e19f9d28f950d230b554",
+    "content-hash": "f4501f82e7df50a4a0e182bf3fbc3173",
     "packages": [
         {
             "name": "api-platform/core",
@@ -237,16 +237,16 @@
         },
         {
             "name": "dbp/relay-blob-library",
-            "version": "v0.1.3",
+            "version": "v0.1.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/digital-blueprint/relay-blob-library.git",
-                "reference": "6fc2fb9288121d45de171e665e919e0e58c5f8e7"
+                "reference": "1c0afa4dbb47c04c94fbedf42feea63172d60825"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/digital-blueprint/relay-blob-library/zipball/6fc2fb9288121d45de171e665e919e0e58c5f8e7",
-                "reference": "6fc2fb9288121d45de171e665e919e0e58c5f8e7",
+                "url": "https://api.github.com/repos/digital-blueprint/relay-blob-library/zipball/1c0afa4dbb47c04c94fbedf42feea63172d60825",
+                "reference": "1c0afa4dbb47c04c94fbedf42feea63172d60825",
                 "shasum": ""
             },
             "require": {
@@ -287,9 +287,9 @@
             "description": "PHP helper library for interaction with the relay-blob-bundle.",
             "support": {
                 "issues": "https://github.com/digital-blueprint/relay-blob-library/issues",
-                "source": "https://github.com/digital-blueprint/relay-blob-library/tree/v0.1.3"
+                "source": "https://github.com/digital-blueprint/relay-blob-library/tree/v0.1.4"
             },
-            "time": "2023-07-28T07:52:01+00:00"
+            "time": "2023-07-28T12:12:30+00:00"
         },
         {
             "name": "dbp/relay-core-bundle",
@@ -8522,74 +8522,6 @@
                 }
             ],
             "time": "2023-06-08T12:52:13+00:00"
-        },
-        {
-            "name": "web-token/jwt-checker",
-            "version": "v2.2.11",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/web-token/jwt-checker.git",
-                "reference": "5f31d98155951739e2fae7455e8466ccddd08f50"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/web-token/jwt-checker/zipball/5f31d98155951739e2fae7455e8466ccddd08f50",
-                "reference": "5f31d98155951739e2fae7455e8466ccddd08f50",
-                "shasum": ""
-            },
-            "require": {
-                "web-token/jwt-core": "^2.1"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Jose\\Component\\Checker\\": ""
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Florent Morselli",
-                    "homepage": "https://github.com/Spomky"
-                },
-                {
-                    "name": "All contributors",
-                    "homepage": "https://github.com/web-token/jwt-checker/contributors"
-                }
-            ],
-            "description": "Checker component of the JWT Framework.",
-            "homepage": "https://github.com/web-token",
-            "keywords": [
-                "JOSE",
-                "JWE",
-                "JWK",
-                "JWKSet",
-                "JWS",
-                "Jot",
-                "RFC7515",
-                "RFC7516",
-                "RFC7517",
-                "RFC7518",
-                "RFC7519",
-                "RFC7520",
-                "bundle",
-                "jwa",
-                "jwt",
-                "symfony"
-            ],
-            "support": {
-                "source": "https://github.com/web-token/jwt-checker/tree/v2.2.11"
-            },
-            "funding": [
-                {
-                    "url": "https://www.patreon.com/FlorentMorselli",
-                    "type": "patreon"
-                }
-            ],
-            "time": "2021-03-17T14:55:52+00:00"
         },
         {
             "name": "web-token/jwt-core",

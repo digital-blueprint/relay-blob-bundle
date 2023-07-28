@@ -1,3 +1,6 @@
+# v0.1.12
+* Use `\Dbp\Relay\BlobLibrary\Helpers\SignatureTools::verify`
+
 # v0.1.11
 * Use `dbp/relay-blob-library` and move some code from `\Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature`
   to `\Dbp\Relay\BlobLibrary\Helpers\SignatureTools`

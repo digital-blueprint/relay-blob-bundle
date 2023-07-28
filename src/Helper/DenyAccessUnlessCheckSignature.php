@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Helper;
 
+use Dbp\Relay\BlobLibrary\Helpers\Error;
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Component\HttpFoundation\Request;
@@ -32,17 +33,13 @@ class DenyAccessUnlessCheckSignature
      *
      * @return array extracted payload from token
      *
-     * @throws \JsonException
      * @throws ApiError
      */
     public static function verify(string $secret, string $token): array
     {
-        $jwk = SignatureTools::createJWK($secret);
-        $payload = [];
-
-        if (!SignatureTools::verifyToken($jwk, $token, $payload)) {
-            /* @noinspection ForgottenDebugOutputInspection */
-            //dump(['token' => $token, 'payload' => $payload, 'secret' => $secret]);
+        try {
+            $payload = SignatureTools::verify($secret, $token);
+        } catch (\Exception $e) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature invalid', 'blob:signature-invalid');
         }
 
