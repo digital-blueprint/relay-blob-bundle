@@ -5,6 +5,7 @@ A JWT generated using this system could look like this:
 eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
 ```
 The decoded JWT payload and header for this signature look like this:
+
 Header:
 ```json
 {
