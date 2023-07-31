@@ -360,6 +360,24 @@ class BlobService
         }
     }
 
+    public function sendQuotaWarning(Bucket $bucket, int $bucketWarningQuotaByte)
+    {
+        $notifyQuotaConfig = $bucket->getNotifyQuotaConfig();
+
+        $id = $bucket->getIdentifier();
+        $name = $bucket->getName();
+        $quota = $bucket->getQuota();
+
+        $context = [
+            'bucketId' => $id,
+            'bucketName' => $name,
+            'quota' => $quota,
+            'filledTo' => ($bucketWarningQuotaByte / ($quota * 1024 * 1024)) * 100,
+        ];
+
+        $this->sendEmail($notifyQuotaConfig, $context);
+    }
+
     public function sendNotifyQuota(Bucket $bucket)
     {
         $notifyQuotaConfig = $bucket->getNotifyQuotaConfig();
@@ -382,6 +400,18 @@ class BlobService
         $buckets = $this->configurationService->getBuckets();
         foreach ($buckets as $bucket) {
             $this->sendReportingForBucket($bucket);
+            $this->sendBucketQuotaWarning($bucket);
+        }
+    }
+
+    public function sendBucketQuotaWarning(Bucket $bucket)
+    {
+        // Check quota
+        $bucketQuotaByte = $bucket->getQuota() * 1024 * 1024; // Convert mb to Byte
+        $bucketWarningQuotaByte = $bucket->getQuota() * 1024 * 1024 * ($bucket->getNotifyWhenQuotaOver() / 100); // Convert mb to Byte and then calculate the warning quota
+
+        if ($bucketQuotaByte > $bucketWarningQuotaByte) {
+            $this->sendQuotaWarning($bucket, $bucketWarningQuotaByte);
         }
     }
 

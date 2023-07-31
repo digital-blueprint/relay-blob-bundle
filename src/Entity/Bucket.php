@@ -68,6 +68,11 @@ class Bucket
      */
     private $reportingConfig;
 
+    /**
+     * @var int
+     */
+    private $notifyWhenQuotaOver;
+
     public function getIdentifier(): string
     {
         return $this->identifier;
@@ -106,6 +111,16 @@ class Bucket
     public function setReportExpiryWhenIn(string $reportExpiryWhenIn): void
     {
         $this->reportExpiryWhenIn = $reportExpiryWhenIn;
+    }
+
+    public function setNotifyWhenQuotaOver(int $notifyWhenQuotaOver): void
+    {
+        $this->notifyWhenQuotaOver = $notifyWhenQuotaOver;
+    }
+
+    public function getNotifyWhenQuotaOver(): int
+    {
+        return $this->notifyWhenQuotaOver;
     }
 
     public function getKey(): string
@@ -188,6 +203,7 @@ class Bucket
         $bucket->setIdentifier((string) $config['bucket_id']);
         $bucket->setService((string) $config['service']);
         $bucket->setName((string) $config['bucket_name']);
+        $bucket->setNotifyWhenQuotaOver((int) $config['notify_when_quota_over']);
         $bucket->setReportExpiryWhenIn((string) $config['report_when_expiry_in']);
         $bucket->setKey((string) $config['key']);
         $bucket->setQuota((int) $config['quota']);
