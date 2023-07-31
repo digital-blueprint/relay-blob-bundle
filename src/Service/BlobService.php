@@ -362,7 +362,7 @@ class BlobService
 
     public function sendQuotaWarning(Bucket $bucket, int $bucketWarningQuotaByte)
     {
-        $notifyQuotaConfig = $bucket->getNotifyQuotaConfig();
+        $notifyQuotaConfig = $bucket->getNotifyWhenQuotaOver();
 
         $id = $bucket->getIdentifier();
         $name = $bucket->getName();
