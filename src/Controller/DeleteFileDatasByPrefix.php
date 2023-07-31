@@ -28,7 +28,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         /** @var string $sig */
         $sig = $request->query->get('sig', '');
         if (!$sig) {
-            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:deleteFileDataByPrefix-missing-sig');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Signature missing', 'blob:deleteFileDataByPrefix-missing-sig');
         }
         // get params
         // get required params
@@ -42,7 +42,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
 
         // check if the minimal required params are present
         if (!$bucketId || !$creationTime || !$prefix || !$action) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot be checked', 'blob:deleteFileDataByPrefix-unset-sig-params');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Signature cannot be checked', 'blob:deleteFileDataByPrefix-unset-sig-params');
         }
 
         // check if bucketID is correct

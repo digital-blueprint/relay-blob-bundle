@@ -66,7 +66,7 @@ final class CreateFileDataAction extends BaseBlobController
 
         // check if the minimal needed url params are present
         if (!$bucketId || !$creationTime || !$prefix || !$action || !$fileName) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature cannot be checked', 'blob:createFileData-unset-sig-params');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID, creationTime, prefix, action or fileName are missing and signature cannot be checked', 'blob:createFileData-unset-sig-params');
         }
 
         // check if correct method and action is specified

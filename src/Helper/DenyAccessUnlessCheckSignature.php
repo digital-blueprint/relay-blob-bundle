@@ -77,7 +77,7 @@ class DenyAccessUnlessCheckSignature
         $sig = $request->query->get('sig', '');
         // check checksum
         if (!$bucketId || !$creationTime || !$action || !$sig || $request->getMethod() !== $method) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'BucketID, creationTime or action missing!', 'blob:signature-invalid');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID, creationTime or action missing!', 'blob:signature-invalid');
         }
     }
 
