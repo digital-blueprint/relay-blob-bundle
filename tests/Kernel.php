@@ -68,11 +68,45 @@ class Kernel extends BaseKernel
                     'bucket_name' => 'Test bucket',
                     'key' => '08d848fd868d83646778b87dd0695b10f59c78e23b286e9884504d1bb43cce93',
                     'quota' => 500, // in MB
-                    'notify_when_quota_over' => 400, // in MB
+                    'notify_when_quota_over' => 70, // in percent of quota
                     'report_when_expiry_in' => 'P62D', // in Days, 62 = two 31 day months
                     'bucket_owner' => 'manuel.kocher@tugraz.at',
                     'max_retention_duration' => 'P1Y',
-                    'link_expire_time' => 'P7D',
+                    'link_expire_time' => 'PT1M',
+                    'policies' => [
+                        'create' => true,
+                        'delete' => true,
+                        'open' => true,
+                        'download' => true,
+                        'rename' => true,
+                        'work' => true,
+                    ],
+                    'notify_quota' => [
+                        'dsn' => 'smtp:localhost',
+                        'from' => 'noreply@tugraz.at',
+                        'to' => 'tamara.steinwender@tugraz.at',
+                        'subject' => 'Blob notify quota',
+                        'html_template' => 'emails/notify-quota.html.twig',
+                    ],
+                    'reporting' => [
+                        'dsn' => 'smtp:localhost',
+                        'from' => 'noreply@tugraz.at',
+                        'to' => 'tamara.steinwender@tugraz.at',
+                        'subject' => 'Blob file deletion reporting',
+                        'html_template' => 'emails/reporting.html.twig',
+                    ],
+                ],
+                'test_bucket2' => [
+                    'service' => 'Dbp\Relay\BlobBundle\Tests\DummyFileSystemService',
+                    'bucket_id' => '4321',
+                    'bucket_name' => 'Test bucket 2',
+                    'key' => 'f5b08061e9989d0357c4173aa3af9bc05d0400121af5f90a43e6cdb91ff1fbf2',
+                    'quota' => 500, // in MB
+                    'notify_when_quota_over' => 70, // in percent of quota
+                    'report_when_expiry_in' => 'P62D', // in Days, 62 = two 31 day months
+                    'bucket_owner' => 'manuel.kocher@tugraz.at',
+                    'max_retention_duration' => 'P1Y',
+                    'link_expire_time' => 'PT1M',
                     'policies' => [
                         'create' => true,
                         'delete' => true,
