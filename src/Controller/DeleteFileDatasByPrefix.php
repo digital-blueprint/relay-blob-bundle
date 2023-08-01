@@ -50,9 +50,14 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         if (!$bucket) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:deleteFileDataByPrefix-bucketID-not-configured');
         }
+        
+        $linkExpiryTime = $bucket->getLinkExpireTime();
+        $now = new \DateTime('now');
+        $now->sub(new \DateInterval($linkExpiryTime));
+        $expiryTime = strtotime($now->format('c'));
 
         // check if request is expired
-        if ((int) $creationTime < strtotime('-5 min')) {
+        if ((int) $creationTime < $expiryTime) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:deleteFileDataByPrefix-creationtime-too-old');
         }
 

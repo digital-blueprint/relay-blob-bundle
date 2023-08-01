@@ -48,22 +48,30 @@ class FileDataProvider extends AbstractDataProvider
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Signature missing', 'blob:getFileDataByID-missing-sig');
         }
-        $bucketId = $filters['bucketID'] ?? '';
 
+        $bucketId = $filters['bucketID'] ?? '';
         assert(is_string($bucketId));
         if (!$bucketId) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:getFileDataByID-missing-bucketID');
         }
+
+        $action = $filters['action'] ?? '';
+        assert(is_string($action));
+        if (!$action) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Action is missing', 'blob:get-file-data-by-id-missing-bucketID');
+        }
+
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
         if (!$bucket) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:getFileDataByID-bucketID-not-configured');
         }
+
         $method = $this->requestStack->getCurrentRequest()->getMethod();
         $action = $filters['action'] ?? '';
         assert(is_string($action));
 
-        if (!$action || ($method === 'GET' && $action !== 'GETONE') || ($method === 'DELETE' && $action !== 'DELETEONE')) {
-            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Action is missing or wrong', 'blob:getFileDataByID-method-not-suitable');
+        if (($method === 'GET' && $action !== 'GETONE') || ($method === 'DELETE' && $action !== 'DELETEONE')) {
+            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Action/Method combination is wrong', 'blob:getFileDataByID-method-not-suitable');
         }
 
         // get secret of bucket
@@ -214,8 +222,14 @@ class FileDataProvider extends AbstractDataProvider
 
         // now, after the signature and checksum check it is safe to something
 
+        $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
+        $linkExpiryTime = $bucket->getLinkExpireTime();
+        $now = new \DateTime('now');
+        $now->sub(new \DateInterval($linkExpiryTime));
+        $expiryTime = strtotime($now->format('c'));
+
         // check if request is expired
-        if ((int) $creationTime < strtotime('-5 min')) {
+        if ((int) $creationTime < $expiryTime || $expiryTime === false) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:checkSignature-creationtime-too-old');
         }
 

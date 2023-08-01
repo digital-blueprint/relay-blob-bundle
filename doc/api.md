@@ -108,17 +108,18 @@ This means that systems communicating with blob have to also generate their chec
 
 #### GET
 
-| relay:errorId                                  | Status code | Description                                                                                                                   | relay:errorDetails | Example |
-|------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------|--------------------| ------- |
-| `blob:getFileDataByID-missing-sig`             | 401         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
-| `blob:getFileDataByID-missing-bucketID`        | 400         | The parameter `bucketID` is missing                                                                                           | `message`          |         |
-| `blob:getFileDataByID-bucketID-not-configured` | 400         | The bucket with given `bucketID` is not configured                                                                            | `message`          |         |
-| `blob:getFileDataByID-method-not-suitable`     | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
-| `blob:getFileDataByID-fileData-not-found`      | 404         | No FileData for the given identifier was not found!                                                                           | `message`          |         |
-| `blob:checkSignature-missing-sig`              | 401         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
-| `blob:checkSignature-missing-signature-params` | 403         | One or multiple of the required url parameters are missing                                                                    | `message`          |         |
-| `blob:checkSignature-creationtime-too-old`     | 403         | The parameter `creationTime` is too old, therefore the request timed out and a new request has to be created, signed and sent | `message`          |         |
-| `blob:checkSignature-method-not-suitable`      | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
+| relay:errorId                                   | Status code | Description                                                                                                                   | relay:errorDetails | Example |
+|-------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------|--------------------| ------- |
+| `blob:getFileDataByID-missing-sig`              | 401         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
+| `blob:getFileDataByID-missing-bucketID`         | 400         | The parameter `bucketID` is missing                                                                                           | `message`          |         |
+| `blob:getFileDataByID-bucketID-not-configured`  | 400         | The bucket with given `bucketID` is not configured                                                                            | `message`          |         |
+| `blob:get-file-data-by-id-missing-bucketID`     | 400         | The request has not specified a action/method                                                                                 |                    |         |
+| `blob:getFileDataByID-method-not-suitable`      | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
+| `blob:getFileDataByID-fileData-not-found`       | 404         | No FileData for the given identifier was not found!                                                                           | `message`          |         |
+| `blob:checkSignature-missing-sig`               | 401         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
+| `blob:checkSignature-missing-signature-params`  | 403         | One or multiple of the required url parameters are missing                                                                    | `message`          |         |
+| `blob:checkSignature-creationtime-too-old`      | 403         | The parameter `creationTime` is too old, therefore the request timed out and a new request has to be created, signed and sent | `message`          |         |
+| `blob:checkSignature-method-not-suitable`       | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
 
 #### PUT
 

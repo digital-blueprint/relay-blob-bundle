@@ -74,8 +74,14 @@ final class CreateFileDataAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:createFileData-method-not-suitable');
         }
 
+        $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
+        $linkExpiryTime = $bucket->getLinkExpireTime();
+        $now = new \DateTime('now');
+        $now->sub(new \DateInterval($linkExpiryTime));
+        $expiryTime = strtotime($now->format('c'));
+
         // check if request is expired
-        if ((int) $creationTime < strtotime('-5 min')) {
+        if ((int) $creationTime < $expiryTime) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:createFileData-creationtime-too-old');
         }
 
