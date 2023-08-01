@@ -75,6 +75,10 @@ final class CreateFileDataAction extends BaseBlobController
         }
 
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
+        if (!$bucket) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:createFileData-bucketID-not-configured');
+        }
+
         $linkExpiryTime = $bucket->getLinkExpireTime();
         $now = new \DateTime('now');
         $now->sub(new \DateInterval($linkExpiryTime));
