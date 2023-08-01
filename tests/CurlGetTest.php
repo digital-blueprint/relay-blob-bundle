@@ -2328,7 +2328,7 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test: correct checksum with wrong signature should lead to a error.
+     * Integration test: overdue creationtime should return an error.
      */
     public function testOperationsWithOverdueCreationTime(): void
     {
@@ -2481,6 +2481,375 @@ class CurlGetTest extends ApiTestCase
                 );
                 $this->assertEquals(403, $response->getStatusCode());
             }
+        } catch (\Throwable $e) {
+            echo $e->getTraceAsString()."\n";
+            $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * Integration test: Unconfigured bucket should return an error.
+     */
+    public function testOperationsWithUnconfiguredBucket(): void
+    {
+        try {
+            $client = static::createClient();
+            /** @var BlobService $blobService */
+            $blobService = $client->getContainer()->get(BlobService::class);
+            $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getKey();
+            $bucketId = $bucket->getIdentifier();
+            $prefix = 'playground';
+
+            // =======================================================
+            // POST file
+            // =======================================================
+
+            $creationTime = date('U');
+            $fileName = $this->files[0]['name'];
+            $fileHash = $this->files[0]['hash'];
+            $notifyEmail = 'eugen.neuber@tugraz.at';
+            $retentionDuration = $this->files[0]['retention'];
+            $action = 'CREATEONE';
+
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+
+            $data = [
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+
+            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+                [
+                    'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
+                ],
+                [
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+                "HTTP_ACCEPT: application/ld+json\r\n"
+                .'file='.base64_encode($this->files[0]['content'])
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+            );
+            $c = new CreateFileDataAction($blobService);
+            try {
+                $fileData = $c->__invoke($requestPost);
+            } catch (\Throwable $e) {
+                echo $e->getTraceAsString()."\n";
+                $this->fail($e->getMessage());
+            }
+
+            $this->assertNotNull($fileData);
+            $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
+            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertTrue(uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
+            $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
+            $this->files[0]['uuid'] = $fileData->getIdentifier();
+            $identifier = $fileData->getIdentifier();
+            $this->files[0]['created'] = $fileData->getDateCreated();
+            $this->files[0]['until'] = $fileData->getExistsUntil();
+
+            // =======================================================
+            // Check all operations with unconfigured bucket
+            // =======================================================
+            echo "Check GETONE, DELETEONE operations with unconfigured bucket\n";
+
+            $actions = [
+                0 => 'GETONE',
+                1 => 'DELETEONE',
+            ];
+
+            $bucketId = '2468';
+
+            foreach ($actions as $action) {
+                // url with missing / at the beginning to create a wrong checksum
+                $baseUrl = "/blob/files/$identifier?bucketID=$bucketId&creationTime=$creationTime&action=$action";
+
+                $payload = [
+                    'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
+                ];
+
+                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+                $options = [
+                    'headers' => [
+                        'Accept' => 'application/ld+json',
+                        'HTTP_ACCEPT' => 'application/ld+json',
+                    ],
+                ];
+
+                /** @var Response $response */
+                $response = $client->request(substr($action, 0, strlen($action) - 3), $baseUrl.'&sig='.$token, $options);
+                $this->assertEquals(400, $response->getStatusCode());
+            }
+
+            echo "Check GETALL, DELETEALL operations with unconfigured bucket\n";
+
+            $actions = [
+                0 => 'GETALL',
+                1 => 'DELETEALL',
+            ];
+
+            foreach ($actions as $action) {
+                // url with missing / at the beginning to create a wrong checksum
+                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=$action";
+
+                $payload = [
+                    'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
+                ];
+
+                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+                /** @var Response $response */
+                $response = $client->request(substr($action, 0, strlen($action) - 3), $baseUrl.'&sig='.$token, $options);
+                $this->assertEquals(400, $response->getStatusCode());
+            }
+
+            echo "Check CREATEONE operation with unconfigured bucket\n";
+
+            $actions = [
+                0 => 'CREATEONE',
+            ];
+
+            foreach ($actions as $action) {
+                $fileHash = $this->files[0]['hash'];
+                // url with missing / at the beginning to create a wrong checksum
+                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=$action&fileName=test.txt&fileHash=$fileHash";
+
+                $payload = [
+                    'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
+                ];
+
+                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+                $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
+
+                /** @var Response $response */
+                $response = $client->request('POST', $baseUrl.'&sig='.$token,
+                    [
+                        'headers' => ['Content-Type' => 'form-data'],
+                        'extra' => [
+                            'files' => [
+                                'file' => $file,
+                            ],
+                        ],
+                    ]
+                );
+                $this->assertEquals(400, $response->getStatusCode());
+            }
+        } catch (\Throwable $e) {
+            echo $e->getTraceAsString()."\n";
+            $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * Integration test: Buckt data should be separate.
+     */
+    public function testGETPOSTDELETEforDifferentBuckets(): void
+    {
+        try {
+            $client = static::createClient();
+            /** @var BlobService $blobService */
+            $blobService = $client->getContainer()->get(BlobService::class);
+            $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getKey();
+            $bucketId = $bucket->getIdentifier();
+            $prefix = 'playground';
+
+            // =======================================================
+            // POST file
+            // =======================================================
+
+            $creationTime = date('U');
+            $fileName = $this->files[0]['name'];
+            $fileHash = $this->files[0]['hash'];
+            $notifyEmail = 'eugen.neuber@tugraz.at';
+            $retentionDuration = $this->files[0]['retention'];
+            $action = 'CREATEONE';
+
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+
+            $data = [
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+
+            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+                [
+                    'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
+                ],
+                [
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+                "HTTP_ACCEPT: application/ld+json\r\n"
+                .'file='.base64_encode($this->files[0]['content'])
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+            );
+            $c = new CreateFileDataAction($blobService);
+            try {
+                $fileData = $c->__invoke($requestPost);
+            } catch (\Throwable $e) {
+                echo $e->getTraceAsString()."\n";
+                $this->fail($e->getMessage());
+            }
+
+            $this->assertNotNull($fileData);
+            $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
+            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertTrue(uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
+            $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
+            $this->files[0]['uuid'] = $fileData->getIdentifier();
+            $identifier = $fileData->getIdentifier();
+            $this->files[0]['created'] = $fileData->getDateCreated();
+            $this->files[0]['until'] = $fileData->getExistsUntil();
+
+            // =======================================================
+            // Check GETALL of other bucket shouldnt return file
+            // =======================================================
+            echo "Check GETALL on other bucket shouldnt return file\n";
+
+            $bucketId = 4321;
+            // get key of wrong bucket
+            $bucket = $configService->getBuckets()[1];
+            $secret = $bucket->getKey();
+
+            // url with missing / at the beginning to create a wrong checksum
+            $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETALL";
+
+            $payload = [
+                'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+            ];
+
+            /** @var Response $response */
+            $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
+            $this->assertEquals(200, $response->getStatusCode());
+            $this->assertEquals([], json_decode($response->getContent(), true)['hydra:member']);
+
+            // =======================================================
+            // POST file in other bucket
+            // =======================================================
+
+            $creationTime = date('U');
+            $fileName = $this->files[0]['name'];
+            $fileHash = $this->files[0]['hash'];
+            $notifyEmail = 'eugen.neuber@tugraz.at';
+            $retentionDuration = $this->files[0]['retention'];
+            $action = 'CREATEONE';
+
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+
+            $data = [
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+
+            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+                [
+                    'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
+                ],
+                [
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+                "HTTP_ACCEPT: application/ld+json\r\n"
+                .'file='.base64_encode($this->files[0]['content'])
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+            );
+            $c = new CreateFileDataAction($blobService);
+            try {
+                $fileData = $c->__invoke($requestPost);
+            } catch (\Throwable $e) {
+                echo $e->getTraceAsString()."\n";
+                $this->fail($e->getMessage());
+            }
+
+            $this->assertNotNull($fileData);
+            $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
+            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertTrue(uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
+            $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
+            $this->files[0]['uuid'] = $fileData->getIdentifier();
+            $identifier = $fileData->getIdentifier();
+            $this->files[0]['created'] = $fileData->getDateCreated();
+            $this->files[0]['until'] = $fileData->getExistsUntil();
+
+            // =======================================================
+            // DELETE all files in other bucket
+            // =======================================================
+
+            echo "Check DELETEALL on other bucket shouldnt delete original bucket\n";
+
+            $bucketId = 4321;
+            // get key of wrong bucket
+            $bucket = $configService->getBuckets()[1];
+            $secret = $bucket->getKey();
+
+            // url with missing / at the beginning to create a wrong checksum
+            $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=DELETEALL";
+
+            $payload = [
+                'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+            ];
+
+            /** @var Response $response */
+            $response = $client->request('DELETE', $baseUrl.'&sig='.$token, $options);
+            $this->assertEquals(204, $response->getStatusCode());
+
+            // =======================================================
+            // Check GETALL of original bucket should still return file
+            // =======================================================
+            echo "Check GETALL on original bucket should still return file\n";
+
+            $bucketId = 1234;
+            // get key of wrong bucket
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getKey();
+
+            // url with missing / at the beginning to create a wrong checksum
+            $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETALL";
+
+            $payload = [
+                'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+            ];
+
+            /** @var Response $response */
+            $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
+            $this->assertEquals(200, $response->getStatusCode());
+            $this->assertEquals(1, count(json_decode($response->getContent(), true)['hydra:member']));
+
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
