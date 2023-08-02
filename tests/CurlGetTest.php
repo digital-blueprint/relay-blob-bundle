@@ -1899,7 +1899,7 @@ class CurlGetTest extends ApiTestCase
                 0 => "bucketID=$bucketId",
                 1 => "prefix=$prefix",
                 2 => "creationTime=$creationTime",
-                3 => "action=CREATEONE",
+                3 => 'action=CREATEONE',
                 4 => "fileName=$fileName",
                 5 => "fileHash=$fileHash",
                 6 => 'sig=',
@@ -1955,7 +1955,7 @@ class CurlGetTest extends ApiTestCase
                 0 => "bucketID=$bucketId",
                 1 => "prefix=$prefix",
                 2 => "creationTime=$creationTime",
-                3 => "action=PUTONE",
+                3 => 'action=PUTONE',
                 4 => "fileName=$fileName",
                 5 => 'sig=',
             ];
@@ -1999,7 +1999,6 @@ class CurlGetTest extends ApiTestCase
                 $response = $client->request('PUT', $baseUrl.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
             }
-
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
@@ -2849,7 +2848,6 @@ class CurlGetTest extends ApiTestCase
             $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
             $this->assertEquals(1, count(json_decode($response->getContent(), true)['hydra:member']));
-
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());

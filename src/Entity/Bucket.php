@@ -66,6 +66,11 @@ class Bucket
     /**
      * @var ?array
      */
+    private $notifyQuotaOverConfig;
+
+    /**
+     * @var ?array
+     */
     private $reportingConfig;
 
     /**
@@ -185,6 +190,18 @@ class Bucket
         return $this;
     }
 
+    public function getNotifyQuotaOverConfig(): ?array
+    {
+        return $this->notifyQuotaOverConfig;
+    }
+
+    public function setNotifyQuotaOverConfig(?array $notifyQuotaOverConfig): self
+    {
+        $this->notifyQuotaOverConfig = $notifyQuotaOverConfig;
+
+        return $this;
+    }
+
     public function getReportingConfig(): ?array
     {
         return $this->reportingConfig;
@@ -224,6 +241,17 @@ class Bucket
             && !empty($config['notify_quota']['html_template'])
         ) {
             $bucket->setNotifyQuotaConfig($config['notify_quota']);
+        }
+        if (
+            array_key_exists('warn_quota', $config)
+            && is_array($config['warn_quota'])
+            && !empty($config['warn_quota']['dsn'])
+            && !empty($config['warn_quota']['from'])
+            && !empty($config['warn_quota']['to'])
+            && !empty($config['warn_quota']['subject'])
+            && !empty($config['warn_quota']['html_template'])
+        ) {
+            $bucket->setNotifyQuotaOverConfig($config['warn_quota']);
         }
         if (
             array_key_exists('reporting', $config)
