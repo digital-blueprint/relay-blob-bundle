@@ -35,7 +35,7 @@ final class CreateFileDataAction extends BaseBlobController
         $sig = $request->query->get('sig', '');
         // check if signature is present in url
         if (!$sig) {
-            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:createFileData-missing-sig');
+            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:create-file-data-missing-sig');
         }
 
         // get request params
@@ -66,12 +66,12 @@ final class CreateFileDataAction extends BaseBlobController
 
         // check if the minimal needed url params are present
         if (!$bucketId || !$creationTime || !$prefix || !$action || !$fileName) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID, creationTime, prefix, action or fileName are missing and signature cannot be checked', 'blob:createFileData-unset-sig-params');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID, creationTime, prefix, action or fileName are missing and signature cannot be checked', 'blob:create-file-data-unset-params');
         }
 
         // check if correct method and action is specified
         if ($method !== 'POST' || $action !== 'CREATEONE') {
-            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:createFileData-method-not-suitable');
+            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:create-file-data-method-not-suitable');
         }
 
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
@@ -86,7 +86,7 @@ final class CreateFileDataAction extends BaseBlobController
 
         // check if request is expired
         if ((int) $creationTime < $expiryTime) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:createFileData-creationtime-too-old');
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'creationTime too old', 'blob:create-file-data-creationTime-too-old');
         }
 
         $fileData = $this->blobService->createFileData($request);
@@ -115,7 +115,7 @@ final class CreateFileDataAction extends BaseBlobController
 
         // Use given service for bucket
         if (!$bucket->getService()) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is not configured', 'blob:createFileData-no-bucket-service');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is not configured', 'blob:create-file-data-no-bucket-service');
         }
 
         /** @var ?UploadedFile $uploadedFile */
@@ -125,7 +125,7 @@ final class CreateFileDataAction extends BaseBlobController
 
         // check hash of file
         if ($hash !== $request->query->get('fileHash', '')) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:createFileData-file-hash-change-forbidden');
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:create-file-data-file-hash-change-forbidden');
         }
 
         // Check quota
@@ -134,13 +134,13 @@ final class CreateFileDataAction extends BaseBlobController
         $newBucketSizeByte = $bucketsizeByte + $fileData->getFileSize();
         if ($newBucketSizeByte > $bucketQuotaByte) {
             $this->blobService->sendNotifyQuota($bucket);
-            throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached', 'blob:createFileData-bucket-quota-reached');
+            throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached', 'blob:create-file-data-bucket-quota-reached');
         }
 
         // Then return correct data for service
         $fileData = $this->blobService->saveFile($fileData);
         if (!$fileData) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'data upload failed', 'blob:createFileData-data-upload-failed');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'data upload failed', 'blob:create-file-data-data-upload-failed');
         }
 
         $this->blobService->saveFileData($fileData);

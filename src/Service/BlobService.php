@@ -71,17 +71,17 @@ class BlobService
 
         // check if there is an uploaded file
         if (!$uploadedFile) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'No file with parameter key "file" was received!', 'blob:createFileData-missing-file');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'No file with parameter key "file" was received!', 'blob:create-file-data-missing-file');
         }
 
         // If the upload failed, figure out why
         if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, $uploadedFile->getErrorMessage(), 'blob:createFileData-upload-error');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, $uploadedFile->getErrorMessage(), 'blob:create-file-data-upload-error');
         }
 
         // check if file is empty
         if ($uploadedFile->getSize() === 0) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Empty files cannot be added!', 'blob:createFileData-empty-files-not-allowed');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Empty files cannot be added!', 'blob:create-file-data-empty-files-not-allowed');
         }
 
         $fileData->setFile($uploadedFile);
@@ -119,7 +119,7 @@ class BlobService
         $bucket = $this->configurationService->getBucketByID($fileData->getBucketID());
         // bucket is not configured
         if (!$bucket) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:createFileData-not-configured-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:create-file-data-not-configured-bucketID');
         }
         $fileData->setBucket($bucket);
 
@@ -232,7 +232,7 @@ class BlobService
             ->find($identifier);
 
         if (!$fileData) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:fileData-not-found');
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
 
         return $fileData;
@@ -246,7 +246,7 @@ class BlobService
             ->findBy(['bucketID' => $bucketID, 'prefix' => $prefix]);
 
         if (!$fileDatas) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileDatas was not found!', 'blob:fileData-not-found');
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileDatas was not found!', 'blob:file-data-not-found');
         }
 
         return $fileDatas;
