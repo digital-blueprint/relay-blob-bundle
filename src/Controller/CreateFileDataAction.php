@@ -86,7 +86,7 @@ final class CreateFileDataAction extends BaseBlobController
 
         // check if request is expired
         if ((int) $creationTime < $expiryTime) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'creationTime too old', 'blob:create-file-data-creationTime-too-old');
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'creationTime too old', 'blob:create-file-data-creation-time-too-old');
         }
 
         $fileData = $this->blobService->createFileData($request);

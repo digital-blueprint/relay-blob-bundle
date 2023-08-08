@@ -52,13 +52,13 @@ class FileDataProvider extends AbstractDataProvider
         $bucketId = $filters['bucketID'] ?? '';
         assert(is_string($bucketId));
         if (!$bucketId) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-file-data-by-id-missing-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-file-data-by-id-missing-bucket-id');
         }
 
         $action = $filters['action'] ?? '';
         assert(is_string($action));
         if (!$action) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Action is missing', 'blob:get-file-data-by-id-missing-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Action is missing', 'blob:get-file-data-by-id-missing-bucket-id');
         }
 
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
@@ -149,14 +149,14 @@ class FileDataProvider extends AbstractDataProvider
 
         // check if bucketID is present
         if (!$bucketId) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-file-data-collection-missing-bucketID');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-file-data-collection-missing-bucket-id');
         }
         // check if prefix is present
         if (!$prefix) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'prefix is missing', 'blob:getFileDataCollection-missing-prefix');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'prefix is missing', 'blob:get-file-data-collection-missing-prefix');
         }
         if (!$creationTime) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'creationTime is missing', 'blob:get-file-data-collection-missing-creationTime');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'creationTime is missing', 'blob:get-file-data-collection-missing-creation-time');
         }
         if (!$action) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'action is missing', 'blob:get-file-data-collection-missing-method');
@@ -165,7 +165,7 @@ class FileDataProvider extends AbstractDataProvider
         // check if bucketID is correct
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
         if (!$bucket) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-file-data-collection-bucketID-not-configured');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:get-file-data-collection-bucket-id-not-configured');
         }
 
         // check if signature and checksum is correct
@@ -230,7 +230,7 @@ class FileDataProvider extends AbstractDataProvider
 
         // check if request is expired
         if ((int) $creationTime < $expiryTime || $expiryTime === false) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Parameter creationTime too old', 'blob:check-signature-creationTime-too-old');
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Parameter creationTime too old', 'blob:check-signature-creation-time-too-old');
         }
 
         // check action/method
