@@ -158,7 +158,7 @@ class BlobService
         $fileData = $datasystemService->getLink($fileData, $fileData->getBucket()->getPolicies());
 
         if (!$fileData) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:filedata-invalid');
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:file-data-invalid');
         }
 
         return $fileData;
@@ -171,7 +171,7 @@ class BlobService
         $fileData = $datasystemService->getBinaryData($fileData, $fileData->getBucket()->getPolicies());
 
         if (!$fileData) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:filedata-invalid');
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:file-data-invalid');
         }
 
         return $fileData;
@@ -180,7 +180,7 @@ class BlobService
     public function generateGETONELink(string $baseUrl, FileData $fileData, string $binary = ''): string
     {
         if (!$fileData) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:filedata-invalid');
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:file-data-invalid');
         }
 
         $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
