@@ -114,7 +114,7 @@ class FileDataProvider extends AbstractDataProvider
                 /** @var string */
                 $binary = $this->requestStack->getCurrentRequest()->query->get('binary', '');
                 if ($binary && $binary === '1') {
-                    $fileData = $this->blobService->getBinaryData($fileData);
+                    $fileData = $this->blobService->getBase64Data($fileData);
                     //$response = new RedirectResponse($fileData->getContentUrl(), 302);
                     //return $response;
                 }

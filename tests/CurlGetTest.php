@@ -18,9 +18,11 @@ use Dbp\Relay\CoreBundle\TestUtils\UserAuthTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Exception;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Uid\Uuid;
 use function uuid_is_valid;
 
@@ -59,7 +61,7 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         return self::$fd[$identifier];
     }
 
-    public function getBinaryData(FileData $fileData, PoliciesStruct $policiesStruct): FileData
+    public function getBase64Data(FileData $fileData, PoliciesStruct $policiesStruct): FileData
     {
         $identifier = $fileData->getIdentifier();
         if (!isset(self::$fd[$identifier])) {
@@ -76,6 +78,26 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         self::$fd[$identifier] = $fileData;
 
         return self::$fd[$identifier];
+    }
+
+    public function getBinaryResponse(FileData $fileData, PoliciesStruct $policiesStruct): Response
+    {
+        $identifier = $fileData->getIdentifier();
+        if (!isset(self::$fd[$identifier])) {
+            echo "    DummyFileSystemService::getLink($identifier): not found!\n";
+        }
+
+        // build binary response
+        $response = new BinaryFileResponse(self::$data[$identifier]->getRealPath());
+        $response->headers->set('Content-Type', self::$data[$identifier]->getMimeType());
+        $filename = $fileData->getFileName();
+
+        $response->setContentDisposition(
+            ResponseHeaderBag::DISPOSITION_ATTACHMENT,
+            $filename
+        );
+
+        return $response;
     }
 
     public function removeFile(FileData $fileData): bool

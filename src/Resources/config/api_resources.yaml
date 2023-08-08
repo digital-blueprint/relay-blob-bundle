@@ -336,6 +336,44 @@ resources:
               required: true
               example: ""
 
+      download:
+        class: ApiPlatform\Metadata\Get
+        method: GET
+        controller: Dbp\Relay\BlobBundle\Controller\DownloadAction
+        uriTemplate: "/files/{identifier}/download"
+        normalizationContext:
+          groups: ["BlobFiles:output"]
+          jsonld_embed_context: true
+        read: false
+        openapiContext:
+          tags: ["Blob"]
+          summary: "Returns the file with given identifier as a binary response"
+          parameters:
+            - name: bucketID
+              in: query
+              description: 'Identifier of bucket'
+              type: string
+              required: true
+              example: "1234"
+            - name: creationTime
+              in: query
+              description: 'Current timestamp in seconds'
+              type: string
+              required: true
+              example: "1688636927"
+            - name: action
+              in: query
+              description: 'Action that gets executed'
+              type: string
+              required: true
+              example: "GETONE"
+            - name: sig
+              in: query
+              description: 'Signature containing the checksum required for the check'
+              type: string
+              required: true
+              example: ""
+
     properties:
       identifier:
         identifier: true
