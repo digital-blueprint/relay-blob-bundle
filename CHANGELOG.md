@@ -1,3 +1,10 @@
+# v0.1.13
+* Refactor all errorIDs to kebapcase and adapt documentation
+* Update relay-blob-library to v0.1.5
+* Add an email warning when the used bucket memory reaches a defined percentage of the quota
+* Add on-purpose failing testcases for missing parameters, wrong signatures, ...
+* Enhance docs
+
 # v0.1.12
 * Use `\Dbp\Relay\BlobLibrary\Helpers\SignatureTools::verify`
 
