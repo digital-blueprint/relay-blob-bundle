@@ -89,7 +89,7 @@ This means that systems communicating with blob have to also generate their chec
 | `blob:create-file-data-method-not-suitable`        | 405         | The method used is not compatible with the method/action specified in the url                                                             | `message`          |                                             |
 | `blob:blob-service-invalid-json`                   | 422         | The additional Metadata doesn't contain valid json!                                                                                       | `message`          |                                  |
 | `blob:file-not-saved`                              | 500         | File could not be saved!                                                                                                                  | `message`          |                                  |
-| `blob:create-file-data-bucket-quota-reached`       | 507         | Bucket quote is reached.                                                                                                                  | `message`          |                                  |
+| `blob:create-file-data-bucket-quota-reached`       | 507         | Bucket quota is reached.                                                                                                                  | `message`          |                                  |
 
 #### DELETE
 
