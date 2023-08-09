@@ -43,7 +43,7 @@ final class CreateFileDataAction extends BaseBlobController
         $bucketId = $request->query->get('bucketID', '');
         $creationTime = $request->query->get('creationTime', 0);
         $prefix = $request->query->get('prefix', '');
-        $action = $request->query->get('action', '');
+        $urlMethod = $request->query->get('method', '');
         /** @var string */
         $fileName = $request->query->get('fileName', '');
 
@@ -65,13 +65,13 @@ final class CreateFileDataAction extends BaseBlobController
         assert(is_string($sig));
 
         // check if the minimal needed url params are present
-        if (!$bucketId || !$creationTime || !$prefix || !$action || !$fileName) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID, creationTime, prefix, action or fileName are missing and signature cannot be checked', 'blob:create-file-data-unset-params');
+        if (!$bucketId || !$creationTime || !$prefix || !$urlMethod || !$fileName) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID, creationTime, prefix, method or fileName are missing and signature cannot be checked', 'blob:create-file-data-unset-params');
         }
 
-        // check if correct method and action is specified
-        if ($method !== 'POST' || $action !== 'CREATEONE') {
-            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:create-file-data-method-not-suitable');
+        // check if correct method and method is specified
+        if ($method !== 'POST' || $urlMethod !== 'POST') {
+            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or method not suitable', 'blob:create-file-data-method-not-suitable');
         }
 
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);

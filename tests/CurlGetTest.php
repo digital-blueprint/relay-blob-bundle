@@ -196,17 +196,17 @@ class CurlGetTest extends ApiTestCase
             $bucketId = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
-            $action = 'GETALL';
+            $action = 'GET';
             $payload = [
                 'bucketID' => $bucketId,
                 'creationTime' => $creationTime,
                 'prefix' => $prefix,
-                'action' => $action,
+                'method' => $action,
             ];
 
             //$token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
-            $url = "/blob/files?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action";
+            $url = "/blob/files?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -271,9 +271,9 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
-            $action = 'CREATEONE';
+            $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -317,8 +317,8 @@ class CurlGetTest extends ApiTestCase
             $creationTime = date('U');
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
-            $action = 'GETALL';
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=$action";
+            $action = 'GET';
+            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -365,9 +365,9 @@ class CurlGetTest extends ApiTestCase
             $fileName = $this->files[1]['name'];
             $fileHash = $this->files[1]['hash'];
             $retentionDuration = $this->files[1]['retention'];
-            $action = 'CREATEONE';
+            $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -410,8 +410,8 @@ class CurlGetTest extends ApiTestCase
 
             $creationTime = date('U');
             $prefix = 'playground';
-            $action = 'GETALL';
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=$action";
+            $action = 'GET';
+            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -464,8 +464,8 @@ class CurlGetTest extends ApiTestCase
 
             $creationTime = date('U');
             $prefix = 'playground';
-            $action = 'DELETEALL';
-            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=$action";
+            $action = 'DELETE';
+            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -502,8 +502,8 @@ class CurlGetTest extends ApiTestCase
 
             $creationTime = date('U');
             $prefix = 'playground';
-            $action = 'GETALL';
-            $url = "/blob/files?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action";
+            $action = 'GET';
+            $url = "/blob/files?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -553,12 +553,12 @@ class CurlGetTest extends ApiTestCase
             $creationTime = date('U');
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
-            $action = 'CREATEONE';
+            $action = 'POST';
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
             $retentionDuration = $this->files[0]['retention'];
 
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&fileName=$fileName&fileHash=$fileHash&retentionDuration=$retentionDuration&action=$action";
+            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&fileName=$fileName&fileHash=$fileHash&retentionDuration=$retentionDuration&method=$action";
 
             // =======================================================
             // POST a file
@@ -607,7 +607,7 @@ class CurlGetTest extends ApiTestCase
 
             $creationTime = date('U');
 
-            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETONE";
+            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -636,7 +636,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "DELETE a file by id\n";
 
-            $url = "/blob/files/{$this->files[0]['uuid']}?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=DELETEONE";
+            $url = "/blob/files/{$this->files[0]['uuid']}?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=DELETE";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -675,7 +675,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files\n";
 
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETALL";
+            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -728,7 +728,7 @@ class CurlGetTest extends ApiTestCase
             $creationTime = strtotime('-1 hour');
             $prefix = 'playground';
 
-            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETALL";
+            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -778,7 +778,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET a file by unknown id\n";
 
-            $url = "/blob/files/{$uuid}?prefix=$prefix&bucketID=$bucketId&creationTime=$creationTime&action=GETONE";
+            $url = "/blob/files/{$uuid}?prefix=$prefix&bucketID=$bucketId&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -805,7 +805,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "DELETE a file by unknown id\n";
 
-            $url = "/blob/files/{$uuid}?prefix=$prefix&bucketID=$bucketId&creationTime=$creationTime&action=DELETEONE";
+            $url = "/blob/files/{$uuid}?prefix=$prefix&bucketID=$bucketId&creationTime=$creationTime&method=DELETE";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -834,7 +834,7 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test: create with wrong action.
+     * Integration test: create with wrong method.
      */
     public function testPostWithWrongAction(): void
     {
@@ -859,11 +859,11 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // POST a file
             // =======================================================
-            echo "POST file 0 with wrong action\n";
+            echo "POST file 0 with wrong method\n";
 
-            $action = 'GETONE';
+            $action = 'GET';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -895,7 +895,7 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test: get all with wrong action.
+     * Integration test: get all with wrong method.
      */
     public function testGetAllWithWrongAction(): void
     {
@@ -914,9 +914,9 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET all files
             // =======================================================
-            echo "GET all files with wrong action\n";
+            echo "GET all files with wrong method\n";
 
-            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=DELETEONE";
+            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=DELETE";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -945,9 +945,9 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test: get one with wrong action.
+     * Integration test: get one with wrong method.
      */
-    public function testGetOneWithWrongAction(): void
+    public function testGETWithWrongAction(): void
     {
         try {
             $client = static::createClient();
@@ -964,9 +964,9 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET one file
             // =======================================================
-            echo "GET one file with wrong actions\n";
+            echo "GET one file with wrong methods\n";
 
-            $actions = ['GETALL', 'DELETEONE', 'DELETEALL', 'PUTONE', 'CREATEONE'];
+            $actions = ['GET', 'DELETE', 'DELETE', 'PUT', 'POST'];
 
             // =======================================================
             // POST a file
@@ -979,9 +979,9 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
-            $action = 'CREATEONE';
+            $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1022,8 +1022,8 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
 
             foreach ($actions as $action) {
-                echo 'GET one file with wrong action '.$action."\n";
-                $url = '/blob/files/".$fileData->getIdentifier()'.'?bucketID=$bucketId&creationTime=$creationTime&action='.$action;
+                echo 'GET one file with wrong method '.$action."\n";
+                $url = '/blob/files/".$fileData->getIdentifier()'.'?bucketID=$bucketId&creationTime=$creationTime&method='.$action;
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1055,9 +1055,9 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test: put one with wrong action.
+     * Integration test: put one with wrong method.
      */
-    public function testPutOneWithWrongAction(): void
+    public function testPUTWithWrongAction(): void
     {
         try {
             $client = static::createClient();
@@ -1074,9 +1074,9 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // PUT one file
             // =======================================================
-            echo "PUT one file with wrong actions\n";
+            echo "PUT one file with wrong methods\n";
 
-            $actions = ['GETALL', 'DELETEONE', 'DELETEALL', 'GETONE', 'CREATEONE'];
+            $actions = ['GET', 'DELETE', 'DELETE', 'GET', 'POST'];
 
             // =======================================================
             // POST a file
@@ -1089,9 +1089,9 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
-            $action = 'CREATEONE';
+            $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1132,8 +1132,8 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
 
             foreach ($actions as $action) {
-                echo 'PUT one file with wrong action '.$action."\n";
-                $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName";
+                echo 'PUT one file with wrong method '.$action."\n";
+                $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1168,7 +1168,7 @@ class CurlGetTest extends ApiTestCase
     /**
      * Integration test: put one.
      */
-    public function testPutOne(): void
+    public function testPUT(): void
     {
         try {
             $client = static::createClient();
@@ -1187,7 +1187,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "PUT one file\n";
 
-            $actions = ['GETALL', 'DELETEONE', 'DELETEALL', 'GETONE', 'CREATEONE'];
+            $actions = ['GET', 'DELETE', 'DELETE', 'GET', 'POST'];
 
             // =======================================================
             // POST a file
@@ -1200,9 +1200,9 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
-            $action = 'CREATEONE';
+            $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1241,11 +1241,11 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // PUT one file
             // =======================================================
-            $action = 'PUTONE';
+            $action = 'PUT';
             $newFileName = 'Test1.php';
-            echo 'PUT one file with action '.$action."\n";
+            echo 'PUT one file with method '.$action."\n";
 
-            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$newFileName";
+            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$newFileName";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1269,8 +1269,8 @@ class CurlGetTest extends ApiTestCase
             $response = $client->request('PUT', $url.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
 
-            $action = 'GETONE';
-            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&action=$action";
+            $action = 'GET';
+            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&method=$action";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1303,7 +1303,7 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test: try to call all actions with wrong methods.
+     * Integration test: try to call all methods with wrong methods.
      */
     public function testAllMethodsWithWrongActions(): void
     {
@@ -1319,7 +1319,7 @@ class CurlGetTest extends ApiTestCase
             $creationTime = date('U');
             $prefix = 'playground';
 
-            $actions = ['GETALL', 'DELETEONE', 'DELETEALL', 'GETONE', 'CREATEONE', 'PUTONE'];
+            $actions = ['GET', 'DELETE', 'DELETE', 'GET', 'POST', 'PUT'];
             $methods = ['GET', 'POST', 'DELETE', 'PUT'];
 
             // =======================================================
@@ -1332,9 +1332,9 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
-            $action = 'CREATEONE';
+            $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1371,7 +1371,7 @@ class CurlGetTest extends ApiTestCase
             $this->files[0]['until'] = $fileData->getExistsUntil();
 
             // =======================================================
-            // Test methods with wrong action
+            // Test methods with wrong method
             // =======================================================
 
             foreach ($methods as $method) {
@@ -1380,7 +1380,7 @@ class CurlGetTest extends ApiTestCase
                         continue;
                     }
                     echo $method.' file with wrong action '.$action."\n";
-                    $url = "/blob/files?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName";
+                    $url = "/blob/files?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName";
 
                     $payload = [
                         'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1439,9 +1439,9 @@ class CurlGetTest extends ApiTestCase
                 $fileHash = $this->files[$i]['hash'];
                 $notifyEmail = 'eugen.neuber@tugraz.at';
                 $retentionDuration = $this->files[$i]['retention'];
-                $action = 'CREATEONE';
+                $action = 'POST';
 
-                $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+                $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
                 $data = [
                     'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1485,7 +1485,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "DELETE all files with prefix playground\n";
             $prefix = 'playground';
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=DELETEALL";
+            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=DELETE";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1512,7 +1512,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files with prefix playground0\n";
             $prefix = 'playground0';
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETALL";
+            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1541,7 +1541,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files with prefix playground\n";
             $prefix = 'playground';
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETALL";
+            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1597,9 +1597,9 @@ class CurlGetTest extends ApiTestCase
                 $fileHash = $this->files[$i]['hash'];
                 $notifyEmail = 'eugen.neuber@tugraz.at';
                 $retentionDuration = $this->files[$i]['retention'];
-                $action = 'CREATEONE';
+                $action = 'POST';
 
-                $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+                $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
                 $data = [
                     'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1640,7 +1640,7 @@ class CurlGetTest extends ApiTestCase
             // GET all files in prefix playground
             // =======================================================
             echo "GET all files with prefix playground\n";
-            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&includeData=1&action=GETONE";
+            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&includeData=1&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1673,7 +1673,7 @@ class CurlGetTest extends ApiTestCase
     /**
      * Integration test: delete all with wrong action.
      */
-    public function testDeleteAllWithWrongAction(): void
+    public function testDELETEWithWrongAction(): void
     {
         try {
             $client = static::createClient();
@@ -1692,7 +1692,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "DELETE all files\n";
 
-            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETONE";
+            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1743,9 +1743,9 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
-            $action = 'CREATEONE';
+            $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1787,8 +1787,8 @@ class CurlGetTest extends ApiTestCase
             echo "GET, DELETE all files with prefix playground with missing params\n";
 
             $actions = [
-                0 => 'GETALL',
-                1 => 'DELETEALL',
+                0 => 'GET',
+                1 => 'DELETE',
             ];
 
             foreach ($actions as $action) {
@@ -1796,7 +1796,7 @@ class CurlGetTest extends ApiTestCase
                     0 => "bucketID=$bucketId",
                     1 => "prefix=$prefix",
                     2 => "creationTime=$creationTime",
-                    3 => "action=$action",
+                    3 => "method=$action",
                     4 => 'sig=',
                 ];
 
@@ -1834,7 +1834,7 @@ class CurlGetTest extends ApiTestCase
                     ];
 
                     /** @var Response $response */
-                    $response = $client->request(substr($action, 0, strlen($action) - 3), $baseUrl.$token, $options);
+                    $response = $client->request($action, $baseUrl.$token, $options);
                     $this->assertEquals(400, $response->getStatusCode());
                 }
             }
@@ -1845,15 +1845,15 @@ class CurlGetTest extends ApiTestCase
             echo "GET, DELETE one file with prefix playground with missing params\n";
 
             $actions = [
-                0 => 'GETONE',
-                1 => 'DELETEONE',
+                0 => 'GET',
+                1 => 'DELETE',
             ];
 
             foreach ($actions as $action) {
                 $params = [
                     0 => "bucketID=$bucketId",
                     1 => "creationTime=$creationTime",
-                    2 => "action=$action",
+                    2 => "method=$action",
                     3 => 'sig=',
                 ];
 
@@ -1898,7 +1898,7 @@ class CurlGetTest extends ApiTestCase
                     ];
 
                     /** @var Response $response */
-                    $response = $client->request(substr($action, 0, strlen($action) - 3), $baseUrl.$token, $options);
+                    $response = $client->request($action, $baseUrl.$token, $options);
                     //echo $response->getContent()."\n";
                     $this->assertEquals(400, $response->getStatusCode());
                 }
@@ -1917,7 +1917,7 @@ class CurlGetTest extends ApiTestCase
                 0 => "bucketID=$bucketId",
                 1 => "prefix=$prefix",
                 2 => "creationTime=$creationTime",
-                3 => 'action=CREATEONE',
+                3 => 'method=POST',
                 4 => "fileName=$fileName",
                 5 => "fileHash=$fileHash",
                 6 => 'sig=',
@@ -1973,7 +1973,7 @@ class CurlGetTest extends ApiTestCase
                 0 => "bucketID=$bucketId",
                 1 => "prefix=$prefix",
                 2 => "creationTime=$creationTime",
-                3 => 'action=PUTONE',
+                3 => 'method=PUT',
                 4 => "fileName=$fileName",
                 5 => 'sig=',
             ];
@@ -2048,9 +2048,9 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
-            $action = 'CREATEONE';
+            $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2090,16 +2090,16 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // Check all operations with wrong checksum (in that case missing the first / in the cs generation)
             // =======================================================
-            echo "Check GETONE, DELETEONE operations with wrong checksum\n";
+            echo "Check GET, DELETE operations with wrong checksum\n";
 
             $actions = [
-                0 => 'GETONE',
-                1 => 'DELETEONE',
+                0 => 'GET',
+                1 => 'DELETE',
             ];
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "blob/files/$identifier?bucketID=$bucketId&creationTime=$creationTime&action=$action";
+                $baseUrl = "blob/files/$identifier?bucketID=$bucketId&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2115,20 +2115,20 @@ class CurlGetTest extends ApiTestCase
                 ];
 
                 /** @var Response $response */
-                $response = $client->request(substr($action, 0, strlen($action) - 3), $baseUrl.'&sig='.$token, $options);
+                $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
 
-            echo "Check GETALL, DELETEALL operations with wrong checksum\n";
+            echo "Check GET, DELETE operations with wrong checksum\n";
 
             $actions = [
-                0 => 'GETALL',
-                1 => 'DELETEALL',
+                0 => 'GET',
+                1 => 'DELETE',
             ];
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=$action";
+                $baseUrl = "blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2137,20 +2137,20 @@ class CurlGetTest extends ApiTestCase
                 $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
                 /** @var Response $response */
-                $response = $client->request(substr($action, 0, strlen($action) - 3), $baseUrl.'&sig='.$token, $options);
+                $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
 
-            echo "Check CREATEONE operation with wrong checksum\n";
+            echo "Check POST operation with wrong checksum\n";
 
             $actions = [
-                0 => 'CREATEONE',
+                0 => 'POST',
             ];
 
             foreach ($actions as $action) {
                 $fileHash = $this->files[0]['hash'];
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=$action&fileName=test.txt&fileHash=$fileHash";
+                $baseUrl = "blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action&fileName=test.txt&fileHash=$fileHash";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2204,9 +2204,9 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
-            $action = 'CREATEONE';
+            $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2246,16 +2246,16 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // Check all operations with wrong signature
             // =======================================================
-            echo "Check GETONE, DELETEONE operations with wrong signature\n";
+            echo "Check GET, DELETE operations with wrong signature\n";
 
             $actions = [
-                0 => 'GETONE',
-                1 => 'DELETEONE',
+                0 => 'GET',
+                1 => 'DELETE',
             ];
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files/$identifier?bucketID=$bucketId&creationTime=$creationTime&action=$action";
+                $baseUrl = "/blob/files/$identifier?bucketID=$bucketId&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2274,20 +2274,20 @@ class CurlGetTest extends ApiTestCase
                 ];
 
                 /** @var Response $response */
-                $response = $client->request(substr($action, 0, strlen($action) - 3), $baseUrl.'&sig='.$token, $options);
+                $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
 
-            echo "Check GETALL, DELETEALL operations with wrong signature\n";
+            echo "Check GET, DELETE operations with wrong signature\n";
 
             $actions = [
-                0 => 'GETALL',
-                1 => 'DELETEALL',
+                0 => 'GET',
+                1 => 'DELETE',
             ];
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=$action";
+                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2299,20 +2299,20 @@ class CurlGetTest extends ApiTestCase
                 $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
                 /** @var Response $response */
-                $response = $client->request(substr($action, 0, strlen($action) - 3), $baseUrl.'&sig='.$token, $options);
+                $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
 
-            echo "Check CREATEONE operation with wrong checksum\n";
+            echo "Check POST operation with wrong checksum\n";
 
             $actions = [
-                0 => 'CREATEONE',
+                0 => 'POST',
             ];
 
             foreach ($actions as $action) {
                 $fileHash = $this->files[0]['hash'];
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=$action&fileName=test.txt&fileHash=$fileHash";
+                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action&fileName=test.txt&fileHash=$fileHash";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2369,9 +2369,9 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
-            $action = 'CREATEONE';
+            $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2411,11 +2411,11 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // Check all operations with overdue creationTime
             // =======================================================
-            echo "Check GETONE, DELETEONE operations with overdue creationTime\n";
+            echo "Check GET, DELETE operations with overdue creationTime\n";
 
             $actions = [
-                0 => 'GETONE',
-                1 => 'DELETEONE',
+                0 => 'GET',
+                1 => 'DELETE',
             ];
 
             $creationTime = new \DateTime('now');
@@ -2424,7 +2424,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files/$identifier?bucketID=$bucketId&creationTime=$creationTime&action=$action";
+                $baseUrl = "/blob/files/$identifier?bucketID=$bucketId&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2440,20 +2440,20 @@ class CurlGetTest extends ApiTestCase
                 ];
 
                 /** @var Response $response */
-                $response = $client->request(substr($action, 0, strlen($action) - 3), $baseUrl.'&sig='.$token, $options);
+                $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
 
-            echo "Check GETALL, DELETEALL operations with overdue creationTime\n";
+            echo "Check GET, DELETE operations with overdue creationTime\n";
 
             $actions = [
-                0 => 'GETALL',
-                1 => 'DELETEALL',
+                0 => 'GET',
+                1 => 'DELETE',
             ];
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=$action";
+                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2462,20 +2462,20 @@ class CurlGetTest extends ApiTestCase
                 $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
                 /** @var Response $response */
-                $response = $client->request(substr($action, 0, strlen($action) - 3), $baseUrl.'&sig='.$token, $options);
+                $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
 
-            echo "Check CREATEONE operation with overdue creationTime\n";
+            echo "Check POST operation with overdue creationTime\n";
 
             $actions = [
-                0 => 'CREATEONE',
+                0 => 'POST',
             ];
 
             foreach ($actions as $action) {
                 $fileHash = $this->files[0]['hash'];
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=$action&fileName=test.txt&fileHash=$fileHash";
+                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action&fileName=test.txt&fileHash=$fileHash";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2529,9 +2529,9 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
-            $action = 'CREATEONE';
+            $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2571,18 +2571,18 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // Check all operations with unconfigured bucket
             // =======================================================
-            echo "Check GETONE, DELETEONE operations with unconfigured bucket\n";
+            echo "Check GET, DELETE operations with unconfigured bucket\n";
 
             $actions = [
-                0 => 'GETONE',
-                1 => 'DELETEONE',
+                0 => 'GET',
+                1 => 'DELETE',
             ];
 
             $bucketId = '2468';
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files/$identifier?bucketID=$bucketId&creationTime=$creationTime&action=$action";
+                $baseUrl = "/blob/files/$identifier?bucketID=$bucketId&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2598,20 +2598,20 @@ class CurlGetTest extends ApiTestCase
                 ];
 
                 /** @var Response $response */
-                $response = $client->request(substr($action, 0, strlen($action) - 3), $baseUrl.'&sig='.$token, $options);
+                $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
             }
 
-            echo "Check GETALL, DELETEALL operations with unconfigured bucket\n";
+            echo "Check GET, DELETE operations with unconfigured bucket\n";
 
             $actions = [
-                0 => 'GETALL',
-                1 => 'DELETEALL',
+                0 => 'GET',
+                1 => 'DELETE',
             ];
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=$action";
+                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2620,20 +2620,20 @@ class CurlGetTest extends ApiTestCase
                 $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
                 /** @var Response $response */
-                $response = $client->request(substr($action, 0, strlen($action) - 3), $baseUrl.'&sig='.$token, $options);
+                $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
             }
 
-            echo "Check CREATEONE operation with unconfigured bucket\n";
+            echo "Check POST operation with unconfigured bucket\n";
 
             $actions = [
-                0 => 'CREATEONE',
+                0 => 'POST',
             ];
 
             foreach ($actions as $action) {
                 $fileHash = $this->files[0]['hash'];
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=$action&fileName=test.txt&fileHash=$fileHash";
+                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action&fileName=test.txt&fileHash=$fileHash";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2687,9 +2687,9 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
-            $action = 'CREATEONE';
+            $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2727,9 +2727,9 @@ class CurlGetTest extends ApiTestCase
             $this->files[0]['until'] = $fileData->getExistsUntil();
 
             // =======================================================
-            // Check GETALL of other bucket shouldnt return file
+            // Check GET of other bucket shouldnt return file
             // =======================================================
-            echo "Check GETALL on other bucket shouldnt return file\n";
+            echo "Check GET on other bucket shouldnt return file\n";
 
             $bucketId = 4321;
             // get key of wrong bucket
@@ -2737,7 +2737,7 @@ class CurlGetTest extends ApiTestCase
             $secret = $bucket->getKey();
 
             // url with missing / at the beginning to create a wrong checksum
-            $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETALL";
+            $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2766,9 +2766,9 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
-            $action = 'CREATEONE';
+            $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2809,7 +2809,7 @@ class CurlGetTest extends ApiTestCase
             // DELETE all files in other bucket
             // =======================================================
 
-            echo "Check DELETEALL on other bucket shouldnt delete original bucket\n";
+            echo "Check DELETE on other bucket shouldnt delete original bucket\n";
 
             $bucketId = 4321;
             // get key of wrong bucket
@@ -2817,7 +2817,7 @@ class CurlGetTest extends ApiTestCase
             $secret = $bucket->getKey();
 
             // url with missing / at the beginning to create a wrong checksum
-            $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=DELETEALL";
+            $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=DELETE";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2837,9 +2837,9 @@ class CurlGetTest extends ApiTestCase
             $this->assertEquals(204, $response->getStatusCode());
 
             // =======================================================
-            // Check GETALL of original bucket should still return file
+            // Check GET of original bucket should still return file
             // =======================================================
-            echo "Check GETALL on original bucket should still return file\n";
+            echo "Check GET on original bucket should still return file\n";
 
             $bucketId = 1234;
             // get key of wrong bucket
@@ -2847,7 +2847,7 @@ class CurlGetTest extends ApiTestCase
             $secret = $bucket->getKey();
 
             // url with missing / at the beginning to create a wrong checksum
-            $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&action=GETALL";
+            $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2899,9 +2899,9 @@ class CurlGetTest extends ApiTestCase
                 $fileHash = $this->files[$i]['hash'];
                 $notifyEmail = 'eugen.neuber@tugraz.at';
                 $retentionDuration = $this->files[$i]['retention'];
-                $action = 'CREATEONE';
+                $action = 'POST';
 
-                $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+                $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
                 $data = [
                     'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2942,7 +2942,7 @@ class CurlGetTest extends ApiTestCase
             // GET ONE file in prefix playground
             // =======================================================
             echo "GET download one file with prefix playground\n";
-            $url = '/blob/files/'.$this->files[0]['uuid']."/download?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&includeData=1&action=GETONE";
+            $url = '/blob/files/'.$this->files[0]['uuid']."/download?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&includeData=1&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2997,9 +2997,9 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
-            $action = 'CREATEONE';
+            $action = 'POST';
 
-            $url = "/blob/files/download?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/download?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -3043,7 +3043,7 @@ class CurlGetTest extends ApiTestCase
             $params = [
                     0 => "bucketID=$bucketId",
                     1 => "creationTime=$creationTime",
-                    2 => 'action=GETONE',
+                    2 => 'method=GET',
                     3 => 'sig=',
                 ];
 
@@ -3102,7 +3102,7 @@ class CurlGetTest extends ApiTestCase
             $creationTime->sub(new \DateInterval('PT2M'));
             $creationTime = strtotime($creationTime->format('c'));
 
-            $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&creationTime=$creationTime&action=GETONE";
+            $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -3130,7 +3130,7 @@ class CurlGetTest extends ApiTestCase
             $creationTime->sub(new \DateInterval('PT2M'));
             $creationTime = strtotime($creationTime->format('c'));
 
-            $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&creationTime=$creationTime&action=DELETEONE";
+            $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&creationTime=$creationTime&method=DELETE";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),

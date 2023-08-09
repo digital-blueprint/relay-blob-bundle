@@ -39,12 +39,12 @@ resources:
               type: string
               required: true
               example: "my-prefix/my-subprefix"
-            - name: action
+            - name: method
               in: query
-              description: 'Action that gets executed'
+              description: 'method that gets executed'
               type: string
               required: true
-              example: "GETALL"
+              example: "GET"
             - name: includeData
               in: query
               description: 'If the returned contentUrl is a http link or the base64 encoded data'
@@ -83,12 +83,12 @@ resources:
               type: string
               required: true
               example: "my-prefix/my-subprefix"
-            - name: action
+            - name: method
               in: query
-              description: 'Action that gets executed'
+              description: 'method that gets executed'
               type: string
               required: true
-              example: "GETONE"
+              example: "GET"
             - name: includeData
               in: query
               description: 'If the returned contentUrl is a http link or the base64 encoded data'
@@ -130,12 +130,12 @@ resources:
               type: string
               required: true
               example: "my-prefix/my-subprefix"
-            - name: action
+            - name: method
               in: query
-              description: 'Action that gets executed'
+              description: 'method that gets executed'
               type: string
               required: true
-              example: "DELETEONE"
+              example: "DELETE"
             - name: sig
               in: query
               description: 'Signature containing the checksum required for the check'
@@ -183,12 +183,12 @@ resources:
               type: string
               required: true
               example: "my-prefix/my-subprefix"
-            - name: action
+            - name: method
               in: query
-              description: 'Action that gets executed'
+              description: 'method that gets executed'
               type: string
               required: true
-              example: "PUTONE"
+              example: "PUT"
             - name: fileName
               in: query
               description: 'New filename'
@@ -227,12 +227,12 @@ resources:
               type: string
               required: true
               example: "my-prefix/my-subprefix"
-            - name: action
+            - name: method
               in: query
-              description: 'Action that gets executed'
+              description: 'method that gets executed'
               type: string
               required: true
-              example: "GETALL"
+              example: "GET"
             - name: fileName
               in: query
               description: 'Name of the file to upload'
@@ -323,9 +323,9 @@ resources:
               type: string
               required: true
               example: "my-prefix/my-subprefix"
-            - name: action
+            - name: method
               in: query
-              description: 'Action that gets executed'
+              description: 'method that gets executed'
               type: string
               required: true
               example: "DELTEALL"
@@ -361,12 +361,12 @@ resources:
               type: string
               required: true
               example: "1688636927"
-            - name: action
+            - name: method
               in: query
-              description: 'Action that gets executed'
+              description: 'method that gets executed'
               type: string
               required: true
-              example: "GETONE"
+              example: "GET"
             - name: sig
               in: query
               description: 'Signature containing the checksum required for the check'

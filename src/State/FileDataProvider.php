@@ -55,10 +55,10 @@ class FileDataProvider extends AbstractDataProvider
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-file-data-by-id-missing-bucket-id');
         }
 
-        $action = $filters['action'] ?? '';
-        assert(is_string($action));
-        if (!$action) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Action is missing', 'blob:get-file-data-by-id-missing-bucket-id');
+        $urlMethod = $filters['method'] ?? '';
+        assert(is_string($urlMethod));
+        if (!$urlMethod) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'method is missing', 'blob:get-file-data-by-id-missing-bucket-id');
         }
 
         $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
@@ -67,10 +67,10 @@ class FileDataProvider extends AbstractDataProvider
         }
 
         $method = $this->requestStack->getCurrentRequest()->getMethod();
-        $action = $filters['action'] ?? '';
-        assert(is_string($action));
+        $urlMethod = $filters['method'] ?? '';
+        assert(is_string($urlMethod));
 
-        if (($method === 'GET' && $action !== 'GETONE') || ($method === 'DELETE' && $action !== 'DELETEONE')) {
+        if (($method === 'GET' && $urlMethod !== 'GET') || ($method === 'DELETE' && $urlMethod !== 'DELETE')) {
             throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Action/Method combination is wrong', 'blob:get-file-data-by-id-method-not-suitable');
         }
 
@@ -138,11 +138,11 @@ class FileDataProvider extends AbstractDataProvider
         $bucketId = $filters['bucketID'] ?? '';
         $prefix = $filters['prefix'] ?? '';
         $creationTime = $filters['creationTime'] ?? '';
-        $action = $filters['action'] ?? '';
+        $urlMethod = $filters['method'] ?? '';
         assert(is_string($bucketId));
         assert(is_string($prefix));
         assert(is_string($creationTime));
-        assert(is_string($action));
+        assert(is_string($urlMethod));
 
         /** @var string $bucketId */
         $bucketId = $this->requestStack->getCurrentRequest()->query->get('bucketID', '');
@@ -158,8 +158,8 @@ class FileDataProvider extends AbstractDataProvider
         if (!$creationTime) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'creationTime is missing', 'blob:get-file-data-collection-missing-creation-time');
         }
-        if (!$action) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'action is missing', 'blob:get-file-data-collection-missing-method');
+        if (!$urlMethod) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'method is missing', 'blob:get-file-data-collection-missing-method');
         }
 
         // check if bucketID is correct
@@ -188,7 +188,7 @@ class FileDataProvider extends AbstractDataProvider
             $fileData->setBucket($bucket);
             $fileData = $this->blobService->getLink($fileData);
 
-            $fileData->setContentUrl($this->blobService->generateGETONELink($baseUrl, $fileData, $includeData));
+            $fileData->setContentUrl($this->blobService->generateGETLink($baseUrl, $fileData, $includeData));
         }
 
         return $fileDatas;
@@ -210,11 +210,11 @@ class FileDataProvider extends AbstractDataProvider
 
         $bucketId = $filters['bucketID'] ?? '';
         $creationTime = $filters['creationTime'] ?? '0';
-        $action = $filters['action'] ?? '';
+        $urlMethod = $filters['method'] ?? '';
 
         // check if the minimal params are present
-        if (!$bucketId || !$creationTime || !$action) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID, creationTime or action parameter missing', 'blob:check-signature-missing-signature-params');
+        if (!$bucketId || !$creationTime || !$urlMethod) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID, creationTime or method parameter missing', 'blob:check-signature-missing-signature-params');
         }
 
         // verify signature and checksum
@@ -237,10 +237,10 @@ class FileDataProvider extends AbstractDataProvider
         $method = $this->requestStack->getCurrentRequest()->getMethod();
 
         // check if the provided method and action is suitable
-        if (($method === 'GET' && $action !== 'GETONE' && $action !== 'GETALL')
-            || ($method === 'DELETE' && $action !== 'DELETEONE' && $action !== 'DELETEALL')
-            || ($method === 'PUT' && $action !== 'PUTONE')
-            || ($method === 'POST' && $action !== 'CREATEONE')
+        if (($method === 'GET' && $urlMethod !== 'GET' && $urlMethod !== 'GET')
+            || ($method === 'DELETE' && $urlMethod !== 'DELETE' && $urlMethod !== 'DELETE')
+            || ($method === 'PUT' && $urlMethod !== 'PUT')
+            || ($method === 'POST' && $urlMethod !== 'POST')
         ) {
             throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:check-signature-method-not-suitable');
         }

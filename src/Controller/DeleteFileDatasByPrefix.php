@@ -35,13 +35,13 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         $bucketId = $request->query->get('bucketID', '');
         $creationTime = $request->query->get('creationTime', 0);
         $prefix = $request->query->get('prefix', '');
-        $action = $request->query->get('action', '');
+        $urlMethod = $request->query->get('method', '');
         assert(is_string($bucketId));
         assert(is_string($prefix));
         assert(is_string($sig));
 
         // check if the minimal required params are present
-        if (!$bucketId || !$creationTime || !$prefix || !$action) {
+        if (!$bucketId || !$creationTime || !$prefix || !$urlMethod) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Signature cannot be checked', 'blob:delete-file-data-by-prefix-unset-sig-params');
         }
 
@@ -63,7 +63,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
 
         // check action/method
         $method = $request->getMethod();
-        if (($method !== 'DELETE' || $action !== 'DELETEALL')) {
+        if (($method !== 'DELETE' || $urlMethod !== 'DELETE')) {
             throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:delete-file-data-by-prefix-method-not-suitable');
         }
 

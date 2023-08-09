@@ -36,10 +36,10 @@ class DownloadAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID is missing', 'blob:download-file-by-id-missing-bucket-id');
         }
 
-        $action = $request->query->get('action', '');
-        assert(is_string($action));
-        if (!$action) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'action is missing', 'blob:download-file-by-id-missing-action');
+        $urlMethod = $request->query->get('method', '');
+        assert(is_string($urlMethod));
+        if (!$urlMethod) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'method is missing', 'blob:download-file-by-id-missing-method');
         }
 
         $creationTime = $request->query->get('creationTime', '');
@@ -54,7 +54,7 @@ class DownloadAction extends BaseBlobController
         }
 
         $method = $request->getMethod();
-        if ($method !== 'GET' || $action !== 'GETONE') {
+        if ($method !== 'GET' || $urlMethod !== 'GET') {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'action/method is invalid', 'blob:download-file-by-id-invalid-method');
         }
 

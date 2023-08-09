@@ -190,7 +190,7 @@ class BlobService
         return $response;
     }
 
-    public function generateGETONELink(string $baseUrl, FileData $fileData, string $includeData = ''): string
+    public function generateGETLink(string $baseUrl, FileData $fileData, string $includeData = ''): string
     {
         if (!$fileData) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:file-data-invalid');
@@ -202,32 +202,32 @@ class BlobService
         $now = new \DateTimeImmutable('now', new DateTimeZone('UTC'));
 
         $payload = [
-            'cs' => $this->generateChecksumFromFileData($fileData, 'GETONE', $now, $includeData),
+            'cs' => $this->generateChecksumFromFileData($fileData, 'GET', $now, $includeData),
         ];
 
         // set content url
-        $filePath = $this->generateSignedContentUrl($fileData, 'GETONE', $now, $includeData, DenyAccessUnlessCheckSignature::create($fileData->getBucket()->getKey(), $payload));
+        $filePath = $this->generateSignedContentUrl($fileData, 'GET', $now, $includeData, DenyAccessUnlessCheckSignature::create($fileData->getBucket()->getKey(), $payload));
 
         return $baseUrl.'/'.substr($filePath, 1);
     }
 
-    public function generateSignedContentUrl($fileData, $action, $now, $includeData, $sig): string
+    public function generateSignedContentUrl($fileData, $urlMethod, $now, $includeData, $sig): string
     {
         if ($includeData) {
-            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&includeData=1'.'&action='.$action.'&sig='.$sig;
+            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&includeData=1'.'&method='.$urlMethod.'&sig='.$sig;
         } else {
-            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&action='.$action.'&sig='.$sig;
+            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&method='.$urlMethod.'&sig='.$sig;
         }
     }
 
-    public function generateChecksumFromFileData($fileData, $action, $now, $includeData = ''): ?string
+    public function generateChecksumFromFileData($fileData, $urlMethod, $now, $includeData = ''): ?string
     {
         if (!$includeData) {
             // create url to hash
-            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&action='.$action;
+            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&method='.$urlMethod;
         } else {
             // create url to hash
-            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&includeData=1'.'&action='.$action;
+            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&includeData=1'.'&method='.$urlMethod;
         }
 
         // create sha256 hash
