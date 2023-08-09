@@ -45,9 +45,9 @@ resources:
               type: string
               required: true
               example: "GETALL"
-            - name: binary
+            - name: includeData
               in: query
-              description: 'If the returned link redirects to the binary or not'
+              description: 'If the returned contentUrl is a http link or the base64 encoded data'
               type: string
               required: false
               example: "1"
@@ -89,9 +89,9 @@ resources:
               type: string
               required: true
               example: "GETONE"
-            - name: binary
+            - name: includeData
               in: query
-              description: 'If the returned link redirects to the binary or not'
+              description: 'If the returned contentUrl is a http link or the base64 encoded data'
               type: string
               required: false
               example: "1"

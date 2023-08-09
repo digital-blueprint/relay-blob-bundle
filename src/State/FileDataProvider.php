@@ -110,10 +110,10 @@ class FileDataProvider extends AbstractDataProvider
 
             // check if GET request was used
             if ($this->requestStack->getCurrentRequest()->getMethod() === 'GET') {
-                // check if binary parameter is set
+                // check if includeData parameter is set
                 /** @var string */
-                $binary = $this->requestStack->getCurrentRequest()->query->get('binary', '');
-                if ($binary && $binary === '1') {
+                $includeData = $this->requestStack->getCurrentRequest()->query->get('includeData', '');
+                if ($includeData && $includeData === '1') {
                     $fileData = $this->blobService->getBase64Data($fileData);
                     //$response = new RedirectResponse($fileData->getContentUrl(), 302);
                     //return $response;
@@ -172,7 +172,7 @@ class FileDataProvider extends AbstractDataProvider
         $secret = $bucket->getKey();
         $this->checkSignature($secret, $filters);
 
-        $binary = $filters['binary'] ?? '';
+        $includeData = $filters['includeData'] ?? '';
         assert(is_string($bucketId));
 
         if (!$bucket->getService()) {
@@ -188,7 +188,7 @@ class FileDataProvider extends AbstractDataProvider
             $fileData->setBucket($bucket);
             $fileData = $this->blobService->getLink($fileData);
 
-            $fileData->setContentUrl($this->blobService->generateGETONELink($baseUrl, $fileData, $binary));
+            $fileData->setContentUrl($this->blobService->generateGETONELink($baseUrl, $fileData, $includeData));
         }
 
         return $fileDatas;
