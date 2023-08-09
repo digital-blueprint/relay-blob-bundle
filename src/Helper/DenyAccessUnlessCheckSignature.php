@@ -69,18 +69,6 @@ class DenyAccessUnlessCheckSignature
         return $data;
     }
 
-    public static function checkNeededParamsAndMethod(Request $request, string $method)
-    {
-        $bucketId = $request->query->get('bucketID', '');
-        $creationTime = $request->query->get('creationTime', 0);
-        $action = $request->query->get('action', '');
-        $sig = $request->query->get('sig', '');
-        // check checksum
-        if (!$bucketId || !$creationTime || !$action || !$sig || $request->getMethod() !== $method) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID, creationTime or action missing!', 'blob:signature-invalid');
-        }
-    }
-
     public static function generateSha256(Request $request): string
     {
         // remove signature part of uri
