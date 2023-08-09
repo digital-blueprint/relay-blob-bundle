@@ -10,4 +10,5 @@ The files are stored with an expiry date, and expired files get deleted automati
 Buckets can be configured to have different expiry times, usage rights, storage quotas, etc.
 
 Installation Requirements:
+
  - A MySQL / MariaDB database

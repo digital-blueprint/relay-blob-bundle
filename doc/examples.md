@@ -36,25 +36,25 @@ Examples of the API is use can be found in the [common-activities](https://githu
 Furthermore, below are some examples of how to implement communication with blob in php.
 
 ### GET
-GET can mean get a collection of items (GETALL) or get a single item (GETONE), thus this section is separated into two subesections.
-#### GETONE
+GET can mean get a collection of items or get a single item, thus this section is separated into two subesections.
+#### GET item
 Setting:
 
 Imagine that you have uploaded a file and got back the identifier `de1aaf61-bc52-4c91-a679-bef2f24e3cf7`. Therefore, you know that you can access the file using the `/blob/files/de1aaf61-bc52-4c91-a679-bef2f24e3cf7` endpoint.
-However, you also need to specify the `bucketID`, `creationTime`, `action` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
+However, you also need to specify the `bucketID`, `creationTime`, `method` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
 `creationTime` is the creation time of the request, thus this is a timestamp of the current time. At the time of writing, it is the 17.07.2023 15:57:25, thus the current timestamp is `1689602245`.
-`action` is the action you want the endpoint to perform. For GET requests, this could be `GETONE` or `GETALL` depending on if you want to get a collection of resources or a single resource. The endpoint `/blob/files/{identifier}` is used to get one resource, therefore the correct action to use is `GETONE`, all other would fail.
+`method` is the method you want the endpoint to perform. For GET requests, the correct method to use is `GET`, all other would fail.
 
 Assuming the above mentioned setting, the url part so far would look like this:
 ```
-/blob/files/de1aaf61-bc52-4c91-a679-bef2f24e3cf7?bucketID=1248&creationTime=1689602245&action=GETONE
+/blob/files/de1aaf61-bc52-4c91-a679-bef2f24e3cf7?bucketID=1248&creationTime=1689602245&method=GET
 ```
 This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `cs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
 
-Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `acf1a1aa8269438e3127cf863b531856c575a0cc4165cc75f7c865e39d2e9cce`. This checksum then has to be added to a json with the key `cs`.
+Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `5338afb41dc80ae0668975a9c198c8a58a43b175b84616ecc709a799da6a5982`. This checksum then has to be added to a json with the key `cs`.
 This then has to be signed using the secret key, and appended to the url. The result will look something like this:
 ```
-/blob/files/de1aaf61-bc52-4c91-a679-bef2f24e3cf7?bucketID=1248&creationTime=1689602245&action=GETONE&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
+/blob/files/de1aaf61-bc52-4c91-a679-bef2f24e3cf7?bucketID=1248&creationTime=1689602245&method=GET&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
 ```
 Note: the signature in this case is faked, your signature will have another value, but the basic syntax will look the same.
 
@@ -67,7 +67,7 @@ composer require web-token/jwt-core
 composer require web-token/jwt-key-mgmt
 composer require web-token/jwt-signature-algorithm-hmac
 ```
-The following script is a simple example of how to communicate with blob using GETONE. Make sure to replace the base url with your blob base url and the identitifer, bucketID and secretKey with your values.
+The following script is a simple example of how to communicate with blob to GET an item. Make sure to replace the base url with your blob base url and the identitifer, bucketID and secretKey with your values.
 ```php
 <?php
 require __DIR__ .'/vendor/autoload.php';
@@ -93,7 +93,7 @@ $creationTime = time(); // get current timestamp using time()
 $binary = 1;
 
 // create SHA-256 checksum of request parameters
-$cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.$creationTime.'&action=GETONE'.'&binary='.$binary);
+$cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.$creationTime.'&method=GET'.'&binary='.$binary);
 
 // create payload for signature
 $payload = [
@@ -133,7 +133,7 @@ $params = [
     'query' => [
         'bucketID' => $bucketID,
         'creationTime' => $creationTime,
-        'action' => 'GETONE',
+        'method' => 'GET',
         'binary' => $binary,
         'sig' => $sig,
     ]
@@ -144,25 +144,25 @@ $response = $client->request('GET', '/blob/files/'.$id, $params);
 // print response body
 echo $response->getBody()."\n";
 ```
-#### GETALL
+#### GET Collection
 Setting:
 
 Imagine that you have uploaded multiple files with the same `prefix` and you want to retrieve all files with this prefix. Therefore, you know that you can access the file using the `/blob/files` endpoint.
-However, you also need to specify the `bucketID`, `creationTime`, `prefix`, `action` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
+However, you also need to specify the `bucketID`, `creationTime`, `prefix`, `method` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
 `creationTime` is the creation time of the request, thus this is a timestamp of the current time. At the time of writing, it is the 17.07.2023 15:57:25, thus the current timestamp is `1689602245`.
 `prefix` is the prefix you specified when uploading the files, lets assume this is `myData`.
-`action` is the action you want the endpoint to perform. For GET requests, this could be `GETONE` or `GETALL` depending on if you want to get a collection of resources or a single resource. The endpoint `/blob/files` is used to get a collection of resources, therefore the correct action to use is `GETALL`, all other would fail.
+`method` is the method you want the endpoint to perform. For GET requests, this should be `GET`, all others would fail
 
 Assuming the above mentioned setting, the url part so far would look like this:
 ```
-/blob/files?bucketID=1248&creationTime=1689602245&prefix=myData&action=GETALL
+/blob/files?bucketID=1248&creationTime=1689602245&prefix=myData&method=GET
 ```
 This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `cs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
 
-Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `a03381ce2c8fa73851d1d26cb5d0a5b5a73fbf2ca9e67d66e4f471ae11a4075e`. This checksum then has to be added to a json with the key `cs`.
+Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `7c2bdb6f8553cccee3934864e60d79c55d447a851b064f4e989293acca890bc2`. This checksum then has to be added to a json with the key `cs`.
 This then has to be signed using the secret key, and appended to the url. The result will look something like this:
 ```
-/blob/files?bucketID=1248&creationTime=1689602245&prefix=myData&action=GETALL&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
+/blob/files?bucketID=1248&creationTime=1689602245&prefix=myData&method=GET&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
 ```
 Note: the signature in this case is faked, your signature will have another value, but the basic syntax will look the same.
 
@@ -175,7 +175,7 @@ composer require web-token/jwt-core
 composer require web-token/jwt-key-mgmt
 composer require web-token/jwt-signature-algorithm-hmac
 ```
-The following script is a simple example of how to communicate with blob using GETALL. Make sure to replace the base url with your blob base url and the bucketID, prefix and secretKey with your values.
+The following script is a simple example of how to communicate with blob to GET a collection. Make sure to replace the base url with your blob base url and the bucketID, prefix and secretKey with your values.
 ```php
 <?php
 require __DIR__ .'/vendor/autoload.php';
@@ -201,7 +201,7 @@ $prefix = 'myData';
 $binary = 1;
 
 // create SHA-256 checksum of request parameters
-$cs = hash('sha256', '/blob/files?bucketID='.$bucketID.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action=GETALL'.'&binary='.$binary);
+$cs = hash('sha256', '/blob/files?bucketID='.$bucketID.'&creationTime='.$creationTime.'&prefix='.$prefix.'&method=GET'.'&binary='.$binary);
 
 // create payload for signature
 $payload = [
@@ -242,7 +242,7 @@ $params = [
         'bucketID' => $bucketID,
         'creationTime' => $creationTime,
         'prefix' => $prefix,
-        'action' => 'GETALL',
+        'method' => 'GET',
         'binary' => $binary,
         'sig' => $sig,
     ]
@@ -255,14 +255,14 @@ echo $response->getBody()."\n";
 
 ```
 ### POST
-#### CREATEONE
+#### CREATE item
 Setting:
 
 Imagine that you want to upload a file. Therefore, you know that you can upload a file using the `/blob/files` endpoint.
-However, you also need to specify the `bucketID`, `creationTime`, `prefix`, `action`, `fileName`, `fileHash` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
+However, you also need to specify the `bucketID`, `creationTime`, `prefix`, `method`, `fileName`, `fileHash` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
 `creationTime` is the creation time of the request, thus this is a timestamp of the current time. At the time of writing, it is the 17.07.2023 15:57:25, thus the current timestamp is `1689602245`.
 `prefix` is the prefix that the data is stored in. Different prefixes store different items, therefore prefixes are a way to easily group up data that belongs together. Assume that the prefix our file was created with is `myData`.
-`action` is the action you want the endpoint to perform. For PUT requests, this can only be `CREATEONE`, all others would fail.
+`method` is the method you want the endpoint to perform. For POST requests, this should be `POST`, all others would fail
 `fileName` is the new file name of the file you want to rename. Assume that the new file name should be `myFile.txt`.
 `fileHash` is the hash of the file you want to upload. This hash has to be generated using `sha256`.
 
@@ -273,13 +273,13 @@ This is my file.
 
 Assuming the above mentioned setting, the url part so far would look like this:
 ```
-/blob/files?bucketID=1248&creationTime=1689602245&prefix=myData&action=CREATEONE&fileName=myFile.txt&fileHash=c3707db513a88903c2c109c27550590c01fcb688ed9b4e1508197e0c973be0e3
+/blob/files?bucketID=1248&creationTime=1689602245&prefix=myData&method=POST&fileName=myFile.txt&fileHash=c3707db513a88903c2c109c27550590c01fcb688ed9b4e1508197e0c973be0e3
 ```
 This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `cs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
-Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `9d74a8e4ca667aca21fa4f2514abda9db450cdb086d1f2101eef7588e9cdc4e0`. This checksum then has to be added to a json with the key `cs`.
+Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `e1e93cc0a57b20104d124cd0df3e28c8c61f172cd7df7c2c4405b7a41bb01d2d`. This checksum then has to be added to a json with the key `cs`.
 This then has to be signed using the secret key, and appended to the url. The result will look something like this:
 ```
-/blob/files?bucketID=1248&creationTime=1689602245&prefix=myData&action=CREATEONE&fileName=myFile.txt&fileHash=c3707db513a88903c2c109c27550590c01fcb688ed9b4e1508197e0c973be0e3&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
+/blob/files?bucketID=1248&creationTime=1689602245&prefix=myData&method=POST&fileName=myFile.txt&fileHash=c3707db513a88903c2c109c27550590c01fcb688ed9b4e1508197e0c973be0e3&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
 ```
 Note: the signature in this case is faked, your signature will have another value, but the basic syntax will look the same.
 
@@ -292,7 +292,7 @@ composer require web-token/jwt-core
 composer require web-token/jwt-key-mgmt
 composer require web-token/jwt-signature-algorithm-hmac
 ```
-The following script is a simple example of how to communicate with blob using CREATEONE. Make sure to replace the base url with your blob base url and the bucketID, prefix, fileName and secretKey with your values. Also dont forget to replace the path to the file you want to upload.
+The following script is a simple example of how to communicate with blob to POST an item. Make sure to replace the base url with your blob base url and the bucketID, prefix, fileName and secretKey with your values. Also dont forget to replace the path to the file you want to upload.
 ```php
 <?php
 require __DIR__ .'/vendor/autoload.php';
@@ -319,7 +319,7 @@ $fileName = "myFile.txt";
 $fileHash = hash_file("sha256", "myFile.txt");
 
 // create SHA-256 checksum of request parameters
-$cs = hash('sha256', '/blob/files?bucketID='.$bucketID.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action=CREATEONE'.'&fileName='.$fileName.'&fileHash='.$fileHash);
+$cs = hash('sha256', '/blob/files?bucketID='.$bucketID.'&creationTime='.$creationTime.'&prefix='.$prefix.'&method=POST'.'&fileName='.$fileName.'&fileHash='.$fileHash);
 
 // create payload for signature
 $payload = [
@@ -361,7 +361,7 @@ $params = [
         'bucketID' => $bucketID,
         'creationTime' => $creationTime,
         'prefix' => $prefix,
-        'action' => 'CREATEONE',
+        'method' => 'POST',
         'fileName' => $fileName,
         'fileHash' => $fileHash,
         'sig' => $sig,
@@ -394,25 +394,25 @@ echo $response->getBody()."\n";
 ```
 
 ### PUT
-#### PUTONE
+#### PUT item
 Setting:
 
 Imagine that you have uploaded a file and got back the identifier `4da14ef0-d552-4e27-975e-e1f3db5a0e81`. Therefore, you know that you can rename the file using the `/blob/files/4da14ef0-d552-4e27-975e-e1f3db5a0e81` endpoint.
-However, you also need to specify the `bucketID`, `creationTime`, `action`, `fileName` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
+However, you also need to specify the `bucketID`, `creationTime`, `method`, `fileName` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
 `creationTime` is the creation time of the request, thus this is a timestamp of the current time. At the time of writing, it is the 17.07.2023 15:57:25, thus the current timestamp is `1689602245`.
 `prefix` is the prefix that the data is stored in. Different prefixes store different items, therefore prefixes are a way to easily group up data that belongs together. Assume that the prefix our file was created with is `myData`.
-`action` is the action you want the endpoint to perform. For PUT requests, this can only be `PUTONE`, all others would fail.
+`method` is the method you want the endpoint to perform. For PUT requests, this can only be `PUT`, all others would fail.
 `fileName` is the new file name of the file you want to rename. Assume that the new file name should be `myNewFile.txt`.
 
 Assuming the above mentioned setting, the url part so far would look like this:
 ```
-/blob/files/8183d841-4783-4a4c-9680-e8d7c22c896e?bucketID=1248&creationTime=1689602245&action=PUTONE&fileName=myNewFile.txt
+/blob/files/8183d841-4783-4a4c-9680-e8d7c22c896e?bucketID=1248&creationTime=1689602245&method=PUT&fileName=myNewFile.txt
 ```
 This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `cs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
-Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `8e3785bb5b96a0202a0bf1e8975235f5c004f47f95bc7f27ba86dfedab19a803`. This checksum then has to be added to a json with the key `cs`.
+Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `4b8ba380f59dfd6b83bd1db8f37ad8e7855df38f456e5d1c98debf8e7014de7b`. This checksum then has to be added to a json with the key `cs`.
 This then has to be signed using the secret key, and appended to the url. The result will look something like this:
 ```
-/blob/files/8183d841-4783-4a4c-9680-e8d7c22c896e?bucketID=1248&creationTime=1689602245&action=PUTONE&fileName=myNewFile.txt&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
+/blob/files/8183d841-4783-4a4c-9680-e8d7c22c896e?bucketID=1248&creationTime=1689602245&method=PUT&fileName=myNewFile.txt&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
 ```
 Note: the signature in this case is faked, your signature will have another value, but the basic syntax will look the same.
 
@@ -425,7 +425,7 @@ composer require web-token/jwt-core
 composer require web-token/jwt-key-mgmt
 composer require web-token/jwt-signature-algorithm-hmac
 ```
-The following script is a simple example of how to communicate with blob using PUTONE. Make sure to replace the base url with your blob base url and the identifier, bucketID, fileName and secretKey with your values.
+The following script is a simple example of how to communicate with blob using PUT. Make sure to replace the base url with your blob base url and the identifier, bucketID, fileName and secretKey with your values.
 ```php
 <?php
 require __DIR__ .'/vendor/autoload.php';
@@ -451,7 +451,7 @@ $creationTime = time(); // get current timestamp using time()
 $fileName = "newName.txt";
 
 // create SHA-256 checksum of request parameters
-$cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.$creationTime.'&action=PUTONE'.'&fileName='.$fileName);
+$cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.$creationTime.'&method=PUT'.'&fileName='.$fileName);
 
 // create payload for signature
 $payload = [
@@ -494,7 +494,7 @@ $params = [
     'query' => [
         'bucketID' => $bucketID,
         'creationTime' => $creationTime,
-        'action' => 'PUTONE',
+        'method' => 'PUT',
         'fileName' => $fileName,
         'sig' => $sig,
     ],
@@ -508,24 +508,24 @@ echo $response->getBody()."\n";
 ```
 
 ### DELETE
-#### DELETEONE
+#### DELETE item
 Setting:
 
 Imagine that you have uploaded a file and got back the identifier `4da14ef0-d552-4e27-975e-e1f3db5a0e81`. Therefore, you know that you can delete the file using the `/blob/files/4da14ef0-d552-4e27-975e-e1f3db5a0e81` endpoint.
-However, you also need to specify the `bucketID`, `creationTime`, `prefix`, `action` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
+However, you also need to specify the `bucketID`, `creationTime`, `prefix`, `method` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
 `creationTime` is the creation time of the request, thus this is a timestamp of the current time. At the time of writing, it is the 17.07.2023 15:57:25, thus the current timestamp is `1689602245`.
 `prefix` is the prefix that the data is stored in. Different prefixes store different items, therefore prefixes are a way to easily group up data that belongs together. Assume that the prefix our file was created with is `myData`.
-`action` is the action you want the endpoint to perform. For DELETE requests, this could be `DELETEONE` or `DELETEALL` depending on if you want to delete a collection of resources or a single resource. The endpoint `/blob/files/{identifier}` is used to delete one resource, therefore the correct action to use is `DELETEONE`, all other would fail.
+`method` is the method you want the endpoint to perform. For DELETE requests, the correct method to use is `DELETE`, all other would fail.
 
 Assuming the above mentioned setting, the url part so far would look like this:
 ```
-/blob/files/4da14ef0-d552-4e27-975e-e1f3db5a0e81?bucketID=1248&creationTime=1689602245&prefix=myData&action=DELETEONE
+/blob/files/4da14ef0-d552-4e27-975e-e1f3db5a0e81?bucketID=1248&creationTime=1689602245&prefix=myData&method=DELETE
 ```
 This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `cs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
-Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `619999459eb90e6bbf00362f7963cd741ed71f8848437e434b087b4fa1e87b3e`. This checksum then has to be added to a json with the key `cs`.
+Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `f481ec6f9b544b2f24bf7e0b9eec225e4401e26f2053cc260e5eea3448628c93`. This checksum then has to be added to a json with the key `cs`.
 This then has to be signed using the secret key, and appended to the url. The result will look something like this:
 ```
-/blob/files/4da14ef0-d552-4e27-975e-e1f3db5a0e81?bucketID=1248&creationTime=1689602245&action=DELETEONE&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
+/blob/files/4da14ef0-d552-4e27-975e-e1f3db5a0e81?bucketID=1248&creationTime=1689602245&method=DELETE&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
 ```
 Note: the signature in this case is faked, your signature will have another value, but the basic syntax will look the same.
 
@@ -538,7 +538,7 @@ composer require web-token/jwt-core
 composer require web-token/jwt-key-mgmt
 composer require web-token/jwt-signature-algorithm-hmac
 ```
-The following script is a simple example of how to communicate with blob using DELETEONE. Make sure to replace the base url with your blob base url and the identitifer, bucketID and secretKey with your values.
+The following script is a simple example of how to communicate with blob using DELETE. Make sure to replace the base url with your blob base url and the identitifer, bucketID and secretKey with your values.
 ```php
 <?php
 require __DIR__ .'/vendor/autoload.php';
@@ -563,7 +563,7 @@ $bucketID = '1248';
 $creationTime = time(); // get current timestamp using time()
 
 // create SHA-256 checksum of request parameters
-$cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.$creationTime.'&action=DELETEONE');
+$cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.$creationTime.'&method=DELETE');
 
 // create payload for signature
 $payload = [
@@ -603,7 +603,7 @@ $params = [
     'query' => [
         'bucketID' => $bucketID,
         'creationTime' => $creationTime,
-        'action' => 'DELETEONE',
+        'method' => 'DELETE',
         'sig' => $sig,
     ]
 ];
@@ -613,25 +613,25 @@ $response = $client->request('DELETE', '/blob/files/'.$id, $params);
 // print response body
 echo $response->getBody()."\n";
 ```
-#### DELETEALL
+#### DELETE collection
 Setting:
 
 Imagine that you have uploaded multiple files with the same `prefix` and you want to delete all files with this prefix. Therefore, you know that you can access the file using the `/blob/files` endpoint.
-However, you also need to specify the `bucketID`, `creationTime`, `prefix`, `action` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
+However, you also need to specify the `bucketID`, `creationTime`, `prefix`, `method` and `sig` parameters. You already should know the `bucketID`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
 `creationTime` is the creation time of the request, thus this is a timestamp of the current time. At the time of writing, it is the 17.07.2023 15:57:25, thus the current timestamp is `1689602245`.
 `prefix` is the prefix you specified when uploading the files, lets assume this is `myData`.
-`action` is the action you want the endpoint to perform. For GET requests, this could be `DELETEONE` or `DELETEALL` depending on if you want to delete a collection of resources or a single resource. The endpoint `/blob/files` is used to delete a collection of resources, therefore the correct action to use is `DELETEALL`, all other would fail.
+`method` is the method you want the endpoint to perform. For GET requests, the correct method to use is `DELETE`, all other would fail.
 
 Assuming the above mentioned setting, the url part so far would look like this:
 ```
-/blob/files?bucketID=1248&creationTime=1689602245&prefix=myData&action=GETALL
+/blob/files?bucketID=1248&creationTime=1689602245&prefix=myData&method=DELETE
 ```
 This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `cs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
 
-Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `a03381ce2c8fa73851d1d26cb5d0a5b5a73fbf2ca9e67d66e4f471ae11a4075e`. This checksum then has to be added to a json with the key `cs`.
+Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `be675bcaed9a8116afc7d1bc0fe6ef35f669efe31e9326e49677318ae9b180cf`. This checksum then has to be added to a json with the key `cs`.
 This then has to be signed using the secret key, and appended to the url. The result will look something like this:
 ```
-/blob/files?bucketID=1248&creationTime=1689602245&prefix=myData&action=GETALL&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
+/blob/files?bucketID=1248&creationTime=1689602245&prefix=myData&method=DELETE&sig=eyJhbGciOiJIUzI1NiJ9.eyJjcyI6ImM4YzEwM2I3MjdhMjdiOTkxMjU5NzM3OGVlZWFhNjQxYTQ4MDBkMDhmMGEzY2MxMDA2NjQ2ZjA3ZmRhYjE4OWQifQ.o9IPdjFZ5BDXz2Y_vVsZtk5jQ3lpczFE5DtghJZ0mW0
 ```
 Note: the signature in this case is faked, your signature will have another value, but the basic syntax will look the same.
 
@@ -644,7 +644,7 @@ composer require web-token/jwt-core
 composer require web-token/jwt-key-mgmt
 composer require web-token/jwt-signature-algorithm-hmac
 ```
-The following script is a simple example of how to communicate with blob using DELETEALL. Make sure to replace the base url with your blob base url and the bucketID, prefix and secretKey with your values.
+The following script is a simple example of how to communicate with blob using DELETE. Make sure to replace the base url with your blob base url and the bucketID, prefix and secretKey with your values.
 ```php
 <?php
 require __DIR__ .'/vendor/autoload.php';
@@ -669,7 +669,7 @@ $creationTime = time(); // get current timestamp using time()
 $prefix = 'myData';
 
 // create SHA-256 checksum of request parameters
-$cs = hash('sha256', '/blob/files?bucketID='.$bucketID.'&creationTime='.$creationTime.'&prefix='.$prefix.'&action=DELETEALL');
+$cs = hash('sha256', '/blob/files?bucketID='.$bucketID.'&creationTime='.$creationTime.'&prefix='.$prefix.'&method=DELETE');
 
 // create payload for signature
 $payload = [
@@ -710,7 +710,7 @@ $params = [
         'bucketID' => $bucketID,
         'creationTime' => $creationTime,
         'prefix' => $prefix,
-        'action' => 'DELETEALL',
+        'method' => 'DELETE',
         'sig' => $sig,
     ]
 ];
