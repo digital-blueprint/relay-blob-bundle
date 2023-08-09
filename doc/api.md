@@ -150,3 +150,20 @@ This means that systems communicating with blob have to also generate their chec
 | `blob:get-file-data-by-id-file-data-not-found`   | 404         | No FileData for the given identifier was not found!                                                                           | `message`          |         |
 | `blob:get-file-data-by-id-method-not-suitable`   | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
 | `blob:check-signature-method-not-suitable`       | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
+
+### Download operation `/blob/files/{identifier}/download`
+
+#### GET
+
+| relay:errorId                                    | Status code | Description                                                                          | relay:errorDetails | Example |
+|--------------------------------------------------|-------------|--------------------------------------------------------------------------------------|--------------------| ------- |
+| `blob:download-file-by-id-missing-identifier`    | 400         | The identifier `{identifier}` is missing                                             | `message`          |         |
+| `blob:download-file-by-id-missing-bucket-id`     | 400         | The bucket id parameter `bucketID` is missing                                        | `message`          |         |
+| `blob:download-file-by-id-missing-action`        | 400         | The prefix parameter `prefix` is missing                                             | `message`          |         |
+| `blob:download-file-by-id-missing-creation-time` | 400         | The creation time parameter `creationTime` is missing                                | `message`          |         |
+| `blob:download-file-by-id-bucket-not-configured` | 400         | The bucket with given `bucketID` is not configured                                   | `message`          |         |
+| `blob:download-file-by-id-invalid-method`        | 400         | The action/method combination is not valid                                           | `message`          |         |
+| `blob:download-file-by-id-missing-sig`           | 400         | The signature parameter `sig` is missing                                             | `message`          |         |
+| `blob:download-file-by-id-creation-time-too-old` | 403         | The creation time parameter `creationTime` is too old                                | `message`          |         |
+| `blob:checksum-invalid`                          | 403         | The checksum `cs` inside the signature is not valid                                  | `message`          |         |
+| `blob:signature-invalid`                         | 403         | The signature in parameter `sig` is invalid                                          | `message`          |         |
