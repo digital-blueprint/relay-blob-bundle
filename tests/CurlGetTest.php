@@ -1571,7 +1571,7 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test: param binary=1 should lead to a 302 redirect.
+     * Integration test: param includeData=1 should lead to a 200 with included base64 data.
      */
     public function testRedirectToBinary(): void
     {
@@ -1640,7 +1640,7 @@ class CurlGetTest extends ApiTestCase
             // GET all files in prefix playground
             // =======================================================
             echo "GET all files with prefix playground\n";
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&binary=1&action=GETALL";
+            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&includeData=1&action=GETONE";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1662,12 +1662,8 @@ class CurlGetTest extends ApiTestCase
             $response = $client->request('GET', $url.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
             // check if the one created element is there
-            $members = json_decode($response->getContent(), true)['hydra:member'];
-            $this->assertEquals(2, count($members));
-
-            $response = $client->request('GET', $members[0]['contentUrl'], $options);
-            // check if response is valid
-            $this->assertEquals(200, $response->getStatusCode());
+            $members = json_decode($response->getContent(), true);
+            $this->assertEquals('data:text/x-php;base64', substr($members['contentUrl'], 0, strlen('data:text/x-php;base64')));
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
@@ -2870,6 +2866,288 @@ class CurlGetTest extends ApiTestCase
             $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
             $this->assertEquals(1, count(json_decode($response->getContent(), true)['hydra:member']));
+        } catch (\Throwable $e) {
+            echo $e->getTraceAsString()."\n";
+            $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * Integration test: endpoint /id/download should lead to a 200 with included binary data.
+     */
+    public function testBinaryDownload(): void
+    {
+        try {
+            $client = static::createClient();
+            /** @var BlobService $blobService */
+            $blobService = $client->getContainer()->get(BlobService::class);
+            $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getKey();
+            $bucketId = $bucket->getIdentifier();
+            $creationTime = date('U');
+            $prefix = 'playground';
+
+            // =======================================================
+            // POST two files
+            // =======================================================
+
+            for ($i = 0; $i < 2; ++$i) {
+                $creationTime = date('U');
+                $fileName = $this->files[$i]['name'];
+                $fileHash = $this->files[$i]['hash'];
+                $notifyEmail = 'eugen.neuber@tugraz.at';
+                $retentionDuration = $this->files[$i]['retention'];
+                $action = 'CREATEONE';
+
+                $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+
+                $data = [
+                    'cs' => $this->generateSha256ChecksumFromUrl($url),
+                ];
+
+                $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+
+                $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+                    [
+                        'file' => new UploadedFile($this->files[$i]['path'], $this->files[$i]['name'], $this->files[$i]['mime']),
+                    ],
+                    [
+                        'HTTP_ACCEPT' => 'application/ld+json',
+                    ],
+                    "HTTP_ACCEPT: application/ld+json\r\n"
+                    .'file='.base64_encode($this->files[$i]['content'])
+                    ."&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketId"
+                );
+                $c = new CreateFileDataAction($blobService);
+                try {
+                    $fileData = $c->__invoke($requestPost);
+                } catch (\Throwable $e) {
+                    echo $e->getTraceAsString()."\n";
+                    $this->fail($e->getMessage());
+                }
+
+                $this->assertNotNull($fileData);
+                $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
+                $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+                $this->assertTrue(uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
+                $this->assertEquals($this->files[$i]['name'], $fileData->getFileName(), 'File name not correct.');
+                $this->files[$i]['uuid'] = $fileData->getIdentifier();
+                $this->files[$i]['created'] = $fileData->getDateCreated();
+                $this->files[$i]['until'] = $fileData->getExistsUntil();
+            }
+
+            // =======================================================
+            // GET ONE file in prefix playground
+            // =======================================================
+            echo "GET download one file with prefix playground\n";
+            $url = '/blob/files/'.$this->files[0]['uuid']."/download?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&includeData=1&action=GETONE";
+
+            $payload = [
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+            ];
+
+            /* @noinspection PhpInternalEntityUsedInspection */
+            $client->getKernelBrowser()->followRedirects(false);
+
+            /** @var Response $response */
+            $response = $client->request('GET', $url.'&sig='.$token, $options);
+            $this->assertEquals(200, $response->getStatusCode());
+            $this->assertEquals('string', gettype($response->getContent()));
+            // check if the one created element is there
+        } catch (\Throwable $e) {
+            echo $e->getTraceAsString()."\n";
+            $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * Integration test: missing param should lead to a 400 error.
+     */
+    public function testDownloadWithInvalidOrMissingParameters(): void
+    {
+        try {
+            $client = static::createClient();
+            /** @var BlobService $blobService */
+            $blobService = $client->getContainer()->get(BlobService::class);
+            $configService = $client->getContainer()->get(ConfigurationService::class);
+
+            $bucket = $configService->getBuckets()[0];
+            $secret = $bucket->getKey();
+            $bucketId = $bucket->getIdentifier();
+            $creationTime = date('U');
+            $prefix = 'playground';
+
+            // =======================================================
+            // POST file
+            // =======================================================
+
+            $creationTime = date('U');
+            $fileName = $this->files[0]['name'];
+            $fileHash = $this->files[0]['hash'];
+            $notifyEmail = 'eugen.neuber@tugraz.at';
+            $retentionDuration = $this->files[0]['retention'];
+            $action = 'CREATEONE';
+
+            $url = "/blob/files/download?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&action=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+
+            $data = [
+                'cs' => $this->generateSha256ChecksumFromUrl($url),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+
+            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+                [
+                    'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
+                ],
+                [
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+                "HTTP_ACCEPT: application/ld+json\r\n"
+                .'file='.base64_encode($this->files[0]['content'])
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+            );
+            $c = new CreateFileDataAction($blobService);
+            try {
+                $fileData = $c->__invoke($requestPost);
+            } catch (\Throwable $e) {
+                echo $e->getTraceAsString()."\n";
+                $this->fail($e->getMessage());
+            }
+
+            $this->assertNotNull($fileData);
+            $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
+            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertTrue(uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
+            $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
+            $this->files[0]['uuid'] = $fileData->getIdentifier();
+            $this->files[0]['created'] = $fileData->getDateCreated();
+            $this->files[0]['until'] = $fileData->getExistsUntil();
+
+            // =======================================================
+            // GET download one file in prefix playground without creationTime, sig, action, bucketID
+            // =======================================================
+            echo "GET download one file with prefix playground with missing params\n";
+
+            $params = [
+                    0 => "bucketID=$bucketId",
+                    1 => "creationTime=$creationTime",
+                    2 => 'action=GETONE',
+                    3 => 'sig=',
+                ];
+
+            for ($i = 0; $i < count($params) - 1; ++$i) {
+                $baseUrl = '/blob/files/'.$this->files[0]['uuid'].'/download';
+
+                // first param needs ?
+                $connector = '?';
+
+                for ($j = 0; $j < count($params) - 1; ++$j) {
+                    if ($i === $j) {
+                        continue;
+                    }
+
+                    $baseUrl = $baseUrl.$connector.$params[$j];
+                    // all other params need &
+                    $connector = '&';
+                }
+
+                $payload = [
+                    'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
+                ];
+
+                if ($i !== count($params) - 1) {
+                    $baseUrl = $baseUrl.$connector.$params[$j];
+                }
+
+                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+                $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
+
+                $options = [
+                    'headers' => [
+                        'Accept' => 'application/ld+json',
+                        'HTTP_ACCEPT' => 'application/ld+json',
+                    ],
+                    'extra' => [
+                        'files' => [
+                            'file' => $file,
+                        ],
+                    ],
+                ];
+
+                /** @var Response $response */
+                $response = $client->request('GET', $baseUrl.$token, $options);
+                //echo $response->getContent()."\n";
+                $this->assertEquals(400, $response->getStatusCode());
+            }
+
+            // =======================================================
+            // Check download operations with overdue creationTime
+            // =======================================================
+            echo "Check download with overdue creationTime\n";
+
+            $creationTime = new \DateTime('now');
+            $creationTime->sub(new \DateInterval('PT2M'));
+            $creationTime = strtotime($creationTime->format('c'));
+
+            $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&creationTime=$creationTime&action=GETONE";
+
+            $payload = [
+                'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+            ];
+
+            /** @var Response $response */
+            $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
+            $this->assertEquals(403, $response->getStatusCode());
+
+            // =======================================================
+            // Check download with invalid action
+            // =======================================================
+            echo "Check download with invalid action\n";
+
+            $creationTime = new \DateTime('now');
+            $creationTime->sub(new \DateInterval('PT2M'));
+            $creationTime = strtotime($creationTime->format('c'));
+
+            $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&creationTime=$creationTime&action=DELETEONE";
+
+            $payload = [
+                'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
+            ];
+
+            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+            $options = [
+                'headers' => [
+                    'Accept' => 'application/ld+json',
+                    'HTTP_ACCEPT' => 'application/ld+json',
+                ],
+            ];
+
+            /** @var Response $response */
+            $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
+            $this->assertEquals(405, $response->getStatusCode());
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
