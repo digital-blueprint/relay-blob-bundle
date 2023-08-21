@@ -48,7 +48,7 @@ Everything beginning from and including `/blob` has to be included when generati
 The key used for signing and verifying the checksum has to be defined in the blob bucket config and the other backend system communicating with blob.
 
 ### Signature url encoding
-By default, blob verifies the url by generating the signature of the urlencoded url using [RFC3986](https://datatracker.ietf.org/doc/html/rfc3986]). This means that, among other things, `space` get converted to `%20`!
+By default, blob verifies the url by generating the signature of the urlencoded url using [RFC3986](https://datatracker.ietf.org/doc/html/rfc3986). This means that, among other things, `space` get converted to `%20`!
 This means that systems communicating with blob have to also generate their checksum this way. It is not possible to just urlencode the whole url, since this would mean that valid symbols like `/` or `&` would be encoded too. Therefore, it is necessary to urlenode each parameter value separately before appending them in the url.
 
 ## Error codes and descriptions
