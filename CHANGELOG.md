@@ -1,3 +1,9 @@
+# v0.1.14
+* **Breaking change**: `/blob/files/{identifier}/download` action implemented which returns a binary response of the file with the given identifier
+* **Breaking change**: Rename parameter `binary` to `includeData`, since it returns base64 encoded data not binary data
+* **Breaking change**: Rename parameter `action` to `method` and only include the used method now. `CREATONE`, `GETONE`, `GETALL`, `DELETEALL`, `DELETEONE`, `PUTONE` are removed and replaced by `POST`, `GET`, `DELETE`, `PUT`.
+* Add docs and new errorIDS for `/blob/files/{identifier}/download` action
+
 # v0.1.13
 * Refactor all errorIDs to kebapcase and adapt documentation
 * Update relay-blob-library to v0.1.5
