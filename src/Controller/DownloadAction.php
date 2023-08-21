@@ -32,18 +32,21 @@ class DownloadAction extends BaseBlobController
 
         $bucketId = $request->query->get('bucketID', '');
         assert(is_string($bucketId));
+        $bucketId = rawurldecode($bucketId);
         if (!$bucketId) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID is missing', 'blob:download-file-by-id-missing-bucket-id');
         }
 
         $urlMethod = $request->query->get('method', '');
         assert(is_string($urlMethod));
+        $urlMethod = rawurldecode($urlMethod);
         if (!$urlMethod) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'method is missing', 'blob:download-file-by-id-missing-method');
         }
 
         $creationTime = $request->query->get('creationTime', '');
         assert(is_string($creationTime));
+        $creationTime = rawurldecode($creationTime);
         if (!$creationTime) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'creationTime is missing', 'blob:download-file-by-id-missing-creation-time');
         }
@@ -70,6 +73,7 @@ class DownloadAction extends BaseBlobController
         }
 
         assert(is_string($sig));
+        $sig = rawurldecode($sig);
 
         DenyAccessUnlessCheckSignature::verifyChecksumAndSignature($fileData->getBucket()->getKey(), $sig, $request);
 

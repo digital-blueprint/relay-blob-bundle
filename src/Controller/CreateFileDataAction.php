@@ -38,17 +38,16 @@ final class CreateFileDataAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:create-file-data-missing-sig');
         }
 
-        // get request params
         // get necessary params
         $bucketId = $request->query->get('bucketID', '');
-        $creationTime = $request->query->get('creationTime', 0);
+        $creationTime = $request->query->get('creationTime', '0');
         $prefix = $request->query->get('prefix', '');
         $urlMethod = $request->query->get('method', '');
         /** @var string */
         $fileName = $request->query->get('fileName', '');
+        $fileHash = $request->query->get('fileHash', '');
 
         // get optional params
-        $fileHash = $request->query->get('fileHash', '');
         /** @var string */
         $notifyEmail = $request->query->get('notifyEmail', '');
         $retentionDuration = $request->query->get('retentionDuration', '');
@@ -59,10 +58,27 @@ final class CreateFileDataAction extends BaseBlobController
 
         // check types of params
         assert(is_string($bucketId));
+        assert(is_string($creationTime));
         assert(is_string($prefix));
+        assert(is_string($urlMethod));
         assert(is_string($fileName));
+        assert(is_string($fileHash));
         assert(is_string($notifyEmail));
+        assert(is_string($retentionDuration));
+        assert(is_string($additionalMetadata));
         assert(is_string($sig));
+
+        // urldecode according to RFC 3986
+        $bucketId = rawurldecode($bucketId);
+        $creationTime = rawurldecode($creationTime);
+        $prefix = rawurldecode($prefix);
+        $urlMethod = rawurldecode($urlMethod);
+        $fileName = rawurldecode($fileName);
+        $fileHash = rawurldecode($fileHash);
+        $notifyEmail = rawurldecode($notifyEmail);
+        $retentionDuration = rawurldecode($retentionDuration);
+        $additionalMetadata = rawurldecode($additionalMetadata);
+        $sig = rawurldecode($sig);
 
         // check if the minimal needed url params are present
         if (!$bucketId || !$creationTime || !$prefix || !$urlMethod || !$fileName) {
@@ -120,11 +136,13 @@ final class CreateFileDataAction extends BaseBlobController
 
         /** @var ?UploadedFile $uploadedFile */
         $uploadedFile = $fileData->getFile();
+
+        // TODO extensions are not always3 letters
         $fileData->setExtension($uploadedFile->guessExtension() ?? substr($fileData->getFileName(), -3, 3));
         $hash = hash('sha256', $uploadedFile->getContent());
 
         // check hash of file
-        if ($hash !== $request->query->get('fileHash', '')) {
+        if ($hash !== $fileHash) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:create-file-data-file-hash-change-forbidden');
         }
 

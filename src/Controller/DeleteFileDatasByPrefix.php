@@ -33,12 +33,23 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         // get params
         // get required params
         $bucketId = $request->query->get('bucketID', '');
-        $creationTime = $request->query->get('creationTime', 0);
+        $creationTime = $request->query->get('creationTime', '0');
         $prefix = $request->query->get('prefix', '');
         $urlMethod = $request->query->get('method', '');
+
+        // check param type
         assert(is_string($bucketId));
+        assert(is_string($creationTime));
         assert(is_string($prefix));
+        assert(is_string($urlMethod));
         assert(is_string($sig));
+
+        // url decode according to RFC 3986
+        $bucketId = rawurldecode($bucketId);
+        $creationTime = rawurldecode($creationTime);
+        $prefix = rawurldecode($prefix);
+        $urlMethod = rawurldecode($urlMethod);
+        $sig = rawurldecode($sig);
 
         // check if the minimal required params are present
         if (!$bucketId || !$creationTime || !$prefix || !$urlMethod) {

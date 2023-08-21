@@ -45,18 +45,21 @@ class FileDataProvider extends AbstractDataProvider
     {
         $sig = $this->requestStack->getCurrentRequest()->query->get('sig', '');
         assert(is_string($sig));
+        $sig = rawurldecode($sig);
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Signature missing', 'blob:get-file-data-by-id-missing-sig');
         }
 
         $bucketId = $filters['bucketID'] ?? '';
         assert(is_string($bucketId));
+        $bucketId = rawurldecode($bucketId);
         if (!$bucketId) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is missing', 'blob:get-file-data-by-id-missing-bucket-id');
         }
 
         $urlMethod = $filters['method'] ?? '';
         assert(is_string($urlMethod));
+        $urlMethod = rawurldecode($urlMethod);
         if (!$urlMethod) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'method is missing', 'blob:get-file-data-by-id-missing-bucket-id');
         }
@@ -67,8 +70,6 @@ class FileDataProvider extends AbstractDataProvider
         }
 
         $method = $this->requestStack->getCurrentRequest()->getMethod();
-        $urlMethod = $filters['method'] ?? '';
-        assert(is_string($urlMethod));
 
         if (($method === 'GET' && $urlMethod !== 'GET') || ($method === 'DELETE' && $urlMethod !== 'DELETE')) {
             throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Action/Method combination is wrong', 'blob:get-file-data-by-id-method-not-suitable');
@@ -104,6 +105,7 @@ class FileDataProvider extends AbstractDataProvider
                 /** @var string */
                 $fileName = $this->requestStack->getCurrentRequest()->query->get('fileName', '');
                 assert(is_string($fileName));
+                $fileName = rawurldecode($fileName);
                 $fileData->setFileName($fileName);
                 $this->blobService->saveFileData($fileData);
             }
@@ -143,9 +145,12 @@ class FileDataProvider extends AbstractDataProvider
         assert(is_string($prefix));
         assert(is_string($creationTime));
         assert(is_string($urlMethod));
-
-        /** @var string $bucketId */
-        $bucketId = $this->requestStack->getCurrentRequest()->query->get('bucketID', '');
+        assert(is_string($sig));
+        $bucketId = rawurldecode($bucketId);
+        $prefix = rawurldecode($prefix);
+        $creationTime = rawurldecode($creationTime);
+        $urlMethod = rawurldecode($urlMethod);
+        $sig = rawurldecode($sig);
 
         // check if bucketID is present
         if (!$bucketId) {
@@ -173,7 +178,8 @@ class FileDataProvider extends AbstractDataProvider
         $this->checkSignature($secret, $filters);
 
         $includeData = $filters['includeData'] ?? '';
-        assert(is_string($bucketId));
+        assert(is_string($includeData));
+        $includeData = rawurldecode($includeData) ?? '';
 
         if (!$bucket->getService()) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is not configured', 'blob:get-file-data-collection-no-bucket-service');
@@ -208,9 +214,10 @@ class FileDataProvider extends AbstractDataProvider
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Signature missing', 'blob:check-signature-missing-sig');
         }
 
-        $bucketId = $filters['bucketID'] ?? '';
-        $creationTime = $filters['creationTime'] ?? '0';
-        $urlMethod = $filters['method'] ?? '';
+        $bucketId = rawurldecode($filters['bucketID'] ?? '');
+        $creationTime = rawurldecode($filters['creationTime'] ?? '0');
+        $urlMethod = rawurldecode($filters['method'] ?? '');
+        $sig = rawurldecode($sig);
 
         // check if the minimal params are present
         if (!$bucketId || !$creationTime || !$urlMethod) {
@@ -237,8 +244,8 @@ class FileDataProvider extends AbstractDataProvider
         $method = $this->requestStack->getCurrentRequest()->getMethod();
 
         // check if the provided method and action is suitable
-        if (($method === 'GET' && $urlMethod !== 'GET' && $urlMethod !== 'GET')
-            || ($method === 'DELETE' && $urlMethod !== 'DELETE' && $urlMethod !== 'DELETE')
+        if (($method === 'GET' && $urlMethod !== 'GET')
+            || ($method === 'DELETE' && $urlMethod !== 'DELETE')
             || ($method === 'PUT' && $urlMethod !== 'PUT')
             || ($method === 'POST' && $urlMethod !== 'POST')
         ) {
