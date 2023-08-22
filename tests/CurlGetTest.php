@@ -193,12 +193,12 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
             $action = 'GET';
             $payload = [
-                'bucketID' => $bucketId,
+                'bucketID' => $bucketID,
                 'creationTime' => $creationTime,
                 'prefix' => $prefix,
                 'method' => $action,
@@ -206,7 +206,7 @@ class CurlGetTest extends ApiTestCase
 
             //$token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
-            $url = "/blob/files?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -258,7 +258,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
 
             // =======================================================
             // POST a file
@@ -273,7 +273,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -290,7 +290,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[0]['content'])
-                    ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                    ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -318,7 +318,7 @@ class CurlGetTest extends ApiTestCase
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $action = 'GET';
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action";
+            $url = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -367,7 +367,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[1]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -384,7 +384,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[1]['content'])
-                    ."&fileName={$this->files[1]['name']}&prefix=$prefix&bucketID=$bucketId"
+                    ."&fileName={$this->files[1]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -411,7 +411,7 @@ class CurlGetTest extends ApiTestCase
             $creationTime = date('U');
             $prefix = 'playground';
             $action = 'GET';
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action";
+            $url = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -465,7 +465,7 @@ class CurlGetTest extends ApiTestCase
             $creationTime = date('U');
             $prefix = 'playground';
             $action = 'DELETE';
-            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action";
+            $url = "/blob/files/?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -491,7 +491,7 @@ class CurlGetTest extends ApiTestCase
             $query = $this->entityManager->getConnection()->createQueryBuilder();
             $this->files = $query->select('*')
                 ->from('blob_files')
-                ->where("prefix = '$prefix' AND bucket_id = '$bucketId'")
+                ->where("prefix = '$prefix' AND bucket_id = '$bucketID'")
                 ->fetchAllAssociativeIndexed();
             $this->assertEmpty($this->files, 'Files not deleted');
 
@@ -503,7 +503,7 @@ class CurlGetTest extends ApiTestCase
             $creationTime = date('U');
             $prefix = 'playground';
             $action = 'GET';
-            $url = "/blob/files?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -549,7 +549,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
@@ -558,7 +558,7 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $retentionDuration = $this->files[0]['retention'];
 
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&fileName=$fileName&fileHash=$fileHash&retentionDuration=$retentionDuration&method=$action";
+            $url = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&fileName=$fileName&fileHash=$fileHash&retentionDuration=$retentionDuration&method=$action";
 
             // =======================================================
             // POST a file
@@ -580,7 +580,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -607,7 +607,7 @@ class CurlGetTest extends ApiTestCase
 
             $creationTime = date('U');
 
-            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
+            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -636,7 +636,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "DELETE a file by id\n";
 
-            $url = "/blob/files/{$this->files[0]['uuid']}?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=DELETE";
+            $url = "/blob/files/{$this->files[0]['uuid']}?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=DELETE";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -666,7 +666,7 @@ class CurlGetTest extends ApiTestCase
             $query = $this->entityManager->getConnection()->createQueryBuilder();
             $this->files = $query->select('*')
                 ->from('blob_files')
-                ->where("prefix = '$prefix' AND bucket_id = '$bucketId' AND identifier = '{$this->files[0]['uuid']}'")
+                ->where("prefix = '$prefix' AND bucket_id = '$bucketID' AND identifier = '{$this->files[0]['uuid']}'")
                 ->fetchAllAssociativeIndexed();
             $this->assertEmpty($this->files, 'Files not deleted');
 
@@ -675,7 +675,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files\n";
 
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
+            $url = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -724,11 +724,11 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = strtotime('-1 hour');
             $prefix = 'playground';
 
-            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
+            $url = "/blob/files/?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -768,7 +768,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
             $uuid = Uuid::v4();
@@ -778,7 +778,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET a file by unknown id\n";
 
-            $url = "/blob/files/{$uuid}?prefix=$prefix&bucketID=$bucketId&creationTime=$creationTime&method=GET";
+            $url = "/blob/files/{$uuid}?prefix=$prefix&bucketID=$bucketID&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -805,7 +805,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "DELETE a file by unknown id\n";
 
-            $url = "/blob/files/{$uuid}?prefix=$prefix&bucketID=$bucketId&creationTime=$creationTime&method=DELETE";
+            $url = "/blob/files/{$uuid}?prefix=$prefix&bucketID=$bucketID&creationTime=$creationTime&method=DELETE";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -846,7 +846,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
@@ -854,7 +854,7 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $retentionDuration = $this->files[0]['retention'];
 
-            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime";
+            $url = "/blob/files/?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime";
 
             // =======================================================
             // POST a file
@@ -863,7 +863,7 @@ class CurlGetTest extends ApiTestCase
 
             $action = 'GET';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -880,7 +880,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             $fileData = $c->__invoke($requestPost);
@@ -907,7 +907,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
 
@@ -916,7 +916,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files with wrong method\n";
 
-            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=DELETE";
+            $url = "/blob/files/?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=DELETE";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -957,7 +957,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
 
@@ -981,7 +981,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -998,7 +998,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -1023,7 +1023,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($actions as $action) {
                 echo 'GET one file with wrong method '.$action."\n";
-                $url = '/blob/files/".$fileData->getIdentifier()'.'?bucketID=$bucketId&creationTime=$creationTime&method='.$action;
+                $url = '/blob/files/".$fileData->getIdentifier()'.'?bucketID=$bucketID&creationTime=$creationTime&method='.$action;
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1067,7 +1067,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
 
@@ -1091,7 +1091,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1108,7 +1108,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -1133,7 +1133,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($actions as $action) {
                 echo 'PUT one file with wrong method '.$action."\n";
-                $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName";
+                $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1178,7 +1178,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
 
@@ -1202,7 +1202,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1219,7 +1219,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -1245,7 +1245,7 @@ class CurlGetTest extends ApiTestCase
             $newFileName = 'Test1.php';
             echo 'PUT one file with method '.$action."\n";
 
-            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$newFileName";
+            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$newFileName";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1270,7 +1270,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertEquals(200, $response->getStatusCode());
 
             $action = 'GET';
-            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketId&creationTime=$creationTime&method=$action";
+            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketID&creationTime=$creationTime&method=$action";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1315,7 +1315,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
 
@@ -1334,7 +1334,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1351,7 +1351,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -1380,7 +1380,7 @@ class CurlGetTest extends ApiTestCase
                         continue;
                     }
                     echo $method.' file with wrong action '.$action."\n";
-                    $url = "/blob/files?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName";
+                    $url = "/blob/files?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName";
 
                     $payload = [
                         'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1425,7 +1425,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
 
@@ -1441,7 +1441,7 @@ class CurlGetTest extends ApiTestCase
                 $retentionDuration = $this->files[$i]['retention'];
                 $action = 'POST';
 
-                $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+                $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
                 $data = [
                     'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1458,7 +1458,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                     "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[$i]['content'])
-                    ."&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketId"
+                    ."&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketID"
                 );
                 $c = new CreateFileDataAction($blobService);
                 try {
@@ -1485,7 +1485,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "DELETE all files with prefix playground\n";
             $prefix = 'playground';
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=DELETE";
+            $url = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=DELETE";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1512,7 +1512,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files with prefix playground0\n";
             $prefix = 'playground0';
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
+            $url = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1541,7 +1541,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files with prefix playground\n";
             $prefix = 'playground';
-            $url = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
+            $url = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1583,7 +1583,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
 
@@ -1599,7 +1599,7 @@ class CurlGetTest extends ApiTestCase
                 $retentionDuration = $this->files[$i]['retention'];
                 $action = 'POST';
 
-                $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+                $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
                 $data = [
                     'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1616,7 +1616,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                     "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[$i]['content'])
-                    ."&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketId"
+                    ."&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketID"
                 );
                 $c = new CreateFileDataAction($blobService);
                 try {
@@ -1640,7 +1640,7 @@ class CurlGetTest extends ApiTestCase
             // GET all files in prefix playground
             // =======================================================
             echo "GET all files with prefix playground\n";
-            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&includeData=1&method=GET";
+            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&includeData=1&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1683,7 +1683,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
 
@@ -1692,7 +1692,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "DELETE all files\n";
 
-            $url = "/blob/files/?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
+            $url = "/blob/files/?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1730,7 +1730,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
 
@@ -1745,7 +1745,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1762,7 +1762,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -1793,7 +1793,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($actions as $action) {
                 $params = [
-                    0 => "bucketID=$bucketId",
+                    0 => "bucketID=$bucketID",
                     1 => "prefix=$prefix",
                     2 => "creationTime=$creationTime",
                     3 => "method=$action",
@@ -1851,7 +1851,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($actions as $action) {
                 $params = [
-                    0 => "bucketID=$bucketId",
+                    0 => "bucketID=$bucketID",
                     1 => "creationTime=$creationTime",
                     2 => "method=$action",
                     3 => 'sig=',
@@ -1914,7 +1914,7 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
 
             $params = [
-                0 => "bucketID=$bucketId",
+                0 => "bucketID=$bucketID",
                 1 => "prefix=$prefix",
                 2 => "creationTime=$creationTime",
                 3 => 'method=POST',
@@ -1970,7 +1970,7 @@ class CurlGetTest extends ApiTestCase
             $fileName = $this->files[0]['name'];
 
             $params = [
-                0 => "bucketID=$bucketId",
+                0 => "bucketID=$bucketID",
                 1 => "prefix=$prefix",
                 2 => "creationTime=$creationTime",
                 3 => 'method=PUT',
@@ -2036,7 +2036,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $prefix = 'playground';
 
             // =======================================================
@@ -2050,7 +2050,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2067,7 +2067,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -2099,7 +2099,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "blob/files/$identifier?bucketID=$bucketId&creationTime=$creationTime&method=$action";
+                $baseUrl = "blob/files/$identifier?bucketID=$bucketID&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2128,7 +2128,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action";
+                $baseUrl = "blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2150,7 +2150,7 @@ class CurlGetTest extends ApiTestCase
             foreach ($actions as $action) {
                 $fileHash = $this->files[0]['hash'];
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action&fileName=test.txt&fileHash=$fileHash";
+                $baseUrl = "blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action&fileName=test.txt&fileHash=$fileHash";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2192,7 +2192,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $prefix = 'playground';
 
             // =======================================================
@@ -2206,7 +2206,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2223,7 +2223,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -2255,7 +2255,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files/$identifier?bucketID=$bucketId&creationTime=$creationTime&method=$action";
+                $baseUrl = "/blob/files/$identifier?bucketID=$bucketID&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2287,7 +2287,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action";
+                $baseUrl = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2312,7 +2312,7 @@ class CurlGetTest extends ApiTestCase
             foreach ($actions as $action) {
                 $fileHash = $this->files[0]['hash'];
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action&fileName=test.txt&fileHash=$fileHash";
+                $baseUrl = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action&fileName=test.txt&fileHash=$fileHash";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2357,7 +2357,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $prefix = 'playground';
 
             // =======================================================
@@ -2371,7 +2371,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2388,7 +2388,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -2424,7 +2424,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files/$identifier?bucketID=$bucketId&creationTime=$creationTime&method=$action";
+                $baseUrl = "/blob/files/$identifier?bucketID=$bucketID&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2453,7 +2453,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action";
+                $baseUrl = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2475,7 +2475,7 @@ class CurlGetTest extends ApiTestCase
             foreach ($actions as $action) {
                 $fileHash = $this->files[0]['hash'];
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action&fileName=test.txt&fileHash=$fileHash";
+                $baseUrl = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action&fileName=test.txt&fileHash=$fileHash";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2517,7 +2517,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $prefix = 'playground';
 
             // =======================================================
@@ -2531,7 +2531,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2548,7 +2548,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -2578,11 +2578,11 @@ class CurlGetTest extends ApiTestCase
                 1 => 'DELETE',
             ];
 
-            $bucketId = '2468';
+            $bucketID = '2468';
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files/$identifier?bucketID=$bucketId&creationTime=$creationTime&method=$action";
+                $baseUrl = "/blob/files/$identifier?bucketID=$bucketID&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2611,7 +2611,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action";
+                $baseUrl = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2633,7 +2633,7 @@ class CurlGetTest extends ApiTestCase
             foreach ($actions as $action) {
                 $fileHash = $this->files[0]['hash'];
                 // url with missing / at the beginning to create a wrong checksum
-                $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=$action&fileName=test.txt&fileHash=$fileHash";
+                $baseUrl = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action&fileName=test.txt&fileHash=$fileHash";
 
                 $payload = [
                     'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2675,7 +2675,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $prefix = 'playground';
 
             // =======================================================
@@ -2689,7 +2689,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2706,7 +2706,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -2731,13 +2731,13 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "Check GET on other bucket shouldnt return file\n";
 
-            $bucketId = 4321;
+            $bucketID = 4321;
             // get key of wrong bucket
             $bucket = $configService->getBuckets()[1];
             $secret = $bucket->getKey();
 
             // url with missing / at the beginning to create a wrong checksum
-            $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
+            $baseUrl = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2768,7 +2768,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2785,7 +2785,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -2811,13 +2811,13 @@ class CurlGetTest extends ApiTestCase
 
             echo "Check DELETE on other bucket shouldnt delete original bucket\n";
 
-            $bucketId = 4321;
+            $bucketID = 4321;
             // get key of wrong bucket
             $bucket = $configService->getBuckets()[1];
             $secret = $bucket->getKey();
 
             // url with missing / at the beginning to create a wrong checksum
-            $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=DELETE";
+            $baseUrl = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=DELETE";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2841,13 +2841,13 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "Check GET on original bucket should still return file\n";
 
-            $bucketId = 1234;
+            $bucketID = 1234;
             // get key of wrong bucket
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
 
             // url with missing / at the beginning to create a wrong checksum
-            $baseUrl = "/blob/files?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&method=GET";
+            $baseUrl = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -2885,7 +2885,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
 
@@ -2901,7 +2901,7 @@ class CurlGetTest extends ApiTestCase
                 $retentionDuration = $this->files[$i]['retention'];
                 $action = 'POST';
 
-                $url = "/blob/files/?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+                $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
                 $data = [
                     'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2918,7 +2918,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                     "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[$i]['content'])
-                    ."&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketId"
+                    ."&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketID"
                 );
                 $c = new CreateFileDataAction($blobService);
                 try {
@@ -2942,7 +2942,7 @@ class CurlGetTest extends ApiTestCase
             // GET ONE file in prefix playground
             // =======================================================
             echo "GET download one file with prefix playground\n";
-            $url = '/blob/files/'.$this->files[0]['uuid']."/download?bucketID=$bucketId&prefix=$prefix&creationTime=$creationTime&includeData=1&method=GET";
+            $url = '/blob/files/'.$this->files[0]['uuid']."/download?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&includeData=1&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2984,7 +2984,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketId = $bucket->getIdentifier();
+            $bucketID = $bucket->getIdentifier();
             $creationTime = date('U');
             $prefix = 'playground';
 
@@ -2999,7 +2999,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/download?bucketID=$bucketId&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/download?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'cs' => $this->generateSha256ChecksumFromUrl($url),
@@ -3016,7 +3016,7 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketId"
+                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -3041,7 +3041,7 @@ class CurlGetTest extends ApiTestCase
             echo "GET download one file with prefix playground with missing params\n";
 
             $params = [
-                    0 => "bucketID=$bucketId",
+                    0 => "bucketID=$bucketID",
                     1 => "creationTime=$creationTime",
                     2 => 'method=GET',
                     3 => 'sig=',
@@ -3102,7 +3102,7 @@ class CurlGetTest extends ApiTestCase
             $creationTime->sub(new \DateInterval('PT2M'));
             $creationTime = strtotime($creationTime->format('c'));
 
-            $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&creationTime=$creationTime&method=GET";
+            $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketID&creationTime=$creationTime&method=GET";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),
@@ -3127,10 +3127,9 @@ class CurlGetTest extends ApiTestCase
             echo "Check download with invalid action\n";
 
             $creationTime = new \DateTime('now');
-            $creationTime->sub(new \DateInterval('PT2M'));
             $creationTime = strtotime($creationTime->format('c'));
 
-            $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketId&creationTime=$creationTime&method=DELETE";
+            $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketID&creationTime=$creationTime&method=DELETE";
 
             $payload = [
                 'cs' => $this->generateSha256ChecksumFromUrl($baseUrl),

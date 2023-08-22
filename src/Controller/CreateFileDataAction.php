@@ -31,24 +31,16 @@ final class CreateFileDataAction extends BaseBlobController
      */
     public function __invoke(Request $request): FileData
     {
-        /** @var string */
-        $sig = $request->query->get('sig', '');
-        // check if signature is present in url
-        if (!$sig) {
-            throw ApiError::withDetails(Response::HTTP_UNAUTHORIZED, 'Signature missing', 'blob:create-file-data-missing-sig');
-        }
+        // check minimal needed parameters for presence and correctness
+        $errorPrefix = 'blob:create-file-data';
+        DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $request, [], ['POST']);
 
-        // get necessary params
-        $bucketId = $request->query->get('bucketID', '');
-        $creationTime = $request->query->get('creationTime', '0');
+        // get remaining necessary params
         $prefix = $request->query->get('prefix', '');
-        $urlMethod = $request->query->get('method', '');
-        /** @var string */
         $fileName = $request->query->get('fileName', '');
         $fileHash = $request->query->get('fileHash', '');
 
         // get optional params
-        /** @var string */
         $notifyEmail = $request->query->get('notifyEmail', '');
         $retentionDuration = $request->query->get('retentionDuration', '');
         $additionalMetadata = $request->query->get('additionalMetadata', '');
@@ -57,54 +49,32 @@ final class CreateFileDataAction extends BaseBlobController
         $method = $request->getMethod();
 
         // check types of params
-        assert(is_string($bucketId));
-        assert(is_string($creationTime));
         assert(is_string($prefix));
-        assert(is_string($urlMethod));
         assert(is_string($fileName));
         assert(is_string($fileHash));
         assert(is_string($notifyEmail));
         assert(is_string($retentionDuration));
         assert(is_string($additionalMetadata));
-        assert(is_string($sig));
 
         // urldecode according to RFC 3986
-        $bucketId = rawurldecode($bucketId);
-        $creationTime = rawurldecode($creationTime);
         $prefix = rawurldecode($prefix);
-        $urlMethod = rawurldecode($urlMethod);
         $fileName = rawurldecode($fileName);
         $fileHash = rawurldecode($fileHash);
         $notifyEmail = rawurldecode($notifyEmail);
         $retentionDuration = rawurldecode($retentionDuration);
         $additionalMetadata = rawurldecode($additionalMetadata);
-        $sig = rawurldecode($sig);
 
-        // check if the minimal needed url params are present
-        if (!$bucketId || !$creationTime || !$prefix || !$urlMethod || !$fileName) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID, creationTime, prefix, method or fileName are missing and signature cannot be checked', 'blob:create-file-data-unset-params');
+        // check if fileName is set
+        if (!$fileName) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName is missing', 'blob:create-file-data-file-name-missing');
         }
 
-        // check if correct method and method is specified
-        if ($method !== 'POST' || $urlMethod !== 'POST') {
-            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or method not suitable', 'blob:create-file-data-method-not-suitable');
+        // check if prefix is set
+        if (!$prefix) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'prefix is missing', 'blob:create-file-data-prefix-missing');
         }
 
-        $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
-        if (!$bucket) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:createFileData-bucketID-not-configured');
-        }
-
-        $linkExpiryTime = $bucket->getLinkExpireTime();
-        $now = new \DateTime('now');
-        $now->sub(new \DateInterval($linkExpiryTime));
-        $expiryTime = strtotime($now->format('c'));
-
-        // check if request is expired
-        if ((int) $creationTime < $expiryTime) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'creationTime too old', 'blob:create-file-data-creation-time-too-old');
-        }
-
+        // get the filedata of the request
         $fileData = $this->blobService->createFileData($request);
         $fileData = $this->blobService->setBucket($fileData);
 
@@ -113,7 +83,7 @@ final class CreateFileDataAction extends BaseBlobController
         $secret = $bucket->getKey();
 
         // check signature and checksum that is stored in signature
-        DenyAccessUnlessCheckSignature::verifyChecksumAndSignature($secret, $sig, $request);
+        DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService);
 
         // now, after check of signature and checksum it is safe to do computations
 
@@ -137,10 +107,11 @@ final class CreateFileDataAction extends BaseBlobController
         /** @var ?UploadedFile $uploadedFile */
         $uploadedFile = $fileData->getFile();
 
-        // TODO extensions are not always3 letters
+        // TODO extensions are not always 3 letters
         $fileData->setExtension($uploadedFile->guessExtension() ?? substr($fileData->getFileName(), -3, 3));
         $hash = hash('sha256', $uploadedFile->getContent());
 
+        // TODO maybe save the fileHash in the database for a integrity check when retrieving files?
         // check hash of file
         if ($hash !== $fileHash) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:create-file-data-file-hash-change-forbidden');

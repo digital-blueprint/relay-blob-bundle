@@ -190,6 +190,13 @@ class BlobService
         return $response;
     }
 
+    public function getSecretOfBucketWithBucketID(string $bucketID): string
+    {
+        $bucket = $this->configurationService->getBucketByID($bucketID);
+
+        return $bucket->getKey();
+    }
+
     public function generateGETLink(string $baseUrl, FileData $fileData, string $includeData = ''): string
     {
         if (!$fileData) {
@@ -294,10 +301,10 @@ class BlobService
         return $query->getQuery()->getOneOrNullResult();
     }
 
-    public function getAllExpiringFiledatasByBucket(string $bucketId): array
+    public function getAllExpiringFiledatasByBucket(string $bucketID): array
     {
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $expiring = $now->add(new \DateInterval($this->configurationService->getBucketByID($bucketId)->getReportExpiryWhenIn()));
+        $expiring = $now->add(new \DateInterval($this->configurationService->getBucketByID($bucketID)->getReportExpiryWhenIn()));
 
         $query = $this->em
             ->getRepository(FileData::class)
@@ -306,7 +313,7 @@ class BlobService
             ->andWhere('f.existsUntil <= :expiring')
             ->orderBy('f.notifyEmail', 'ASC')
             ->orderBy('f.existsUntil', 'ASC')
-            ->setParameter('bucketID', $bucketId)
+            ->setParameter('bucketID', $bucketID)
             ->setParameter('expiring', $expiring);
 
         return $query->getQuery()->getResult();

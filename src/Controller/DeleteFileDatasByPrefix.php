@@ -22,76 +22,40 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         $this->blobService = $blobService;
     }
 
+    /**
+     * @throws \JsonException
+     */
     public function __invoke(Request $request)
     {
-        // check if signature is present
-        /** @var string $sig */
-        $sig = $request->query->get('sig', '');
-        if (!$sig) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Signature missing', 'blob:delete-file-data-by-prefix-missing-sig');
-        }
-        // get params
-        // get required params
-        $bucketId = $request->query->get('bucketID', '');
-        $creationTime = $request->query->get('creationTime', '0');
+        $errorPrefix = 'blob:delete-file-data-by-prefix';
+        DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $request, [], ['DELETE']);
+
+        // get remaining required params, check type and decode according to RFC3986
         $prefix = $request->query->get('prefix', '');
-        $urlMethod = $request->query->get('method', '');
-
-        // check param type
-        assert(is_string($bucketId));
-        assert(is_string($creationTime));
         assert(is_string($prefix));
-        assert(is_string($urlMethod));
-        assert(is_string($sig));
-
-        // url decode according to RFC 3986
-        $bucketId = rawurldecode($bucketId);
-        $creationTime = rawurldecode($creationTime);
         $prefix = rawurldecode($prefix);
-        $urlMethod = rawurldecode($urlMethod);
-        $sig = rawurldecode($sig);
 
         // check if the minimal required params are present
-        if (!$bucketId || !$creationTime || !$prefix || !$urlMethod) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Signature cannot be checked', 'blob:delete-file-data-by-prefix-unset-sig-params');
-        }
-
-        // check if bucketID is correct
-        $bucket = $this->blobService->configurationService->getBucketByID($bucketId);
-        if (!$bucket) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:delete-file-data-by-prefix-bucket-id-not-configured');
-        }
-
-        $linkExpiryTime = $bucket->getLinkExpireTime();
-        $now = new \DateTime('now');
-        $now->sub(new \DateInterval($linkExpiryTime));
-        $expiryTime = strtotime($now->format('c'));
-
-        // check if request is expired
-        if ((int) $creationTime < $expiryTime) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Creation Time too old', 'blob:delete-file-data-by-prefix-creation-time-too-old');
-        }
-
-        // check action/method
-        $method = $request->getMethod();
-        if (($method !== 'DELETE' || $urlMethod !== 'DELETE')) {
-            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:delete-file-data-by-prefix-method-not-suitable');
+        if (!$prefix) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Signature cannot be checked', 'blob:delete-file-data-by-prefix-prefix-missing');
         }
 
         // verify signature and checksum
-        $secret = $bucket->getKey();
-        DenyAccessUnlessCheckSignature::verifyChecksumAndSignature($secret, $sig, $request);
+        $bucketID = $request->query->get('bucketID', '');
+        assert(is_string($bucketID));
+        $bucketID = rawurldecode($bucketID);
+
+        $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
+        DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService);
 
         // now, after checksum and signature check, it is safe to do stuff
 
-        if (!$bucket->getService()) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketService is not configured', 'blob:delete-file-data-by-prefix-no-bucket-service');
-        }
+        // get all the file datas associated with the prefix
+        $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefix($bucketID, $prefix);
 
-        $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefix($bucketId, $prefix);
-
-        //remove files
+        // remove all the files datas
         foreach ($fileDatas as $fileData) {
+            $bucket = $this->blobService->configurationService->getBucketByID($bucketID);
             $fileData->setBucket($bucket);
             $this->blobService->removeFileData($fileData);
         }
