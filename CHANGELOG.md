@@ -1,5 +1,6 @@
-# next
+# v0.1.15
 * Enforce [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986) by using [rawurldecode](https://www.php.net/manual/en/function.rawurldecode.php) on all url parameters. Before checksum calculation all non-alphanumeric characters have to be converted according to RFC 3986, otherwise the checksum check will fail.
+* Increase `file_name` column size of `blob_files` to 1000 characters
 
 # v0.1.14
 * **Breaking change**: `/blob/files/{identifier}/download` action implemented which returns a binary response of the file with the given identifier
