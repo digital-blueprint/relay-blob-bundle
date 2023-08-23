@@ -55,7 +55,6 @@ class DenyAccessUnlessCheckSignature
      *
      * @return array extracted payload from token
      *
-     * @throws \JsonException
      * @throws ApiError
      */
     public static function verifyChecksumAndSignature(string $secret, string $sig, Request $request): array

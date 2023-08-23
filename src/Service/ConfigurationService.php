@@ -76,11 +76,6 @@ class ConfigurationService
         return null;
     }
 
-    public function getLinkUrl(): string
-    {
-        return $this->config['link_url'];
-    }
-
     public function getReportingInterval()
     {
         return $this->config['reporting_interval'];

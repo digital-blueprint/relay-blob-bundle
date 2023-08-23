@@ -57,15 +57,20 @@ class BlobService
         $this->em->getConnection()->connect();
     }
 
+    /**
+     * Creates a new fileData element and saves all the data from the request in it, if the request is valid.
+     *
+     * @param Request $request request which provides all the data
+     *
+     * @throws \Exception
+     */
     public function createFileData(Request $request): FileData
     {
-        if ($identifier = $request->get('identifier')) {
-            $fileData = $this->em->find(FileData::class, $identifier);
-        } else {
-            $fileData = new FileData();
-            $fileData->setIdentifier((string) Uuid::v4());
-        }
+        // create new identifier for new file
+        $fileData = new FileData();
+        $fileData->setIdentifier((string) Uuid::v4());
 
+        // get file from request
         /** @var ?UploadedFile $uploadedFile */
         $uploadedFile = $request->files->get('file');
 
@@ -84,12 +89,15 @@ class BlobService
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Empty files cannot be added!', 'blob:create-file-data-empty-files-not-allowed');
         }
 
+        // set the file in the fileData
         $fileData->setFile($uploadedFile);
 
+        // set prefix, filename and filesize
         $fileData->setPrefix($request->get('prefix', ''));
         $fileData->setFileName($request->get('fileName', 'no-name-file.txt'));
         $fileData->setFilesize(filesize($uploadedFile->getRealPath()));
 
+        // set creationTime and last access time
         $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $fileData->setDateCreated($time);
         $fileData->setLastAccess($time);
@@ -104,18 +112,23 @@ class BlobService
             }
         }
 
+        // set metadata, bucketID and retentionDuration
         $fileData->setAdditionalMetadata($metadata);
-
         $fileData->setBucketID($request->get('bucketID', ''));
-
         $retentionDuration = $request->get('retentionDuration', '0');
         $fileData->setRetentionDuration($retentionDuration);
 
         return $fileData;
     }
 
+    /**
+     * Sets the bucket of the given fileData and returns the fileData with set bucket.
+     *
+     * @param FileData $fileData fileData which is missing the bucket
+     */
     public function setBucket(FileData $fileData): Filedata
     {
+        // get bucket by bucketID
         $bucket = $this->configurationService->getBucketByID($fileData->getBucketID());
         // bucket is not configured
         if (!$bucket) {
@@ -126,15 +139,21 @@ class BlobService
         return $fileData;
     }
 
+    /**
+     * Used to persist given fileData in entity manager, and automatically adapts last acccess timestamp.
+     *
+     * @param FileData $fileData fileData to be persisted
+     *
+     * @throws \Exception
+     */
     public function saveFileData(FileData $fileData): void
     {
+        // save last access time
         $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $fileData->setLastAccess($time);
 
+        // try to persist fileData, or throw error
         try {
-//            dump($fileData);
-
-            //throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
             $this->em->persist($fileData);
             $this->em->flush();
         } catch (\Exception $e) {
@@ -142,21 +161,41 @@ class BlobService
         }
     }
 
+    /**
+     * Saves the file using the connector.
+     *
+     * @param FileData $fileData fileData that carries the file which should be saved
+     */
     public function saveFile(FileData $fileData): ?FileData
     {
-        $i = $fileData->getIdentifier();
+        // get the service of the bucket
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
+
+        // save the file using the connector
         $fileData = $datasystemService->saveFile($fileData);
 
         return $fileData;
     }
 
+    /**
+     * Get HTTP link to binary content.
+     *
+     * @param FileData $fileData fileData for which a link should be provided
+     *
+     * @throws \Exception
+     */
     public function getLink(FileData $fileData): FileData
     {
+        // set bucket of fileData by bucketID
         $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
+
+        // get service from bucket
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
+
+        // get HTTP link with connector for fileData
         $fileData = $datasystemService->getLink($fileData, $fileData->getBucket()->getPolicies());
 
+        // if !fileData, then something went wrong
         if (!$fileData) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:file-data-invalid');
         }
@@ -164,25 +203,47 @@ class BlobService
         return $fileData;
     }
 
+    /**
+     * Get file content as base64 contentUrl.
+     *
+     * @param FileData $fileData fileData for which the base64 encoded file should be provided
+     */
     public function getBase64Data(FileData $fileData): FileData
     {
+        // set bucket of fileData
         $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
+
+        // get service of bucket
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
+
+        // get base64 encoded file with connector
         $fileData = $datasystemService->getBase64Data($fileData, $fileData->getBucket()->getPolicies());
 
+        // if !fileData, then something went wrong
         if (!$fileData) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:file-data-invalid');
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'base64 encoded data could not be generated', 'blob:file-data-invalid');
         }
 
         return $fileData;
     }
 
+    /**
+     * Get file as binary response.
+     *
+     * @param FileData $fileData fileData from which the file is taken
+     */
     public function getBinaryResponse(FileData $fileData): Response
     {
+        // set bucket of fileData
         $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
+
+        // get service of bucket
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
+
+        // get binary response of file with connector
         $response = $datasystemService->getBinaryResponse($fileData, $fileData->getBucket()->getPolicies());
 
+        // if !response, then something went wrong
         if (!$response) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Response could not be generated', 'blob:file-data-invalid');
         }
@@ -190,6 +251,11 @@ class BlobService
         return $response;
     }
 
+    /**
+     * Get the secret of the bucket with given bucketID.
+     *
+     * @param string $bucketID bucketID of bucket from which the secret should be taken
+     */
     public function getSecretOfBucketWithBucketID(string $bucketID): string
     {
         $bucket = $this->configurationService->getBucketByID($bucketID);
@@ -197,17 +263,25 @@ class BlobService
         return $bucket->getKey();
     }
 
+    /**
+     * Generate HTTP link to blob resource.
+     *
+     * @throws \JsonException
+     */
     public function generateGETLink(string $baseUrl, FileData $fileData, string $includeData = ''): string
     {
+        // check if fileData is present
         if (!$fileData) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:file-data-invalid');
         }
 
+        // set bucket of fileData
         $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
 
         // get time now
         $now = new \DateTimeImmutable('now', new DateTimeZone('UTC'));
 
+        // generate checksum and encode it in payload
         $payload = [
             'cs' => $this->generateChecksumFromFileData($fileData, 'GET', $now, $includeData),
         ];
@@ -215,9 +289,20 @@ class BlobService
         // set content url
         $filePath = $this->generateSignedContentUrl($fileData, 'GET', $now, $includeData, DenyAccessUnlessCheckSignature::create($fileData->getBucket()->getKey(), $payload));
 
+        // build and return HTTP path
         return $baseUrl.'/'.substr($filePath, 1);
     }
 
+    /**
+     * Generate signed content url for get requests by identifier
+     * This is useful for generating the HTTP contentUrls for every fileData.
+     *
+     * @param $fileData fileData for which the HTTP url should be generated
+     * @param $urlMethod method which is used
+     * @param $now timestamp of now which is used as creationTime
+     * @param $includeData specifies whether includeData should be =1 or left out
+     * @param $sig signature with checksum that is used
+     */
     public function generateSignedContentUrl($fileData, $urlMethod, $now, $includeData, $sig): string
     {
         if ($includeData) {
@@ -227,8 +312,17 @@ class BlobService
         }
     }
 
+    /**
+     * Generate the sha256 hash from a HTTP url.
+     *
+     * @param $fileData fileData for which the HTTP url should be generated
+     * @param $urlMethod method used in the request
+     * @param $now timestamp of now which is used as creationTime
+     * @param $includeData specified whether includeData should be =1 or left out
+     */
     public function generateChecksumFromFileData($fileData, $urlMethod, $now, $includeData = ''): ?string
     {
+        // check whether includeData should be in url or not
         if (!$includeData) {
             // create url to hash
             $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&method='.$urlMethod;
@@ -243,9 +337,11 @@ class BlobService
         return $cs;
     }
 
+    /**
+     * Get fileData for file with given identifier.
+     */
     public function getFileData(string $identifier): FileData
     {
-        //echo "    BlobService::getFileData($identifier)\n";
         /** @var FileData $fileData */
         $fileData = $this->em
             ->getRepository(FileData::class)
@@ -258,9 +354,11 @@ class BlobService
         return $fileData;
     }
 
+    /**
+     * Get all the fileDatas of a given bucketID and prefix.
+     */
     public function getFileDataByBucketIDAndPrefix(string $bucketID, string $prefix): array
     {
-        //echo "    BlobService::getFileDataByBucketIDAndPrefix($bucketID, $prefix)\n";
         $fileDatas = $this->em
             ->getRepository(FileData::class)
             ->findBy(['bucketID' => $bucketID, 'prefix' => $prefix]);
@@ -272,6 +370,9 @@ class BlobService
         return $fileDatas;
     }
 
+    /**
+     * Get all the fileDatas of a given bucketID and prefix with pagination limits.
+     */
     public function getFileDataByBucketIDAndPrefixWithPagination(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage): array
     {
         $query = $this->em
@@ -288,6 +389,11 @@ class BlobService
         return $query->getQuery()->getResult();
     }
 
+    /**
+     * Get quota of the bucket with given bucketID.
+     *
+     * @throws \Doctrine\ORM\NonUniqueResultException
+     */
     public function getQuotaOfBucket(string $bucketID): array
     {
         $query = $this->em
@@ -301,6 +407,11 @@ class BlobService
         return $query->getQuery()->getOneOrNullResult();
     }
 
+    /**
+     * Get all the fileDatas which expire in the defined time period by bucketID.
+     *
+     * @throws \Exception
+     */
     public function getAllExpiringFiledatasByBucket(string $bucketID): array
     {
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
@@ -319,10 +430,13 @@ class BlobService
         return $query->getQuery()->getResult();
     }
 
+    /**
+     * Remove a given fileData from the entity manager.
+     *
+     * @return void
+     */
     public function removeFileData(FileData $fileData)
     {
-//        $i = $fileData->getIdentifier();
-//        echo "    BlobService::removeFileData(identifier: {$i})\n";
         $bucket = $this->configurationService->getBucketByID($fileData->getBucketID());
         $fileData->setBucket($bucket);
 
@@ -333,18 +447,13 @@ class BlobService
         $this->em->flush();
     }
 
-    public function renameFileData(FileData $fileData)
-    {
-        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
-        $datasystemService->renameFile($fileData);
-
-        $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $fileData->setLastAccess($time);
-
-        $this->em->persist($fileData);
-        $this->em->flush();
-    }
-
+    /**
+     * Increases the exists_until time for a given fileData.
+     *
+     * @return void
+     *
+     * @throws \Exception
+     */
     public function increaseExistsUntil(FileData $fileData)
     {
         $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
