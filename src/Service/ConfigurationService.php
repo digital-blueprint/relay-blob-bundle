@@ -18,19 +18,24 @@ class ConfigurationService
     }
 
     /**
-     * @return void
+     * Sets the config.
      */
     public function setConfig(array $config)
     {
         $this->config = $config;
     }
 
+    /**
+     * Returns the config.
+     */
     public function getConfig(): array
     {
         return $this->config;
     }
 
     /**
+     * Gets all configured bucket objects.
+     *
      * @return Bucket[]
      */
     public function getBuckets(): array
@@ -51,6 +56,9 @@ class ConfigurationService
         return $buckets;
     }
 
+    /**
+     * Returns the bucket object for the given bucket name.
+     */
     public function getBucketByName(string $bucketName): ?Bucket
     {
         $bucket = null;
@@ -63,6 +71,9 @@ class ConfigurationService
         return $bucket;
     }
 
+    /**
+     * Returns the bucket object for the given bucketID.
+     */
     public function getBucketByID(string $bucketID): ?Bucket
     {
         $buckets = $this->config['buckets'];
@@ -76,6 +87,11 @@ class ConfigurationService
         return null;
     }
 
+    /**
+     * Gets the reporting interval from the config.
+     *
+     * @return mixed
+     */
     public function getReportingInterval()
     {
         return $this->config['reporting_interval'];

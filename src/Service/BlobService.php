@@ -469,6 +469,13 @@ class BlobService
         $this->em->flush();
     }
 
+    /**
+     * Cleans the table from resources that exceeded their existsUntil date.
+     *
+     * @return void
+     *
+     * @throws \Exception
+     */
     public function cleanUp()
     {
         // get all invalid filedatas
@@ -489,6 +496,11 @@ class BlobService
         }
     }
 
+    /**
+     * Sends an warning email with information about the buckets used quota.
+     *
+     * @return void
+     */
     public function sendQuotaWarning(Bucket $bucket, float $bucketQuotaByte)
     {
         $notifyQuotaConfig = $bucket->getNotifyQuotaOverConfig();
@@ -507,6 +519,11 @@ class BlobService
         $this->sendEmail($notifyQuotaConfig, $context);
     }
 
+    /**
+     * Sends an email that the quota of the bucket is reached.
+     *
+     * @return void
+     */
     public function sendNotifyQuota(Bucket $bucket)
     {
         $notifyQuotaConfig = $bucket->getNotifyQuotaConfig();
@@ -524,6 +541,11 @@ class BlobService
         //$this->sendEmail($notifyQuotaConfig, $context);
     }
 
+    /**
+     * Sends reporting and bucket quota warning email if needed.
+     *
+     * @return void
+     */
     public function sendReporting()
     {
         $buckets = $this->configurationService->getBuckets();
@@ -533,6 +555,13 @@ class BlobService
         }
     }
 
+    /**
+     * Checks whether the bucket is filled to a preconfigured percentage, and sends a warning email if so.
+     *
+     * @return void
+     *
+     * @throws \Doctrine\ORM\NonUniqueResultException
+     */
     public function sendBucketQuotaWarning(Bucket $bucket)
     {
         // Check quota
@@ -543,6 +572,14 @@ class BlobService
         }
     }
 
+    /**
+     * Checks whether some files will expire soon, and sends a email to the bucket owner
+     * or owner of the file (if configured as notifyEmail).
+     *
+     * @return void
+     *
+     * @throws \Exception
+     */
     public function sendReportingForBucket(Bucket $bucket)
     {
         $reportingConfig = $bucket->getReportingConfig();
@@ -586,6 +623,16 @@ class BlobService
         }
     }
 
+    /**
+     * Wrapper to send an email from a given context.
+     *
+     * @return void
+     *
+     * @throws \Symfony\Component\Mailer\Exception\TransportExceptionInterface
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
+     */
     private function sendEmail(array $config, array $context)
     {
         $loader = new FilesystemLoader(__DIR__.'/../Resources/views/');

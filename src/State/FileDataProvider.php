@@ -43,6 +43,7 @@ class FileDataProvider extends AbstractDataProvider
 
     /**
      * @throws \JsonException
+     * @throws \Exception
      */
     protected function getFileDataById($id, array $filters): object
     {
@@ -61,7 +62,6 @@ class FileDataProvider extends AbstractDataProvider
         $fileData = $this->blobService->getFileData($id);
 
         // check if fileData is null
-        assert(!is_null($fileData));
         if (!$fileData) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
@@ -100,6 +100,7 @@ class FileDataProvider extends AbstractDataProvider
 
     /**
      * @throws \JsonException
+     * @throws \Exception
      */
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {

@@ -20,6 +20,9 @@ class DatasystemProviderService
         $this->container = $container;
     }
 
+    /**
+     * Gets the datasystem Service of the bucket object.
+     */
     public function getServiceByBucket(Bucket $bucket): DatasystemProviderServiceInterface
     {
         $service = $bucket->getService();

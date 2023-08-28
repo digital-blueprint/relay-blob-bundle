@@ -129,6 +129,15 @@ class DenyAccessUnlessCheckSignature
         }
     }
 
+    /**
+     * Checks if the parameters bucketID, creationTime, method and sig are present and valid,
+     * either using filter or the request itself.
+     * Also checks if the creationTime is too old, the bucket with given ID is configured, and if the specified method is allowed.
+     *
+     * @return void
+     *
+     * @throws \Exception
+     */
     public static function checkMinimalParameters(string $errorPrefix, BlobService $blobService, Request $request, array $filters = [], array $allowedMethods = [])
     {
         // either use filters or request to get parameters, depending on which is provided
@@ -201,6 +210,9 @@ class DenyAccessUnlessCheckSignature
         }
     }
 
+    /**
+     * Generates a sha256 hash from the request url except with the trailing &sig part cut out.
+     */
     public static function generateSha256FromRequest(Request $request): string
     {
         // remove signature part of uri
