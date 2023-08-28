@@ -90,10 +90,10 @@ $client = new Client([
 $id = 'de1aaf61-bc52-4c91-a679-bef2f24e3cf7';
 $bucketID = '1248';
 $creationTime = time(); // get current timestamp using time()
-$binary = 1;
+$includeData = 1;
 
 // create SHA-256 checksum of request parameters
-$cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.$creationTime.'&method=GET'.'&binary='.$binary);
+$cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.$creationTime.'&method=GET'.'&includeData='.$includeData);
 
 // create payload for signature
 $payload = [
@@ -134,7 +134,7 @@ $params = [
         'bucketID' => $bucketID,
         'creationTime' => $creationTime,
         'method' => 'GET',
-        'binary' => $binary,
+        'includeData' => $includeData,
         'sig' => $sig,
     ]
 ];
@@ -198,10 +198,10 @@ $client = new Client([
 $bucketID = '1248';
 $creationTime = time(); // get current timestamp using time()
 $prefix = 'myData';
-$binary = 1;
+$includeData = 1;
 
 // create SHA-256 checksum of request parameters
-$cs = hash('sha256', '/blob/files?bucketID='.$bucketID.'&creationTime='.$creationTime.'&prefix='.$prefix.'&method=GET'.'&binary='.$binary);
+$cs = hash('sha256', '/blob/files?bucketID='.$bucketID.'&creationTime='.$creationTime.'&prefix='.$prefix.'&method=GET'.'&includeData='.$includeData);
 
 // create payload for signature
 $payload = [
@@ -243,7 +243,7 @@ $params = [
         'creationTime' => $creationTime,
         'prefix' => $prefix,
         'method' => 'GET',
-        'binary' => $binary,
+        'includeData' => $includeData,
         'sig' => $sig,
     ]
 ];
