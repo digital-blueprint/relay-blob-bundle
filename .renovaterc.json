@@ -19,6 +19,10 @@
     {
       "matchPackagePrefixes": ["web-token/"],
       "allowedVersions": "<3"
+    },
+    {
+      "matchPackagePrefixes": ["symfony/orm-pack"],
+      "allowedVersions": "<2.4"
     }
   ]
 }
