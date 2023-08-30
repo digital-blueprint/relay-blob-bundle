@@ -106,13 +106,22 @@ class DenyAccessUnlessCheckSignature
         // now, after the signature and checksum check it is safe to something
 
         $bucket = $blobService->configurationService->getBucketByID($bucketID);
+
+        // get the time for which a request should be valid
         $linkExpiryTime = $bucket->getLinkExpireTime();
+
+        // sub linkexpirytime from now to check if creationTime is too old
         $now = new \DateTime('now');
         $now->sub(new \DateInterval($linkExpiryTime));
         $expiryTime = strtotime($now->format('c'));
 
+        // add linkExpiryTime to now, and allow requests to be only linkExpiryTime in the future
+        $now = new \DateTime('now');
+        $now->add(new \DateInterval($linkExpiryTime));
+        $futureBlock = strtotime($now->format('c'));
+
         // check if request is expired
-        if ((int) $creationTime < $expiryTime || $expiryTime === false) {
+        if ((int) $creationTime < $expiryTime || $creationTime > $futureBlock ||$expiryTime === false) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Parameter creationTime too old', 'blob:check-signature-creation-time-too-old');
         }
 
@@ -193,8 +202,13 @@ class DenyAccessUnlessCheckSignature
         $now->sub(new \DateInterval($linkExpiryTime));
         $expiryTime = strtotime($now->format('c'));
 
-        // check if request is expired
-        if ((int) $creationTime < $expiryTime || $expiryTime === false) {
+        // add linkExpiryTime to now, and allow requests to be only linkExpiryTime in the future
+        $now = new \DateTime('now');
+        $now->add(new \DateInterval($linkExpiryTime));
+        $futureBlock = strtotime($now->format('c'));
+
+        // check if request is expired or in the future
+        if ((int) $creationTime < $expiryTime || $creationTime > $futureBlock || $expiryTime === false) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Parameter creationTime too old', $errorPrefix.'-creation-time-too-old');
         }
 

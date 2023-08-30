@@ -117,11 +117,6 @@ class FileDataProvider extends AbstractDataProvider
         $prefix = $filters['prefix'] ?? '';
         $prefix = rawurldecode($prefix);
 
-        // check if prefix is present
-        if (!$prefix) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'prefix is missing', 'blob:get-file-data-collection-missing-prefix');
-        }
-
         // check if signature and checksum is correct
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
         DenyAccessUnlessCheckSignature::checkSignature($secret, $this->requestStack->getCurrentRequest(), $this->blobService);

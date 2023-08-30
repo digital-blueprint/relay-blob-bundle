@@ -140,7 +140,7 @@ class BlobService
     }
 
     /**
-     * Used to persist given fileData in entity manager, and automatically adapts last acccess timestamp.
+     * Used to persist given fileData in entity manager, and automatically adapts last access timestamp.
      *
      * @param FileData $fileData fileData to be persisted
      *
