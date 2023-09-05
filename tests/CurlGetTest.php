@@ -1794,10 +1794,9 @@ class CurlGetTest extends ApiTestCase
             foreach ($actions as $action) {
                 $params = [
                     0 => "bucketID=$bucketID",
-                    1 => "prefix=$prefix",
-                    2 => "creationTime=$creationTime",
-                    3 => "method=$action",
-                    4 => 'sig=',
+                    1 => "creationTime=$creationTime",
+                    2 => "method=$action",
+                    3 => 'sig=',
                 ];
 
                 for ($i = 0; $i < count($params) - 1; ++$i) {
@@ -1832,6 +1831,8 @@ class CurlGetTest extends ApiTestCase
                             'HTTP_ACCEPT' => 'application/ld+json',
                         ],
                     ];
+
+                    echo 'Test url '.$baseUrl.$token;
 
                     /** @var Response $response */
                     $response = $client->request($action, $baseUrl.$token, $options);

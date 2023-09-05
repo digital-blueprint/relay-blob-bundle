@@ -121,7 +121,7 @@ class DenyAccessUnlessCheckSignature
         $futureBlock = strtotime($now->format('c'));
 
         // check if request is expired
-        if ((int) $creationTime < $expiryTime || $creationTime > $futureBlock ||$expiryTime === false) {
+        if ((int) $creationTime < $expiryTime || $creationTime > $futureBlock || $expiryTime === false) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Parameter creationTime too old', 'blob:check-signature-creation-time-too-old');
         }
 

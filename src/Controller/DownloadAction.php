@@ -40,6 +40,12 @@ class DownloadAction extends BaseBlobController
         // check if the signature is valid
         DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService);
 
+        $urlMethod = rawurldecode($request->get('method', ''));
+        $method = $request->getMethod();
+        if ($method !== 'GET' || $urlMethod !== 'GET') {
+            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'action/method is invalid', 'blob:download-file-by-id-invalid-method');
+        }
+
         // get data associated with the provided identifier
         $fileData = $this->blobService->getFileData($identifier);
         $this->blobService->setBucket($fileData);
