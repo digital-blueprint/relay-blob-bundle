@@ -52,7 +52,7 @@ class FileDataProvider extends AbstractDataProvider
         DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $this->requestStack->getCurrentRequest(), $filters, ['GET', 'PUT', 'DELETE']);
 
         // get secret of bucket
-        $bucketID = $filters['bucketID'] ?? '';
+        $bucketID = rawurldecode($filters['bucketID']) ?? '';
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
 
         // check if signature is valid

@@ -34,12 +34,15 @@ class DownloadAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'No identifier set', 'blob:download-file-by-id-missing-identifier');
         }
 
+        $bucketID = rawurldecode($request->get('bucketID', ''));
+        $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
+
+        // check if the signature is valid
+        DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService);
+
         // get data associated with the provided identifier
         $fileData = $this->blobService->getFileData($identifier);
         $this->blobService->setBucket($fileData);
-
-        // check if the signature is valid
-        DenyAccessUnlessCheckSignature::checkSignature($fileData->getBucket()->getKey(), $request, $this->blobService);
 
         return $this->blobService->getBinaryResponse($fileData);
     }
