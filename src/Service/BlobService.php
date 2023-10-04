@@ -371,6 +371,29 @@ class BlobService
     }
 
     /**
+     * Get all the fileDatas of a given bucketID and that starts with prefix.
+     */
+    public function getFileDataByBucketIDAndStartsWithPrefix(string $bucketID, string $prefix): array
+    {
+        $query = $this->em
+            ->getRepository(FileData::class)
+            ->createQueryBuilder('f')
+            ->where('f.bucketID = :bucketID')
+            ->andWhere('f.prefix LIKE :prefix')
+            ->orderBy('f.dateCreated', 'ASC')
+            ->setParameter('bucketID', $bucketID)
+            ->setParameter('prefix', $prefix.'%');
+
+        $result = $query->getQuery()->getResult();
+
+        if (!$result) {
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileDatas was not found!', 'blob:file-data-not-found');
+        }
+
+        return $result;
+    }
+
+    /**
      * Get all the fileDatas of a given bucketID and prefix with pagination limits.
      */
     public function getFileDataByBucketIDAndPrefixWithPagination(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage): array
@@ -388,6 +411,26 @@ class BlobService
 
         return $query->getQuery()->getResult();
     }
+
+    /**
+     * Get all the fileDatas of a given bucketID that start with prefix with pagination limits.
+     */
+    public function getFileDataByBucketIDAndStartsWithPrefixWithPagination(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage): array
+    {
+        $query = $this->em
+            ->getRepository(FileData::class)
+            ->createQueryBuilder('f')
+            ->where('f.bucketID = :bucketID')
+            ->andWhere('f.prefix LIKE :prefix')
+            ->orderBy('f.dateCreated', 'ASC')
+            ->setParameter('bucketID', $bucketID)
+            ->setParameter('prefix', $prefix.'%')
+            ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber - 1))
+            ->setMaxResults($maxNumItemsPerPage);
+
+        return $query->getQuery()->getResult();
+    }
+
 
     /**
      * Get quota of the bucket with given bucketID.

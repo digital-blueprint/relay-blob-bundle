@@ -43,6 +43,8 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         // verify signature and checksum
         $bucketID = $request->query->get('bucketID', '');
         assert(is_string($bucketID));
+        $startsWith = $request->query->get('startsWith', '');
+        assert(is_string($startsWith));
         $bucketID = rawurldecode($bucketID);
 
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
@@ -50,8 +52,12 @@ class DeleteFileDatasByPrefix extends BaseBlobController
 
         // now, after checksum and signature check, it is safe to do stuff
 
-        // get all the file datas associated with the prefix
-        $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefix($bucketID, $prefix);
+        // get all the file datas associated with the prefix, and decide whether the prefix should be used as 'startsWith'
+        if ($startsWith) {
+            $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefix($bucketID, $prefix);
+        } else {
+            $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefix($bucketID, $prefix);
+        }
 
         // remove all the files datas
         foreach ($fileDatas as $fileData) {

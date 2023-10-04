@@ -123,11 +123,17 @@ class FileDataProvider extends AbstractDataProvider
 
         // get includeData param and decode it
         $includeData = $filters['includeData'] ?? '';
+        $startsWith = $filters['startsWith'] ?? '';
         assert(is_string($includeData));
         $includeData = rawurldecode($includeData) ?? '';
 
-        // get file data of bucket for current page
-        $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixWithPagination($bucketID, $prefix, $currentPageNumber, $maxNumItemsPerPage);
+        // get file data of bucket for current page, and decide whether prefix should be used as 'startsWith' or not
+        if ($startsWith) {
+            $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefixWithPagination($bucketID, $prefix, $currentPageNumber, $maxNumItemsPerPage);
+        } else {
+            $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixWithPagination($bucketID, $prefix, $currentPageNumber, $maxNumItemsPerPage);
+        }
+
 
         // create sharelinks
         foreach ($fileDatas as &$fileData) {
