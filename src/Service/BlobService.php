@@ -431,7 +431,6 @@ class BlobService
         return $query->getQuery()->getResult();
     }
 
-
     /**
      * Get quota of the bucket with given bucketID.
      *

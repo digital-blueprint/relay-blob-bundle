@@ -134,7 +134,6 @@ class FileDataProvider extends AbstractDataProvider
             $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixWithPagination($bucketID, $prefix, $currentPageNumber, $maxNumItemsPerPage);
         }
 
-
         // create sharelinks
         foreach ($fileDatas as &$fileData) {
             assert($fileData instanceof FileData);
