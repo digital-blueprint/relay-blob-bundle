@@ -27,6 +27,7 @@ In general, the parameters have to be given in the specified order while optiona
 | `bucketID`                                          | ID of the bucket in which the file(s) are located.                                                  | int    | all valid bucket IDs           |
 | `creationTime`                                      | Current time (UTC) in seconds                                                                       | int    | all valid integers             |
 | `prefix`                                            | prefix which the file(s) have                                                                       | string | all valid prefixes             |
+| `startsWith`                                        | if set, the request operation will affect all prefixes starting with the given prefix               | int    | `1`                            |
 | `method` (was called `action` until `v0.1.14`)      | method that is used, e.g. `GET` to get files                                                        | string | `GET`, `POST`, `DELETE`, `PUT` |
 | `sig`                                               | signature string of the checksum `cs`                                                               | string | all valid signature strings    |
 | `fileName`                                          | original filename of the file                                                                       | string | all valid strings              |
