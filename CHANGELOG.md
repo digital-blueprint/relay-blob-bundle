@@ -1,3 +1,6 @@
+# next version
+* Implement parameter `startsWith`, which enables operations on all prefixes in one bucket starting with `prefix`.
+
 # v0.1.16
 * Refactor whole blob codebase
 * Improve error handling by merging similar error cases into one method
