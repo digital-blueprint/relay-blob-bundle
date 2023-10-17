@@ -1,4 +1,4 @@
-# next version
+# v0.1.17
 * Implement parameter `startsWith`, which enables operations on all prefixes in one bucket starting with `prefix`.
 
 # v0.1.16
