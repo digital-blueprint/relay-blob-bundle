@@ -89,7 +89,13 @@ final class CreateFileDataAction extends BaseBlobController
 
         // Check retentionDuration & idleRetentionDuration valid durations
         $fileData->setRetentionDuration($retentionDuration);
-        if ($bucket->getMaxRetentionDuration() < $fileData->getRetentionDuration() || !$fileData->getRetentionDuration()) {
+        if ($fileData->getRetentionDuration()) {
+            $bucketExpireDate = $fileData->getDateCreated()->add(new \DateInterval($bucket->getMaxRetentionDuration()));
+            $fileExpireDate = $fileData->getDateCreated()->add(new \DateInterval($fileData->getRetentionDuration()));
+            if ($bucketExpireDate < $fileExpireDate) {
+                $fileData->setRetentionDuration((string) $bucket->getMaxRetentionDuration());
+            }
+        } else {
             $fileData->setRetentionDuration((string) $bucket->getMaxRetentionDuration());
         }
         // Set exists until time
