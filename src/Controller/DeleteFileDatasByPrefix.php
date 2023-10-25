@@ -31,14 +31,15 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $request, [], ['DELETE']);
 
         // get remaining required params, check type and decode according to RFC3986
-        $prefix = $request->query->get('prefix', '');
-        assert(is_string($prefix));
-        $prefix = rawurldecode($prefix);
+        $prefix = $request->query->get('prefix');
 
         // check if the minimal required params are present
-        if (!$prefix) {
+        if ($prefix === null) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Signature cannot be checked', 'blob:delete-file-data-by-prefix-prefix-missing');
         }
+
+        assert(is_string($prefix));
+        $prefix = rawurldecode($prefix);
 
         // verify signature and checksum
         $bucketID = $request->query->get('bucketID', '');
