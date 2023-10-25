@@ -293,7 +293,7 @@ class BlobService
             $url = $baseUrl.'/'.substr($filePath, 1);
         } else {
             $filePath = $this->getBase64Data($fileData)->getContentUrl();
-            $url = $filePath;
+            $url = $filePath.'';
         }
         // build and return HTTP path
         return $url;
