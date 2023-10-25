@@ -286,11 +286,17 @@ class BlobService
             'cs' => $this->generateChecksumFromFileData($fileData, 'GET', $now, $includeData),
         ];
 
-        // set content url
-        $filePath = $this->generateSignedContentUrl($fileData, 'GET', $now, $includeData, DenyAccessUnlessCheckSignature::create($fileData->getBucket()->getKey(), $payload));
-
+        $url = '';
+        if (!$includeData) {
+            // set content url
+            $filePath = $this->generateSignedContentUrl($fileData, 'GET', $now, $includeData, DenyAccessUnlessCheckSignature::create($fileData->getBucket()->getKey(), $payload));
+            $url = $baseUrl.'/'.substr($filePath, 1);
+        } else {
+            $filePath = $this->getBase64Data($fileData)->getContentUrl();
+            $url = $filePath;
+        }
         // build and return HTTP path
-        return $baseUrl.'/'.substr($filePath, 1);
+        return $url;
     }
 
     /**
