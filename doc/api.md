@@ -125,18 +125,19 @@ This means that systems communicating with blob have to also generate their chec
 
 #### PUT
 
-| relay:errorId                                     | Status code | Description                                                                                                                   | relay:errorDetails | Example |
-|---------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------|--------------------| ------- |
-| `blob:get-file-data-by-id-missing-sig`            | 400         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
-| `blob:get-file-data-by-id-missing-bucket-id`      | 400         | The parameter `bucketID` is missing                                                                                           | `message`          |         |
-| `blob:get-file-data-by-id-bucket-not-configured`  | 400         | The bucket with given `bucketID` is not configured                                                                            | `message`          |         |
-| `blob:check-signature-missing-sig`                | 400         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
-| `blob:check-signature-missing-signature-params`   | 400         | One or multiple of the required url parameters are missing                                                                    | `message`          |         |
-| `blob:check-signature-creation-time-too-old`      | 403         | The parameter `creationTime` is too old, therefore the request timed out and a new request has to be created, signed and sent | `message`          |         |
-| `blob:get-file-data-by-id-file-data-not-found`    | 404         | No FileData for the given identifier was not found!                                                                           | `message`          |         |
-| `blob:get-file-data-by-id-method-not-suitable`    | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
-| `blob:check-signature-method-not-suitable`        | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
-| `blob:file-not-saved`                             | 500         | File could not be saved!                                                                                                      | `message`          |         |
+| relay:errorId                                    | Status code | Description                                                                                                                   | relay:errorDetails | Example |
+|--------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------|--------------------| ------- |
+| `blob:get-file-data-by-id-missing-sig`           | 400         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
+| `blob:get-file-data-by-id-missing-bucket-id`     | 400         | The parameter `bucketID` is missing                                                                                           | `message`          |         |
+| `blob:get-file-data-by-id-bucket-not-configured` | 400         | The bucket with given `bucketID` is not configured                                                                            | `message`          |         |
+| `blob:check-signature-missing-sig`               | 400         | The signature in parameter `sig` is missing                                                                                   | `message`          |         |
+| `blob:check-signature-missing-signature-params`  | 400         | One or multiple of the required url parameters are missing                                                                    | `message`          |         |
+| `blob:put-file-data-missing-filename`            | 400         | The parameter `fileName` is missing                                                                                           | `message`          |         |
+| `blob:check-signature-creation-time-too-old`     | 403         | The parameter `creationTime` is too old, therefore the request timed out and a new request has to be created, signed and sent | `message`          |         |
+| `blob:get-file-data-by-id-file-data-not-found`   | 404         | No FileData for the given identifier was not found!                                                                           | `message`          |         |
+| `blob:get-file-data-by-id-method-not-suitable`   | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
+| `blob:check-signature-method-not-suitable`       | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
+| `blob:file-not-saved`                            | 500         | File could not be saved!                                                                                                      | `message`          |         |
 
 #### DELETE
 

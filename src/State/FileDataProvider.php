@@ -80,6 +80,12 @@ class FileDataProvider extends AbstractDataProvider
             // check if PUT request was used
             if ($method === 'PUT') {
                 $fileName = $filters['fileName'] ?? '';
+
+                // throw error if filename is not provided
+                if (!$fileName) {
+                    throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName is missing!', 'blob:put-file-data-missing-filename');
+                }
+
                 assert(is_string($fileName));
                 $fileName = rawurldecode($fileName);
                 $fileData->setFileName($fileName);
