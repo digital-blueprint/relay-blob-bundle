@@ -96,4 +96,14 @@ class ConfigurationService
     {
         return $this->config['reporting_interval'];
     }
+
+    /**
+     * Gets the cleanup interval from the config.
+     *
+     * @return mixed
+     */
+    public function getCleanupInterval()
+    {
+        return $this->config['cleanup_interval'];
+    }
 }

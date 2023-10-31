@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Cron;
 
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\CoreBundle\Cron\CronJobInterface;
 use Dbp\Relay\CoreBundle\Cron\CronOptions;
 
@@ -15,9 +16,12 @@ class CleanupCronJob implements CronJobInterface
      */
     private $blobService;
 
-    public function __construct(BlobService $blobService)
+    private $configService;
+
+    public function __construct(BlobService $blobService, ConfigurationService $configService)
     {
         $this->blobService = $blobService;
+        $this->configService = $configService;
     }
 
     public function getName(): string
@@ -27,7 +31,7 @@ class CleanupCronJob implements CronJobInterface
 
     public function getInterval(): string
     {
-        return '0 * * * *'; // Every hour
+        return $this->configService->getCleanupInterval();
     }
 
     public function run(CronOptions $options): void
