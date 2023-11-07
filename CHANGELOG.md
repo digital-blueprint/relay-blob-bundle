@@ -1,6 +1,8 @@
 # next
 * fix missing `fileName` bug in 'PUT' request
 * move cleanup interval to config, s.t. it is more easily configurable
+* database: rename `last_access` column to `date_accessed`
+* database: add `date_modified` column
 
 # v0.1.17
 * Implement parameter `startsWith`, which enables operations on all prefixes in one bucket starting with `prefix`.
