@@ -74,7 +74,15 @@ class FileData
      *
      * @var \DateTimeImmutable
      */
-    private $lastAccess;
+    private $dateAccessed;
+
+    /**
+     * @ORM\Column(type="datetime_immutable")
+     * @Groups({"BlobFiles:output"})
+     *
+     * @var \DateTimeImmutable
+     */
+    private $dateModified;
 
     /**
      * @Groups({"BlobFiles:input"})
@@ -104,6 +112,13 @@ class FileData
      * @var resource
      */
     private $file;
+/*
+    /**
+     * @ORM\Column(type="text", nullable=true)
+     *
+     * @var string
+     */
+//    private $fileHash;
 
     /**
      * @ORM\Column(type="text", nullable=true)
@@ -191,12 +206,22 @@ class FileData
 
     public function getLastAccess(): \DateTimeImmutable
     {
-        return $this->lastAccess;
+        return $this->dateAccessed;
     }
 
-    public function setLastAccess(\DateTimeImmutable $lastAccess): void
+    public function setLastAccess(\DateTimeImmutable $dateAccessed): void
     {
-        $this->lastAccess = $lastAccess;
+        $this->dateAccessed = $dateAccessed;
+    }
+
+    public function getDateModified(): \DateTimeImmutable
+    {
+        return $this->dateModified;
+    }
+
+    public function setDateModified(\DateTimeImmutable $dateModified): void
+    {
+        $this->dateModified = $dateModified;
     }
 
     public function getRetentionDuration(): ?string
@@ -258,7 +283,17 @@ class FileData
     {
         $this->additionalMetadata = $additionalMetadata;
     }
+/*
+    public function getFileHash(): ?string
+    {
+        return $this->fileHash;
+    }
 
+    public function setFileHash($fileHash): void
+    {
+        $this->fileHash = $fileHash;
+    }
+*/
     public function getFileSize(): int
     {
         return $this->fileSize;

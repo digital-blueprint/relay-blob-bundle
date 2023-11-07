@@ -101,6 +101,7 @@ class BlobService
         $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $fileData->setDateCreated($time);
         $fileData->setLastAccess($time);
+        $fileData->setDateModified($time);
 
         // Check if json is valid
         $metadata = $request->get('additionalMetadata'); // default is null
@@ -646,7 +647,7 @@ class BlobService
                 $file['prefix'] = $fileData->getPrefix();
                 $file['dateCreated'] = $fileData->getDateCreated()->format('c');
                 $file['lastAccess'] = $fileData->getLastAccess()->format('c');
-                $file['existsUnitl'] = $fileData->getExistsUntil()->format('c');
+                $file['existsUntil'] = $fileData->getExistsUntil()->format('c');
                 if (empty($notifyEmails[$fileData->getNotifyEmail()])) {
                     $notifyEmails[$fileData->getNotifyEmail()] = [];
                 }
