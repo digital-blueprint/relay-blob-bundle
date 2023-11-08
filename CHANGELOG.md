@@ -2,7 +2,8 @@
 * fix missing `fileName` bug in 'PUT' request
 * move cleanup interval to config, s.t. it is more easily configurable
 * database: rename `last_access` column to `date_accessed`
-* database: add `date_modified` column
+* database: rework `extension` column to `mime_type` to store mime types instead extensions
+* database: add `date_modified`, `additional_type` columns
 
 # v0.1.17
 * Implement parameter `startsWith`, which enables operations on all prefixes in one bucket starting with `prefix`.
