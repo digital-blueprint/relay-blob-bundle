@@ -113,8 +113,7 @@ final class CreateFileDataAction extends BaseBlobController
         /** @var ?UploadedFile $uploadedFile */
         $uploadedFile = $fileData->getFile();
 
-        // TODO extensions are not always 3 letters
-        $fileData->setExtension($uploadedFile->guessExtension() ?? substr($fileData->getFileName(), -3, 3));
+        $fileData->setMimeType($uploadedFile->getMimeType() ?? '');
         $hash = hash('sha256', $uploadedFile->getContent());
 
         // TODO maybe save the fileHash in the database for a integrity check when retrieving files?

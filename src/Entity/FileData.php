@@ -40,12 +40,12 @@ class FileData
     private $fileName;
 
     /**
-     * @ORM\Column(type="string", length=64)
+     * @ORM\Column(type="string", length=255)
      * @Groups({"BlobFiles:output"})
      *
      * @var string
      */
-    private $extension;
+    private $mimeType;
 
     /**
      * @ORM\Column(type="string", length=50)
@@ -129,6 +129,14 @@ class FileData
     private $additionalMetadata;
 
     /**
+     * @ORM\Column(type="text", nullable=true)
+     * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
+     *
+     * @var string
+     */
+    private $additionalType;
+
+    /**
      * @ORM\Column(type="integer")
      * @Groups({"BlobFiles:output"})
      *
@@ -164,14 +172,14 @@ class FileData
         $this->fileName = $fileName;
     }
 
-    public function getExtension(): string
+    public function getMimeType(): string
     {
-        return $this->extension;
+        return $this->mimeType;
     }
 
-    public function setExtension(string $extension): void
+    public function setMimeType(string $mimeType): void
     {
-        $this->extension = $extension;
+        $this->mimeType = $mimeType;
     }
 
     public function getBucketID(): string
@@ -282,6 +290,16 @@ class FileData
     public function setAdditionalMetadata($additionalMetadata): void
     {
         $this->additionalMetadata = $additionalMetadata;
+    }
+
+    public function getAdditionalType(): ?string
+    {
+        return $this->additionalType;
+    }
+
+    public function setAdditionalType($additionalType): void
+    {
+        $this->additionalType = $additionalType;
     }
 /*
     public function getFileHash(): ?string
