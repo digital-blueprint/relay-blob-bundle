@@ -23,6 +23,6 @@ final class Version20231108140920 extends EntityManagerMigration
 
     public function down(Schema $schema): void
     {
-        $this->addSql('ALTER TABLE blob_files CHANGE mime_type extension VARCHAR(255) NOT NULL');
+        $this->addSql('ALTER TABLE blob_files CHANGE mime_type extension VARCHAR(50) NOT NULL');
     }
 }
