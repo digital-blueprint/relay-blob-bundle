@@ -69,6 +69,9 @@ class FileDataProvider extends AbstractDataProvider
         // get used method of request
         $method = $this->requestStack->getCurrentRequest()->getMethod();
 
+        // get the current time to save it as last access / last modified
+        $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+
         // decide by method what to execute
         if ($method !== 'DELETE') {
             // create shareLink
@@ -89,7 +92,7 @@ class FileDataProvider extends AbstractDataProvider
                 assert(is_string($fileName));
                 $fileName = rawurldecode($fileName);
                 $fileData->setFileName($fileName);
-                $this->blobService->saveFileData($fileData);
+                $fileData->setDateModified($time);
             }
             // check if GET request was used
             elseif ($method === 'GET') {
@@ -100,6 +103,8 @@ class FileDataProvider extends AbstractDataProvider
                 }
             }
         }
+
+        $this->blobService->saveFileData($fileData);
 
         return $fileData;
     }
@@ -143,6 +148,7 @@ class FileDataProvider extends AbstractDataProvider
         // create sharelinks
         foreach ($fileDatas as &$fileData) {
             assert($fileData instanceof FileData);
+            $this->blobService->saveFileData($fileData);
             $fileData->setBucket($this->blobService->configurationService->getBucketByID($bucketID));
             $fileData = $this->blobService->getLink($fileData);
             $baseUrl = $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost();
