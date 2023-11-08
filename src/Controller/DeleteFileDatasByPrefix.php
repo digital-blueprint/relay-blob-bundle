@@ -7,28 +7,19 @@ namespace Dbp\Relay\BlobBundle\Controller;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class DeleteFileDatasByPrefix extends BaseBlobController
 {
-
     /**
      * @var BlobService
      */
     private $blobService;
 
-    /**
-     * @var LoggerInterface
-     */
-    protected $logger;
-
     public function __construct(BlobService $blobService)
     {
         $this->blobService = $blobService;
-        $this->logger = new NullLogger();
     }
 
     /**
@@ -71,9 +62,6 @@ class DeleteFileDatasByPrefix extends BaseBlobController
 
         // remove all the files datas
         foreach ($fileDatas as $fileData) {
-            dump('DELETE '.$fileData->getIdentifier().' from bucket '.$fileData->getBucketID());
-            dump($this->logger);
-            $this->logger->info('DELETE '.$fileData->getIdentifier().' from bucket '.$fileData->getBucketID());
             $bucket = $this->blobService->configurationService->getBucketByID($bucketID);
             $fileData->setBucket($bucket);
             $this->blobService->removeFileData($fileData);

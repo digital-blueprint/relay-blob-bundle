@@ -112,13 +112,6 @@ class FileData
      * @var resource
      */
     private $file;
-/*
-    /**
-     * @ORM\Column(type="text", nullable=true)
-     *
-     * @var string
-     */
-//    private $fileHash;
 
     /**
      * @ORM\Column(type="text", nullable=true)
@@ -301,17 +294,7 @@ class FileData
     {
         $this->additionalType = $additionalType;
     }
-/*
-    public function getFileHash(): ?string
-    {
-        return $this->fileHash;
-    }
 
-    public function setFileHash($fileHash): void
-    {
-        $this->fileHash = $fileHash;
-    }
-*/
     public function getFileSize(): int
     {
         return $this->fileSize;

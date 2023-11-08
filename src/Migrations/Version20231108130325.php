@@ -7,7 +7,7 @@ namespace Dbp\Relay\BlobBundle\Migrations;
 use Doctrine\DBAL\Schema\Schema;
 
 /**
- * Add column additional_type
+ * Add column additional_type.
  */
 final class Version20231108130325 extends EntityManagerMigration
 {

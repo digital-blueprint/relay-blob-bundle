@@ -7,7 +7,7 @@ namespace Dbp\Relay\BlobBundle\Migrations;
 use Doctrine\DBAL\Schema\Schema;
 
 /**
- * Add column date_modified
+ * Add column date_modified.
  */
 final class Version20231107154100 extends EntityManagerMigration
 {

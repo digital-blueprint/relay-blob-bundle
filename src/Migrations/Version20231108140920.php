@@ -7,7 +7,7 @@ namespace Dbp\Relay\BlobBundle\Migrations;
 use Doctrine\DBAL\Schema\Schema;
 
 /**
- * Rename extension column to mime_type
+ * Rename extension column to mime_type.
  */
 final class Version20231108140920 extends EntityManagerMigration
 {

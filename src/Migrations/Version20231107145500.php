@@ -7,7 +7,7 @@ namespace Dbp\Relay\BlobBundle\Migrations;
 use Doctrine\DBAL\Schema\Schema;
 
 /**
- * Rename last_access column to date_accessed
+ * Rename last_access column to date_accessed.
  */
 final class Version20231107145500 extends EntityManagerMigration
 {
