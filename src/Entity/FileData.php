@@ -114,7 +114,7 @@ class FileData
     private $file;
 
     /**
-     * @ORM\Column(type="text", nullable=true)
+     * @ORM\Column(type="json", nullable=true)
      * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
      *
      * @var string
