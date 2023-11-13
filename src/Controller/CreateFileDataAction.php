@@ -74,6 +74,10 @@ final class CreateFileDataAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'prefix is missing', 'blob:create-file-data-prefix-missing');
         }
 
+        if ($additionalMetadata && !json_decode($additionalMetadata, true)) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalMetadata', 'blob:create-file-bad-additional-metadata');
+        }
+
         // get the filedata of the request
         $fileData = $this->blobService->createFileData($request);
         $fileData = $this->blobService->setBucket($fileData);
