@@ -107,6 +107,7 @@ class BlobService
         $metadata = $request->get('additionalMetadata'); // default is null
         if ($metadata) {
             try {
+                $metadata = rawurldecode($metadata);
                 json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
             } catch (\JsonException $e) {
                 throw ApiError::withDetails(Response::HTTP_UNPROCESSABLE_ENTITY, 'The additional Metadata doesn\'t contain valid json!', 'blob:blob-service-invalid-json');

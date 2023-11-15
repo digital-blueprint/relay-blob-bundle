@@ -83,15 +83,28 @@ class FileDataProvider extends AbstractDataProvider
             // check if PUT request was used
             if ($method === 'PUT') {
                 $fileName = $filters['fileName'] ?? '';
+                $additionalMetadata = $filters['additionalMetadata'] ?? '';
 
                 // throw error if filename is not provided
-                if (!$fileName) {
-                    throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName is missing!', 'blob:put-file-data-missing-filename');
+                if (!$fileName && !$additionalMetadata) {
+                    throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName or additionalMetadata is missing!', 'blob:put-file-data-missing-filename-or-additionalMetadata');
+                } elseif (!$additionalMetadata) {
+                    assert(is_string($fileName));
+                    $fileName = rawurldecode($fileName);
+                    $fileData->setFileName($fileName);
+                } elseif (!$fileName) {
+                    assert(is_string($additionalMetadata));
+                    $additionalMetadata = rawurldecode($additionalMetadata);
+                    $fileData->setAdditionalMetadata($additionalMetadata);
+                } else {
+                    assert(is_string($fileName));
+                    assert(is_string($additionalMetadata));
+                    $fileName = rawurldecode($fileName);
+                    $additionalMetadata = rawurldecode($additionalMetadata);
+                    $fileData->setFileName($fileName);
+                    $fileData->setAdditionalMetadata($additionalMetadata);
                 }
 
-                assert(is_string($fileName));
-                $fileName = rawurldecode($fileName);
-                $fileData->setFileName($fileName);
                 $fileData->setDateModified($time);
             }
             // check if GET request was used

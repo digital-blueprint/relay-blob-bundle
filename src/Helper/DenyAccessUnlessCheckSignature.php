@@ -61,9 +61,18 @@ class DenyAccessUnlessCheckSignature
     {
         $data = self::verify($secret, $sig);
 
-        // check checksum
-        if (!array_key_exists('cs', $data) || $data['cs'] !== self::generateSha256FromRequest($request)) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum invalid', 'blob:checksum-invalid');
+        $method = $request->getMethod();
+        if ($method === 'POST' || $method === 'PUT') {
+            // check checksum of url and body since both are expected
+            if (!array_key_exists('ucs', $data) || $data['ucs'] !== self::generateSha256FromRequest($request) ||
+                !array_key_exists('bcs', $data) || $data['bcs'] !== self::generateSha256FromRequestBody($request)) {
+                throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum bcs or ucs invalid', 'blob:checksum-invalid');
+            }
+        } else {
+            // check checksum of only url since no body is expected
+            if (!array_key_exists('ucs', $data) || $data['ucs'] !== self::generateSha256FromRequest($request)) {
+                throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum ucs invalid', 'blob:checksum-invalid');
+            }
         }
 
         return $data;
@@ -232,7 +241,32 @@ class DenyAccessUnlessCheckSignature
         // remove signature part of uri
         $url = explode('&sig=', $request->getRequestUri());
 
+        assert(is_string($url[0]));
+
         // generate hmac sha256 hash over the uri except the signature part
         return SignatureTools::generateSha256Checksum($url[0]);
+    }
+
+    /**
+     * Generates a sha256 hash from the request body.
+     */
+    public static function generateSha256FromRequestBody(Request $request): string
+    {
+        $body = '';
+
+        // extract data using different methods
+        // for POST
+        if ($request->getMethod() === 'POST') {
+            $body = json_encode($request->request->all(), JSON_FORCE_OBJECT);
+        }
+        // for PUT
+        elseif ($request->getMethod() === 'PUT') {
+            $body = $request->getContent();
+        }
+
+        assert(is_string($body));
+
+        // generate hmac sha256 hash over the body
+        return SignatureTools::generateSha256Checksum($body);
     }
 }
