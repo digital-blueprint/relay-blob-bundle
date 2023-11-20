@@ -2026,7 +2026,7 @@ class CurlGetTest extends ApiTestCase
                         'HTTP_ACCEPT' => 'application/ld+json',
                         'Content-Type' => 'application/json',
                     ],
-                    'body' => "{}",
+                    'body' => '{}',
                 ];
 
                 /** @var Response $response */
