@@ -36,6 +36,7 @@ final class CreateFileDataAction extends BaseBlobController
         DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $request, [], ['POST']);
 
         // get remaining necessary params
+        $bucketID = $request->query->get('bucketID', '');
         $prefix = $request->query->get('prefix', '');
         $fileName = $request->query->get('fileName', '');
         $fileHash = $request->query->get('fileHash', '');
@@ -43,25 +44,32 @@ final class CreateFileDataAction extends BaseBlobController
         // get optional params
         $notifyEmail = $request->query->get('notifyEmail', '');
         $retentionDuration = $request->query->get('retentionDuration', '');
-        $additionalMetadata = $request->query->get('additionalMetadata', '');
+        $additionalType = $request->query->get('additionalType', '');
+
+        // get optional additionalMetadata from formdata body
+        $additionalMetadata = $request->request->get('additionalMetadata', '');
 
         // get request method
         $method = $request->getMethod();
 
         // check types of params
+        assert(is_string($bucketID));
         assert(is_string($prefix));
         assert(is_string($fileName));
         assert(is_string($fileHash));
         assert(is_string($notifyEmail));
         assert(is_string($retentionDuration));
+        assert(is_string($additionalType));
         assert(is_string($additionalMetadata));
 
         // urldecode according to RFC 3986
+        $bucketID = rawurldecode($bucketID);
         $prefix = rawurldecode($prefix);
         $fileName = rawurldecode($fileName);
         $fileHash = rawurldecode($fileHash);
         $notifyEmail = rawurldecode($notifyEmail);
         $retentionDuration = rawurldecode($retentionDuration);
+        $additionalType = rawurldecode($additionalType);
         $additionalMetadata = rawurldecode($additionalMetadata);
 
         // check if fileName is set
@@ -74,8 +82,21 @@ final class CreateFileDataAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'prefix is missing', 'blob:create-file-data-prefix-missing');
         }
 
+        // check if metadata is a valid json
         if ($additionalMetadata && !json_decode($additionalMetadata, true)) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalMetadata', 'blob:create-file-bad-additional-metadata');
+        }
+
+        $bucket = $this->blobService->getBucketByID($bucketID);
+        // check if additionaltype is defined
+        if ($additionalType && !array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalType', 'blob:create-file-bad-additional-type');
+        }
+
+        // TODO implement json schema validation
+        // check if given additionalMetadata json has the same keys like the defined additionalType
+        if ($additionalType && !empty(array_diff_key(json_decode($additionalMetadata, true), json_decode($bucket->getAdditionalTypes()[$additionalType], true)))) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'additionalType mismatch', 'blob:create-file-additional-type-mismatch');
         }
 
         // get the filedata of the request
@@ -107,6 +128,7 @@ final class CreateFileDataAction extends BaseBlobController
         // Set everything else...
         $fileData->setFileName($fileName);
         $fileData->setNotifyEmail($notifyEmail);
+        $fileData->setAdditionalType($additionalType);
         $fileData->setAdditionalMetadata($additionalMetadata);
 
         // Use given service for bucket

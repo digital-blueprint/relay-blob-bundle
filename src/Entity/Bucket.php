@@ -78,6 +78,11 @@ class Bucket
      */
     private $notifyWhenQuotaOver;
 
+    /**
+     * @var ?array
+     */
+    private $additionalTypes;
+
     public function getIdentifier(): string
     {
         return $this->identifier;
@@ -214,6 +219,18 @@ class Bucket
         return $this;
     }
 
+    public function getAdditionalTypes(): ?array
+    {
+        return $this->additionalTypes;
+    }
+
+    public function setAdditionalTypes(?array $additionalTypes): self
+    {
+        $this->additionalTypes = $additionalTypes;
+
+        return $this;
+    }
+
     public static function fromConfig(array $config): Bucket
     {
         $bucket = new Bucket();
@@ -263,6 +280,13 @@ class Bucket
             && !empty($config['reporting']['html_template'])
         ) {
             $bucket->setReportingConfig($config['reporting']);
+        }
+
+        if (
+            array_key_exists('additional_types', $config)
+            && is_array($config['additional_types'])
+        ) {
+            $bucket->setAdditionalTypes(array_merge(...$config['additional_types']));
         }
 
         return $bucket;

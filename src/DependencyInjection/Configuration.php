@@ -125,6 +125,8 @@ class Configuration implements ConfigurationInterface
                                         ->end()
                                     ->end()
                                 ->end()
+                                ->variableNode('additional_types')
+                                ->end()
                             ->end()
                         ->end()
                     ->end()

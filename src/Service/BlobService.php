@@ -673,6 +673,11 @@ class BlobService
         }
     }
 
+    public function getBucketByID($bucketID)
+    {
+        return $this->configurationService->getBucketByID($bucketID);
+    }
+
     /**
      * Wrapper to send an email from a given context.
      *
