@@ -95,7 +95,7 @@ final class CreateFileDataAction extends BaseBlobController
 
         // TODO implement json schema validation
         // check if given additionalMetadata json has the same keys like the defined additionalType
-        if ($additionalType && !empty(array_diff_key(json_decode($additionalMetadata, true), json_decode($bucket->getAdditionalTypes()[$additionalType], true)))) {
+        if ($additionalType && $additionalMetadata && !empty(array_diff_key(json_decode($additionalMetadata, true), json_decode($bucket->getAdditionalTypes()[$additionalType], true)))) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'additionalType mismatch', 'blob:create-file-additional-type-mismatch');
         }
 
