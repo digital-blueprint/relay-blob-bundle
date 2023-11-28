@@ -1,9 +1,12 @@
-# next
+# v0.1.18
+* **Breaking change**: rework checksum `cs` to a url checksum `ucs` and a body checksum `bcs`. `ucs` is required in every request and works like `cs` did, and `bcs` builds a checksum over the json body of a request.
 * fix missing `fileName` bug in 'PUT' request
 * move cleanup interval to config, s.t. it is more easily configurable
 * database: rename `last_access` column to `date_accessed`
 * database: rework `extension` column to `mime_type` to store mime types instead extensions
 * database: add `date_modified`, `additional_type` columns
+* Add `justinrainbow/json-schema` to composer.json
+
 
 # v0.1.17
 * Implement parameter `startsWith`, which enables operations on all prefixes in one bucket starting with `prefix`.
