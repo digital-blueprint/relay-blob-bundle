@@ -55,6 +55,7 @@ content:
 dbp_relay_blob:
   database_url: %env(resolve:DATABASE_URL)%'
   reporting_interval: "0 11 * * MON" # when notification cronjob should run
+  cleanup_interval: "*/5 * * * *" # when cleanup cronjob should run
   buckets:
     test_bucket:
       service: 'Dbp\Relay\BlobConnectorFilesystemBundle\Service\FilesystemService' # The path to a dbp relay blob connector service
