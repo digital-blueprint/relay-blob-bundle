@@ -9,6 +9,7 @@ use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
+use JsonSchema\Validator;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -82,26 +83,49 @@ class FileDataProvider extends AbstractDataProvider
 
             // check if PUT request was used
             if ($method === 'PUT') {
-                $fileName = $filters['fileName'] ?? '';
-                $additionalMetadata = $filters['additionalMetadata'] ?? '';
+                $body = json_decode($this->requestStack->getCurrentRequest()->getContent(), true);
+                $fileName = $body['fileName'] ?? '';
+                $additionalMetadata = $body['additionalMetadata'] ?? '';
+                $additionalType = $body['additionalType'] ?? '';
 
                 // throw error if filename is not provided
-                if (!$fileName && !$additionalMetadata) {
+                if (!$fileName && !$additionalMetadata & !$additionalType) {
                     throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName or additionalMetadata is missing!', 'blob:put-file-data-missing-filename-or-additionalMetadata');
-                } elseif (!$additionalMetadata) {
+                }
+
+                if ($fileName) {
                     assert(is_string($fileName));
                     $fileName = rawurldecode($fileName);
                     $fileData->setFileName($fileName);
-                } elseif (!$fileName) {
+                }
+                $bucket = $this->blobService->getBucketByID($bucketID);
+
+                if ($additionalType) {
+                    assert(is_string($additionalType));
+                    $additionalType = rawurldecode($additionalType);
+
+                    if (!array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
+                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalType', 'blob:put-file-data-bad-additional-type');
+                    }
+                    $fileData->setAdditionalType($additionalType);
+                }
+
+                if ($additionalMetadata) {
+                    dump($additionalMetadata);
+                    if (!json_decode($additionalMetadata, true)) {
+                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata is no valid JSON!', 'blob:put-file-data-bad-additionalMetadata');
+                    }
+                    $storedType = $fileData->getAdditionalType();
+                    if ($storedType) {
+                        $validator = new Validator();
+                        $metadataDecoded = json_decode($additionalMetadata);
+
+                        if ($validator->validate($metadataDecoded, (object) json_decode($bucket->getAdditionalTypes()[$storedType])) !== 0) {
+                            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata does not fit additionalType schema!', 'blob:put-file-data-additionalType-mismatch');
+                        }
+                    }
                     assert(is_string($additionalMetadata));
                     $additionalMetadata = rawurldecode($additionalMetadata);
-                    $fileData->setAdditionalMetadata($additionalMetadata);
-                } else {
-                    assert(is_string($fileName));
-                    assert(is_string($additionalMetadata));
-                    $fileName = rawurldecode($fileName);
-                    $additionalMetadata = rawurldecode($additionalMetadata);
-                    $fileData->setFileName($fileName);
                     $fileData->setAdditionalMetadata($additionalMetadata);
                 }
 
