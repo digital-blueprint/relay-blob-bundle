@@ -8,6 +8,7 @@ use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
+use JsonSchema\Validator;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -93,9 +94,11 @@ final class CreateFileDataAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalType', 'blob:create-file-bad-additional-type');
         }
 
-        // TODO implement json schema validation
+        $validator = new Validator();
+        $metadataDecoded = json_decode($additionalMetadata);
+
         // check if given additionalMetadata json has the same keys like the defined additionalType
-        if ($additionalType && $additionalMetadata && !empty(array_diff_key(json_decode($additionalMetadata, true), json_decode($bucket->getAdditionalTypes()[$additionalType], true)))) {
+        if ($additionalType && $validator->validate($metadataDecoded, (object) json_decode($bucket->getAdditionalTypes()[$additionalType])) !== 0) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'additionalType mismatch', 'blob:create-file-additional-type-mismatch');
         }
 
