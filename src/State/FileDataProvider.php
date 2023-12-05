@@ -111,7 +111,6 @@ class FileDataProvider extends AbstractDataProvider
                 }
 
                 if ($additionalMetadata) {
-                    dump($additionalMetadata);
                     if (!json_decode($additionalMetadata, true)) {
                         throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata is no valid JSON!', 'blob:put-file-data-bad-additionalMetadata');
                     }
