@@ -1257,7 +1257,7 @@ class CurlGetTest extends ApiTestCase
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl("{\"fileName\": \"$newFileName\"}"),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
@@ -1268,7 +1268,7 @@ class CurlGetTest extends ApiTestCase
                     'HTTP_ACCEPT' => 'application/ld+json',
                     'Content-Type' => 'application/json',
                 ],
-                'body' => '{}',
+                'body' => "{\"fileName\": \"$newFileName\"}",
             ];
 
             /* @noinspection PhpInternalEntityUsedInspection */
