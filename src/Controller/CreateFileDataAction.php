@@ -94,8 +94,13 @@ final class CreateFileDataAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalType', 'blob:create-file-bad-additional-type');
         }
 
+        // check if defined additionalType is valid json
+        if ($additionalType && !json_decode($bucket->getAdditionalTypes()[$additionalType])) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Invalid additionalType json', 'blob:create-file-invalid-additional-type-json');
+        }
+
         $validator = new Validator();
-        $metadataDecoded = json_decode($additionalMetadata);
+        $metadataDecoded = (object) json_decode($additionalMetadata);
 
         // check if given additionalMetadata json has the same keys like the defined additionalType
         if ($additionalType && $validator->validate($metadataDecoded, (object) json_decode($bucket->getAdditionalTypes()[$additionalType])) !== 0) {
