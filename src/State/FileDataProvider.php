@@ -183,12 +183,20 @@ class FileDataProvider extends AbstractDataProvider
 
         // create sharelinks
         foreach ($fileDatas as &$fileData) {
-            assert($fileData instanceof FileData);
-            $this->blobService->saveFileData($fileData);
-            $fileData->setBucket($this->blobService->configurationService->getBucketByID($bucketID));
-            $fileData = $this->blobService->getLink($fileData);
-            $baseUrl = $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost();
-            $fileData->setContentUrl($this->blobService->generateGETLink($baseUrl, $fileData, $includeData));
+            try {
+                assert($fileData instanceof FileData);
+                $this->blobService->saveFileData($fileData);
+                $fileData->setBucket($this->blobService->configurationService->getBucketByID($bucketID));
+                $fileData = $this->blobService->getLink($fileData);
+                $baseUrl = $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost();
+                $fileData->setContentUrl($this->blobService->generateGETLink($baseUrl, $fileData, $includeData));
+            } catch (\Exception $e) {
+                // skip file not found
+                // TODO how to handle this correctly? This should never happen in the first place
+                if ($e->getCode() === 404) {
+                    continue;
+                }
+            }
         }
 
         return $fileDatas;

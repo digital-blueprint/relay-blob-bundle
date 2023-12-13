@@ -294,8 +294,12 @@ class BlobService
             $filePath = $this->generateSignedContentUrl($fileData, 'GET', $now, $includeData, DenyAccessUnlessCheckSignature::create($fileData->getBucket()->getKey(), $payload));
             $url = $baseUrl.'/'.substr($filePath, 1);
         } else {
-            $filePath = $this->getBase64Data($fileData)->getContentUrl();
-            $url = $filePath.'';
+            try {
+                $filePath = $this->getBase64Data($fileData)->getContentUrl();
+                $url = $filePath.'';
+            } catch (\Exception $e) {
+                throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'File went missing', 'blob:file-not-found');
+            }
         }
         // build and return HTTP path
         return $url;
