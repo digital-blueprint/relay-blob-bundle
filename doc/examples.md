@@ -15,10 +15,10 @@ Header:
 Body:
 ```json
 {
-  "cs": "c8c103b727a27b9912597378eeeaa641a4800d08f0a3cc1006646f07fdab189d"
+  "ucs": "c8c103b727a27b9912597378eeeaa641a4800d08f0a3cc1006646f07fdab189d"
 }
 ```
-As seen in the example, the body consists of only one parameter `cs` which is the SHA-256 checksum of the request url (beginning from and including `/blob`).
+As seen in the example, the body consists of only one parameter `ucs` which is the SHA-256 checksum of the request url (beginning from and including `/blob`).
 In this case, the checksum `cs` was created using the following input:
 ```
 /blob/filesystem/de1aaf61-bc52-4c91-a679-bef2f24e3cf7?validUntil=2023-07-17T07:50:14+00:00
@@ -49,7 +49,7 @@ Assuming the above mentioned setting, the url part so far would look like this:
 ```
 /blob/files/de1aaf61-bc52-4c91-a679-bef2f24e3cf7?bucketID=1248&creationTime=1689602245&method=GET
 ```
-This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `cs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
+This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `ucs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
 
 Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `5338afb41dc80ae0668975a9c198c8a58a43b175b84616ecc709a799da6a5982`. This checksum then has to be added to a json with the key `cs`.
 This then has to be signed using the secret key, and appended to the url. The result will look something like this:
@@ -97,13 +97,13 @@ $cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.
 
 // create payload for signature
 $payload = [
-    'cs' => $cs
+    'ucs' => $cs
 ];
 
 // 32 byte key required
 // you should have gotten your key by your blob bucket owner
 // an example key can be generated using php -r 'echo bin2hex(random_bytes(32))."\n";'
-$secretKey = "your-key"; // replace this
+$secretKey = 'your-key'; // replace this
 
 // create JWK
 $jwk = JWKFactory::createFromSecret(
@@ -205,7 +205,7 @@ $cs = hash('sha256', '/blob/files?bucketID='.$bucketID.'&creationTime='.$creatio
 
 // create payload for signature
 $payload = [
-    'cs' => $cs
+    'ucs' => $cs
 ];
 
 // 32 byte key required
@@ -323,13 +323,14 @@ $cs = hash('sha256', '/blob/files?bucketID='.$bucketID.'&creationTime='.$creatio
 
 // create payload for signature
 $payload = [
-    'cs' => $cs
+    'ucs' => $cs,
+    'bcs' => hash('sha256', '{}')
 ];
 
 // 32 byte key required
 // you should have gotten your key by your blob bucket owner
 // an example key can be generated using php -r 'echo bin2hex(random_bytes(32))."\n";'
-$secretKey = "your-key"; // replace this
+$secretKey = 'your-key'; // replace this
 
 // create JWK
 $jwk = JWKFactory::createFromSecret(
@@ -371,18 +372,6 @@ $params = [
             'name' => 'file',
             'contents' => file_get_contents('myFile.txt'),
             'filename' => $fileName,
-        ],
-        [
-            'name' => 'prefix',
-            'contents' => $prefix,
-        ],
-        [
-            'name' => 'fileName',
-            'contents' => $fileName,
-        ],
-        [
-            'name' => 'bucketID',
-            'contents' => $bucketID
         ],
     ]
 ];
@@ -450,18 +439,21 @@ $bucketID = '1248';
 $creationTime = time(); // get current timestamp using time()
 $fileName = "newName.txt";
 
+$body = "{\"fileName\":\"$fileName\"}";
+
 // create SHA-256 checksum of request parameters
-$cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.$creationTime.'&method=PUT'.'&fileName='.$fileName);
+$cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.$creationTime.'&method=PUT');
 
 // create payload for signature
 $payload = [
-    'cs' => $cs
+    'ucs' => $cs,
+    'bcs' => hash('sha256', $body),
 ];
 
 // 32 byte key required
 // you should have gotten your key by your blob bucket owner
 // an example key can be generated using php -r 'echo bin2hex(random_bytes(32))."\n";'
-$secretKey = "your-key"; // replace this
+$secretKey = 'your-key'; // replace this
 
 // create JWK
 $jwk = JWKFactory::createFromSecret(
@@ -495,10 +487,9 @@ $params = [
         'bucketID' => $bucketID,
         'creationTime' => $creationTime,
         'method' => 'PUT',
-        'fileName' => $fileName,
         'sig' => $sig,
     ],
-    'body' => '{}',
+    'body' => $body,
 ];
 // send request using the defined parameters
 $response = $client->request('PUT', '/blob/files/'.$id, $params);
@@ -567,13 +558,13 @@ $cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.
 
 // create payload for signature
 $payload = [
-    'cs' => $cs
+    'ucs' => $cs
 ];
 
 // 32 byte key required
 // you should have gotten your key by your blob bucket owner
 // an example key can be generated using php -r 'echo bin2hex(random_bytes(32))."\n";'
-$secretKey = "your-key"; // replace this
+$secretKey = 'your-key'; // replace this
 
 // create JWK
 $jwk = JWKFactory::createFromSecret(
@@ -673,7 +664,7 @@ $cs = hash('sha256', '/blob/files?bucketID='.$bucketID.'&creationTime='.$creatio
 
 // create payload for signature
 $payload = [
-    'cs' => $cs
+    'ucs' => $cs
 ];
 
 // 32 byte key required
