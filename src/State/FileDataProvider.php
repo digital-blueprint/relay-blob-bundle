@@ -132,6 +132,19 @@ class FileDataProvider extends AbstractDataProvider
             }
             // check if GET request was used
             elseif ($method === 'GET') {
+                $content = base64_decode(explode(',', $this->blobService->getBase64Data($fileData)->getContentUrl())[1], true);
+
+                if (!$content) {
+                    throw ApiError::withDetails(Response::HTTP_CONFLICT, 'file data cannot be decoded', 'blob:file-data-decode-fail');
+                }
+                // check if file integrity should be checked and if so check it
+                if ($this->blobService->doFileIntegrityChecks() && $fileData->getFileHash() !== null && hash('sha256', $content) !== $fileData->getFileHash()) {
+                    throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 file hash doesnt match! File integrity cannot be guaranteed', 'blob:file-hash-mismatch');
+                }
+                if ($this->blobService->doFileIntegrityChecks() && $fileData->getMetadataHash() !== null && hash('sha256', $fileData->getAdditionalMetadata()) !== $fileData->getMetadataHash()) {
+                    throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 metadata hash doesnt match! Metadata integrity cannot be guaranteed', 'blob:metadata-hash-mismatch');
+                }
+
                 // check if includeData parameter is set
                 $includeData = $filters['includeData'] ?? '';
                 if ($includeData === '1') {

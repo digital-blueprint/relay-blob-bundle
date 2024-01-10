@@ -104,23 +104,26 @@ class BlobService
         $fileData->setDateModified($time);
 
         // Check if json is valid
-        $metadata = $request->get('additionalMetadata'); // default is null
-        if ($metadata) {
-            try {
-                $metadata = rawurldecode($metadata);
-                json_decode($metadata, true, 512, JSON_THROW_ON_ERROR);
-            } catch (\JsonException $e) {
-                throw ApiError::withDetails(Response::HTTP_UNPROCESSABLE_ENTITY, 'The additional Metadata doesn\'t contain valid json!', 'blob:blob-service-invalid-json');
-            }
-        }
+        /** @var string $additionalMetadata */
+        $additionalMetadata = $request->request->get('additionalMetadata', '');
 
         // set metadata, bucketID and retentionDuration
-        $fileData->setAdditionalMetadata($metadata);
+        $fileData->setAdditionalMetadata($additionalMetadata);
         $fileData->setBucketID($request->get('bucketID', ''));
         $retentionDuration = $request->get('retentionDuration', '0');
         $fileData->setRetentionDuration($retentionDuration);
 
+        if ($this->configurationService->doFileIntegrityChecks()) {
+            $fileData->setFileHash(hash('sha256', $uploadedFile->getContent()));
+            $fileData->setMetadataHash(hash('sha256', $additionalMetadata));
+        }
+
         return $fileData;
+    }
+
+    public function doFileIntegrityChecks(): bool
+    {
+        return $this->configurationService->doFileIntegrityChecks();
     }
 
     /**

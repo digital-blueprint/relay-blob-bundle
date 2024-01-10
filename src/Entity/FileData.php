@@ -138,6 +138,22 @@ class FileData
     private $fileSize;
 
     /**
+     * @ORM\Column(type="string", length=64)
+     * @Groups({"BlobFiles:output"})
+     *
+     * @var string|null
+     */
+    private $fileHash;
+
+    /**
+     * @ORM\Column(type="string", length=64)
+     * @Groups({"BlobFiles:output"})
+     *
+     * @var string|null
+     */
+    private $metadataHash;
+
+    /**
      * @ORM\Column(type="string", length=255)
      * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
      *
@@ -303,6 +319,26 @@ class FileData
     public function setFileSize(int $fileSize): void
     {
         $this->fileSize = $fileSize;
+    }
+
+    public function getFileHash(): ?string
+    {
+        return $this->fileHash;
+    }
+
+    public function setFileHash(string $fileHash): void
+    {
+        $this->fileHash = $fileHash;
+    }
+
+    public function getMetadataHash(): ?string
+    {
+        return $this->metadataHash;
+    }
+
+    public function setMetadataHash(string $metadataHash): void
+    {
+        $this->metadataHash = $metadataHash;
     }
 
     public function getNotifyEmail(): ?string

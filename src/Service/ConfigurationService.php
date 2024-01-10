@@ -106,4 +106,14 @@ class ConfigurationService
     {
         return $this->config['cleanup_interval'];
     }
+
+    public function doFileIntegrityChecks(): bool
+    {
+        return $this->config['file_integrity_checks'];
+    }
+
+    public function getIntegrityCheckInterval(): string
+    {
+        return $this->config['integrity_check_interval'];
+    }
 }
