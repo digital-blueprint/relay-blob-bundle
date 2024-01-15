@@ -1,0 +1,20 @@
+<html>
+<body>
+<p><b>Integrity check report of files of bucket {{ bucketName }} ({{ bucketId }})</b></p>
+<p>If there are any files showing up in this email, please check their binary and metadata consistency! The files could be corrupted!</p>
+<table>
+    <tr><th>file id</th><th>filename</th> <th>prefix</th><th>date created</th><th>last access</th><th>exists until</th></tr>
+    {% for file in files %}
+        <tr>
+            <td>{{ file.id|e }}</td>
+            <td>{{ file.fileName|e }}</td>
+            <td>{{ file.prefix|e }}</td>
+            <td>{{ file.dateCreated|e }}</td>
+            <td>{{ file.lastAccess|e }}</td>
+            <td>{{ file.existsUntil|e }}</td>
+        </tr>
+    {% endfor %}
+
+</table>
+</body>
+</html>

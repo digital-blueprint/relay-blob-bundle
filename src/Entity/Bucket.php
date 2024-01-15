@@ -74,6 +74,11 @@ class Bucket
     private $reportingConfig;
 
     /**
+     * @var ?array
+     */
+    private $integrityCheckConfig;
+
+    /**
      * @var int
      */
     private $notifyWhenQuotaOver;
@@ -219,6 +224,18 @@ class Bucket
         return $this;
     }
 
+    public function getIntegrityCheckConfig(): ?array
+    {
+        return $this->integrityCheckConfig;
+    }
+
+    public function setIntegrityCheckConfig(?array $integrityCheckConfig): self
+    {
+        $this->integrityCheckConfig = $integrityCheckConfig;
+
+        return $this;
+    }
+
     public function getAdditionalTypes(): ?array
     {
         return $this->additionalTypes;
@@ -280,6 +297,18 @@ class Bucket
             && !empty($config['reporting']['html_template'])
         ) {
             $bucket->setReportingConfig($config['reporting']);
+        }
+
+        if (
+            array_key_exists('integrity', $config)
+            && is_array($config['integrity'])
+            && !empty($config['integrity']['dsn'])
+            && !empty($config['integrity']['from'])
+            && !empty($config['integrity']['to'])
+            && !empty($config['integrity']['subject'])
+            && !empty($config['integrity']['html_template'])
+        ) {
+            $bucket->setIntegrityCheckConfig($config['integrity']);
         }
 
         if (

@@ -232,6 +232,69 @@ class BlobService
         return $fileData;
     }
 
+    public function checkIntegrity()
+    {
+        $buckets = $this->configurationService->getBuckets();
+        foreach ($buckets as $bucket) {
+            $fileDatas = $this->getFileDataByBucketID($bucket->getIdentifier());
+            $invalidDatas = [];
+            foreach ($fileDatas as $fileData) {
+                $content = base64_decode(explode(',', $this->getBase64Data($fileData)->getContentUrl())[1], true);
+
+                /** @var FileData $fileData */
+                if ($fileData->getFileHash() !== null && $content !== false && hash('sha256', $content) !== $fileData->getFileHash()) {
+                    $invalidDatas[] = $fileData;
+                } elseif ($fileData->getFileHash() !== null && hash('sha256', $fileData->getAdditionalMetadata()) !== $fileData->getMetadataHash()) {
+                    $invalidDatas[] = $fileData;
+                }
+            }
+            $this->sendIntegrityCheckMail($bucket, $invalidDatas);
+        }
+    }
+
+    /**
+     * Checks whether some files will expire soon, and sends a email to the bucket owner
+     * or owner of the file (if configured as notifyEmail).
+     *
+     * @return void
+     *
+     * @throws \Exception
+     */
+    public function sendIntegrityCheckMail(Bucket $bucket, array $invalidDatas)
+    {
+        $integrityConfig = $bucket->getIntegrityCheckConfig();
+
+        $id = $bucket->getIdentifier();
+        $name = $bucket->getName();
+
+        if (!empty($invalidDatas)) {
+            // create for each email to be notified an array with expiring filedatas
+            $files = [];
+            foreach ($invalidDatas as $fileData) {
+                /* @var ?FileData $fileData */
+                $file['id'] = $fileData->getIdentifier();
+                $file['fileName'] = $fileData->getFileName();
+                $file['prefix'] = $fileData->getPrefix();
+                $file['dateCreated'] = $fileData->getDateCreated()->format('c');
+                $file['lastAccess'] = $fileData->getLastAccess()->format('c');
+                $file['existsUntil'] = $fileData->getExistsUntil()->format('c');
+                if (empty($notifyEmails[$fileData->getNotifyEmail()])) {
+                    $notifyEmails[$fileData->getNotifyEmail()] = [];
+                }
+                array_push($files, $file);
+            }
+
+            $context = [
+                'bucketId' => $id,
+                'bucketName' => $name,
+                'files' => $files,
+            ];
+
+            $config = $integrityConfig;
+            $this->sendEmail($config, $context);
+        }
+    }
+
     /**
      * Get file as binary response.
      *
@@ -377,6 +440,22 @@ class BlobService
         $fileDatas = $this->em
             ->getRepository(FileData::class)
             ->findBy(['bucketID' => $bucketID, 'prefix' => $prefix]);
+
+        if (!$fileDatas) {
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileDatas was not found!', 'blob:file-data-not-found');
+        }
+
+        return $fileDatas;
+    }
+
+    /**
+     * Get all the fileDatas of a given bucketID.
+     */
+    public function getFileDataByBucketID(string $bucketID): array
+    {
+        $fileDatas = $this->em
+            ->getRepository(FileData::class)
+            ->findBy(['bucketID' => $bucketID]);
 
         if (!$fileDatas) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileDatas was not found!', 'blob:file-data-not-found');

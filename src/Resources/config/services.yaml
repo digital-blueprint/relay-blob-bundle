@@ -31,3 +31,7 @@ services:
   Dbp\Relay\BlobBundle\Cron\SendReportCronJob:
     autowire: true
     autoconfigure: true
+
+  Dbp\Relay\BlobBundle\Cron\IntegrityCronJob:
+    autowire: true
+    autoconfigure: true
