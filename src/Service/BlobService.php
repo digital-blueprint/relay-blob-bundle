@@ -116,6 +116,9 @@ class BlobService
         if ($this->configurationService->doFileIntegrityChecks()) {
             $fileData->setFileHash(hash('sha256', $uploadedFile->getContent()));
             $fileData->setMetadataHash(hash('sha256', $additionalMetadata));
+        } else {
+            $fileData->setFileHash('');
+            $fileData->setMetadataHash('');
         }
 
         return $fileData;

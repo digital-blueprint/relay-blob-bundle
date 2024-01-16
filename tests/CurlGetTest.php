@@ -273,7 +273,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -291,7 +291,6 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[0]['content'])
-                    ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {

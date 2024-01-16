@@ -61,6 +61,8 @@ class Kernel extends BaseKernel
             'link_url' => 'http://127.0.0.1:8000/',
             'reporting_interval' => '0 9 * * MON',
             'cleanup_interval' => '0 * * * *',
+            'file_integrity_checks' => false,
+            'integrity_check_interval' => '0 0 1 * *',
 //            'database_url' => 'sqlite:///:memory:',
             'buckets' => [
                 'test_bucket' => [
@@ -95,6 +97,13 @@ class Kernel extends BaseKernel
                         'to' => 'tamara.steinwender@tugraz.at',
                         'subject' => 'Blob file deletion reporting',
                         'html_template' => 'emails/reporting.html.twig',
+                    ],
+                    'integrity' => [
+                        'dsn' => 'smtp:localhost',
+                        'from' => 'noreply@tugraz.at',
+                        'to' => 'manuel.kocher@tugraz.at',
+                        'subject' => 'Blob file integrity check report',
+                        'html_template' => 'emails/integrity.html.twig',
                     ],
                 ],
                 'test_bucket2' => [
