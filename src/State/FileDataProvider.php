@@ -149,6 +149,8 @@ class FileDataProvider extends AbstractDataProvider
                 $includeData = $filters['includeData'] ?? '';
                 if ($includeData === '1') {
                     $fileData = $this->blobService->getBase64Data($fileData);
+                } else {
+                    $fileData = $this->blobService->getLink($fileData);
                 }
             }
         }
