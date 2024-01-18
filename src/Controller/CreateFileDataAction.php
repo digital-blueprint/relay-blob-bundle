@@ -71,7 +71,6 @@ final class CreateFileDataAction extends BaseBlobController
         $notifyEmail = rawurldecode($notifyEmail);
         $retentionDuration = rawurldecode($retentionDuration);
         $additionalType = rawurldecode($additionalType);
-        $additionalMetadata = rawurldecode($additionalMetadata);
 
         // check if fileName is set
         if (!$fileName) {
@@ -103,7 +102,7 @@ final class CreateFileDataAction extends BaseBlobController
         $metadataDecoded = (object) json_decode($additionalMetadata);
 
         // check if given additionalMetadata json has the same keys like the defined additionalType
-        if ($additionalType && $validator->validate($metadataDecoded, (object) json_decode($bucket->getAdditionalTypes()[$additionalType])) !== 0) {
+        if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) json_decode($bucket->getAdditionalTypes()[$additionalType])) !== 0) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'additionalType mismatch', 'blob:create-file-additional-type-mismatch');
         }
 
