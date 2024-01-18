@@ -2,6 +2,7 @@
 * Improve error handling for file not found cases
 * Add validation of json schema to POST and PUT endpoints
 * Add more and better tests
+* Remove the need for urlencoding the additionalMetadata since it was moved to the body
 
 # v0.1.18
 * **Breaking change**: rework checksum `cs` to a url checksum `ucs` and a body checksum `bcs`. `ucs` is required in every request and works like `cs` did, and `bcs` builds a checksum over the json body of a request.
