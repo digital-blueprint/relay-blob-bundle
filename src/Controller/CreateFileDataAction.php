@@ -149,7 +149,6 @@ final class CreateFileDataAction extends BaseBlobController
         $fileData->setMimeType($uploadedFile->getMimeType() ?? '');
         $hash = hash('sha256', $uploadedFile->getContent());
 
-        // TODO maybe save the fileHash in the database for a integrity check when retrieving files?
         // check hash of file
         if ($hash !== $fileHash) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:create-file-data-file-hash-change-forbidden');
