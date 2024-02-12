@@ -6,14 +6,14 @@
 * Update dbp/relay-blob-library to v0.2.0
 
 # v0.1.18
-* **Breaking change**: rework checksum `cs` to a url checksum `ucs` and a body checksum `bcs`. `ucs` is required in every request and works like `cs` did, and `bcs` builds a checksum over the json body of a request.
+* **Breaking change**: rework checksum `cs` to an url checksum `ucs` and a body checksum `bcs`. `ucs` is required in
+  every request and works like `cs` did, and `bcs` builds a checksum over the json body of a request.
 * fix missing `fileName` bug in 'PUT' request
 * move cleanup interval to config, s.t. it is more easily configurable
 * database: rename `last_access` column to `date_accessed`
 * database: rework `extension` column to `mime_type` to store mime types instead extensions
 * database: add `date_modified`, `additional_type` columns
 * Add `justinrainbow/json-schema` to composer.json
-
 
 # v0.1.17
 * Implement parameter `startsWith`, which enables operations on all prefixes in one bucket starting with `prefix`.
@@ -24,13 +24,16 @@
 * Fix wrong http status code was provided in /{id}/download endpoint
 
 # v0.1.15
-* Enforce [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986) by using [rawurldecode](https://www.php.net/manual/en/function.rawurldecode.php) on all url parameters. Before checksum calculation all non-alphanumeric characters have to be converted according to RFC 3986, otherwise the checksum check will fail.
+* Enforce [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986) by using [rawurldecode](https://www.php.net/manual/en/function.rawurldecode.php) on all url parameters. Before checksum calculation all
+  non-alphanumeric characters have to be converted according to RFC 3986, otherwise the checksum check will fail.
 * Increase `file_name` column size of `blob_files` to 1000 characters
 
 # v0.1.14
-* **Breaking change**: `/blob/files/{identifier}/download` action implemented which returns a binary response of the file with the given identifier
+* **Breaking change**: `/blob/files/{identifier}/download` action implemented which returns a binary response of the
+  file with the given identifier
 * **Breaking change**: Rename parameter `binary` to `includeData`, since it returns base64 encoded data not binary data
-* **Breaking change**: Rename parameter `action` to `method` and only include the used method now. `CREATONE`, `GETONE`, `GETALL`, `DELETEALL`, `DELETEONE`, `PUTONE` are removed and replaced by `POST`, `GET`, `DELETE`, `PUT`.
+* **Breaking change**: Rename parameter `action` to `method` and only include the used method now. `CREATONE`, `GETONE`,
+  `GETALL`, `DELETEALL`, `DELETEONE`, `PUTONE` are removed and replaced by `POST`, `GET`, `DELETE`, `PUT`.
 * Add docs and new errorIDS for `/blob/files/{identifier}/download` action
 
 # v0.1.13
