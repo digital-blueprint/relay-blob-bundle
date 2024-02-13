@@ -12,21 +12,21 @@ You can upload a file unauthorized via the API to a configured bucket and gets a
 Authentication takes place via signed requests.
 The file is attached to the bucket, not to an owner.
 
-A bucket can be an application or an application space. For example you can have two buckets with a different target group for one application.
+A bucket can be an application or an application space. For example, you can have two buckets with a different target group for one application.
 A bucket is configured in the config file.
 
 ## Requirements
+
 You need a DbpRelayBlobConnector bundle installed to make this bundle working. E.g. [DbpRelayBlobConnectorFilesystemBundle](https://github.com/digital-blueprint/relay-blob-connector-filesystem-bundle)
 
-<!--
 ## Bundle installation
 
-You can install the bundle directly from [packagist.org](https://packagist.org/packages/{{package-name}}).
+You can install the bundle directly from [packagist.org](https://packagist.org/packages/dbp/relay-blob-bundle).
 
 ```bash
-composer require {{package-name}}
+composer require dbp/relay-blob-bundle
 ```
--->
+
 ## Integration into the Relay API Server
 
 * Add the bundle to your `config/bundles.php` in front of `DbpRelayCoreBundle`:
@@ -65,7 +65,7 @@ dbp_relay_blob:
       quota: 500 # Max quota in MB
       notify_when_quota_over: 70 # percent of quota when the bucket owner should be notified that the storage is running out
       report_when_expiry_in: 'P30D' # duration of how much in advance a bucket owner or user should be warned about the deletion of files
-      bucket_owner: 'tamara.steiwnender@tugraz.at' # Email who will be notified when quota is reached
+      bucket_owner: 'john@example.com' # Email who will be notified when quota is reached
       max_retention_duration: 'P1Y' # Max retention duration of files in ISO 8601
       link_expire_time: 'P7D' # Max expire time of sharelinks in ISO 8601
       policies: # policies what can be done in the bucket
@@ -78,13 +78,13 @@ dbp_relay_blob:
       notify_quota: # Notification configuration how emails are sent when the quota is reached
         dsn: '%env(TUGRAZ_MAILER_TRANSPORT_DSN)%'
         from: 'noreply@tugraz.at'
-        to: 'tamara.steinwender@tugraz.at'
+        to: 'john@example.com'
         subject: 'Blob notify quota'
         html_template: 'emails/notify-quota.html.twig'
       reporting: # Reporting configuration how emails are sent when file expires
         dsn: '%env(TUGRAZ_MAILER_TRANSPORT_DSN)%'
         from: 'noreply@tugraz.at'
-        to: 'tamara.steinwender@tugraz.at' # this email is an fallback, if no email field of an file is set
+        to: 'john@example.com' # this email is a fallback, if no email field of a file is set
         subject: 'Blob file deletion reporting'
         html_template: 'emails/reporting.html.twig'
 ```
@@ -125,8 +125,12 @@ See the [API documentation](doc/api.md).
 ## CronJobs
 
 ### Cleanup Cronjob
+
 `Blob File cleanup`: This cronjob is for cleanup purposes. It starts every hour and deletes old files.
 
 ### Send Report Cronjob
-`Blob File send reports`: This cronjob sends reports to given email adresses, or the bucket owner. In this reports there are all files which are going to be deleted in the timeframe specified in the config. 
-The email adresse are attached to these files or there is a default in the config. This cronjob starts every Monday at 9 o'clock in the Morning (UTC).
+
+`Blob File send reports`: This cronjob sends reports to given email addresses, or the bucket owner.
+In these reports there are all files which are going to be deleted in the timeframe specified in the config. 
+The email address are attached to these files or there is a default in the config.
+This cronjob starts every Monday at 9 o'clock in the Morning (UTC).
