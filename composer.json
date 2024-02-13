@@ -1,6 +1,6 @@
 {
     "name": "dbp/relay-blob-bundle",
-    "description": "A bundle for fileserving, persisting and managing",
+    "description": "A bundle for file-serving, persisting and managing",
     "type": "symfony-bundle",
     "license": "AGPL-3.0-or-later",
     "require": {
