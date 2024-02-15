@@ -62,10 +62,11 @@ class DenyAccessUnlessCheckSignature
         $data = self::verify($secret, $sig);
 
         $method = $request->getMethod();
-        if ($method === 'POST' || $method === 'PUT') {
+        if ($method === 'POST' || $method === 'PATCH') {
             // check checksum of url and body since both are expected
             if (!array_key_exists('ucs', $data) || $data['ucs'] !== self::generateSha256FromRequest($request) ||
                 !array_key_exists('bcs', $data) || $data['bcs'] !== self::generateSha256FromRequestBody($request)) {
+
                 throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum bcs or ucs invalid', 'blob:checksum-invalid');
             }
         } else {
@@ -121,16 +122,25 @@ class DenyAccessUnlessCheckSignature
 
         // sub linkexpirytime from now to check if creationTime is too old
         $now = new \DateTime('now');
-        $now->sub(new \DateInterval($linkExpiryTime));
-        $expiryTime = strtotime($now->format('c'));
+        $expiryTime = $now->sub(new \DateInterval($linkExpiryTime));
 
         // add linkExpiryTime to now, and allow requests to be only linkExpiryTime in the future
         $now = new \DateTime('now');
-        $now->add(new \DateInterval($linkExpiryTime));
-        $futureBlock = strtotime($now->format('c'));
+        $futureBlock = $now->add(new \DateInterval($linkExpiryTime));
+
+        $creationDateTime = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $creationTime);
+        if ($creationDateTime === false) {
+            // RFC3339_EXTENDED is broken in PHP
+            $creationDateTime = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $creationTime);
+        }
+
+        // check if creationTime is in the correct format
+        if ($creationDateTime === false) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Parameter creationTime is in a bad format!', 'blob:check-signature-creation-time-bad-format');
+        }
 
         // check if request is expired
-        if ((int) $creationTime < $expiryTime || $creationTime > $futureBlock || $expiryTime === false) {
+        if ($creationDateTime < $expiryTime || $creationDateTime > $futureBlock) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Parameter creationTime too old', 'blob:check-signature-creation-time-too-old');
         }
 
@@ -140,7 +150,7 @@ class DenyAccessUnlessCheckSignature
         // check if the provided method and action is suitable
         if (($method === 'GET' && $urlMethod !== 'GET')
             || ($method === 'DELETE' && $urlMethod !== 'DELETE')
-            || ($method === 'PUT' && $urlMethod !== 'PUT')
+            || ($method === 'PATCH' && $urlMethod !== 'PATCH')
             || ($method === 'POST' && $urlMethod !== 'POST')
         ) {
             throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:check-signature-method-not-suitable');
@@ -207,17 +217,28 @@ class DenyAccessUnlessCheckSignature
         }
         // get link expiry date and current date
         $linkExpiryTime = $bucket->getLinkExpireTime();
+
+        // sub linkexpirytime from now to check if creationTime is too old
         $now = new \DateTime('now');
-        $now->sub(new \DateInterval($linkExpiryTime));
-        $expiryTime = strtotime($now->format('c'));
+        $expiryTime = $now->sub(new \DateInterval($linkExpiryTime));
 
         // add linkExpiryTime to now, and allow requests to be only linkExpiryTime in the future
         $now = new \DateTime('now');
-        $now->add(new \DateInterval($linkExpiryTime));
-        $futureBlock = strtotime($now->format('c'));
+        $futureBlock = $now->add(new \DateInterval($linkExpiryTime));
+
+        $creationDateTime = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $creationTime);
+        if ($creationDateTime === false) {
+            // RFC3339_EXTENDED is broken in PHP
+            $creationDateTime = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $creationTime);
+        }
+
+        // check if creationTime is in the correct format
+        if ($creationDateTime === false) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Parameter creationTime is in a bad format!', 'blob:check-signature-creation-time-bad-format');
+        }
 
         // check if request is expired or in the future
-        if ((int) $creationTime < $expiryTime || $creationTime > $futureBlock || $expiryTime === false) {
+        if ($creationDateTime < $expiryTime || $creationDateTime > $futureBlock) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Parameter creationTime too old', $errorPrefix.'-creation-time-too-old');
         }
 
@@ -259,8 +280,8 @@ class DenyAccessUnlessCheckSignature
         if ($request->getMethod() === 'POST') {
             $body = json_encode($request->request->all(), JSON_FORCE_OBJECT);
         }
-        // for PUT
-        elseif ($request->getMethod() === 'PUT') {
+        // for PATCH
+        elseif ($request->getMethod() === 'PATCH') {
             $body = $request->getContent();
         }
 

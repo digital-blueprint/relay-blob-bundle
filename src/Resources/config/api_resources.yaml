@@ -29,10 +29,10 @@ resources:
               example: "1234"
             - name: creationTime
               in: query
-              description: 'Current timestamp in seconds'
+              description: 'Current time in ISO 8601'
               type: string
               required: true
-              example: "1688636927"
+              example: "2019-09-07T-15:50+00"
             - name: prefix
               in: query
               description: 'Prefix of a file collection'
@@ -73,10 +73,10 @@ resources:
               example: "1234"
             - name: creationTime
               in: query
-              description: 'Current timestamp in seconds'
+              description: 'Current time in ISO 8601'
               type: string
               required: true
-              example: "1688636927"
+              example: "2019-09-07T-15:50+00 "
             - name: prefix
               in: query
               description: 'Prefix of a file collection'
@@ -120,10 +120,10 @@ resources:
               example: "1234"
             - name: creationTime
               in: query
-              description: 'Current timestamp in seconds'
+              description: 'Current times as ISO 8601'
               type: string
               required: true
-              example: "1688636927"
+              example: "2019-09-07T-15:50+00 "
             - name: prefix
               in: query
               description: 'Prefix of a file collection'
@@ -143,19 +143,7 @@ resources:
               required: true
               example: ""
 
-      put_exists_until:
-        security: "is_granted('IS_AUTHENTICATED_FULLY')"
-        class: ApiPlatform\Metadata\Put
-        method: PUT
-        provider: Dbp\Relay\BlobBundle\State\FileDataProvider
-        processor: Dbp\Relay\BlobBundle\State\FileDataProcessor
-        uriTemplate: "/files/{identifier}/exists_until"
-        openapiContext:
-          tags: ["Blob"]
-        denormalizationContext:
-          groups: ["BlobFiles:update:exists"]
-
-      ApiPlatform\Metadata\Put:
+      ApiPlatform\Metadata\Patch:
         provider: Dbp\Relay\BlobBundle\State\FileDataProvider
         processor: Dbp\Relay\BlobBundle\State\FileDataProcessor
         uriTemplate: "/files/{identifier}"
@@ -173,10 +161,10 @@ resources:
               example: "1234"
             - name: creationTime
               in: query
-              description: 'Current timestamp in seconds'
+              description: 'Current time as ISO 8601'
               type: string
               required: true
-              example: "1688636927"
+              example: "2019-09-07T-15:50+00 "
             - name: prefix
               in: query
               description: 'Prefix of a file collection'
@@ -188,7 +176,7 @@ resources:
               description: 'method that gets executed'
               type: string
               required: true
-              example: "PUT"
+              example: "PATCH"
             - name: fileName
               in: query
               description: 'New filename'
@@ -217,10 +205,10 @@ resources:
               example: "1234"
             - name: creationTime
               in: query
-              description: 'Current timestamp in seconds'
+              description: 'Current time as ISO 8601'
               type: string
               required: true
-              example: "1688636927"
+              example: "2019-09-07T-15:50+00 "
             - name: prefix
               in: query
               description: 'Prefix of a file collection'
@@ -313,10 +301,10 @@ resources:
               example: "1234"
             - name: creationTime
               in: query
-              description: 'Current timestamp in seconds'
+              description: 'Current time as ISO 8601'
               type: string
               required: true
-              example: "1688636927"
+              example: "2019-09-07T-15:50+00 "
             - name: prefix
               in: query
               description: 'Prefix of a file collection'
@@ -357,10 +345,10 @@ resources:
               example: "1234"
             - name: creationTime
               in: query
-              description: 'Current timestamp in seconds'
+              description: 'Current time as ISO 8601'
               type: string
               required: true
-              example: "1688636927"
+              example: "2019-09-07T-15:50+00 "
             - name: method
               in: query
               description: 'method that gets executed'

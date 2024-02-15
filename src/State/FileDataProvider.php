@@ -50,7 +50,7 @@ class FileDataProvider extends AbstractDataProvider
     {
         // check if the minimal needed parameters are present and correct
         $errorPrefix = 'blob:get-file-data-by-id';
-        DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $this->requestStack->getCurrentRequest(), $filters, ['GET', 'PUT', 'DELETE']);
+        DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $this->requestStack->getCurrentRequest(), $filters, ['GET', 'PATCH', 'DELETE']);
 
         // get secret of bucket
         $bucketID = rawurldecode($filters['bucketID']) ?? '';
@@ -81,16 +81,19 @@ class FileDataProvider extends AbstractDataProvider
             // check if filedata is null
             assert(!is_null($fileData));
 
-            // check if PUT request was used
-            if ($method === 'PUT') {
+            // check if PATCH request was used
+            if ($method === 'PATCH') {
                 $body = json_decode($this->requestStack->getCurrentRequest()->getContent(), true);
                 $fileName = $body['fileName'] ?? '';
                 $additionalMetadata = $body['additionalMetadata'] ?? '';
                 $additionalType = $body['additionalType'] ?? '';
+                $prefix = $body['prefix'] ?? '';
+                $existsUntil = $body['existsUntil'] ?? '';
+                $notifyEmail = $body['notifyEmail'] ?? '';
 
                 // throw error if filename is not provided
                 if (!$fileName && !$additionalMetadata & !$additionalType) {
-                    throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName or additionalMetadata is missing!', 'blob:put-file-data-missing-filename-or-additionalMetadata');
+                    throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName or additionalMetadata is missing!', 'blob:patch-file-data-missing-filename-or-additionalMetadata');
                 }
 
                 if ($fileName) {
@@ -105,14 +108,14 @@ class FileDataProvider extends AbstractDataProvider
                     $additionalType = rawurldecode($additionalType);
 
                     if (!array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
-                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalType', 'blob:put-file-data-bad-additional-type');
+                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalType', 'blob:patch-file-data-bad-additional-type');
                     }
                     $fileData->setAdditionalType($additionalType);
                 }
 
                 if ($additionalMetadata) {
                     if (!json_decode($additionalMetadata, true)) {
-                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata is no valid JSON!', 'blob:put-file-data-bad-additionalMetadata');
+                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata is no valid JSON!', 'blob:patch-file-data-bad-additionalMetadata');
                     }
                     $storedType = $fileData->getAdditionalType();
                     if ($storedType) {
@@ -120,12 +123,40 @@ class FileDataProvider extends AbstractDataProvider
                         $metadataDecoded = json_decode($additionalMetadata);
 
                         if ($validator->validate($metadataDecoded, (object) json_decode($bucket->getAdditionalTypes()[$storedType])) !== 0) {
-                            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata does not fit additionalType schema!', 'blob:put-file-data-additionalType-mismatch');
+                            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata does not fit additionalType schema!', 'blob:patch-file-data-additionalType-mismatch');
                         }
                     }
                     assert(is_string($additionalMetadata));
                     $additionalMetadata = rawurldecode($additionalMetadata);
                     $fileData->setAdditionalMetadata($additionalMetadata);
+                }
+
+                if ($prefix) {
+                    assert(is_string($prefix));
+                    $prefix = rawurldecode($prefix);
+                    $fileData->setPrefix($prefix);
+                }
+
+                if ($existsUntil) {
+                    assert(is_string($existsUntil));
+                    $existsUntil = rawurldecode($existsUntil);
+
+                    // check if date can be created
+                    $date = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $existsUntil);
+                    if ($date === false) {
+                        // RFC3339_EXTENDED is broken in PHP
+                        $date = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $existsUntil);
+                    }
+                    if ($date === false) {
+                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given existsUntil is in an invalid format!', 'blob:patch-file-data-existsUntil-bad-format');
+                    }
+                    $fileData->setExistsUntil($date);
+                }
+
+                if ($notifyEmail) {
+                    assert(is_string($notifyEmail));
+                    $notifyEmail = rawurldecode($notifyEmail);
+                    $fileData->setNotifyEmail($notifyEmail);
                 }
 
                 $fileData->setDateModified($time);

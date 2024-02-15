@@ -6,7 +6,6 @@ namespace Dbp\Relay\BlobBundle\State;
 
 use ApiPlatform\Metadata\DeleteOperationInterface;
 use ApiPlatform\Metadata\Operation;
-use ApiPlatform\Metadata\Put;
 use ApiPlatform\State\ProcessorInterface;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
@@ -34,8 +33,6 @@ class FileDataProcessor extends AbstractController implements ProcessorInterface
 
         if ($operation instanceof DeleteOperationInterface) {
             $this->blobService->removeFileData($data);
-        } elseif ($operation instanceof Put && $operation->getName() === 'put_exists_until') {
-            $this->blobService->increaseExistsUntil($data);
         }
 
         return $data;

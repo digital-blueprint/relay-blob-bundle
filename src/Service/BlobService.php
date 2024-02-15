@@ -387,9 +387,9 @@ class BlobService
     public function generateSignedContentUrl($fileData, $urlMethod, $now, $includeData, $sig): string
     {
         if ($includeData) {
-            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&includeData=1'.'&method='.$urlMethod.'&sig='.$sig;
+            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1'.'&method='.$urlMethod.'&sig='.$sig;
         } else {
-            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&method='.$urlMethod.'&sig='.$sig;
+            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod.'&sig='.$sig;
         }
     }
 
@@ -406,10 +406,10 @@ class BlobService
         // check whether includeData should be in url or not
         if (!$includeData) {
             // create url to hash
-            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&method='.$urlMethod;
+            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod;
         } else {
             // create url to hash
-            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.strtotime($now->format('c')).'&includeData=1'.'&method='.$urlMethod;
+            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1'.'&method='.$urlMethod;
         }
 
         // create sha256 hash
@@ -583,28 +583,6 @@ class BlobService
         $datasystemService->removeFile($fileData);
 
         $this->em->remove($fileData);
-        $this->em->flush();
-    }
-
-    /**
-     * Increases the exists_until time for a given fileData.
-     *
-     * @return void
-     *
-     * @throws \Exception
-     */
-    public function increaseExistsUntil(FileData $fileData)
-    {
-        $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $fileData->setLastAccess($time);
-
-        //Check new date is not greater than maxretentiondate from bucket
-        $maxRetentionTimeFromNow = $time->add(new \DateInterval($fileData->getBucket()->getMaxRetentionDuration()));
-        if ($fileData->getExistsUntil() > $maxRetentionTimeFromNow) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'The given `exists until time` is longer then the max retention time of the bucket! Enter a time between now and '.$maxRetentionTimeFromNow->format('c'), 'blob:blob-service-invalid-max-retentiontime');
-        }
-
-        $this->em->persist($fileData);
         $this->em->flush();
     }
 

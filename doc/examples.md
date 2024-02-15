@@ -382,8 +382,8 @@ $response = $client->request('POST', '/blob/files', $params);
 echo $response->getBody()."\n";
 ```
 
-### PUT
-#### PUT item
+### PATCH
+#### PATCH item
 Setting:
 
 Imagine that you have uploaded a file and got back the identifier `4da14ef0-d552-4e27-975e-e1f3db5a0e81`. Therefore, you know that you can rename the file using the `/blob/files/4da14ef0-d552-4e27-975e-e1f3db5a0e81` endpoint.
@@ -486,13 +486,13 @@ $params = [
     'query' => [
         'bucketID' => $bucketID,
         'creationTime' => $creationTime,
-        'method' => 'PUT',
+        'method' => 'PATCH',
         'sig' => $sig,
     ],
     'body' => $body,
 ];
 // send request using the defined parameters
-$response = $client->request('PUT', '/blob/files/'.$id, $params);
+$response = $client->request('PATCH', '/blob/files/'.$id, $params);
 
 // print response body
 echo $response->getBody()."\n";
