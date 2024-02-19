@@ -1,8 +1,9 @@
 # v0.1.20
-* Remove `exists_until` endpoint
-* Change `PUT` to `PATCH`
+* **Breaking change**: Change `creationTime` to ISO8601 Date instead of unix timestamp
+* **Breaking change**: Remove `exists_until` endpoint
+* **Breaking change**: Change `PUT` to `PATCH`
+* **Breaking change**: Move all `POST` url parameters but `creationTime`, `method` and `bucketID` to body
 * Add additional changeable parameters to body of `PATCH`
-* Move all `POST` url parameters but `creationTime`, `method` and `bucketID` to body
 
 # v0.1.19
 * Improve error handling for file not found cases
