@@ -194,7 +194,7 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $action = 'GET';
             $payload = [
@@ -265,7 +265,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "POST file (0)\n";
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
@@ -273,16 +273,32 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -292,6 +308,7 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[0]['content'])
             );
+
             $c = new CreateFileDataAction($blobService);
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -314,7 +331,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files (0)\n";
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $action = 'GET';
@@ -359,7 +376,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "POST file 1\n";
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $fileName = $this->files[1]['name'];
@@ -367,16 +384,32 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[1]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[1]['path'], $this->files[1]['name'], $this->files[1]['mime']),
                 ],
@@ -385,7 +418,6 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[1]['content'])
-                    ."&fileName={$this->files[1]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -409,7 +441,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files (0 and 1)\n";
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $action = 'GET';
             $url = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action";
@@ -463,7 +495,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "DELETE all files (0 and 1)\n";
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $action = 'DELETE';
             $url = "/blob/files/?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action";
@@ -501,7 +533,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files (empty)\n";
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $action = 'GET';
             $url = "/blob/files?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
@@ -551,7 +583,7 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $action = 'POST';
@@ -559,21 +591,37 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $retentionDuration = $this->files[0]['retention'];
 
-            $url = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&fileName=$fileName&fileHash=$fileHash&retentionDuration=$retentionDuration&method=$action";
+            $url = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action";
 
             // =======================================================
             // POST a file
             // =======================================================
-            echo "POST file 0\n";
+            echo "POST file 0 testGetDeleteById\n";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -582,7 +630,6 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -607,7 +654,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET a file by id (0)\n";
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
 
             $url = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
 
@@ -727,7 +774,7 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = strtotime('-1 hour');
+            $creationTime = rawurlencode(date('c', time() - 3600));
             $prefix = 'playground';
 
             $url = "/blob/files/?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
@@ -771,7 +818,7 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $uuid = Uuid::v4();
 
@@ -849,7 +896,7 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $fileName = $this->files[0]['name'];
@@ -865,16 +912,32 @@ class CurlGetTest extends ApiTestCase
 
             $action = 'GET';
 
-            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -883,7 +946,6 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             $fileData = $c->__invoke($requestPost);
@@ -911,7 +973,7 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
             // =======================================================
@@ -961,7 +1023,7 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
             // =======================================================
@@ -969,14 +1031,14 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET one file with wrong methods\n";
 
-            $actions = ['GET', 'DELETE', 'DELETE', 'PUT', 'POST'];
+            $actions = ['GET', 'DELETE', 'DELETE', 'PATCH', 'POST'];
 
             // =======================================================
             // POST a file
             // =======================================================
             echo "POST file (0)\n";
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
@@ -984,16 +1046,32 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -1059,9 +1137,9 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test: put one with wrong method.
+     * Integration test: PATCH one with wrong method.
      */
-    public function testPUTWithWrongAction(): void
+    public function testPATCHWithWrongAction(): void
     {
         try {
             $client = static::createClient();
@@ -1072,13 +1150,13 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
             // =======================================================
-            // PUT one file
+            // PATCH one file
             // =======================================================
-            echo "PUT one file with wrong methods\n";
+            echo "PATCH one file with wrong methods\n";
 
             $actions = ['GET', 'DELETE', 'DELETE', 'GET', 'POST'];
 
@@ -1087,7 +1165,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "POST file (0)\n";
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
@@ -1095,16 +1173,32 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -1113,7 +1207,6 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -1133,11 +1226,11 @@ class CurlGetTest extends ApiTestCase
             $this->files[0]['until'] = $fileData->getExistsUntil();
 
             // =======================================================
-            // PUT one file with wrong action
+            // PATCH one file with wrong action
             // =======================================================
 
             foreach ($actions as $action) {
-                echo 'PUT one file with wrong method '.$action."\n";
+                echo 'PATCH one file with wrong method '.$action."\n";
                 $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName";
 
                 $payload = [
@@ -1159,7 +1252,7 @@ class CurlGetTest extends ApiTestCase
                 $client->getKernelBrowser()->followRedirects();
 
                 /** @var Response $response */
-                $response = $client->request('PUT', $url.'&sig='.$token, $options);
+                $response = $client->request('PATCH', $url.'&sig='.$token, $options);
                 echo $url."\n";
                 $this->assertEquals(405, $response->getStatusCode());
             }
@@ -1172,9 +1265,9 @@ class CurlGetTest extends ApiTestCase
     }
 
     /**
-     * Integration test: put one.
+     * Integration test: PATCH one.
      */
-    public function testPUT(): void
+    public function testPATCH(): void
     {
         try {
             $client = static::createClient();
@@ -1185,13 +1278,13 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
             // =======================================================
-            // PUT one file
+            // PATCH one file
             // =======================================================
-            echo "PUT one file\n";
+            echo "PATCH one file\n";
 
             $actions = ['GET', 'DELETE', 'DELETE', 'GET', 'POST'];
 
@@ -1200,7 +1293,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "POST file (0)\n";
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
@@ -1208,16 +1301,32 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -1246,13 +1355,13 @@ class CurlGetTest extends ApiTestCase
             $this->files[0]['until'] = $fileData->getExistsUntil();
 
             // =======================================================
-            // PUT one file
+            // PATCH one file
             // =======================================================
-            $action = 'PUT';
+            $action = 'PATCH';
             $newFileName = 'Test1.php';
-            echo 'PUT one file with method '.$action."\n";
+            echo 'PATCH one file with method '.$action."\n";
 
-            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$newFileName";
+            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1274,7 +1383,7 @@ class CurlGetTest extends ApiTestCase
             $client->getKernelBrowser()->followRedirects();
 
             /** @var Response $response */
-            $response = $client->request('PUT', $url.'&sig='.$token, $options);
+            $response = $client->request('PATCH', $url.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
 
             $action = 'GET';
@@ -1324,17 +1433,17 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
-            $actions = ['GET', 'DELETE', 'DELETE', 'GET', 'POST', 'PUT'];
-            $methods = ['GET', 'POST', 'DELETE', 'PUT'];
+            $actions = ['GET', 'DELETE', 'DELETE', 'GET', 'POST', 'PATCH'];
+            $methods = ['GET', 'POST', 'DELETE', 'PATCH'];
 
             // =======================================================
             // POST a file
             // =======================================================
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
@@ -1342,16 +1451,32 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -1435,7 +1560,7 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
             // =======================================================
@@ -1443,23 +1568,39 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
 
             for ($i = 0; $i < 2; ++$i) {
-                $creationTime = date('U');
+                $creationTime = rawurlencode(date('c'));
                 $fileName = $this->files[$i]['name'];
                 $fileHash = $this->files[$i]['hash'];
                 $notifyEmail = 'eugen.neuber@tugraz.at';
                 $retentionDuration = $this->files[$i]['retention'];
                 $action = 'POST';
 
-                $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+                $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+                $requestBody = [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ];
+
+                $bodyJson = json_encode($requestBody);
 
                 $data = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                    'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                    'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
                 ];
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-                $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+                $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                    [
+                        'fileName' => $fileName,
+                        'fileHash' => $fileHash,
+                        'notifyEmail' => $notifyEmail,
+                        'retentionDuration' => $retentionDuration,
+                    ],
+                    [],
                     [
                         'file' => new UploadedFile($this->files[$i]['path'], $this->files[$i]['name'], $this->files[$i]['mime']),
                     ],
@@ -1468,7 +1609,6 @@ class CurlGetTest extends ApiTestCase
                     ],
                     "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[$i]['content'])
-                    ."&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketID"
                 );
                 $c = new CreateFileDataAction($blobService);
                 try {
@@ -1594,7 +1734,7 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
             // =======================================================
@@ -1602,23 +1742,39 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
 
             for ($i = 0; $i < 2; ++$i) {
-                $creationTime = date('U');
+                $creationTime = rawurlencode(date('c'));
                 $fileName = $this->files[$i]['name'];
                 $fileHash = $this->files[$i]['hash'];
                 $notifyEmail = 'eugen.neuber@tugraz.at';
                 $retentionDuration = $this->files[$i]['retention'];
                 $action = 'POST';
 
-                $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+                $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+                $requestBody = [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ];
+
+                $bodyJson = json_encode($requestBody);
 
                 $data = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                    'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                    'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
                 ];
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-                $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+                $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                    [
+                        'fileName' => $fileName,
+                        'fileHash' => $fileHash,
+                        'notifyEmail' => $notifyEmail,
+                        'retentionDuration' => $retentionDuration,
+                    ],
+                    [],
                     [
                         'file' => new UploadedFile($this->files[$i]['path'], $this->files[$i]['name'], $this->files[$i]['mime']),
                     ],
@@ -1627,7 +1783,6 @@ class CurlGetTest extends ApiTestCase
                     ],
                     "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[$i]['content'])
-                    ."&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketID"
                 );
                 $c = new CreateFileDataAction($blobService);
                 try {
@@ -1695,7 +1850,7 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
             // =======================================================
@@ -1742,30 +1897,46 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
             // =======================================================
             // POST file
             // =======================================================
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -1931,9 +2102,7 @@ class CurlGetTest extends ApiTestCase
                 1 => "prefix=$prefix",
                 2 => "creationTime=$creationTime",
                 3 => 'method=POST',
-                4 => "fileName=$fileName",
-                5 => "fileHash=$fileHash",
-                6 => 'sig=',
+                4 => 'sig=',
             ];
 
             for ($i = 0; $i < count($params) - 1; ++$i) {
@@ -1952,9 +2121,18 @@ class CurlGetTest extends ApiTestCase
                     $connector = '&';
                 }
 
+                $requestBody = [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ];
+
+                $bodyJson = json_encode($requestBody);
+
                 $payload = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
-                    'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                    'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
                 ];
 
                 if ($i !== count($params) - 1) {
@@ -1968,6 +2146,29 @@ class CurlGetTest extends ApiTestCase
                         'Accept' => 'application/ld+json',
                         'HTTP_ACCEPT' => 'application/ld+json',
                     ],
+                    'extra' => [
+                        [
+                            'name' => 'file',
+                            'contents' => $this->files[0]['content'],
+                            'filename' => $fileName,
+                        ],
+                        [
+                            'name' => 'fileName',
+                            'contents' => $fileName,
+                        ],
+                        [
+                            'name' => 'fileHash',
+                            'contents' => $fileHash,
+                        ],
+                        [
+                            'name' => 'notifyEmail',
+                            'contents' => $notifyEmail,
+                        ],
+                        [
+                            'name' => 'retentionDuration',
+                            'contents' => $retentionDuration,
+                        ],
+                    ],
                 ];
 
                 /** @var Response $response */
@@ -1976,10 +2177,10 @@ class CurlGetTest extends ApiTestCase
             }
 
             // =======================================================
-            // PUT file in prefix playground without creationTime, sig, action, bucketID, prefix, fileName, fileHash
+            // PATCH file in prefix playground without creationTime, sig, action, bucketID, prefix, fileName, fileHash
             // =======================================================
 
-            echo "PUT one file with prefix playground with missing params\n";
+            echo "PATCH one file with prefix playground with missing params\n";
 
             $fileName = $this->files[0]['name'];
 
@@ -1987,7 +2188,7 @@ class CurlGetTest extends ApiTestCase
                 0 => "bucketID=$bucketID",
                 1 => "prefix=$prefix",
                 2 => "creationTime=$creationTime",
-                3 => 'method=PUT',
+                3 => 'method=PATCH',
                 4 => "fileName=$fileName",
                 5 => 'sig=',
             ];
@@ -2029,7 +2230,7 @@ class CurlGetTest extends ApiTestCase
                 ];
 
                 /** @var Response $response */
-                $response = $client->request('PUT', $baseUrl, $options);
+                $response = $client->request('PATCH', $baseUrl, $options);
                 $this->assertEquals(400, $response->getStatusCode());
             }
         } catch (\Throwable $e) {
@@ -2058,23 +2259,39 @@ class CurlGetTest extends ApiTestCase
             // POST file
             // =======================================================
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
+
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -2083,7 +2300,6 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -2184,6 +2400,12 @@ class CurlGetTest extends ApiTestCase
                             'files' => [
                                 'file' => $file,
                             ],
+                            'parameters' => [
+                                'fileName' => $fileName,
+                                'fileHash' => $fileHash,
+                                'notifyEmail' => $notifyEmail,
+                                'retentionDuration' => $retentionDuration,
+                            ],
                         ],
                     ]
                 );
@@ -2215,23 +2437,39 @@ class CurlGetTest extends ApiTestCase
             // POST file
             // =======================================================
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -2240,7 +2478,6 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -2351,6 +2588,12 @@ class CurlGetTest extends ApiTestCase
                             'files' => [
                                 'file' => $file,
                             ],
+                            'parameters' => [
+                                'fileName' => $fileName,
+                                'fileHash' => $fileHash,
+                                'notifyEmail' => $notifyEmail,
+                                'retentionDuration' => $retentionDuration,
+                            ],
                         ],
                     ]
                 );
@@ -2382,23 +2625,39 @@ class CurlGetTest extends ApiTestCase
             // POST file
             // =======================================================
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -2437,9 +2696,7 @@ class CurlGetTest extends ApiTestCase
                 1 => 'DELETE',
             ];
 
-            $creationTime = new \DateTime('now');
-            $creationTime->sub(new \DateInterval('PT2M'));
-            $creationTime = strtotime($creationTime->format('c'));
+            $creationTime = rawurlencode(date('c', time() - 120));
 
             foreach ($actions as $action) {
                 // url with missing / at the beginning to create a wrong checksum
@@ -2496,9 +2753,18 @@ class CurlGetTest extends ApiTestCase
                 // url with missing / at the beginning to create a wrong checksum
                 $baseUrl = "/blob/files?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action&fileName=test.txt&fileHash=$fileHash";
 
+                $requestBody = [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ];
+
+                $bodyJson = json_encode($requestBody);
+
                 $payload = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
-                    'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                    'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
                 ];
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
@@ -2512,6 +2778,12 @@ class CurlGetTest extends ApiTestCase
                         'extra' => [
                             'files' => [
                                 'file' => $file,
+                            ],
+                            'parameters' => [
+                                'fileName' => $fileName,
+                                'fileHash' => $fileHash,
+                                'notifyEmail' => $notifyEmail,
+                                'retentionDuration' => $retentionDuration,
                             ],
                         ],
                     ]
@@ -2544,23 +2816,39 @@ class CurlGetTest extends ApiTestCase
             // POST file
             // =======================================================
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -2569,7 +2857,6 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -2704,23 +2991,39 @@ class CurlGetTest extends ApiTestCase
             // POST file
             // =======================================================
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -2784,23 +3087,39 @@ class CurlGetTest extends ApiTestCase
             // POST file in other bucket
             // =======================================================
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -2910,7 +3229,7 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
             // =======================================================
@@ -2918,23 +3237,39 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
 
             for ($i = 0; $i < 2; ++$i) {
-                $creationTime = date('U');
+                $creationTime = rawurlencode(date('c'));
                 $fileName = $this->files[$i]['name'];
                 $fileHash = $this->files[$i]['hash'];
                 $notifyEmail = 'eugen.neuber@tugraz.at';
                 $retentionDuration = $this->files[$i]['retention'];
                 $action = 'POST';
 
-                $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+                $url = "/blob/files/?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+                $requestBody = [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ];
+
+                $bodyJson = json_encode($requestBody);
 
                 $data = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                    'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                    'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
                 ];
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-                $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+                $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                    [
+                        'fileName' => $fileName,
+                        'fileHash' => $fileHash,
+                        'notifyEmail' => $notifyEmail,
+                        'retentionDuration' => $retentionDuration,
+                    ],
+                    [],
                     [
                         'file' => new UploadedFile($this->files[$i]['path'], $this->files[$i]['name'], $this->files[$i]['mime']),
                     ],
@@ -2943,7 +3278,6 @@ class CurlGetTest extends ApiTestCase
                     ],
                     "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[$i]['content'])
-                    ."&fileName={$this->files[$i]['name']}&prefix=$prefix&bucketID=$bucketID"
                 );
                 $c = new CreateFileDataAction($blobService);
                 try {
@@ -3010,30 +3344,46 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getIdentifier();
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
             // =======================================================
             // POST file
             // =======================================================
 
-            $creationTime = date('U');
+            $creationTime = rawurlencode(date('c'));
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/download?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName&fileHash=$fileHash&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/download?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+
+            $requestBody = [
+                'fileName' => $fileName,
+                'fileHash' => $fileHash,
+                'notifyEmail' => $notifyEmail,
+                'retentionDuration' => $retentionDuration,
+            ];
+
+            $bodyJson = json_encode($requestBody);
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
+                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
 
-            $requestPost = Request::create($url.'&sig='.$token, 'POST', [], [],
+            $requestPost = Request::create($url.'&sig='.$token, 'POST',
+                [
+                    'fileName' => $fileName,
+                    'fileHash' => $fileHash,
+                    'notifyEmail' => $notifyEmail,
+                    'retentionDuration' => $retentionDuration,
+                ],
+                [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
@@ -3042,7 +3392,6 @@ class CurlGetTest extends ApiTestCase
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
             try {
@@ -3124,9 +3473,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "Check download with overdue creationTime\n";
 
-            $creationTime = new \DateTime('now');
-            $creationTime->sub(new \DateInterval('PT2M'));
-            $creationTime = strtotime($creationTime->format('c'));
+            $creationTime = rawurlencode(date('c', time() - 120));
 
             $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketID&creationTime=$creationTime&method=GET";
 
@@ -3152,8 +3499,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "Check download with invalid action\n";
 
-            $creationTime = new \DateTime('now');
-            $creationTime = strtotime($creationTime->format('c'));
+            $creationTime = rawurlencode(date('c'));
 
             $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketID=$bucketID&creationTime=$creationTime&method=DELETE";
 
