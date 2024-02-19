@@ -1,3 +1,8 @@
+# v0.1.20
+* Remove `exists_until` endpoint
+* Change `PUT` to `PATCH`
+* 
+
 # v0.1.19
 * Improve error handling for file not found cases
 * Add validation of json schema to POST and PUT endpoints

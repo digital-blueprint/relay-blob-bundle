@@ -36,19 +36,17 @@ final class CreateFileDataAction extends BaseBlobController
         $errorPrefix = 'blob:create-file-data';
         DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $request, [], ['POST']);
 
-        // get remaining necessary params
+        // get url params
         $bucketID = $request->query->get('bucketID', '');
         $prefix = $request->query->get('prefix', '');
-        $fileName = $request->query->get('fileName', '');
-        $fileHash = $request->query->get('fileHash', '');
 
-        // get optional params
-        $notifyEmail = $request->query->get('notifyEmail', '');
-        $retentionDuration = $request->query->get('retentionDuration', '');
-        $additionalType = $request->query->get('additionalType', '');
-
-        // get optional additionalMetadata from formdata body
+        // get params from body
+        $notifyEmail = $request->request->get('notifyEmail', '');
+        $retentionDuration = $request->request->get('retentionDuration', '');
+        $additionalType = $request->request->get('additionalType', '');
         $additionalMetadata = $request->request->get('additionalMetadata', '');
+        $fileName = $request->request->get('fileName', '');
+        $fileHash = $request->request->get('fileHash', '');
 
         // get request method
         $method = $request->getMethod();
