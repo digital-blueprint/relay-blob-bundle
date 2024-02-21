@@ -18,7 +18,7 @@ class Configuration implements ConfigurationInterface
                 ->children()
                     ->scalarNode('database_url')
                         ->isRequired()
-                        //->cannotBeEmpty()
+                        // ->cannotBeEmpty()
                         ->defaultValue('%env(resolve:BLOB_DATABASE_NAME)%')
                     ->end()
                     ->scalarNode('link_url')

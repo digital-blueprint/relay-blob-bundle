@@ -44,14 +44,6 @@ class PoliciesStruct
      */
     public $delete = false;
 
-    /**
-     * @param $create
-     * @param $delete
-     * @param $open
-     * @param $download
-     * @param $rename
-     * @param $work
-     */
     public static function withPolicies($create, $delete, $open, $download, $rename, $work): PoliciesStruct
     {
         $instance = new self();
@@ -65,9 +57,6 @@ class PoliciesStruct
         return $instance;
     }
 
-    /**
-     * @param $policies
-     */
     public static function withPoliciesArray($policies): PoliciesStruct
     {
         $instance = new self();

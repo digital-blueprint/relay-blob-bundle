@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Service;
 
-use DateTimeZone;
 use Dbp\Relay\BlobBundle\Entity\Bucket;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
@@ -33,7 +32,7 @@ class BlobService
     /**
      * @var ConfigurationService
      */
-    public $configurationService; //TODO maybe private
+    public $configurationService; // TODO maybe private
 
     /**
      * @var DatasystemProviderService
@@ -134,7 +133,7 @@ class BlobService
      *
      * @param FileData $fileData fileData which is missing the bucket
      */
-    public function setBucket(FileData $fileData): Filedata
+    public function setBucket(FileData $fileData): FileData
     {
         // get bucket by bucketID
         $bucket = $this->configurationService->getBucketByID($fileData->getBucketID());
@@ -350,7 +349,7 @@ class BlobService
         $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
 
         // get time now
-        $now = new \DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
 
         // generate checksum and encode it in payload
         $payload = [
@@ -370,6 +369,7 @@ class BlobService
                 throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'File went missing', 'blob:file-not-found');
             }
         }
+
         // build and return HTTP path
         return $url;
     }
@@ -378,16 +378,16 @@ class BlobService
      * Generate signed content url for get requests by identifier
      * This is useful for generating the HTTP contentUrls for every fileData.
      *
-     * @param $fileData fileData for which the HTTP url should be generated
-     * @param $urlMethod method which is used
-     * @param $now timestamp of now which is used as creationTime
+     * @param $fileData    fileData for which the HTTP url should be generated
+     * @param $urlMethod   method which is used
+     * @param $now         timestamp of now which is used as creationTime
      * @param $includeData specifies whether includeData should be =1 or left out
-     * @param $sig signature with checksum that is used
+     * @param $sig         signature with checksum that is used
      */
     public function generateSignedContentUrl($fileData, $urlMethod, $now, $includeData, $sig): string
     {
         if ($includeData) {
-            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1'.'&method='.$urlMethod.'&sig='.$sig;
+            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1&method='.$urlMethod.'&sig='.$sig;
         } else {
             return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod.'&sig='.$sig;
         }
@@ -396,9 +396,9 @@ class BlobService
     /**
      * Generate the sha256 hash from a HTTP url.
      *
-     * @param $fileData fileData for which the HTTP url should be generated
-     * @param $urlMethod method used in the request
-     * @param $now timestamp of now which is used as creationTime
+     * @param $fileData    fileData for which the HTTP url should be generated
+     * @param $urlMethod   method used in the request
+     * @param $now         timestamp of now which is used as creationTime
      * @param $includeData specified whether includeData should be =1 or left out
      */
     public function generateChecksumFromFileData($fileData, $urlMethod, $now, $includeData = ''): ?string
@@ -409,7 +409,7 @@ class BlobService
             $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod;
         } else {
             // create url to hash
-            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1'.'&method='.$urlMethod;
+            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1&method='.$urlMethod;
         }
 
         // create sha256 hash
@@ -655,7 +655,7 @@ class BlobService
             'quota' => $quota,
         ];
 
-        //$this->sendEmail($notifyQuotaConfig, $context);
+        // $this->sendEmail($notifyQuotaConfig, $context);
     }
 
     /**

@@ -28,9 +28,6 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
         $definition->addMethodCall('setConfig', [$mergedConfig]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function prepend(ContainerBuilder $container): void
     {
         $configs = $container->getExtensionConfig($this->getAlias());

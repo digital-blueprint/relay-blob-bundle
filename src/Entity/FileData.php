@@ -11,12 +11,14 @@ use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
  * @ORM\Entity
+ *
  * @ORM\Table(name="blob_files")
  */
 class FileData
 {
     /**
      * @ORM\Id
+     *
      * @ORM\Column(type="string", length=128)
      *
      * @Groups({"BlobFiles:output", "BlobFiles:input"})
@@ -25,6 +27,7 @@ class FileData
 
     /**
      * @ORM\Column(type="string", length=512)
+     *
      * @Groups({"BlobFiles:output", "BlobFiles:input"})
      *
      * @var string
@@ -33,6 +36,7 @@ class FileData
 
     /**
      * @ORM\Column(type="string", length=512)
+     *
      * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
      *
      * @var string
@@ -41,6 +45,7 @@ class FileData
 
     /**
      * @ORM\Column(type="string", length=255)
+     *
      * @Groups({"BlobFiles:output"})
      *
      * @var string
@@ -49,6 +54,7 @@ class FileData
 
     /**
      * @ORM\Column(type="string", length=50)
+     *
      * @Groups({"BlobFiles:input"})
      *
      * @var string
@@ -62,6 +68,7 @@ class FileData
 
     /**
      * @ORM\Column(type="datetime_immutable")
+     *
      * @Groups({"BlobFiles:output"})
      *
      * @var \DateTimeImmutable
@@ -70,6 +77,7 @@ class FileData
 
     /**
      * @ORM\Column(type="datetime_immutable")
+     *
      * @Groups({"BlobFiles:output"})
      *
      * @var \DateTimeImmutable
@@ -78,6 +86,7 @@ class FileData
 
     /**
      * @ORM\Column(type="datetime_immutable")
+     *
      * @Groups({"BlobFiles:output"})
      *
      * @var \DateTimeImmutable
@@ -93,6 +102,7 @@ class FileData
 
     /**
      * @ORM\Column(type="datetime_immutable")
+     *
      * @Groups({"BlobFiles:output", "BlobFiles:update:exists"})
      *
      * @var \DateTimeImmutable
@@ -115,6 +125,7 @@ class FileData
 
     /**
      * @ORM\Column(type="json", nullable=true)
+     *
      * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
      *
      * @var string
@@ -123,6 +134,7 @@ class FileData
 
     /**
      * @ORM\Column(type="text", nullable=true)
+     *
      * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
      *
      * @var string
@@ -131,6 +143,7 @@ class FileData
 
     /**
      * @ORM\Column(type="integer")
+     *
      * @Groups({"BlobFiles:output"})
      *
      * @var int
@@ -139,6 +152,7 @@ class FileData
 
     /**
      * @ORM\Column(type="string", length=64)
+     *
      * @Groups({"BlobFiles:output"})
      *
      * @var string|null
@@ -147,6 +161,7 @@ class FileData
 
     /**
      * @ORM\Column(type="string", length=64)
+     *
      * @Groups({"BlobFiles:output"})
      *
      * @var string|null
@@ -155,6 +170,7 @@ class FileData
 
     /**
      * @ORM\Column(type="string", length=255)
+     *
      * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
      *
      * @var string
