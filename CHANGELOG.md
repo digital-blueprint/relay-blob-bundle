@@ -4,6 +4,7 @@
 * **Breaking change**: Change `PUT` to `PATCH`
 * **Breaking change**: Move all `POST` url parameters but `creationTime`, `method` and `bucketID` to body
 * Add additional changeable parameters to body of `PATCH`
+* Drop support for PHP 7.3
 
 # v0.1.19
 * Improve error handling for file not found cases
