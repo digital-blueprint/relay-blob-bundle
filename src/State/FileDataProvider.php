@@ -93,22 +93,21 @@ class FileDataProvider extends AbstractDataProvider
                 $prefix = $body['prefix'] ?? '';
                 $existsUntil = $body['existsUntil'] ?? '';
                 $notifyEmail = $body['notifyEmail'] ?? '';
+                $file = $body['file'] ?? '';
 
-                // throw error if filename is not provided
-                if (!$fileName && !$additionalMetadata & !$additionalType) {
-                    throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName or additionalMetadata is missing!', 'blob:patch-file-data-missing-filename-or-additionalMetadata');
+                // throw error if not field is provided
+                if (!$fileName && !$additionalMetadata & !$additionalType && !$prefix && !$existsUntil && !$notifyEmail && !$file) {
+                    throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'at least one field to patch has to be provided', 'blob:patch-file-data-missing');
                 }
 
                 if ($fileName) {
                     assert(is_string($fileName));
-                    $fileName = rawurldecode($fileName);
                     $fileData->setFileName($fileName);
                 }
                 $bucket = $this->blobService->getBucketByID($bucketID);
 
                 if ($additionalType) {
                     assert(is_string($additionalType));
-                    $additionalType = rawurldecode($additionalType);
 
                     if (!array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
                         throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalType', 'blob:patch-file-data-bad-additional-type');
@@ -130,19 +129,16 @@ class FileDataProvider extends AbstractDataProvider
                         }
                     }
                     assert(is_string($additionalMetadata));
-                    $additionalMetadata = rawurldecode($additionalMetadata);
                     $fileData->setAdditionalMetadata($additionalMetadata);
                 }
 
                 if ($prefix) {
                     assert(is_string($prefix));
-                    $prefix = rawurldecode($prefix);
                     $fileData->setPrefix($prefix);
                 }
 
                 if ($existsUntil) {
                     assert(is_string($existsUntil));
-                    $existsUntil = rawurldecode($existsUntil);
 
                     // check if date can be created
                     $date = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $existsUntil);
@@ -158,8 +154,31 @@ class FileDataProvider extends AbstractDataProvider
 
                 if ($notifyEmail) {
                     assert(is_string($notifyEmail));
-                    $notifyEmail = rawurldecode($notifyEmail);
                     $fileData->setNotifyEmail($notifyEmail);
+                }
+
+                if ($file) {
+                    assert(is_string($file));
+                    $fileDecoded = base64_decode($file, true);
+
+                    // check if is valid b64
+                    if ($fileDecoded) {
+                        //$fileData->setFile($fileDecoded);
+                        //$fileData->setMimeType();
+                        $fileData = $this->blobService->saveFileFromString($fileData, $fileDecoded);
+
+                        $fileObj = $fileData->getFile();
+
+                        $fileData->setFileHash(hash('sha256', $fileObj->getContent()));
+                        $fileData->setMimeType($fileObj->getMimeType());
+                        $fileData->setFileSize($fileObj->getSize());
+
+                        if (!$fileData) {
+                            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'data upload failed', 'blob:create-file-data-data-upload-failed');
+                        }
+                    } else {
+                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given file is in an invalid format!', 'blob:patch-file-data-file-bad-format');
+                    }
                 }
 
                 $fileData->setDateModified($time);

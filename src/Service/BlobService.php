@@ -184,6 +184,24 @@ class BlobService
         return $fileData;
     }
 
+
+    /**
+     * Saves the file using the connector.
+     *
+     * @param FileData $fileData fileData that carries the file which should be saved
+     */
+    public function saveFileFromString(FileData $fileData, string $data): ?FileData
+    {
+        // get the service of the bucket
+        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
+
+        // save the file using the connector
+        $fileData = $datasystemService->saveFileFromString($fileData, $data);
+
+        return $fileData;
+    }
+
+
     /**
      * Get HTTP link to binary content.
      *

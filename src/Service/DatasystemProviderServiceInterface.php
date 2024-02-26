@@ -12,6 +12,8 @@ interface DatasystemProviderServiceInterface
 {
     public function saveFile(FileData $fileData): ?FileData;
 
+    public function saveFileFromString(FileData $fileData, string $data): ?FileData;
+
     public function renameFile(FileData $fileData): ?FileData;
 
     public function getLink(FileData $fileData, PoliciesStruct $policiesStruct): ?FileData;
