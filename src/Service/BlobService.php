@@ -66,7 +66,7 @@ class BlobService
     {
         // create new identifier for new file
         $fileData = new FileData();
-        $fileData->setIdentifier(Uuid::uuid4()->toString());
+        $fileData->setIdentifier(Uuid::uuid7()->toString());
 
         // get file from request
         /** @var ?UploadedFile $uploadedFile */
