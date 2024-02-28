@@ -62,7 +62,6 @@ class FileDataProvider extends AbstractDataProvider
         // check if signature is valid
         DenyAccessUnlessCheckSignature::checkSignature($secret, $this->requestStack->getCurrentRequest(), $this->blobService, $this->isAuthenticated());
 
-
         // get file data associated with the given identifier
         $fileData = $this->blobService->getFileData($id);
 
