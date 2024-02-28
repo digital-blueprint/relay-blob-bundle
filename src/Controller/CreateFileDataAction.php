@@ -161,7 +161,6 @@ final class CreateFileDataAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached', 'blob:create-file-data-bucket-quota-reached');
         }
 
-
         // Then return correct data for service
         $fileData = $this->blobService->saveFile($fileData);
 

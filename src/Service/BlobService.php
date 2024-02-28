@@ -9,14 +9,13 @@ use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Doctrine\ORM\EntityManagerInterface;
-use PHPUnit\TextUI\XmlConfiguration\File;
+use Ramsey\Uuid\Uuid;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Email;
-use Ramsey\Uuid\Uuid;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 
@@ -190,7 +189,6 @@ class BlobService
         return $fileData;
     }
 
-
     /**
      * Saves the file using the connector.
      *
@@ -206,7 +204,6 @@ class BlobService
 
         return $fileData;
     }
-
 
     /**
      * Get HTTP link to binary content.

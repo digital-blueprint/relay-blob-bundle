@@ -180,7 +180,7 @@ class FileData
 
     public function getIdentifier(): string
     {
-        return (string)$this->identifier;
+        return (string) $this->identifier;
     }
 
     public function setIdentifier(string $identifier): void

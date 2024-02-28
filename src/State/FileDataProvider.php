@@ -13,9 +13,6 @@ use JsonSchema\Validator;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * @extends AbstractDataProvider<FileData>
- */
 class FileDataProvider extends AbstractDataProvider
 {
     /**
