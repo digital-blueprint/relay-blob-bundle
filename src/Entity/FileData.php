@@ -20,6 +20,7 @@ class FileData
      * @var string
      *
      * @ORM\Id
+     *
      * @ORM\Column(type="uuid_binary", unique=true)
      *
      * @Groups({"BlobFiles:output", "BlobFiles:input"})

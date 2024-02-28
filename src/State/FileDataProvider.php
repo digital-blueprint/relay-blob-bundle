@@ -160,8 +160,8 @@ class FileDataProvider extends AbstractDataProvider
 
                     // check if is valid b64
                     if ($fileDecoded) {
-                        //$fileData->setFile($fileDecoded);
-                        //$fileData->setMimeType();
+                        // $fileData->setFile($fileDecoded);
+                        // $fileData->setMimeType();
                         $fileData = $this->blobService->saveFileFromString($fileData, $fileDecoded);
 
                         $fileObj = $fileData->getFile();

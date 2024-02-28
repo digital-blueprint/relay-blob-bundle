@@ -408,7 +408,7 @@ class BlobService
     public function generateSignedContentUrl($fileData, $urlMethod, $now, $includeData, $sig): string
     {
         if ($includeData) {
-            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1'.'&method='.$urlMethod.'&sig='.$sig;
+            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1&method='.$urlMethod.'&sig='.$sig;
         } else {
             return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod.'&sig='.$sig;
         }
@@ -430,7 +430,7 @@ class BlobService
             $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod;
         } else {
             // create url to hash
-            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1'.'&method='.$urlMethod;
+            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1&method='.$urlMethod;
         }
 
         // create sha256 hash
