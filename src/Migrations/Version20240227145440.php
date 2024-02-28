@@ -13,7 +13,7 @@ final class Version20240227145440 extends EntityManagerMigration
 {
     public function getDescription(): string
     {
-        return 'Rename column bucket_id to internal_bucket_id.';
+        return 'Change type of column identifier from VARCHAR to BINARY.';
     }
 
     public function up(Schema $schema): void
