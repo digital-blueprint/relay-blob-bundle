@@ -12,6 +12,7 @@ resources:
     operations:
 
       ApiPlatform\Metadata\GetCollection:
+        security: 'is_granted("IS_AUTHENTICATED_FULLY")'
         provider: Dbp\Relay\BlobBundle\State\FileDataProvider
         uriTemplate: "/files"
         normalizationContext:
@@ -59,6 +60,7 @@ resources:
               example: ""
 
       ApiPlatform\Metadata\Get:
+        security: 'is_granted("IS_AUTHENTICATED_FULLY")'
         provider: Dbp\Relay\BlobBundle\State\FileDataProvider
         uriTemplate: "/files/{identifier}"
         openapiContext:
@@ -103,6 +105,7 @@ resources:
               example: ""
 
       ApiPlatform\Metadata\Delete:
+        security: 'is_granted("IS_AUTHENTICATED_FULLY")'
         provider: Dbp\Relay\BlobBundle\State\FileDataProvider
         processor: Dbp\Relay\BlobBundle\State\FileDataProcessor
         uriTemplate: "/files/{identifier}"
@@ -144,6 +147,7 @@ resources:
               example: ""
 
       ApiPlatform\Metadata\Patch:
+        security: 'is_granted("IS_AUTHENTICATED_FULLY")'
         provider: Dbp\Relay\BlobBundle\State\FileDataProvider
         processor: Dbp\Relay\BlobBundle\State\FileDataProcessor
         uriTemplate: "/files/{identifier}"
@@ -191,6 +195,7 @@ resources:
               example: ""
 
       ApiPlatform\Metadata\Post:
+        security: 'is_granted("IS_AUTHENTICATED_FULLY")'
         controller: Dbp\Relay\BlobBundle\Controller\CreateFileDataAction
         uriTemplate: "/files"
         deserialize: false
@@ -281,6 +286,7 @@ resources:
                       example: "1234"
 
       delete_byPrefix:
+        security: 'is_granted("IS_AUTHENTICATED_FULLY")'
         class: ApiPlatform\Metadata\Delete
         method: DELETE
         controller: Dbp\Relay\BlobBundle\Controller\DeleteFileDatasByPrefix
@@ -325,6 +331,7 @@ resources:
               example: ""
 
       download:
+        security: 'is_granted("IS_AUTHENTICATED_FULLY")'
         class: ApiPlatform\Metadata\Get
         method: GET
         controller: Dbp\Relay\BlobBundle\Controller\DownloadAction

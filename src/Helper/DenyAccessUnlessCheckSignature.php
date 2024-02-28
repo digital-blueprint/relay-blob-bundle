@@ -83,8 +83,13 @@ class DenyAccessUnlessCheckSignature
      *
      * @throws \JsonException
      */
-    public static function checkSignature(string $secret, Request $request, BlobService $blobService): void
+    public static function checkSignature(string $secret, Request $request, BlobService $blobService, bool $externallyAuthenicated = true): void
     {
+        // check if externally authenticated
+        if (!$externallyAuthenicated) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Not authenticated!', 'blob:not-authenticated');
+        }
+
         // check if signature is present
         /** @var string */
         $sig = $request->query->get('sig', '');

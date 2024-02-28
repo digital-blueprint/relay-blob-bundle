@@ -60,7 +60,8 @@ class FileDataProvider extends AbstractDataProvider
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
 
         // check if signature is valid
-        DenyAccessUnlessCheckSignature::checkSignature($secret, $this->requestStack->getCurrentRequest(), $this->blobService);
+        DenyAccessUnlessCheckSignature::checkSignature($secret, $this->requestStack->getCurrentRequest(), $this->blobService, $this->isAuthenticated());
+
 
         // get file data associated with the given identifier
         $fileData = $this->blobService->getFileData($id);
@@ -233,7 +234,7 @@ class FileDataProvider extends AbstractDataProvider
 
         // check if signature and checksum is correct
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
-        DenyAccessUnlessCheckSignature::checkSignature($secret, $this->requestStack->getCurrentRequest(), $this->blobService);
+        DenyAccessUnlessCheckSignature::checkSignature($secret, $this->requestStack->getCurrentRequest(), $this->blobService, $this->isAuthenticated());
 
         // get includeData param and decode it
         $includeData = rawurldecode($filters['includeData'] ?? '');
