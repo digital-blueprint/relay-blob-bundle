@@ -3,6 +3,9 @@
 * **Breaking change**: Remove `exists_until` endpoint
 * **Breaking change**: Change `PUT` to `PATCH`
 * **Breaking change**: Move all `POST` url parameters but `creationTime`, `method` and `bucketID` to body
+* **Breaking change**: Migrate db to save the uuid as BINARY instead of as VARCHAR
+* **Breaking change**: Use UUIDv7 instead of UUIDv4
+* **Breaking change**: Extend `DatasystemProviderServiceInterface` by one function that allows upload of base64 encoded files
 * Add additional changeable parameters to body of `PATCH`
 * Drop support for PHP 7.3
 * Drop support for PHP 7.4/8.0
