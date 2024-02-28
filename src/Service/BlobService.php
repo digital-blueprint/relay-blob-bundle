@@ -672,7 +672,7 @@ class BlobService
 
         $context = [
             'internalBucketId' => $id,
-            'bucketIs' => $name,
+            'bucketId' => $name,
             'quota' => $quota,
         ];
 
