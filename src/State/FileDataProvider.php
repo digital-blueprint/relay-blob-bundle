@@ -226,27 +226,27 @@ class FileDataProvider extends AbstractDataProvider
         DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $this->requestStack->getCurrentRequest(), $filters, ['GET']);
 
         // get bucketID after check
-        $bucketID = $filters['bucketID'] ?? '';
+        $bucketID = rawurldecode($filters['bucketID'] ?? '');
 
         // get prefix by filters
-        $prefix = $filters['prefix'] ?? '';
-        $prefix = rawurldecode($prefix);
+        $prefix = rawurldecode($filters['prefix'] ?? '');
 
         // check if signature and checksum is correct
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
         DenyAccessUnlessCheckSignature::checkSignature($secret, $this->requestStack->getCurrentRequest(), $this->blobService);
 
         // get includeData param and decode it
-        $includeData = $filters['includeData'] ?? '';
-        $startsWith = $filters['startsWith'] ?? '';
+        $includeData = rawurldecode($filters['includeData'] ?? '');
+        $startsWith = rawurldecode($filters['startsWith'] ?? '');
         assert(is_string($includeData));
-        $includeData = rawurldecode($includeData) ?? '';
+
+        $internalBucketId = $this->blobService->getInternalBucketIdByBucketID($bucketID);
 
         // get file data of bucket for current page, and decide whether prefix should be used as 'startsWith' or not
         if ($startsWith) {
-            $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefixWithPagination($bucketID, $prefix, $currentPageNumber, $maxNumItemsPerPage);
+            $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefixWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
         } else {
-            $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixWithPagination($bucketID, $prefix, $currentPageNumber, $maxNumItemsPerPage);
+            $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
         }
 
         // create sharelinks

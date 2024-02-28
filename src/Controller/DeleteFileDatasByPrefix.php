@@ -51,18 +51,20 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
         DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService);
 
+        $internalBucketID = $this->blobService->getInternalBucketIdByBucketID($bucketID);
+
         // now, after checksum and signature check, it is safe to do stuff
 
         // get all the file datas associated with the prefix, and decide whether the prefix should be used as 'startsWith'
         if ($startsWith) {
-            $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefix($bucketID, $prefix);
+            $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefix($internalBucketID, $prefix);
         } else {
-            $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefix($bucketID, $prefix);
+            $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefix($internalBucketID, $prefix);
         }
 
         // remove all the files datas
         foreach ($fileDatas as $fileData) {
-            $bucket = $this->blobService->configurationService->getBucketByID($bucketID);
+            $bucket = $this->blobService->configurationService->getBucketByInternalID($internalBucketID);
             $fileData->setBucket($bucket);
             $this->blobService->removeFileData($fileData);
         }

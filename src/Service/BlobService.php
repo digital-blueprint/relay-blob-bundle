@@ -16,7 +16,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Email;
-use Symfony\Component\Uid\Uuid;
+use Ramsey\Uuid\Uuid;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 
@@ -67,7 +67,7 @@ class BlobService
     {
         // create new identifier for new file
         $fileData = new FileData();
-        $fileData->setIdentifier((string) Uuid::v4());
+        $fileData->setIdentifier(Uuid::uuid4()->toString());
 
         // get file from request
         /** @var ?UploadedFile $uploadedFile */
@@ -108,7 +108,8 @@ class BlobService
 
         // set metadata, bucketID and retentionDuration
         $fileData->setAdditionalMetadata($additionalMetadata);
-        $fileData->setBucketID($request->get('bucketID', ''));
+
+        $fileData->setInternalBucketID($this->configurationService->getInternalBucketIdByBucketID(rawurldecode($request->get('bucketID', ''))));
         $retentionDuration = $request->get('retentionDuration', '0');
         $fileData->setRetentionDuration($retentionDuration);
 
@@ -121,6 +122,11 @@ class BlobService
         }
 
         return $fileData;
+    }
+
+    public function getInternalBucketIdByBucketID($bucketID): ?string
+    {
+        return $this->configurationService->getInternalBucketIdByBucketID($bucketID);
     }
 
     public function doFileIntegrityChecks(): bool
@@ -136,7 +142,7 @@ class BlobService
     public function setBucket(FileData $fileData): FileData
     {
         // get bucket by bucketID
-        $bucket = $this->configurationService->getBucketByID($fileData->getBucketID());
+        $bucket = $this->configurationService->getBucketByInternalID($fileData->getInternalBucketID());
         // bucket is not configured
         if (!$bucket) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:create-file-data-not-configured-bucket-id');
@@ -212,7 +218,7 @@ class BlobService
     public function getLink(FileData $fileData): FileData
     {
         // set bucket of fileData by bucketID
-        $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
+        $fileData->setBucket($this->configurationService->getBucketByInternalID($fileData->getInternalBucketID()));
 
         // get service from bucket
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
@@ -236,7 +242,7 @@ class BlobService
     public function getBase64Data(FileData $fileData): FileData
     {
         // set bucket of fileData
-        $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
+        $fileData->setBucket($this->configurationService->getBucketByInternalID($fileData->getInternalBucketID()));
 
         // get service of bucket
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
@@ -285,7 +291,7 @@ class BlobService
         $integrityConfig = $bucket->getIntegrityCheckConfig();
 
         $id = $bucket->getIdentifier();
-        $name = $bucket->getName();
+        $name = $bucket->getBucketID();
 
         if (!empty($invalidDatas)) {
             // create for each email to be notified an array with expiring filedatas
@@ -305,8 +311,8 @@ class BlobService
             }
 
             $context = [
-                'bucketId' => $id,
-                'bucketName' => $name,
+                'internalBucketId' => $id,
+                'bucketId' => $name,
                 'files' => $files,
             ];
 
@@ -323,7 +329,7 @@ class BlobService
     public function getBinaryResponse(FileData $fileData): Response
     {
         // set bucket of fileData
-        $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
+        $fileData->setBucket($this->configurationService->getBucketByInternalID($fileData->getInternalBucketID()));
 
         // get service of bucket
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
@@ -364,7 +370,7 @@ class BlobService
         }
 
         // set bucket of fileData
-        $fileData->setBucket($this->configurationService->getBucketByID($fileData->getBucketID()));
+        $fileData->setBucket($this->configurationService->getBucketByInternalID($fileData->getInternalBucketID()));
 
         // get time now
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
@@ -405,9 +411,9 @@ class BlobService
     public function generateSignedContentUrl($fileData, $urlMethod, $now, $includeData, $sig): string
     {
         if ($includeData) {
-            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1&method='.$urlMethod.'&sig='.$sig;
+            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1'.'&method='.$urlMethod.'&sig='.$sig;
         } else {
-            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod.'&sig='.$sig;
+            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod.'&sig='.$sig;
         }
     }
 
@@ -424,10 +430,10 @@ class BlobService
         // check whether includeData should be in url or not
         if (!$includeData) {
             // create url to hash
-            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod;
+            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod;
         } else {
             // create url to hash
-            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1&method='.$urlMethod;
+            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1'.'&method='.$urlMethod;
         }
 
         // create sha256 hash
@@ -460,7 +466,7 @@ class BlobService
     {
         $fileDatas = $this->em
             ->getRepository(FileData::class)
-            ->findBy(['bucketID' => $bucketID, 'prefix' => $prefix]);
+            ->findBy(['internalBucketId' => $bucketID, 'prefix' => $prefix]);
 
         if (!$fileDatas) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileDatas was not found!', 'blob:file-data-not-found');
@@ -476,7 +482,7 @@ class BlobService
     {
         $fileDatas = $this->em
             ->getRepository(FileData::class)
-            ->findBy(['bucketID' => $bucketID]);
+            ->findBy(['internalBucketId' => $bucketID]);
 
         if (!$fileDatas) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileDatas was not found!', 'blob:file-data-not-found');
@@ -493,7 +499,7 @@ class BlobService
         $query = $this->em
             ->getRepository(FileData::class)
             ->createQueryBuilder('f')
-            ->where('f.bucketID = :bucketID')
+            ->where('f.internalBucketId = :bucketID')
             ->andWhere('f.prefix LIKE :prefix')
             ->orderBy('f.dateCreated', 'ASC')
             ->setParameter('bucketID', $bucketID)
@@ -516,7 +522,7 @@ class BlobService
         $query = $this->em
             ->getRepository(FileData::class)
             ->createQueryBuilder('f')
-            ->where('f.bucketID = :bucketID')
+            ->where('f.internalBucketId = :bucketID')
             ->andWhere('f.prefix = :prefix')
             ->orderBy('f.dateCreated', 'ASC')
             ->setParameter('bucketID', $bucketID)
@@ -535,7 +541,7 @@ class BlobService
         $query = $this->em
             ->getRepository(FileData::class)
             ->createQueryBuilder('f')
-            ->where('f.bucketID = :bucketID')
+            ->where('f.internalBucketId = :bucketID')
             ->andWhere('f.prefix LIKE :prefix')
             ->orderBy('f.dateCreated', 'ASC')
             ->setParameter('bucketID', $bucketID)
@@ -556,7 +562,7 @@ class BlobService
         $query = $this->em
             ->getRepository(FileData::class)
             ->createQueryBuilder('f')
-            ->where('f.bucketID = :bucketID')
+            ->where('f.internalBucketId = :bucketID')
             ->orderBy('f.dateCreated', 'ASC')
             ->setParameter('bucketID', $bucketID)
             ->select('SUM(f.fileSize) as bucketSize');
@@ -577,7 +583,7 @@ class BlobService
         $query = $this->em
             ->getRepository(FileData::class)
             ->createQueryBuilder('f')
-            ->where('f.bucketID = :bucketID')
+            ->where('f.internalBucketId = :bucketID')
             ->andWhere('f.existsUntil <= :expiring')
             ->orderBy('f.notifyEmail', 'ASC')
             ->orderBy('f.existsUntil', 'ASC')
@@ -594,7 +600,7 @@ class BlobService
      */
     public function removeFileData(FileData $fileData)
     {
-        $bucket = $this->configurationService->getBucketByID($fileData->getBucketID());
+        $bucket = $this->configurationService->getBucketByInternalID($fileData->getInternalBucketID());
         $fileData->setBucket($bucket);
 
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
@@ -641,12 +647,12 @@ class BlobService
         $notifyQuotaConfig = $bucket->getNotifyQuotaOverConfig();
 
         $id = $bucket->getIdentifier();
-        $name = $bucket->getName();
+        $name = $bucket->getBucketID();
         $quota = $bucket->getQuota();
 
         $context = [
-            'bucketId' => $id,
-            'bucketName' => $name,
+            'internalBucketId' => $id,
+            'bucketId' => $name,
             'quota' => $quota,
             'filledTo' => ($bucketQuotaByte / ($quota * 1024 * 1024)) * 100,
         ];
@@ -664,12 +670,12 @@ class BlobService
         $notifyQuotaConfig = $bucket->getNotifyQuotaConfig();
 
         $id = $bucket->getIdentifier();
-        $name = $bucket->getName();
+        $name = $bucket->getBucketID();
         $quota = $bucket->getQuota();
 
         $context = [
-            'bucketId' => $id,
-            'bucketName' => $name,
+            'internalBucketId' => $id,
+            'bucketIs' => $name,
             'quota' => $quota,
         ];
 
@@ -720,7 +726,7 @@ class BlobService
         $reportingConfig = $bucket->getReportingConfig();
 
         $id = $bucket->getIdentifier();
-        $name = $bucket->getName();
+        $name = $bucket->getBucketID();
         $fileDatas = $this->getAllExpiringFiledatasByBucket($bucket->getIdentifier());
 
         if (!empty($fileDatas)) {
@@ -742,8 +748,8 @@ class BlobService
 
             foreach ($notifyEmails as $email => $files) {
                 $context = [
-                    'bucketId' => $id,
-                    'bucketName' => $name,
+                    'internalBucketId' => $id,
+                    'bucketId' => $name,
                     'files' => $files,
                 ];
 
@@ -761,6 +767,11 @@ class BlobService
     public function getBucketByID($bucketID)
     {
         return $this->configurationService->getBucketByID($bucketID);
+    }
+
+    public function getBucketByInternalID($internalBucketID)
+    {
+        return $this->configurationService->getBucketByInternalID($internalBucketID);
     }
 
     /**

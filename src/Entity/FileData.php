@@ -17,9 +17,10 @@ use Symfony\Component\Serializer\Annotation\Groups;
 class FileData
 {
     /**
-     * @ORM\Id
+     * @var string
      *
-     * @ORM\Column(type="string", length=128)
+     * @ORM\Id
+     * @ORM\Column(type="uuid_binary", unique=true)
      *
      * @Groups({"BlobFiles:output", "BlobFiles:input"})
      */
@@ -59,7 +60,7 @@ class FileData
      *
      * @var string
      */
-    private $bucketID;
+    private $internalBucketId;
 
     /**
      * @var Bucket
@@ -179,7 +180,7 @@ class FileData
 
     public function getIdentifier(): string
     {
-        return $this->identifier;
+        return (string)$this->identifier;
     }
 
     public function setIdentifier(string $identifier): void
@@ -207,14 +208,14 @@ class FileData
         $this->mimeType = $mimeType;
     }
 
-    public function getBucketID(): string
+    public function getInternalBucketID(): string
     {
-        return $this->bucketID;
+        return $this->internalBucketId;
     }
 
-    public function setBucketID(string $bucketID): void
+    public function setInternalBucketID(string $internalBucketId): void
     {
-        $this->bucketID = $bucketID;
+        $this->internalBucketId = $internalBucketId;
     }
 
     public function getBucket(): Bucket

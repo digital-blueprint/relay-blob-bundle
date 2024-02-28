@@ -21,7 +21,7 @@ class Bucket
     /**
      * @var string
      */
-    private $name;
+    private $id;
 
     /**
      * @var string
@@ -108,14 +108,14 @@ class Bucket
         $this->service = $service;
     }
 
-    public function getName(): string
+    public function getBucketID(): string
     {
-        return $this->name;
+        return $this->id;
     }
 
-    public function setName(string $name): void
+    public function setBucketID(string $id): void
     {
-        $this->name = $name;
+        $this->id = $id;
     }
 
     public function getReportExpiryWhenIn(): string
@@ -251,9 +251,9 @@ class Bucket
     public static function fromConfig(array $config): Bucket
     {
         $bucket = new Bucket();
-        $bucket->setIdentifier((string) $config['bucket_id']);
+        $bucket->setIdentifier((string) $config['internal_bucket_id']);
         $bucket->setService((string) $config['service']);
-        $bucket->setName((string) $config['bucket_name']);
+        $bucket->setBucketID((string) $config['bucket_id']);
         $bucket->setNotifyWhenQuotaOver((int) $config['notify_when_quota_over']);
         $bucket->setReportExpiryWhenIn((string) $config['report_when_expiry_in']);
         $bucket->setKey((string) $config['key']);

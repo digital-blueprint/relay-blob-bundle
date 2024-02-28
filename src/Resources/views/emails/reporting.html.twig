@@ -1,7 +1,7 @@
 <html>
 <body>
 <table>
-    <tr><th>Weekly reporting of expiring files of bucket {{ bucketName }} ({{ bucketId }})</th></tr>
+    <tr><th>Weekly reporting of expiring files of bucket {{ bucketId }} ({{ internalBucketId }})</th></tr>
     <tr><th>file id</th><th>filename</th> <th>prefix</th><th>date created</th><th>last access</th><th>exists until</th></tr>
     {% for file in files %}
         <tr>

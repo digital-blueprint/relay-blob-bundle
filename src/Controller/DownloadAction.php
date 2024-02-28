@@ -47,7 +47,7 @@ class DownloadAction extends BaseBlobController
         }
 
         // get data associated with the provided identifier
-        $fileData = $this->blobService->getFileData($identifier);
+            $fileData = $this->blobService->getFileData($identifier);
         $this->blobService->setBucket($fileData);
 
         return $this->blobService->getBinaryResponse($fileData);

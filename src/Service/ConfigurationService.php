@@ -88,6 +88,38 @@ class ConfigurationService
     }
 
     /**
+     * Returns the bucket object for the given bucketID.
+     */
+    public function getInternalBucketIdByBucketID(string $bucketID): ?string
+    {
+        $buckets = $this->config['buckets'];
+
+        foreach ($buckets as $bucket => $bucketConfig) {
+            if ($bucketID === $bucketConfig['bucket_id']) {
+                return $bucketConfig['internal_bucket_id'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the bucket object for the given internalBucketID.
+     */
+    public function getBucketByInternalID(string $internalBucketID): ?Bucket
+    {
+        $buckets = $this->config['buckets'];
+
+        foreach ($buckets as $bucket => $bucketConfig) {
+            if ($internalBucketID === $bucketConfig['internal_bucket_id']) {
+                return Bucket::fromConfig($bucketConfig);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Gets the reporting interval from the config.
      *
      * @return mixed
