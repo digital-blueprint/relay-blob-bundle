@@ -15,6 +15,7 @@ use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\BlobBundle\Service\DatasystemProviderServiceInterface;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\TestUtils\UserAuthTrait;
+use Doctrine\DBAL\Exception;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -126,6 +127,14 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
 
         return $cs;
     }
+
+    public function saveFileFromString(FileData $fileData, string $data): ?FileData
+    {
+        self::$fd[$fileData->getIdentifier()] = $fileData;
+        self::$data[$fileData->getIdentifier()] = $fileData->getFile();
+
+        return $fileData;
+    }
 }
 
 class CurlGetTest extends ApiTestCase
@@ -137,6 +146,14 @@ class CurlGetTest extends ApiTestCase
 
     /** @var array[] */
     private $files;
+
+    /**
+     * @throws Exception
+     */
+    public static function setUpBeforeClass(): void
+    {
+        \Doctrine\DBAL\Types\Type::addType('uuid_binary', 'Ramsey\Uuid\Doctrine\UuidBinaryType');
+    }
 
     /**
      * @throws \Exception
@@ -191,7 +208,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $action = 'GET';
@@ -256,7 +273,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
 
             // =======================================================
             // POST a file
@@ -522,7 +539,7 @@ class CurlGetTest extends ApiTestCase
             $query = $this->entityManager->getConnection()->createQueryBuilder();
             $this->files = $query->select('*')
                 ->from('blob_files')
-                ->where("prefix = '$prefix' AND bucket_id = '$bucketID'")
+                ->where("prefix = '$prefix' AND internal_bucket_id = '$bucketID'")
                 ->fetchAllAssociativeIndexed();
             $this->assertEmpty($this->files, 'Files not deleted');
 
@@ -580,7 +597,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
@@ -713,7 +730,7 @@ class CurlGetTest extends ApiTestCase
             $query = $this->entityManager->getConnection()->createQueryBuilder();
             $this->files = $query->select('*')
                 ->from('blob_files')
-                ->where("prefix = '$prefix' AND bucket_id = '$bucketID' AND identifier = '{$this->files[0]['uuid']}'")
+                ->where("prefix = '$prefix' AND internal_bucket_id = '$bucketID' AND identifier = '{$this->files[0]['uuid']}'")
                 ->fetchAllAssociativeIndexed();
             $this->assertEmpty($this->files, 'Files not deleted');
 
@@ -771,7 +788,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c', time() - 3600));
             $prefix = 'playground';
 
@@ -815,7 +832,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $uuid = Uuid::v4();
@@ -893,7 +910,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
@@ -970,7 +987,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
@@ -1020,7 +1037,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
@@ -1147,7 +1164,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
@@ -1275,7 +1292,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
@@ -1430,7 +1447,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
@@ -1557,7 +1574,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
@@ -1731,7 +1748,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
@@ -1847,7 +1864,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
@@ -1894,7 +1911,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
@@ -2250,7 +2267,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $prefix = 'playground';
 
             // =======================================================
@@ -2428,7 +2445,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $prefix = 'playground';
 
             // =======================================================
@@ -2616,7 +2633,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $prefix = 'playground';
 
             // =======================================================
@@ -2807,7 +2824,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $prefix = 'playground';
 
             // =======================================================
@@ -2982,7 +2999,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $prefix = 'playground';
 
             // =======================================================
@@ -3055,7 +3072,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "Check GET on other bucket shouldnt return file\n";
 
-            $bucketID = 4321;
+            $bucketID = 'test-bucket-2';
             // get key of wrong bucket
             $bucket = $configService->getBuckets()[1];
             $secret = $bucket->getKey();
@@ -3152,7 +3169,7 @@ class CurlGetTest extends ApiTestCase
 
             echo "Check DELETE on other bucket shouldnt delete original bucket\n";
 
-            $bucketID = 4321;
+            $bucketID = 'test-bucket-2';
             // get key of wrong bucket
             $bucket = $configService->getBuckets()[1];
             $secret = $bucket->getKey();
@@ -3182,7 +3199,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "Check GET on original bucket should still return file\n";
 
-            $bucketID = 1234;
+            $bucketID = 'test-bucket';
             // get key of wrong bucket
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -3226,7 +3243,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
@@ -3341,7 +3358,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getIdentifier();
+            $bucketID = $bucket->getBucketID();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 

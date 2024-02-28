@@ -67,8 +67,8 @@ class Kernel extends BaseKernel
             'buckets' => [
                 'test_bucket' => [
                     'service' => 'Dbp\Relay\BlobBundle\Tests\DummyFileSystemService',
-                    'bucket_id' => '1234',
-                    'bucket_name' => 'Test bucket',
+                    'internal_bucket_id' => '1234',
+                    'bucket_id' => 'test-bucket',
                     'key' => '08d848fd868d83646778b87dd0695b10f59c78e23b286e9884504d1bb43cce93',
                     'quota' => 500, // in MB
                     'notify_when_quota_over' => 70, // in percent of quota
@@ -108,8 +108,8 @@ class Kernel extends BaseKernel
                 ],
                 'test_bucket2' => [
                     'service' => 'Dbp\Relay\BlobBundle\Tests\DummyFileSystemService',
-                    'bucket_id' => '4321',
-                    'bucket_name' => 'Test bucket 2',
+                    'internal_bucket_id' => '4321',
+                    'bucket_id' => 'test-bucket-2',
                     'key' => 'f5b08061e9989d0357c4173aa3af9bc05d0400121af5f90a43e6cdb91ff1fbf2',
                     'quota' => 500, // in MB
                     'notify_when_quota_over' => 70, // in percent of quota
