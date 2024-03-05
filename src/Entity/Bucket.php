@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Entity;
 
 use Dbp\Relay\BlobBundle\Helper\PoliciesStruct;
+use Ramsey\Uuid\Validator\GenericValidator;
 
 class Bucket
 {
@@ -251,6 +252,9 @@ class Bucket
     public static function fromConfig(array $config): Bucket
     {
         $bucket = new Bucket();
+        if ($config['internal_bucket_id'] && !(new GenericValidator())->validate((string) $config['internal_bucket_id'])) {
+            throw new \RuntimeException(sprintf('the config entry internal_bucket_id is no valid uuid for bucket \'%s\'', (string) $config['internal_bucket_id']));
+        }
         $bucket->setIdentifier((string) $config['internal_bucket_id']);
         $bucket->setService((string) $config['service']);
         $bucket->setBucketID((string) $config['bucket_id']);
