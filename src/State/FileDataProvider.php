@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\State;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
+use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
@@ -51,16 +52,23 @@ class FileDataProvider extends AbstractDataProvider
      */
     protected function getFileDataById($id, array $filters): object
     {
+        // get current request
+        $request = $this->requestStack->getCurrentRequest();
+
+        // get used method of request
+        $method = $this->requestStack->getCurrentRequest()->getMethod();
+
         // check if the minimal needed parameters are present and correct
         $errorPrefix = 'blob:get-file-data-by-id';
-        DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $this->requestStack->getCurrentRequest(), $filters, ['GET', 'PATCH', 'DELETE']);
+
+        DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $request, $filters, ['GET', 'PATCH', 'DELETE']);
 
         // get secret of bucket
         $bucketID = rawurldecode($filters['bucketID']) ?? '';
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
 
         // check if signature is valid
-        DenyAccessUnlessCheckSignature::checkSignature($secret, $this->requestStack->getCurrentRequest(), $this->blobService, $this->isAuthenticated());
+        DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService, $this->isAuthenticated(), $this->blobService->checkAdditionalAuth());
 
         // get file data associated with the given identifier
         $fileData = $this->blobService->getFileData($id);
@@ -69,9 +77,6 @@ class FileDataProvider extends AbstractDataProvider
         if (!$fileData) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
-
-        // get used method of request
-        $method = $this->requestStack->getCurrentRequest()->getMethod();
 
         // get the current time to save it as last access / last modified
         $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
@@ -86,7 +91,7 @@ class FileDataProvider extends AbstractDataProvider
 
             // check if PATCH request was used
             if ($method === 'PATCH') {
-                $body = json_decode($this->requestStack->getCurrentRequest()->getContent(), true);
+                $body = BlobUtils::getFieldsFromPatchRequest($request);
                 $fileName = $body['fileName'] ?? '';
                 $additionalMetadata = $body['additionalMetadata'] ?? '';
                 $additionalType = $body['additionalType'] ?? '';
@@ -130,6 +135,7 @@ class FileDataProvider extends AbstractDataProvider
                     }
                     assert(is_string($additionalMetadata));
                     $fileData->setAdditionalMetadata($additionalMetadata);
+                    $fileData->setMetadataHash(hash('sha256', $additionalMetadata));
                 }
 
                 if ($prefix) {
@@ -158,27 +164,9 @@ class FileDataProvider extends AbstractDataProvider
                 }
 
                 if ($file) {
-                    assert(is_string($file));
-                    $fileDecoded = base64_decode($file, true);
-
-                    // check if is valid b64
-                    if ($fileDecoded) {
-                        // $fileData->setFile($fileDecoded);
-                        // $fileData->setMimeType();
-                        $fileData = $this->blobService->saveFileFromString($fileData, $fileDecoded);
-
-                        $fileObj = $fileData->getFile();
-
-                        $fileData->setFileHash(hash('sha256', $fileObj->getContent()));
-                        $fileData->setMimeType($fileObj->getMimeType());
-                        $fileData->setFileSize($fileObj->getSize());
-
-                        if (!$fileData) {
-                            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'data upload failed', 'blob:create-file-data-data-upload-failed');
-                        }
-                    } else {
-                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given file is in an invalid format!', 'blob:patch-file-data-file-bad-format');
-                    }
+                    $fileData->setFile($file);
+                    $fileData->setFileHash(hash('sha256', $file->getContent()));
+                    $this->blobService->saveFile($fileData);
                 }
 
                 $fileData->setDateModified($time);
@@ -233,7 +221,7 @@ class FileDataProvider extends AbstractDataProvider
 
         // check if signature and checksum is correct
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
-        DenyAccessUnlessCheckSignature::checkSignature($secret, $this->requestStack->getCurrentRequest(), $this->blobService, $this->isAuthenticated());
+        DenyAccessUnlessCheckSignature::checkSignature($secret, $this->requestStack->getCurrentRequest(), $this->blobService, $this->isAuthenticated(), $this->blobService->checkAdditionalAuth());
 
         // get includeData param and decode it
         $includeData = rawurldecode($filters['includeData'] ?? '');

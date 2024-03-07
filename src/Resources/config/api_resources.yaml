@@ -153,6 +153,7 @@ resources:
         uriTemplate: "/files/{identifier}"
         denormalizationContext:
           groups: ["BlobFiles:update"]
+        deserialize: false
 
         openapiContext:
           tags: ["Blob"]

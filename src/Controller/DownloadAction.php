@@ -38,7 +38,7 @@ class DownloadAction extends BaseBlobController
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
 
         // check if the signature is valid
-        DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService, $this->isGranted('IS_AUTHENTICATED_FULLY'));
+        DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService, $this->isGranted('IS_AUTHENTICATED_FULLY'), $this->blobService->checkAdditionalAuth());
 
         $urlMethod = rawurldecode($request->get('method', ''));
         $method = $request->getMethod();

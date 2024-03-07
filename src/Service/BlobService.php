@@ -133,6 +133,11 @@ class BlobService
         return $this->configurationService->doFileIntegrityChecks();
     }
 
+    public function checkAdditionalAuth(): bool
+    {
+        return $this->configurationService->checkAdditionalAuth();
+    }
+
     /**
      * Sets the bucket of the given fileData and returns the fileData with set bucket.
      *

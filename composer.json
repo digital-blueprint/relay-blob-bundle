@@ -15,6 +15,8 @@
         "doctrine/migrations": "^3.5",
         "doctrine/orm": "^2.18",
         "justinrainbow/json-schema": "^5.2",
+        "kekos/multipart-form-data-parser": "^1.1",
+        "nyholm/psr7": "^1.8",
         "ramsey/uuid": "^4.7",
         "ramsey/uuid-doctrine": "^1.8",
         "symfony/config": "^5.4",
@@ -25,6 +27,7 @@
         "symfony/http-kernel": "^5.4",
         "symfony/mailer": "^5.4",
         "symfony/mime": "^5.4",
+        "symfony/psr-http-message-bridge": "2.3.1",
         "symfony/uid": "^5.4",
         "twig/twig": "^3.8"
     },

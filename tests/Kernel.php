@@ -62,12 +62,13 @@ class Kernel extends BaseKernel
             'reporting_interval' => '0 9 * * MON',
             'cleanup_interval' => '0 * * * *',
             'file_integrity_checks' => false,
+            'additional_auth' => false,
             'integrity_check_interval' => '0 0 1 * *',
 //            'database_url' => 'sqlite:///:memory:',
             'buckets' => [
                 'test_bucket' => [
                     'service' => 'Dbp\Relay\BlobBundle\Tests\DummyFileSystemService',
-                    'internal_bucket_id' => '1234',
+                    'internal_bucket_id' => '018e0ed8-e6d7-794f-8f60-42efe27ef49e',
                     'bucket_id' => 'test-bucket',
                     'key' => '08d848fd868d83646778b87dd0695b10f59c78e23b286e9884504d1bb43cce93',
                     'quota' => 500, // in MB
@@ -108,7 +109,7 @@ class Kernel extends BaseKernel
                 ],
                 'test_bucket2' => [
                     'service' => 'Dbp\Relay\BlobBundle\Tests\DummyFileSystemService',
-                    'internal_bucket_id' => '4321',
+                    'internal_bucket_id' => '018e1902-c4b6-7e9a-9488-084daf6b3218',
                     'bucket_id' => 'test-bucket-2',
                     'key' => 'f5b08061e9989d0357c4173aa3af9bc05d0400121af5f90a43e6cdb91ff1fbf2',
                     'quota' => 500, // in MB

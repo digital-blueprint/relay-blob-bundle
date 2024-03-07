@@ -83,10 +83,10 @@ class DenyAccessUnlessCheckSignature
      *
      * @throws \JsonException
      */
-    public static function checkSignature(string $secret, Request $request, BlobService $blobService, bool $externallyAuthenicated = true): void
+    public static function checkSignature(string $secret, Request $request, BlobService $blobService, bool $externallyAuthenicated = true, bool $checkAdditionalAuth = false): void
     {
         // check if externally authenticated
-        if (!$externallyAuthenicated) {
+        if ($checkAdditionalAuth && !$externallyAuthenicated) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Not authenticated!', 'blob:not-authenticated');
         }
 
@@ -286,7 +286,9 @@ class DenyAccessUnlessCheckSignature
         }
         // for PATCH
         elseif ($request->getMethod() === 'PATCH') {
-            $body = $request->getContent();
+            $body = BlobUtils::getFieldsFromPatchRequest($request);
+            unset($body['file']);
+            $body = json_encode($body, JSON_FORCE_OBJECT);
         }
 
         assert(is_string($body));

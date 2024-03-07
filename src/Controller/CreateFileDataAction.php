@@ -113,7 +113,7 @@ final class CreateFileDataAction extends BaseBlobController
         $secret = $bucket->getKey();
 
         // check signature and checksum that is stored in signature
-        DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService, $this->isGranted('IS_AUTHENTICATED_FULLY'));
+        DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService, $this->isGranted('IS_AUTHENTICATED_FULLY'), $this->blobService->checkAdditionalAuth());
 
         // now, after check of signature and checksum it is safe to do computations
 

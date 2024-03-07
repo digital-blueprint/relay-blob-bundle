@@ -49,7 +49,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         $bucketID = rawurldecode($bucketID);
 
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
-        DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService, $this->isGranted('IS_AUTHENTICATED_FULLY'));
+        DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService, $this->isGranted('IS_AUTHENTICATED_FULLY'), $this->blobService->checkAdditionalAuth());
 
         $internalBucketID = $this->blobService->getInternalBucketIdByBucketID($bucketID);
 

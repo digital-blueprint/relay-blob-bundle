@@ -20,7 +20,7 @@ class ConfigurationService
     /**
      * Sets the config.
      */
-    public function setConfig(array $config)
+    public function setConfig(array $config): void
     {
         $this->config = $config;
     }
@@ -54,21 +54,6 @@ class ConfigurationService
         }
 
         return $buckets;
-    }
-
-    /**
-     * Returns the bucket object for the given bucket name.
-     */
-    public function getBucketByName(string $bucketName): ?Bucket
-    {
-        $bucket = null;
-
-        if (array_key_exists($bucketName, $this->config['buckets'])) {
-            $bucketConfig = $this->config['buckets'][$bucketName];
-            $bucket = Bucket::fromConfig($bucketConfig);
-        }
-
-        return $bucket;
     }
 
     /**
@@ -121,20 +106,16 @@ class ConfigurationService
 
     /**
      * Gets the reporting interval from the config.
-     *
-     * @return mixed
      */
-    public function getReportingInterval()
+    public function getReportingInterval(): mixed
     {
         return $this->config['reporting_interval'];
     }
 
     /**
      * Gets the cleanup interval from the config.
-     *
-     * @return mixed
      */
-    public function getCleanupInterval()
+    public function getCleanupInterval(): mixed
     {
         return $this->config['cleanup_interval'];
     }
@@ -142,6 +123,11 @@ class ConfigurationService
     public function doFileIntegrityChecks(): bool
     {
         return $this->config['file_integrity_checks'];
+    }
+
+    public function checkAdditionalAuth(): bool
+    {
+        return $this->config['additional_auth'];
     }
 
     public function getIntegrityCheckInterval(): string
