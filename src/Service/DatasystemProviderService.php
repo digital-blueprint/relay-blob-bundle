@@ -5,19 +5,22 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Service;
 
 use Dbp\Relay\BlobBundle\Entity\Bucket;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class DatasystemProviderService
 {
     /**
-     * @var ContainerInterface
+     * @var array<class-string,DatasystemProviderServiceInterface>
      */
-    private $container;
+    private array $services;
 
-    public function __construct(
-        ContainerInterface $container
-    ) {
-        $this->container = $container;
+    public function __construct()
+    {
+        $this->services = [];
+    }
+
+    public function addService(DatasystemProviderServiceInterface $service): void
+    {
+        $this->services[$service::class] = $service;
     }
 
     /**
@@ -25,9 +28,12 @@ class DatasystemProviderService
      */
     public function getServiceByBucket(Bucket $bucket): DatasystemProviderServiceInterface
     {
-        $service = $bucket->getService();
+        $serviceClass = $bucket->getService();
 
-        $datasystemService = $this->container->get($service);
+        $datasystemService = $this->services[$serviceClass] ?? null;
+        if ($datasystemService === null) {
+            throw new \RuntimeException("$serviceClass not found");
+        }
         assert($datasystemService instanceof DatasystemProviderServiceInterface);
 
         return $datasystemService;

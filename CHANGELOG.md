@@ -9,6 +9,7 @@
 * Add additional changeable parameters to body of `PATCH`
 * Drop support for PHP 7.3
 * Drop support for PHP 7.4/8.0
+* Add support for Symfony 6
 
 # v0.1.19
 * Improve error handling for file not found cases
