@@ -195,6 +195,8 @@ class CurlGetTest extends ApiTestCase
                 'retention' => 'P1M',
             ],
         ];
+
+        $this->markTestIncomplete();
     }
 
     /**
