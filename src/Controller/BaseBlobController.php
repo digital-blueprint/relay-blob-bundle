@@ -11,10 +11,6 @@ class BaseBlobController extends AbstractController
 {
     /**
      * Request::get() is internal starting with Symfony 5.4, so we duplicate a subset of the logic we need here.
-     *
-     * @param mixed $default
-     *
-     * @return mixed
      */
     public static function requestGet(Request $request, string $key, $default = null)
     {

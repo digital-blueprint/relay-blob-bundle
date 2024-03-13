@@ -8,5 +8,5 @@ use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 
 class BlobServiceTest extends ApiTestCase
 {
-    //TODO test auth
+    // TODO test auth
 }

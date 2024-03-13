@@ -89,8 +89,6 @@ class ConfigurationService
 
     /**
      * Gets the reporting interval from the config.
-     *
-     * @return mixed
      */
     public function getReportingInterval()
     {
@@ -99,8 +97,6 @@ class ConfigurationService
 
     /**
      * Gets the cleanup interval from the config.
-     *
-     * @return mixed
      */
     public function getCleanupInterval()
     {

@@ -16,7 +16,7 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
 {
     use ExtensionTrait;
 
-    public function loadInternal(array $mergedConfig, ContainerBuilder $container)
+    public function loadInternal(array $mergedConfig, ContainerBuilder $container): void
     {
         $loader = new YamlFileLoader(
             $container,
@@ -28,9 +28,6 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
         $definition->addMethodCall('setConfig', [$mergedConfig]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function prepend(ContainerBuilder $container): void
     {
         $configs = $container->getExtensionConfig($this->getAlias());
