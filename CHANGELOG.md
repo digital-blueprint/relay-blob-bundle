@@ -1,3 +1,8 @@
+# v0.1.21
+
+* Registering the `uuid_binary` type in the doctrine config is no longer required,
+  the bundle will now handle it automatically.
+
 # v0.1.20
 * **Breaking change**: Change `creationTime` to ISO8601 Date instead of unix timestamp
 * **Breaking change**: Remove `exists_until` endpoint
