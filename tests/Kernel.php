@@ -64,7 +64,7 @@ class Kernel extends BaseKernel
             'file_integrity_checks' => false,
             'additional_auth' => false,
             'integrity_check_interval' => '0 0 1 * *',
-//            'database_url' => 'sqlite:///:memory:',
+            //            'database_url' => 'sqlite:///:memory:',
             'buckets' => [
                 'test_bucket' => [
                     'service' => 'Dbp\Relay\BlobBundle\Tests\DummyFileSystemService',

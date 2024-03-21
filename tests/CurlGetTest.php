@@ -3433,11 +3433,11 @@ class CurlGetTest extends ApiTestCase
             echo "GET download one file with prefix playground with missing params\n";
 
             $params = [
-                    0 => "bucketID=$bucketID",
-                    1 => "creationTime=$creationTime",
-                    2 => 'method=GET',
-                    3 => 'sig=',
-                ];
+                0 => "bucketID=$bucketID",
+                1 => "creationTime=$creationTime",
+                2 => 'method=GET',
+                3 => 'sig=',
+            ];
 
             for ($i = 0; $i < count($params) - 1; ++$i) {
                 $baseUrl = '/blob/files/'.$this->files[0]['uuid'].'/download';
