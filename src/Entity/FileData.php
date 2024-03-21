@@ -21,7 +21,7 @@ class FileData
      *
      * @ORM\Id
      *
-     * @ORM\Column(type="uuid_binary", unique=true)
+     * @ORM\Column(type="relay_blob_uuid_binary", unique=true)
      *
      * @Groups({"BlobFiles:output", "BlobFiles:input"})
      */

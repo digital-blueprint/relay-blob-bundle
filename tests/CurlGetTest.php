@@ -15,7 +15,6 @@ use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\BlobBundle\Service\DatasystemProviderServiceInterface;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\TestUtils\UserAuthTrait;
-use Doctrine\DBAL\Exception;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -146,14 +145,6 @@ class CurlGetTest extends ApiTestCase
 
     /** @var array[] */
     private $files;
-
-    /**
-     * @throws Exception
-     */
-    public static function setUpBeforeClass(): void
-    {
-        \Doctrine\DBAL\Types\Type::addType('uuid_binary', 'Ramsey\Uuid\Doctrine\UuidBinaryType');
-    }
 
     /**
      * @throws \Exception

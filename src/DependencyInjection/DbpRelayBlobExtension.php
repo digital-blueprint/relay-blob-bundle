@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\DependencyInjection;
 
+use Dbp\Relay\BlobBundle\Helper\BlobUuidBinaryType;
 use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\CoreBundle\Extension\ExtensionTrait;
 use Symfony\Component\Config\FileLocator;
@@ -26,6 +27,10 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
 
         $definition = $container->getDefinition(ConfigurationService::class);
         $definition->addMethodCall('setConfig', [$mergedConfig]);
+
+        $typeDefinition = $container->getParameter('doctrine.dbal.connection_factory.types');
+        $typeDefinition['relay_blob_uuid_binary'] = ['class' => BlobUuidBinaryType::class];
+        $container->setParameter('doctrine.dbal.connection_factory.types', $typeDefinition);
     }
 
     public function prepend(ContainerBuilder $container): void
