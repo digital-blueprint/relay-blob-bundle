@@ -38,7 +38,7 @@ class FileDataProvider extends AbstractDataProvider
 
     protected function isUserGrantedOperationAccess(int $operation): bool
     {
-        return true;
+        return $this->isAuthenticated();
     }
 
     protected function getItemById(string $id, array $filters = [], array $options = []): ?object
@@ -122,7 +122,7 @@ class FileDataProvider extends AbstractDataProvider
 
                 if ($additionalMetadata) {
                     if (!json_decode($additionalMetadata, true)) {
-                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata is no valid JSON!', 'blob:patch-file-data-bad-additionalMetadata');
+                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata is no valid JSON!', 'blob:patch-file-data-bad-additional-metadata');
                     }
                     $storedType = $fileData->getAdditionalType();
                     if ($storedType) {
@@ -130,7 +130,7 @@ class FileDataProvider extends AbstractDataProvider
                         $metadataDecoded = json_decode($additionalMetadata);
 
                         if ($validator->validate($metadataDecoded, (object) json_decode($bucket->getAdditionalTypes()[$storedType])) !== 0) {
-                            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata does not fit additionalType schema!', 'blob:patch-file-data-additionalType-mismatch');
+                            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata does not fit additionalType schema!', 'blob:patch-file-data-additional-type-mismatch');
                         }
                     }
                     assert(is_string($additionalMetadata));
@@ -153,7 +153,7 @@ class FileDataProvider extends AbstractDataProvider
                         $date = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $existsUntil);
                     }
                     if ($date === false) {
-                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given existsUntil is in an invalid format!', 'blob:patch-file-data-existsUntil-bad-format');
+                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given existsUntil is in an invalid format!', 'blob:patch-file-data-exists-until-bad-format');
                     }
                     $fileData->setExistsUntil($date);
                 }
