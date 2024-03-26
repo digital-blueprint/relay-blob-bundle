@@ -1,3 +1,9 @@
+# v0.1.22
+* Migrate db fields `prefix`, `file_name`, `date_accessed`, `file_size` and `additional_type` to more fitting, efficient types
+* Add indexes on `prefix` and `internal_bucket_id`
+* Remove unused `PoliciesStruct` and adapt code accordingly
+* Enhance some `PATCH` error messages
+
 # v0.1.21
 
 * Registering the `uuid_binary` type in the doctrine config is no longer required,
