@@ -9,7 +9,6 @@ use Dbp\Relay\BlobBundle\Controller\CreateFileDataAction;
 use Dbp\Relay\BlobBundle\Controller\DeleteFileDatasByPrefix;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
-use Dbp\Relay\BlobBundle\Helper\PoliciesStruct;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\BlobBundle\Service\DatasystemProviderServiceInterface;
@@ -44,7 +43,7 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         return $fileData;
     }
 
-    public function getLink(FileData $fileData, PoliciesStruct $policiesStruct): ?FileData
+    public function getLink(FileData $fileData): ?FileData
     {
         $identifier = $fileData->getIdentifier();
         if (!isset(self::$fd[$identifier])) {
@@ -59,7 +58,7 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         return self::$fd[$identifier];
     }
 
-    public function getBase64Data(FileData $fileData, PoliciesStruct $policiesStruct): FileData
+    public function getBase64Data(FileData $fileData): FileData
     {
         $identifier = $fileData->getIdentifier();
         if (!isset(self::$fd[$identifier])) {
@@ -78,7 +77,7 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         return self::$fd[$identifier];
     }
 
-    public function getBinaryResponse(FileData $fileData, PoliciesStruct $policiesStruct): Response
+    public function getBinaryResponse(FileData $fileData): Response
     {
         $identifier = $fileData->getIdentifier();
         if (!isset(self::$fd[$identifier])) {

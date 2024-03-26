@@ -153,7 +153,7 @@ final class CreateFileDataAction extends BaseBlobController
         }
 
         // Check quota
-        $bucketsizeByte = (int) $this->blobService->getQuotaOfBucket($fileData->getInternalBucketID())['bucketSize'];
+        $bucketsizeByte = (int) $this->blobService->getCurrentBucketSize($fileData->getInternalBucketID())['bucketSize'];
         $bucketQuotaByte = $fileData->getBucket()->getQuota() * 1024 * 1024; // Convert mb to Byte
         $newBucketSizeByte = $bucketsizeByte + $fileData->getFileSize();
         if ($newBucketSizeByte > $bucketQuotaByte) {

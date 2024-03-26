@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Entity;
 
-use Dbp\Relay\BlobBundle\Helper\PoliciesStruct;
 use Ramsey\Uuid\Validator\GenericValidator;
 
 class Bucket
@@ -35,11 +34,6 @@ class Bucket
     private $key;
 
     /**
-     * @var string
-     */
-    private $path;
-
-    /**
      * @var int
      */
     private $quota;
@@ -53,11 +47,6 @@ class Bucket
      * @var string
      */
     private $linkExpireTime;
-
-    /**
-     * @var PoliciesStruct
-     */
-    private $policies;
 
     /**
      * @var ?array
@@ -179,16 +168,6 @@ class Bucket
         $this->linkExpireTime = $linkExpireTime;
     }
 
-    public function getPolicies(): PoliciesStruct
-    {
-        return $this->policies;
-    }
-
-    public function setPolicies(PoliciesStruct $policies): void
-    {
-        $this->policies = $policies;
-    }
-
     public function getNotifyQuotaConfig(): ?array
     {
         return $this->notifyQuotaConfig;
@@ -264,10 +243,6 @@ class Bucket
         $bucket->setQuota((int) $config['quota']);
         $bucket->setMaxRetentionDuration((string) $config['max_retention_duration']);
         $bucket->setLinkExpireTime((string) $config['link_expire_time']);
-
-        $policies = PoliciesStruct::withPoliciesArray($config['policies']);
-
-        $bucket->setPolicies($policies);
 
         if (
             array_key_exists('notify_quota', $config)

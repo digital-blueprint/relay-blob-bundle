@@ -77,14 +77,6 @@ class Kernel extends BaseKernel
                     'bucket_owner' => 'manuel.kocher@tugraz.at',
                     'max_retention_duration' => 'P1Y',
                     'link_expire_time' => 'PT1M',
-                    'policies' => [
-                        'create' => true,
-                        'delete' => true,
-                        'open' => true,
-                        'download' => true,
-                        'rename' => true,
-                        'work' => true,
-                    ],
                     'notify_quota' => [
                         'dsn' => 'smtp:localhost',
                         'from' => 'noreply@tugraz.at',
@@ -118,14 +110,6 @@ class Kernel extends BaseKernel
                     'bucket_owner' => 'manuel.kocher@tugraz.at',
                     'max_retention_duration' => 'P1Y',
                     'link_expire_time' => 'PT1M',
-                    'policies' => [
-                        'create' => true,
-                        'delete' => true,
-                        'open' => true,
-                        'download' => true,
-                        'rename' => true,
-                        'work' => true,
-                    ],
                     'notify_quota' => [
                         'dsn' => 'smtp:localhost',
                         'from' => 'noreply@tugraz.at',

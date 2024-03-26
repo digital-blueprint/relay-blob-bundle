@@ -226,7 +226,7 @@ class BlobService
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
 
         // get HTTP link with connector for fileData
-        $fileData = $datasystemService->getLink($fileData, $fileData->getBucket()->getPolicies());
+        $fileData = $datasystemService->getLink($fileData);
 
         // if !fileData, then something went wrong
         if (!$fileData) {
@@ -250,7 +250,7 @@ class BlobService
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
 
         // get base64 encoded file with connector
-        $fileData = $datasystemService->getBase64Data($fileData, $fileData->getBucket()->getPolicies());
+        $fileData = $datasystemService->getBase64Data($fileData);
 
         // if !fileData, then something went wrong
         if (!$fileData) {
@@ -337,7 +337,7 @@ class BlobService
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
 
         // get binary response of file with connector
-        $response = $datasystemService->getBinaryResponse($fileData, $fileData->getBucket()->getPolicies());
+        $response = $datasystemService->getBinaryResponse($fileData);
 
         // if !response, then something went wrong
         if (!$response) {
@@ -559,7 +559,7 @@ class BlobService
      *
      * @throws \Doctrine\ORM\NonUniqueResultException
      */
-    public function getQuotaOfBucket(string $bucketID): array
+    public function getCurrentBucketSize(string $bucketID): array
     {
         $query = $this->em
             ->getRepository(FileData::class)
@@ -568,6 +568,7 @@ class BlobService
             ->orderBy('f.dateCreated', 'ASC')
             ->setParameter('bucketID', $bucketID)
             ->select('SUM(f.fileSize) as bucketSize');
+
 
         return $query->getQuery()->getOneOrNullResult();
     }
@@ -708,7 +709,7 @@ class BlobService
     public function sendBucketQuotaWarning(Bucket $bucket)
     {
         // Check quota
-        $bucketQuotaByte = $this->getQuotaOfBucket($bucket->getIdentifier())['bucketSize']; // Convert mb to Byte
+        $bucketQuotaByte = $this->getCurrentBucketSize($bucket->getIdentifier())['bucketSize'];
         $bucketWarningQuotaByte = $bucket->getQuota() * 1024 * 1024 * ($bucket->getNotifyWhenQuotaOver() / 100); // Convert mb to Byte and then calculate the warning quota
         if (floatval($bucketQuotaByte) > floatval($bucketWarningQuotaByte)) {
             $this->sendQuotaWarning($bucket, floatval($bucketQuotaByte));
