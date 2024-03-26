@@ -569,7 +569,6 @@ class BlobService
             ->setParameter('bucketID', $bucketID)
             ->select('SUM(f.fileSize) as bucketSize');
 
-
         return $query->getQuery()->getOneOrNullResult();
     }
 
