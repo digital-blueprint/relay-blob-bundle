@@ -1,3 +1,6 @@
+# v0.1.23
+* Temporary hotfix: Disable bucket size check with SUM() until a better solution is implemented
+
 # v0.1.22
 * Migrate db fields `prefix`, `file_name`, `date_accessed`, `file_size` and `additional_type` to more fitting, efficient types
 * Add indexes on `prefix` and `internal_bucket_id`
