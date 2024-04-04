@@ -11,6 +11,7 @@ use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
 use JsonSchema\Validator;
+use Symfony\Bridge\PsrHttpMessage\Factory\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -163,10 +164,20 @@ class FileDataProvider extends AbstractDataProvider
                     $fileData->setNotifyEmail($notifyEmail);
                 }
 
-                if ($file) {
+                if ($file instanceof UploadedFile) {
+                    $oldSize = $fileData->getFileSize();
+
                     $fileData->setFile($file);
+                    $fileData->setMimeType($file->getMimeType() ?? '');
+                    $fileData->setFileSize($file->getSize());
                     $fileData->setFileHash(hash('sha256', $file->getContent()));
+
                     $this->blobService->saveFile($fileData);
+
+                    $docBucket = $this->blobService->getBucketByIdFromDatabase($fileData->getInternalBucketID());
+                    $docBucket->setCurrentBucketSize($docBucket->getCurrentBucketSize() - $oldSize + $fileData->getFileSize());
+
+                    $this->blobService->saveBucketData($docBucket);
                 }
 
                 $fileData->setDateModified($time);

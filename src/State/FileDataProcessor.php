@@ -32,6 +32,11 @@ class FileDataProcessor extends AbstractController implements ProcessorInterface
         assert($data instanceof FileData);
 
         if ($operation instanceof DeleteOperationInterface) {
+            $docBucket = $this->blobService->getBucketByIdFromDatabase($data->getInternalBucketID());
+            $docBucket->setCurrentBucketSize($docBucket->getCurrentBucketSize() - $data->getFileSize());
+
+            $this->blobService->saveBucketData($docBucket);
+
             $this->blobService->removeFileData($data);
         }
 

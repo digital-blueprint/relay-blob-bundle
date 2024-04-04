@@ -179,6 +179,47 @@ class BlobService
     }
 
     /**
+     * Used to get a bucket from the db using doctrine.
+     *
+     * @param string $bucketId internal bucket ID of the bucket
+     *
+     * @throws \Exception
+     */
+    public function getBucketByIdFromDatabase(string $bucketId): Bucket
+    {
+        $bucket = $this->em->getRepository(Bucket::class)->find($bucketId);
+
+        if (!$bucket) {
+            $newBucket = new Bucket();
+            $newBucket->setIdentifier($bucketId);
+            $newBucket->setCurrentBucketSize(0);
+            $this->em->persist($newBucket);
+            $this->em->flush();
+            $bucket = $newBucket;
+        }
+
+        return $bucket;
+    }
+
+    /**
+     * Used to persist given fileData in entity manager, and automatically adapts last access timestamp.
+     *
+     * @param Bucket $bucket bucket to be persisted
+     *
+     * @throws \Exception
+     */
+    public function saveBucketData(Bucket $bucket): void
+    {
+        // try to persist fileData, or throw error
+        try {
+            $this->em->persist($bucket);
+            $this->em->flush();
+        } catch (\Exception $e) {
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Bucket data could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * Saves the file using the connector.
      *
      * @param FileData $fileData fileData that carries the file which should be saved
@@ -559,15 +600,14 @@ class BlobService
      *
      * @throws \Doctrine\ORM\NonUniqueResultException
      */
-    public function getCurrentBucketSize(string $bucketID): array
+    public function getCurrentBucketSize(string $bucketID): ?array
     {
         $query = $this->em
-            ->getRepository(FileData::class)
+            ->getRepository(Bucket::class)
             ->createQueryBuilder('f')
-            ->where('f.internalBucketId = :bucketID')
-            ->orderBy('f.dateCreated', 'ASC')
+            ->where('f.identifier = :bucketID')
             ->setParameter('bucketID', $bucketID)
-            ->select('SUM(f.fileSize) as bucketSize');
+            ->select('f.currentBucketSize as bucketSize');
 
         return $query->getQuery()->getOneOrNullResult();
     }

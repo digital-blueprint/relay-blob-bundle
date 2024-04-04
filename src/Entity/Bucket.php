@@ -4,11 +4,21 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Entity;
 
+use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Validator\GenericValidator;
 
+/**
+ * @ORM\Entity
+ *
+ * @ORM\Table(name="blob_bucket_sizes")
+ */
 class Bucket
 {
     /**
+     * @ORM\Id
+     *
+     * @ORM\Column(type="string", length=36)
+     *
      * @var string
      */
     private $identifier;
@@ -77,6 +87,13 @@ class Bucket
      * @var ?array
      */
     private $additionalTypes;
+
+    /**
+     * @ORM\Column(type="integer")
+     *
+     * @return int
+     */
+    private $currentBucketSize;
 
     public function getIdentifier(): string
     {
@@ -224,6 +241,18 @@ class Bucket
     public function setAdditionalTypes(?array $additionalTypes): self
     {
         $this->additionalTypes = $additionalTypes;
+
+        return $this;
+    }
+
+    public function getCurrentBucketSize(): ?int
+    {
+        return $this->currentBucketSize;
+    }
+
+    public function setCurrentBucketSize(int $currentBucketSize): self
+    {
+        $this->currentBucketSize = $currentBucketSize;
 
         return $this;
     }
