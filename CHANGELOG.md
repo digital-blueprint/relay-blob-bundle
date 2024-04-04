@@ -1,3 +1,6 @@
+# v0.1.24
+* Add index on `date_created` for better GET request efficiency
+
 # v0.1.23
 * Temporary hotfix: Disable bucket size check with SUM() until a better solution is implemented
 
