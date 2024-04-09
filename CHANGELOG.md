@@ -1,6 +1,3 @@
-# v0.1.25
-* Update to ramsey/uuid-doctrine v2.0
-
 # v0.1.24
 * Add index on `date_created` for better GET request efficiency
 
