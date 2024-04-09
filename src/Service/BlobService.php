@@ -185,7 +185,7 @@ class BlobService
      *
      * @throws \Exception
      */
-    public function getBucketByIdFromDatabase(string $bucketId): Bucket
+    public function getBucketByInternalIdFromDatabase(string $bucketId): Bucket
     {
         $bucket = $this->em->getRepository(Bucket::class)->find($bucketId);
 
@@ -223,6 +223,7 @@ class BlobService
      * Saves the file using the connector.
      *
      * @param FileData $fileData fileData that carries the file which should be saved
+     * @throws \Exception
      */
     public function saveFile(FileData $fileData): ?FileData
     {
