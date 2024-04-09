@@ -134,4 +134,9 @@ class ConfigurationService
     {
         return $this->config['integrity_check_interval'];
     }
+
+    public function getBucketSizeCheckInterval()
+    {
+        return $this->config['bucket_size_check_interval'];
+    }
 }

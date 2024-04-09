@@ -846,4 +846,34 @@ class BlobService
 
         $mailer->send($email);
     }
+
+    public function checkFileSize()
+    {
+        $buckets = $this->configurationService->getBuckets();
+        foreach ($buckets as $bucket) {
+            $query = $this->em
+                ->getRepository(FileData::class)
+                ->createQueryBuilder('f')
+                ->where('f.internalBucketId = :bucketID')
+                ->setParameter('bucketID', $bucket->getIdentifier())
+                ->select('SUM(f.fileSize) as bucketSize');
+
+            $result = $query->getQuery()->getOneOrNullResult();
+
+            if ($result) {
+                $bucketSize = $result['bucketSize'];
+
+                // bucketSize will be null if there is no file in the bucket
+                if ($bucketSize) {
+                    $bucketSize = (int) $bucketSize;
+                } else {
+                    $bucketSize = 0;
+                }
+
+                $bucket = $this->getBucketByInternalIdFromDatabase($bucket->getIdentifier());
+                $bucket->setCurrentBucketSize($bucketSize);
+                $this->saveBucketData($bucket);
+            }
+        }
+    }
 }
