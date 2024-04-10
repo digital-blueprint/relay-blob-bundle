@@ -1,3 +1,6 @@
+# v0.1.26
+* Support newer symfony/psr-http-message-bridge
+
 # v0.1.25
 * Update to ramsey/uuid-doctrine v2.0
 
