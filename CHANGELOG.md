@@ -1,3 +1,7 @@
+# v0.1.27
+* Add new `blob_bucket_sizes` table that keeps track of the blob bucket sizes. This should improve performance massively for big tables.
+* Add cronjob that regularly checks and updates the `blob_bucket_sizes` table.
+
 # v0.1.26
 * Support newer symfony/psr-http-message-bridge
 
