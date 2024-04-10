@@ -18,7 +18,7 @@
         "kekos/multipart-form-data-parser": "^1.1",
         "nyholm/psr7": "^1.8",
         "ramsey/uuid": "^4.7",
-        "ramsey/uuid-doctrine": "^1.8",
+        "ramsey/uuid-doctrine": "^2.0",
         "symfony/config": "^5.4 || ^6.4",
         "symfony/dependency-injection": "^5.4 || ^6.4",
         "symfony/event-dispatcher": "^5.4 || ^6.4",

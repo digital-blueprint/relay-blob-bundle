@@ -9,4 +9,9 @@ use Ramsey\Uuid\Doctrine\UuidBinaryType;
 class BlobUuidBinaryType extends UuidBinaryType
 {
     public const NAME = 'relay_blob_uuid_binary';
+
+    public function getName(): string
+    {
+        return self::NAME;
+    }
 }
