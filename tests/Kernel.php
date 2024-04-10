@@ -9,7 +9,9 @@ use Dbp\Relay\BlobBundle\DbpRelayBlobBundle;
 use Dbp\Relay\CoreBundle\DbpRelayCoreBundle;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle;
+use Doctrine\DBAL\Exception;
 use Nelmio\CorsBundle\NelmioCorsBundle;
+use Ramsey\Uuid\Doctrine\UuidBinaryType;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Bundle\MonologBundle\MonologBundle;
@@ -43,6 +45,9 @@ class Kernel extends BaseKernel
         $routes->import('@DbpRelayCoreBundle/Resources/config/routing.yaml');
     }
 
+    /**
+     * @throws Exception
+     */
     protected function configureContainer(ContainerConfigurator $container, LoaderInterface $loader)
     {
         $container->import('@DbpRelayCoreBundle/Resources/config/services_test.yaml');
@@ -58,12 +63,12 @@ class Kernel extends BaseKernel
 
         $container->extension('dbp_relay_blob', [
             'database_url' => 'sqlite:///var/dbp_relay_blob_test.db',
-            'link_url' => 'http://127.0.0.1:8000/',
             'reporting_interval' => '0 9 * * MON',
             'cleanup_interval' => '0 * * * *',
             'file_integrity_checks' => false,
             'additional_auth' => false,
             'integrity_check_interval' => '0 0 1 * *',
+            'bucket_size_check_interval' => '0 2 * * 1',
             //            'database_url' => 'sqlite:///:memory:',
             'buckets' => [
                 'test_bucket' => [
@@ -127,5 +132,7 @@ class Kernel extends BaseKernel
                 ],
             ],
         ]);
+
+        \Doctrine\DBAL\Types\Type::addType('uuid_binary', UuidBinaryType::class);
     }
 }

@@ -186,7 +186,7 @@ class CurlGetTest extends ApiTestCase
             ],
         ];
 
-        $this->markTestIncomplete();
+        // $this->markTestIncomplete();
     }
 
     /**
@@ -195,7 +195,7 @@ class CurlGetTest extends ApiTestCase
     public function testGet(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->withUser('user', [], '42');
             $configService = $client->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
@@ -211,6 +211,8 @@ class CurlGetTest extends ApiTestCase
                 'method' => $action,
             ];
 
+            echo "GET collection\n";
+
             // $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
             $url = "/blob/files?bucketID=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
@@ -223,6 +225,7 @@ class CurlGetTest extends ApiTestCase
             $url = $url.'&sig='.$token;
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
@@ -258,7 +261,8 @@ class CurlGetTest extends ApiTestCase
     public function testPostGetDelete(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->withUser('user', [], '42');
+
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -270,7 +274,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // POST a file
             // =======================================================
-            echo "POST file (0)\n";
+            echo "POST file (0)-\n";
 
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
@@ -310,6 +314,7 @@ class CurlGetTest extends ApiTestCase
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
                 [
+                    'Authorization' => 'Bearer 42',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
@@ -317,6 +322,7 @@ class CurlGetTest extends ApiTestCase
             );
 
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -352,6 +358,8 @@ class CurlGetTest extends ApiTestCase
 
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
+                    'Accept' => 'application/ld+json',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
@@ -421,12 +429,14 @@ class CurlGetTest extends ApiTestCase
                     'file' => new UploadedFile($this->files[1]['path'], $this->files[1]['name'], $this->files[1]['mime']),
                 ],
                 [
+                    'Authorization' => 'Bearer 42',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[1]['content'])
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -458,17 +468,18 @@ class CurlGetTest extends ApiTestCase
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
-            $options = [
-                'headers' => [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
-            ];
 
             /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects();
+            $client->getKernelBrowser()->followRedirects(false);
 
-            /** @var Response $response */
+            $client = $this->withUser('user', [], '42');
+
+            /** @var \ApiPlatform\Symfony\Bundle\Test\Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
+
+            if ($response->getStatusCode() !== 200) {
+                echo $response->getContent()."\n";
+            }
 
             $this->assertEquals(200, $response->getStatusCode());
 
@@ -516,11 +527,13 @@ class CurlGetTest extends ApiTestCase
             $requestDelete = Request::create($url.'&sig='.$token, 'DELETE', [], [], [],
                 [
                     'HTTP_ACCEPT' => 'application/ld+json',
+                    'Authorization' => 'Bearer 42',
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
             );
 
             $d = new DeleteFileDatasByPrefix($blobService);
+            $d->setContainer($client->getContainer());
             try {
                 $d->__invoke($requestDelete);
             } catch (\Throwable $e) {
@@ -552,9 +565,12 @@ class CurlGetTest extends ApiTestCase
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
+
+            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -581,8 +597,7 @@ class CurlGetTest extends ApiTestCase
     public function testGetDeleteById(): void
     {
         try {
-            //            $client = $this->withUser('foobar');
-            $client = static::createClient();
+            $client = $this->withUser('user', [], '42');
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -633,12 +648,14 @@ class CurlGetTest extends ApiTestCase
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
                 [
+                    'Authorization' => 'Bearer 42',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -673,6 +690,7 @@ class CurlGetTest extends ApiTestCase
 
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
@@ -702,6 +720,7 @@ class CurlGetTest extends ApiTestCase
 
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
@@ -709,6 +728,8 @@ class CurlGetTest extends ApiTestCase
 
             /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects(false);
+
+            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('DELETE', $url.'&sig='.$token, $options);
@@ -741,6 +762,7 @@ class CurlGetTest extends ApiTestCase
 
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
@@ -748,6 +770,8 @@ class CurlGetTest extends ApiTestCase
 
             /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects();
+
+            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -955,8 +979,8 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             $fileData = $c->__invoke($requestPost);
-
             $this->fail('    FileData incorrectly saved: '.$fileData->getIdentifier());
         } catch (ApiError $e) {
             $this->assertEquals(405, $e->getStatusCode());
@@ -1090,6 +1114,7 @@ class CurlGetTest extends ApiTestCase
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -1216,6 +1241,7 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -1277,7 +1303,7 @@ class CurlGetTest extends ApiTestCase
     public function testPATCH(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->withUser('user', [], '42');
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1285,15 +1311,11 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getBucketID();
-            $creationTime = rawurlencode(date('c'));
-            $prefix = 'playground';
 
             // =======================================================
             // PATCH one file
             // =======================================================
             echo "PATCH one file\n";
-
-            $actions = ['GET', 'DELETE', 'DELETE', 'GET', 'POST'];
 
             // =======================================================
             // POST a file
@@ -1338,6 +1360,7 @@ class CurlGetTest extends ApiTestCase
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
                 [
+                    'Authorization' => 'Bearer 42',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
@@ -1345,6 +1368,7 @@ class CurlGetTest extends ApiTestCase
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -1372,18 +1396,19 @@ class CurlGetTest extends ApiTestCase
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl("{\"fileName\": \"$newFileName\"}"),
+                'bcs' => $this->generateSha256ChecksumFromUrl("{\"fileName\":\"$newFileName\"}"),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
                     'HTTP_ACCEPT' => 'application/ld+json',
-                    'Content-Type' => 'application/json',
+                    'Content-Type' => 'multipart/form-data; boundary=--------------------------1',
                 ],
-                'body' => "{\"fileName\": \"$newFileName\"}",
+                'body' => "----------------------------1\r\nContent-Disposition: form-data; name=\"fileName\"\r\n\r\n$newFileName\r\n----------------------------1--\r\n",
             ];
 
             /* @noinspection PhpInternalEntityUsedInspection */
@@ -1392,6 +1417,8 @@ class CurlGetTest extends ApiTestCase
             /** @var Response $response */
             $response = $client->request('PATCH', $url.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
+
+            echo "GET file to see if its changed\n";
 
             $action = 'GET';
             $url = '/blob/files/'.$fileData->getIdentifier()."?bucketID=$bucketID&creationTime=$creationTime&method=$action";
@@ -1402,19 +1429,21 @@ class CurlGetTest extends ApiTestCase
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
-            $options = [
+            $options2 = [
                 'headers' => [
-                    'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                    'Content-Type' => 'application/json',
+                    'Authorization' => 'Bearer 42',
                 ],
             ];
 
             /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects();
 
-            /** @var Response $response */
-            $response = $client->request('GET', $url.'&sig='.$token, $options);
+            // get new token to make it work for some reason
+            $client = $this->withUser('user', [], '42');
+
+            /** @var \ApiPlatform\Symfony\Bundle\Test\Response $response */
+            $response = $client->request('GET', $url.'&sig='.$token, $options2);
+            echo $response->getContent(false)."\n";
             $this->assertEquals(200, $response->getStatusCode());
             // check if fileName was indeed changed
             $this->assertEquals(json_decode($response->getContent())->fileName, $newFileName);
@@ -1495,6 +1524,7 @@ class CurlGetTest extends ApiTestCase
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -1534,11 +1564,14 @@ class CurlGetTest extends ApiTestCase
                             'Accept' => 'application/ld+json',
                             'HTTP_ACCEPT' => 'application/ld+json',
                             'Content-Type' => 'application/json',
+                            'Authorization' => 'Bearer 42',
                         ],
                     ];
 
                     /* @noinspection PhpInternalEntityUsedInspection */
                     $client->getKernelBrowser()->followRedirects();
+
+                    $client = $this->withUser('user', [], '42');
 
                     /** @var Response $response */
                     $response = $client->request($method, $url.'&sig='.$token, $options);
@@ -1618,6 +1651,7 @@ class CurlGetTest extends ApiTestCase
                     .'file='.base64_encode($this->files[$i]['content'])
                 );
                 $c = new CreateFileDataAction($blobService);
+                $c->setContainer($client->getContainer());
                 try {
                     $fileData = $c->__invoke($requestPost);
                 } catch (\Throwable $e) {
@@ -1652,6 +1686,7 @@ class CurlGetTest extends ApiTestCase
 
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
@@ -1659,6 +1694,8 @@ class CurlGetTest extends ApiTestCase
 
             /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects(false);
+
+            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('DELETE', $url.'&sig='.$token, $options);
@@ -1679,6 +1716,7 @@ class CurlGetTest extends ApiTestCase
 
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
@@ -1686,6 +1724,8 @@ class CurlGetTest extends ApiTestCase
 
             /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects(false);
+
+            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -1708,6 +1748,7 @@ class CurlGetTest extends ApiTestCase
 
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
@@ -1715,6 +1756,8 @@ class CurlGetTest extends ApiTestCase
 
             /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects(false);
+
+            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -1792,6 +1835,7 @@ class CurlGetTest extends ApiTestCase
                     .'file='.base64_encode($this->files[$i]['content'])
                 );
                 $c = new CreateFileDataAction($blobService);
+                $c->setContainer($client->getContainer());
                 try {
                     $fileData = $c->__invoke($requestPost);
                 } catch (\Throwable $e) {
@@ -1823,6 +1867,7 @@ class CurlGetTest extends ApiTestCase
 
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
@@ -1830,6 +1875,8 @@ class CurlGetTest extends ApiTestCase
 
             /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects(false);
+
+            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -1955,6 +2002,7 @@ class CurlGetTest extends ApiTestCase
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -2017,12 +2065,14 @@ class CurlGetTest extends ApiTestCase
 
                     $options = [
                         'headers' => [
+                            'Authorization' => 'Bearer 42',
                             'Accept' => 'application/ld+json',
                             'HTTP_ACCEPT' => 'application/ld+json',
                         ],
                     ];
 
                     echo 'Test url '.$baseUrl.$token;
+                    $client = $this->withUser('user', [], '42');
 
                     /** @var Response $response */
                     $response = $client->request($action, $baseUrl.$token, $options);
@@ -2078,6 +2128,7 @@ class CurlGetTest extends ApiTestCase
 
                     $options = [
                         'headers' => [
+                            'Authorization' => 'Bearer 42',
                             'Accept' => 'application/ld+json',
                             'HTTP_ACCEPT' => 'application/ld+json',
                         ],
@@ -2087,6 +2138,8 @@ class CurlGetTest extends ApiTestCase
                             ],
                         ],
                     ];
+
+                    $client = $this->withUser('user', [], '42');
 
                     /** @var Response $response */
                     $response = $client->request($action, $baseUrl.$token, $options);
@@ -2150,6 +2203,7 @@ class CurlGetTest extends ApiTestCase
 
                 $options = [
                     'headers' => [
+                        'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
                         'HTTP_ACCEPT' => 'application/ld+json',
                     ],
@@ -2177,6 +2231,8 @@ class CurlGetTest extends ApiTestCase
                         ],
                     ],
                 ];
+
+                $client = $this->withUser('user', [], '42');
 
                 /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.$token, $options);
@@ -2309,6 +2365,7 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -2348,10 +2405,12 @@ class CurlGetTest extends ApiTestCase
 
                 $options = [
                     'headers' => [
+                        'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
                         'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                 ];
+                $client = $this->withUser('user', [], '42');
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -2374,6 +2433,7 @@ class CurlGetTest extends ApiTestCase
                 ];
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $client = $this->withUser('user', [], '42');
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -2399,10 +2459,15 @@ class CurlGetTest extends ApiTestCase
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
+                $client = $this->withUser('user', [], '42');
+
                 /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
-                        'headers' => ['Content-Type' => 'form-data'],
+                        'headers' => [
+                            'Content-Type' => 'form-data',
+                            'Authorization' => 'Bearer 42',
+                        ],
                         'extra' => [
                             'files' => [
                                 'file' => $file,
@@ -2487,6 +2552,7 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -2529,10 +2595,13 @@ class CurlGetTest extends ApiTestCase
 
                 $options = [
                     'headers' => [
+                        'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
                         'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                 ];
+
+                $client = $this->withUser('user', [], '42');
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -2558,6 +2627,8 @@ class CurlGetTest extends ApiTestCase
                 $secret = $bucket->getKey();
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+                $client = $this->withUser('user', [], '42');
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -2587,10 +2658,15 @@ class CurlGetTest extends ApiTestCase
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
+                $client = $this->withUser('user', [], '42');
+
                 /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
-                        'headers' => ['Content-Type' => 'form-data'],
+                        'headers' => [
+                            'Authorization' => 'Bearer 42',
+                            'Content-Type' => 'form-data',
+                        ],
                         'extra' => [
                             'files' => [
                                 'file' => $file,
@@ -2676,6 +2752,7 @@ class CurlGetTest extends ApiTestCase
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -2717,10 +2794,13 @@ class CurlGetTest extends ApiTestCase
 
                 $options = [
                     'headers' => [
+                        'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
                         'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                 ];
+
+                $client = $this->withUser('user', [], '42');
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -2743,6 +2823,8 @@ class CurlGetTest extends ApiTestCase
                 ];
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+                $client = $this->withUser('user', [], '42');
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -2778,10 +2860,15 @@ class CurlGetTest extends ApiTestCase
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
+                $client = $this->withUser('user', [], '42');
+
                 /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
-                        'headers' => ['Content-Type' => 'form-data'],
+                        'headers' => [
+                            'Content-Type' => 'form-data',
+                            'Authorization' => 'Bearer 42',
+                        ],
                         'extra' => [
                             'files' => [
                                 'file' => $file,
@@ -2866,6 +2953,7 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -2907,10 +2995,13 @@ class CurlGetTest extends ApiTestCase
 
                 $options = [
                     'headers' => [
+                        'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
                         'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                 ];
+
+                $client = $this->withUser('user', [], '42');
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -2933,6 +3024,8 @@ class CurlGetTest extends ApiTestCase
                 ];
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+
+                $client = $this->withUser('user', [], '42');
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -2959,10 +3052,15 @@ class CurlGetTest extends ApiTestCase
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
+                $client = $this->withUser('user', [], '42');
+
                 /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
-                        'headers' => ['Content-Type' => 'form-data'],
+                        'headers' => [
+                            'Content-Type' => 'form-data',
+                            'Authorization' => 'Bearer 42',
+                        ],
                         'extra' => [
                             'files' => [
                                 'file' => $file,
@@ -3042,6 +3140,7 @@ class CurlGetTest extends ApiTestCase
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -3080,10 +3179,13 @@ class CurlGetTest extends ApiTestCase
 
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
+
+            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
@@ -3138,6 +3240,7 @@ class CurlGetTest extends ApiTestCase
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -3177,10 +3280,13 @@ class CurlGetTest extends ApiTestCase
 
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
+
+            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('DELETE', $baseUrl.'&sig='.$token, $options);
@@ -3207,10 +3313,13 @@ class CurlGetTest extends ApiTestCase
 
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
+
+            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
@@ -3287,6 +3396,7 @@ class CurlGetTest extends ApiTestCase
                     .'file='.base64_encode($this->files[$i]['content'])
                 );
                 $c = new CreateFileDataAction($blobService);
+                $c->setContainer($client->getContainer());
                 try {
                     $fileData = $c->__invoke($requestPost);
                 } catch (\Throwable $e) {
@@ -3318,6 +3428,7 @@ class CurlGetTest extends ApiTestCase
 
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
@@ -3325,6 +3436,8 @@ class CurlGetTest extends ApiTestCase
 
             /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects(false);
+
+            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -3401,6 +3514,7 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
             );
             $c = new CreateFileDataAction($blobService);
+            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -3459,6 +3573,7 @@ class CurlGetTest extends ApiTestCase
 
                 $options = [
                     'headers' => [
+                        'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
                         'HTTP_ACCEPT' => 'application/ld+json',
                     ],
@@ -3468,6 +3583,8 @@ class CurlGetTest extends ApiTestCase
                         ],
                     ],
                 ];
+
+                $client = $this->withUser('user', [], '42');
 
                 /** @var Response $response */
                 $response = $client->request('GET', $baseUrl.$token, $options);
@@ -3492,10 +3609,13 @@ class CurlGetTest extends ApiTestCase
 
             $options = [
                 'headers' => [
+                    'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
+
+            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
@@ -3516,12 +3636,7 @@ class CurlGetTest extends ApiTestCase
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
-            $options = [
-                'headers' => [
-                    'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
-            ];
+            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);

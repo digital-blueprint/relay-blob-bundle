@@ -223,6 +223,7 @@ class BlobService
      * Saves the file using the connector.
      *
      * @param FileData $fileData fileData that carries the file which should be saved
+     *
      * @throws \Exception
      */
     public function saveFile(FileData $fileData): ?FileData
@@ -875,5 +876,10 @@ class BlobService
                 $this->saveBucketData($bucket);
             }
         }
+    }
+
+    public function getAdditionalAuthFromConfig()
+    {
+        return $this->configurationService->checkAdditionalAuth();
     }
 }

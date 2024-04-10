@@ -39,7 +39,11 @@ class FileDataProvider extends AbstractDataProvider
 
     protected function isUserGrantedOperationAccess(int $operation): bool
     {
-        return $this->isAuthenticated();
+        if ($this->blobService->getAdditionalAuthFromConfig()) {
+            return $this->isAuthenticated();
+        } else {
+            return true;
+        }
     }
 
     protected function getItemById(string $id, array $filters = [], array $options = []): ?object
@@ -70,7 +74,6 @@ class FileDataProvider extends AbstractDataProvider
 
         // check if signature is valid
         DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService, $this->isAuthenticated(), $this->blobService->checkAdditionalAuth());
-
         // get file data associated with the given identifier
         $fileData = $this->blobService->getFileData($id);
 
@@ -249,6 +252,7 @@ class FileDataProvider extends AbstractDataProvider
 
         // check if signature and checksum is correct
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
+
         DenyAccessUnlessCheckSignature::checkSignature($secret, $this->requestStack->getCurrentRequest(), $this->blobService, $this->isAuthenticated(), $this->blobService->checkAdditionalAuth());
 
         // get includeData param and decode it
