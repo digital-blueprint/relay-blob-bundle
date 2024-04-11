@@ -1,3 +1,6 @@
+# v0.1.28
+* The content type for the patch operation is now `application/merge-patch+json` instead of `application/json`
+
 # v0.1.27
 * Add new `blob_bucket_sizes` table that keeps track of the blob bucket sizes. This should improve performance massively for big tables.
 * Add cronjob that regularly checks and updates the `blob_bucket_sizes` table.
