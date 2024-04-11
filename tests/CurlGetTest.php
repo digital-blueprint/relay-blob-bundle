@@ -1277,7 +1277,7 @@ class CurlGetTest extends ApiTestCase
                     'headers' => [
                         'Accept' => 'application/ld+json',
                         'HTTP_ACCEPT' => 'application/ld+json',
-                        'Content-Type' => 'application/json',
+                        'Content-Type' => 'application/merge-patch+json',
                     ],
                 ];
 
@@ -1563,7 +1563,7 @@ class CurlGetTest extends ApiTestCase
                         'headers' => [
                             'Accept' => 'application/ld+json',
                             'HTTP_ACCEPT' => 'application/ld+json',
-                            'Content-Type' => 'application/json',
+                            'Content-Type' => ($method === 'PATCH') ? 'application/merge-patch+json' : 'application/ld+json',
                             'Authorization' => 'Bearer 42',
                         ],
                     ];
@@ -2287,7 +2287,7 @@ class CurlGetTest extends ApiTestCase
                     'headers' => [
                         'Accept' => 'application/ld+json',
                         'HTTP_ACCEPT' => 'application/ld+json',
-                        'Content-Type' => 'application/json',
+                        'Content-Type' => 'application/merge-patch+json',
                     ],
                     'body' => '{}',
                 ];

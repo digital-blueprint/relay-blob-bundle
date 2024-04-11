@@ -481,7 +481,7 @@ $sig = (new CompactSerializer())->serialize($jws, 0);
 // define parameter needed for valid request
 $params = [
     'headers' => [
-        'Content-Type' => 'application/json',
+        'Content-Type' => 'application/merge-patch+json',
     ],
     'query' => [
         'bucketID' => $bucketID,

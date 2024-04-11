@@ -151,6 +151,9 @@ resources:
         provider: Dbp\Relay\BlobBundle\State\FileDataProvider
         processor: Dbp\Relay\BlobBundle\State\FileDataProcessor
         uriTemplate: "/files/{identifier}"
+        inputFormats:
+          json: ['application/merge-patch+json']
+          multipart: ['multipart/form-data']
         denormalizationContext:
           groups: ["BlobFiles:update"]
         deserialize: false
