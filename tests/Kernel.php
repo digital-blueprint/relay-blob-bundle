@@ -57,10 +57,6 @@ class Kernel extends BaseKernel
             'secret' => '',
         ]);
 
-        $container->extension('api_platform', [
-            'metadata_backward_compatibility_layer' => false,
-        ]);
-
         $container->extension('dbp_relay_blob', [
             'database_url' => 'sqlite:///var/dbp_relay_blob_test.db',
             'reporting_interval' => '0 9 * * MON',

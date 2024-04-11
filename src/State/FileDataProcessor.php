@@ -13,6 +13,9 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * @implements ProcessorInterface<FileData,mixed>
+ */
 class FileDataProcessor extends AbstractController implements ProcessorInterface
 {
     /**
