@@ -1,3 +1,6 @@
+# v0.1.29
+* Add support for api-platform 3.2
+
 # v0.1.28
 * The content type for the patch operation is now `application/merge-patch+json` instead of `application/json`
 
