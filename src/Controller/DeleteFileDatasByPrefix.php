@@ -66,7 +66,8 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         foreach ($fileDatas as $fileData) {
             $bucket = $this->blobService->configurationService->getBucketByInternalID($internalBucketID);
             $fileData->setBucket($bucket);
-            $this->blobService->removeFileData($fileData);
+
+            $this->blobService->writeToTablesAndRemoveFileData($fileData, $bucket->getCurrentBucketSize() - $fileData->getFileSize());
         }
     }
 }

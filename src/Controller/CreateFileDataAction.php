@@ -167,36 +167,7 @@ final class CreateFileDataAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached', 'blob:create-file-data-bucket-quota-reached');
         }
 
-        // try to update bucket size
-        try {
-            $docBucket = $this->blobService->getBucketByInternalIdFromDatabase($fileData->getInternalBucketID());
-            $docBucket->setCurrentBucketSize($newBucketSizeByte);
-            $this->blobService->saveBucketData($docBucket);
-        } catch (\Exception $e) {
-            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while saving data to the file_sizes table', 'blob:create-file-data-save-file-size-failed');
-        }
-
-        // Then return correct data for service and save the data
-        try {
-            $fileData = $this->blobService->saveFile($fileData);
-            if (!$fileData) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'data upload failed', 'blob:create-file-data-data-upload-failed');
-            }
-            $this->blobService->saveFileData($fileData);
-        } catch (\Exception $e) {
-            // reset bucket size back to original on error
-            try {
-                $docBucket = $this->blobService->getBucketByInternalIdFromDatabase($fileData->getInternalBucketID());
-                $docBucket->setCurrentBucketSize($newBucketSizeByte);
-                $this->blobService->saveBucketData($docBucket);
-            } catch (\Exception $e) {
-                throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while restoring the original size of the file_sizes table', 'blob:create-file-data-restore-file-size-failed');
-            }
-            if ($e->getCode() === Response::HTTP_BAD_REQUEST) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'data upload failed', 'blob:create-file-data-data-upload-failed');
-            }
-            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while saving the file', 'blob:create-file-data-save-file-failed');
-        }
+        $this->blobService->writeToTablesAndSaveFileData($fileData, $newBucketSizeByte);
 
         return $fileData;
     }

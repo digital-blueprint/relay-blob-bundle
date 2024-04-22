@@ -37,27 +37,8 @@ class FileDataProcessor extends AbstractController implements ProcessorInterface
         assert($data instanceof FileData);
 
         if ($operation instanceof DeleteOperationInterface) {
-            try {
-                $docBucket = $this->blobService->getBucketByInternalIdFromDatabase($data->getInternalBucketID());
-                $docBucket->setCurrentBucketSize($docBucket->getCurrentBucketSize() - $data->getFileSize());
-                $this->blobService->saveBucketData($docBucket);
-            } catch (\Exception $e) {
-                throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while writing to the bucket_sizes table', 'blob:delete-file-data-save-file-size-failed');
-            }
-
-            try {
-                $this->blobService->removeFileData($data);
-            } catch (\Exception $e) {
-                try {
-                    $docBucket = $this->blobService->getBucketByInternalIdFromDatabase($data->getInternalBucketID());
-                    $docBucket->setCurrentBucketSize($docBucket->getCurrentBucketSize() - $data->getFileSize());
-                    $this->blobService->saveBucketData($docBucket);
-                } catch (\Exception $e) {
-                    throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while writing to the bucket_sizes table', 'blob:delete-file-data-restore-file-size-failed');
-                }
-
-                throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while removing the file', 'blob:delete-file-data-remove-file');
-            }
+            $docBucket = $this->blobService->getBucketByInternalIdFromDatabase($data->getInternalBucketID());
+            $this->blobService->writeToTablesAndRemoveFileData($data, $docBucket->getCurrentBucketSize() - $data->getFileSize());
         }
 
         return $data;

@@ -647,11 +647,11 @@ class BlobService
         $bucket = $this->configurationService->getBucketByInternalID($fileData->getInternalBucketID());
         $fileData->setBucket($bucket);
 
-        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
-        $datasystemService->removeFile($fileData);
-
         $this->em->remove($fileData);
         $this->em->flush();
+
+        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
+        $datasystemService->removeFile($fileData);
     }
 
     /**
@@ -881,5 +881,100 @@ class BlobService
     public function getAdditionalAuthFromConfig()
     {
         return $this->configurationService->checkAdditionalAuth();
+    }
+
+    /**
+     * @param $fileData FileData filedata to be saved
+     * @param $newBucketSizeByte int new bucket size (after file save) in bytes
+     * @return void
+     */
+    public function writeToTablesAndSaveFileData($fileData, $newBucketSizeByte)
+    {
+        // prevent negative bucket sizes
+        if ($newBucketSizeByte < 0) {
+            $newBucketSizeByte = 0;
+        }
+
+        // Return correct data for service and save the data
+        $fileData = $this->saveFile($fileData);
+        if (!$fileData) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'data upload failed', 'blob:create-file-data-data-upload-failed');
+        }
+
+        // try to update bucket size
+        $this->em->getConnection()->beginTransaction();
+        try {
+            $docBucket = $this->getBucketByInternalIdFromDatabase($fileData->getInternalBucketID());
+            $docBucket->setCurrentBucketSize($newBucketSizeByte);
+            $this->saveBucketData($docBucket);
+            $this->saveFileData($fileData);
+
+            $this->em->getConnection()->commit();
+        } catch (\Exception $e) {
+            $this->em->getConnection()->rollBack();
+            $this->removeFileData($fileData);
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while saving the file data', 'blob:create-file-data-save-file-failed');
+        }
+    }
+
+    /**
+     * @param $fileData FileData filedata to be changed
+     * @param $newBucketSizeByte int new bucket size (after file save) in bytes
+     * @return void
+     */
+    public function writeToTablesAndChangeFileData($fileData, $newBucketSizeByte)
+    {
+        // prevent negative bucket sizes
+        if ($newBucketSizeByte < 0) {
+            $newBucketSizeByte = 0;
+        }
+
+        // try to update bucket size
+        $this->em->getConnection()->beginTransaction();
+        try {
+            $docBucket = $this->getBucketByInternalIdFromDatabase($fileData->getInternalBucketID());
+            $docBucket->setCurrentBucketSize($newBucketSizeByte);
+            $this->saveBucketData($docBucket);
+            $this->saveFileData($fileData);
+
+            // Return correct data for service and save the data
+            $fileData = $this->saveFile($fileData);
+            if (!$fileData) {
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'data upload failed', 'blob:create-file-data-data-upload-failed');
+            }
+
+            $this->em->getConnection()->commit();
+        } catch (\Exception $e) {
+            $this->em->getConnection()->rollBack();
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while changing the file data', 'blob:change-file-data-save-file-failed');
+        }
+    }
+
+    /**
+     * @param $fileData FileData filedata to be saved
+     * @param $newBucketSizeByte int new bucket size (after file save) in bytes
+     * @return void
+     */
+    public function writeToTablesAndRemoveFileData($fileData, $newBucketSizeByte)
+    {
+        // prevent negative bucket sizes
+        if ($newBucketSizeByte < 0) {
+            $newBucketSizeByte = 0;
+        }
+        // try to update bucket size
+        $this->em->getConnection()->beginTransaction();
+        try {
+            $docBucket = $this->getBucketByInternalIdFromDatabase($fileData->getInternalBucketID());
+            $docBucket->setCurrentBucketSize($newBucketSizeByte);
+            $this->saveBucketData($docBucket);
+
+            $this->removeFileData($fileData);
+
+            $this->em->getConnection()->commit();
+        } catch (\Exception $e) {
+            $this->em->getConnection()->rollBack();
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while removing the file data', 'blob:remove-file-data-save-file-failed');
+        }
+
     }
 }

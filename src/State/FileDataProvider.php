@@ -175,32 +175,11 @@ class FileDataProvider extends AbstractDataProvider
                     $fileData->setFileSize($file->getSize());
                     $fileData->setFileHash(hash('sha256', $file->getContent()));
 
-                    try {
-                        // set bucket size
-                        $docBucket = $this->blobService->getBucketByInternalIdFromDatabase($fileData->getInternalBucketID());
-                        $docBucket->setCurrentBucketSize($docBucket->getCurrentBucketSize() - $oldSize + $fileData->getFileSize());
-                        $this->blobService->saveBucketData($docBucket);
-                    } catch (\Exception $e) {
-                        throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while saving data to the file_sizes table', 'blob:patch-file-data-save-file-size-failed');
-                    }
+                    $fileData->setDateModified($time);
 
-                    try {
-                        // save filedata
-                        $this->blobService->saveFile($fileData);
-                    } catch (\Exception $e) {
-                        // if something goes wrong, reset the value in the bucket sizes table to the original
-                        try {
-                            $docBucket = $this->blobService->getBucketByInternalIdFromDatabase($fileData->getInternalBucketID());
-                            $docBucket->setCurrentBucketSize($docBucket->getCurrentBucketSize() - $fileData->getFileSize());
-                            $this->blobService->saveBucketData($docBucket);
-                        } catch (\Exception $e) {
-                            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while restoring the original size of the file_sizes table', 'blob:patch-file-data-restore-file-size-failed');
-                        }
-                        throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while saving the file', 'blob:patch-file-data-save-file-failed');
-                    }
+                    $docBucket = $this->blobService->getBucketByInternalIdFromDatabase($fileData->getInternalBucketID());
+                    $this->blobService->writeToTablesAndChangeFileData($fileData, $docBucket->getCurrentBucketSize() - $oldSize + $fileData->getFileSize());
                 }
-
-                $fileData->setDateModified($time);
             }
             // check if GET request was used
             elseif ($method === 'GET') {
