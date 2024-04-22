@@ -884,8 +884,9 @@ class BlobService
     }
 
     /**
-     * @param $fileData FileData filedata to be saved
+     * @param $fileData          FileData filedata to be saved
      * @param $newBucketSizeByte int new bucket size (after file save) in bytes
+     *
      * @return void
      */
     public function writeToTablesAndSaveFileData($fileData, $newBucketSizeByte)
@@ -918,8 +919,9 @@ class BlobService
     }
 
     /**
-     * @param $fileData FileData filedata to be changed
+     * @param $fileData          FileData filedata to be changed
      * @param $newBucketSizeByte int new bucket size (after file save) in bytes
+     *
      * @return void
      */
     public function writeToTablesAndChangeFileData($fileData, $newBucketSizeByte)
@@ -951,8 +953,9 @@ class BlobService
     }
 
     /**
-     * @param $fileData FileData filedata to be saved
+     * @param $fileData          FileData filedata to be saved
      * @param $newBucketSizeByte int new bucket size (after file save) in bytes
+     *
      * @return void
      */
     public function writeToTablesAndRemoveFileData($fileData, $newBucketSizeByte)
@@ -975,6 +978,5 @@ class BlobService
             $this->em->getConnection()->rollBack();
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while removing the file data', 'blob:remove-file-data-save-file-failed');
         }
-
     }
 }
