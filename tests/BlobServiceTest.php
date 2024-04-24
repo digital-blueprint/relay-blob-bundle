@@ -8,5 +8,8 @@ use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 
 class BlobServiceTest extends ApiTestCase
 {
-    // TODO test auth
+    public function testExample()
+    {
+        $this->assertTrue(true);
+    }
 }

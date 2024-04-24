@@ -332,7 +332,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
@@ -446,7 +446,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[1]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[1]['uuid'] = $fileData->getIdentifier();
@@ -665,7 +665,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
@@ -1124,7 +1124,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
@@ -1251,7 +1251,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
@@ -1378,7 +1378,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
@@ -1534,7 +1534,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
@@ -1661,7 +1661,7 @@ class CurlGetTest extends ApiTestCase
 
                 $this->assertNotNull($fileData);
                 $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-                $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+                $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
                 $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
                 $this->assertEquals($this->files[$i]['name'], $fileData->getFileName(), 'File name not correct.');
                 $this->files[$i]['uuid'] = $fileData->getIdentifier();
@@ -1845,7 +1845,7 @@ class CurlGetTest extends ApiTestCase
 
                 $this->assertNotNull($fileData);
                 $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-                $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+                $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
                 $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
                 $this->assertEquals($this->files[$i]['name'], $fileData->getFileName(), 'File name not correct.');
                 $this->files[$i]['uuid'] = $fileData->getIdentifier();
@@ -2012,7 +2012,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
@@ -2375,7 +2375,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
@@ -2562,7 +2562,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
@@ -2762,7 +2762,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
@@ -2963,7 +2963,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
@@ -3150,7 +3150,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
@@ -3250,7 +3250,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
@@ -3406,7 +3406,7 @@ class CurlGetTest extends ApiTestCase
 
                 $this->assertNotNull($fileData);
                 $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-                $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+                $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
                 $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
                 $this->assertEquals($this->files[$i]['name'], $fileData->getFileName(), 'File name not correct.');
                 $this->files[$i]['uuid'] = $fileData->getIdentifier();
@@ -3524,7 +3524,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasAttribute('identifier', $fileData, 'File data has no identifier.');
+            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
             $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
