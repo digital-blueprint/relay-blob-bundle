@@ -11,7 +11,6 @@ use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle;
 use Doctrine\DBAL\Exception;
 use Nelmio\CorsBundle\NelmioCorsBundle;
-use Ramsey\Uuid\Doctrine\UuidBinaryType;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Bundle\MonologBundle\MonologBundle;
@@ -129,7 +128,5 @@ class Kernel extends BaseKernel
                 ],
             ],
         ]);
-
-        \Doctrine\DBAL\Types\Type::addType('uuid_binary', UuidBinaryType::class);
     }
 }
