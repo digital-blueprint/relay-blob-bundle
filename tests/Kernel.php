@@ -50,12 +50,13 @@ class Kernel extends BaseKernel
     protected function configureContainer(ContainerConfigurator $container, LoaderInterface $loader)
     {
         $container->import('@DbpRelayCoreBundle/Resources/config/services_test.yaml');
-        $container->import('@DbpRelayBlobBundle/Resources/config/services_test.yaml');
         $container->extension('framework', [
             'test' => true,
             'secret' => '',
             'annotations' => false,
         ]);
+
+        $container->services()->set(DummyFileSystemService::class)->autowire()->autoconfigure();
 
         $container->extension('dbp_relay_blob', [
             'database_url' => 'sqlite:///var/dbp_relay_blob_test.db',

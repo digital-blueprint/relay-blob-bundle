@@ -1,5 +1,0 @@
-services:
-  Dbp\Relay\BlobBundle\Tests\DummyFileSystemService:
-    autowire: true
-    autoconfigure: true
-    public: true

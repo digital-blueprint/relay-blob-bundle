@@ -7,133 +7,17 @@ namespace Dbp\Relay\BlobBundle\Tests;
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use Dbp\Relay\BlobBundle\Controller\CreateFileDataAction;
 use Dbp\Relay\BlobBundle\Controller\DeleteFileDatasByPrefix;
-use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\Service\ConfigurationService;
-use Dbp\Relay\BlobBundle\Service\DatasystemProviderServiceInterface;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\TestUtils\UserAuthTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Uid\Uuid;
-
-class DummyFileSystemService implements DatasystemProviderServiceInterface
-{
-    public static $fd = [];
-    public static $data = [];
-
-    public function saveFile(FileData $fileData): ?FileData
-    {
-        self::$fd[$fileData->getIdentifier()] = $fileData;
-        self::$data[$fileData->getIdentifier()] = $fileData->getFile();
-
-        return $fileData;
-    }
-
-    public function renameFile(FileData $fileData): ?FileData
-    {
-        self::$fd[$fileData->getIdentifier()] = $fileData;
-
-        return $fileData;
-    }
-
-    public function getLink(FileData $fileData): ?FileData
-    {
-        $identifier = $fileData->getIdentifier();
-        if (!isset(self::$fd[$identifier])) {
-            echo "    DummyFileSystemService::getLink($identifier): not found!\n";
-
-            return null;
-        }
-
-        $fileData->setContentUrl("https://localhost.lan/link/$identifier");
-        self::$fd[$identifier] = $fileData;
-
-        return self::$fd[$identifier];
-    }
-
-    public function getBase64Data(FileData $fileData): FileData
-    {
-        $identifier = $fileData->getIdentifier();
-        if (!isset(self::$fd[$identifier])) {
-            echo "    DummyFileSystemService::getLink($identifier): not found!\n";
-        }
-
-        // build binary response
-        $file = file_get_contents(self::$data[$identifier]->getRealPath());
-        $mimeType = self::$data[$identifier]->getMimeType();
-
-        $filename = $fileData->getFileName();
-
-        $fileData->setContentUrl('data:'.$mimeType.';base64,'.base64_encode($file));
-        self::$fd[$identifier] = $fileData;
-
-        return self::$fd[$identifier];
-    }
-
-    public function getBinaryResponse(FileData $fileData): Response
-    {
-        $identifier = $fileData->getIdentifier();
-        if (!isset(self::$fd[$identifier])) {
-            echo "    DummyFileSystemService::getLink($identifier): not found!\n";
-        }
-
-        // build binary response
-        $response = new BinaryFileResponse(self::$data[$identifier]->getRealPath());
-        $response->headers->set('Content-Type', self::$data[$identifier]->getMimeType());
-        $filename = $fileData->getFileName();
-
-        $response->setContentDisposition(
-            ResponseHeaderBag::DISPOSITION_ATTACHMENT,
-            $filename
-        );
-
-        return $response;
-    }
-
-    public function removeFile(FileData $fileData): bool
-    {
-        unset(self::$fd[$fileData->getIdentifier()]);
-        unset(self::$data[$fileData->getIdentifier()]);
-
-        return true;
-    }
-
-    public function generateChecksumFromFileData($fileData, $validUntil = ''): ?string
-    {
-        // if no validUntil is given, use bucket link expiry time per default
-        if ($validUntil === '') {
-            $now = new \DateTimeImmutable('now', new DateTimeZone('UTC'));
-            $now = $now->add(new \DateInterval($fileData->getBucket()->getLinkExpireTime()));
-            $validUntil = $now->format('c');
-        }
-
-        // create url to hash
-        $contentUrl = '/blob/filesystem/'.$fileData->getIdentifier().'?validUntil='.$validUntil;
-
-        // create hmac sha256 keyed hash
-        // $cs = hash_hmac('sha256', $contentUrl, $fileData->getBucket()->getKey());
-
-        // create sha256 hash
-        $cs = hash('sha256', $contentUrl);
-
-        return $cs;
-    }
-
-    public function saveFileFromString(FileData $fileData, string $data): ?FileData
-    {
-        self::$fd[$fileData->getIdentifier()] = $fileData;
-        self::$data[$fileData->getIdentifier()] = $fileData->getFile();
-
-        return $fileData;
-    }
-}
 
 class CurlGetTest extends ApiTestCase
 {
