@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Controller;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
+use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
@@ -70,6 +71,10 @@ final class CreateFileDataAction extends BaseBlobController
         $notifyEmail = rawurldecode($notifyEmail);
         $retentionDuration = rawurldecode($retentionDuration);
         $additionalType = rawurldecode($additionalType);
+
+        if ($request->headers->get('Content-Length') && intval($request->headers->get('Content-Length')) !== 0 && intval($request->headers->get('Content-Length')) > BlobUtils::convertFileSizeStringToBytes(ini_get('post_max_size'))) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given file is too large', 'blob:create-file-data-file-too-big');
+        }
 
         // check if fileName is set
         if (!$fileName) {
