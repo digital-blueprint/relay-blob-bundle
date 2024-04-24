@@ -9,58 +9,44 @@ date_default_timezone_set('UTC');
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
-/**
- * @ORM\Entity
- *
- * @ORM\Table(name="blob_files")
- */
+#[ORM\Table(name: 'blob_files')]
+#[ORM\Entity]
 class FileData
 {
     /**
      * @var string
-     *
-     * @ORM\Id
-     *
-     * @ORM\Column(type="relay_blob_uuid_binary", unique=true)
-     *
-     * @Groups({"BlobFiles:output", "BlobFiles:input"})
      */
+    #[ORM\Id]
+    #[ORM\Column(type: 'relay_blob_uuid_binary', unique: true)]
+    #[Groups(['BlobFiles:output', 'BlobFiles:input'])]
     private $identifier;
 
     /**
-     * @ORM\Column(type="string", length=512)
-     *
-     * @Groups({"BlobFiles:output", "BlobFiles:input"})
-     *
      * @var string
      */
+    #[ORM\Column(type: 'string', length: 512)]
+    #[Groups(['BlobFiles:output', 'BlobFiles:input'])]
     private $prefix;
 
     /**
-     * @ORM\Column(type="string", length=512)
-     *
-     * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
-     *
      * @var string
      */
+    #[ORM\Column(type: 'string', length: 512)]
+    #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
     private $fileName;
 
     /**
-     * @ORM\Column(type="string", length=255)
-     *
-     * @Groups({"BlobFiles:output"})
-     *
      * @var string
      */
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Groups(['BlobFiles:output'])]
     private $mimeType;
 
     /**
-     * @ORM\Column(type="string", length=50)
-     *
-     * @Groups({"BlobFiles:input"})
-     *
      * @var string
      */
+    #[ORM\Column(type: 'string', length: 50)]
+    #[Groups(['BlobFiles:input'])]
     private $internalBucketId;
 
     /**
@@ -69,114 +55,91 @@ class FileData
     private $bucket;
 
     /**
-     * @ORM\Column(type="datetime_immutable")
-     *
-     * @Groups({"BlobFiles:output"})
-     *
      * @var \DateTimeImmutable
      */
+    #[ORM\Column(type: 'datetime_immutable')]
+    #[Groups(['BlobFiles:output'])]
     private $dateCreated;
 
     /**
-     * @ORM\Column(type="datetime_immutable")
-     *
-     * @Groups({"BlobFiles:output"})
-     *
      * @var \DateTimeImmutable
      */
+    #[ORM\Column(type: 'datetime_immutable')]
+    #[Groups(['BlobFiles:output'])]
     private $dateAccessed;
 
     /**
-     * @ORM\Column(type="datetime_immutable")
-     *
-     * @Groups({"BlobFiles:output"})
-     *
      * @var \DateTimeImmutable
      */
+    #[ORM\Column(type: 'datetime_immutable')]
+    #[Groups(['BlobFiles:output'])]
     private $dateModified;
 
     /**
-     * @Groups({"BlobFiles:input"})
-     *
      * @var string|null
      */
+    #[Groups(['BlobFiles:input'])]
     private $retentionDuration;
 
     /**
-     * @ORM\Column(type="datetime_immutable")
-     *
-     * @Groups({"BlobFiles:output", "BlobFiles:update:exists"})
-     *
      * @var \DateTimeImmutable
      */
+    #[ORM\Column(type: 'datetime_immutable')]
+    #[Groups(['BlobFiles:output', 'BlobFiles:update:exists'])]
     private $existsUntil;
 
     /**
-     * @Groups({"BlobFiles:output"})
-     *
      * @var string
      */
+    #[Groups(['BlobFiles:output'])]
     private $contentUrl;
 
     /**
-     * @Groups({"BlobFiles:input"})
-     *
      * @var resource
      */
+    #[Groups(['BlobFiles:input'])]
     private $file;
 
     /**
-     * @ORM\Column(type="json", nullable=true)
-     *
-     * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
-     *
      * @var string
      */
+    #[ORM\Column(type: 'json', nullable: true)]
+    #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
     private $additionalMetadata;
 
     /**
-     * @ORM\Column(type="text", nullable=true)
-     *
-     * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
-     *
      * @var string
      */
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
     private $additionalType;
 
     /**
-     * @ORM\Column(type="integer")
-     *
-     * @Groups({"BlobFiles:output"})
-     *
      * @var int
      */
+    #[ORM\Column(type: 'integer')]
+    #[Groups(['BlobFiles:output'])]
     private $fileSize;
 
     /**
-     * @ORM\Column(type="string", length=64)
-     *
-     * @Groups({"BlobFiles:output"})
-     *
      * @var string|null
      */
+    #[ORM\Column(type: 'string', length: 64)]
+    #[Groups(['BlobFiles:output'])]
     private $fileHash;
 
     /**
-     * @ORM\Column(type="string", length=64)
-     *
-     * @Groups({"BlobFiles:output"})
-     *
      * @var string|null
      */
+    #[ORM\Column(type: 'string', length: 64)]
+    #[Groups(['BlobFiles:output'])]
     private $metadataHash;
 
     /**
-     * @ORM\Column(type="string", length=255)
-     *
-     * @Groups({"BlobFiles:output", "BlobFiles:input", "BlobFiles:update"})
-     *
      * @var string
      */
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
     private $notifyEmail;
 
     public function getIdentifier(): string

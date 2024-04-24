@@ -61,7 +61,7 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
                         'connection' => 'dbp_relay_blob_bundle',
                         'mappings' => [
                             'dbp_relay_blob' => [
-                                'type' => 'annotation',
+                                'type' => 'attribute',
                                 'dir' => __DIR__.'/../Entity',
                                 'prefix' => 'Dbp\Relay\BlobBundle\Entity',
                             ],

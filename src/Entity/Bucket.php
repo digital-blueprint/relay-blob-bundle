@@ -7,20 +7,15 @@ namespace Dbp\Relay\BlobBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Validator\GenericValidator;
 
-/**
- * @ORM\Entity
- *
- * @ORM\Table(name="blob_bucket_sizes")
- */
+#[ORM\Table(name: 'blob_bucket_sizes')]
+#[ORM\Entity]
 class Bucket
 {
     /**
-     * @ORM\Id
-     *
-     * @ORM\Column(type="string", length=36)
-     *
      * @var string
      */
+    #[ORM\Id]
+    #[ORM\Column(type: 'string', length: 36)]
     private $identifier;
 
     /**
@@ -89,10 +84,9 @@ class Bucket
     private $additionalTypes;
 
     /**
-     * @ORM\Column(type="integer")
-     *
      * @return int
      */
+    #[ORM\Column(type: 'integer')]
     private $currentBucketSize;
 
     public function getIdentifier(): string
