@@ -4,8 +4,11 @@
 
 * Port to PHPUnit 10
 * Port from doctrine annotations to PHP attributes
+* Improve error handling for file post, patch and delete. The database and the actual files should be consistent now.
+* Take delete-bucket operation into consideration when updating the `blob_bucket_sizes` table 
+* Better error handling if `post_max_size` is exceeded. This is now a separate error case.
 
-## v0.1.29
+# v0.1.29
 * Add support for api-platform 3.2
 
 ## v0.1.28
