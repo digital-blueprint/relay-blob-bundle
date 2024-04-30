@@ -7,6 +7,7 @@
 * Improve error handling for file post, patch and delete. The database and the actual files should be consistent now.
 * Take delete-bucket operation into consideration when updating the `blob_bucket_sizes` table 
 * Better error handling if `post_max_size` is exceeded. This is now a separate error case.
+* Add metadata output validation for `GET` requests
 
 ## v0.1.30
 
