@@ -203,6 +203,8 @@ resources:
         controller: Dbp\Relay\BlobBundle\Controller\CreateFileDataAction
         uriTemplate: "/files"
         deserialize: false
+        inputFormats:
+          multipart: "multipart/form-data"
         openapiContext:
           tags: ["Blob"]
           parameters:

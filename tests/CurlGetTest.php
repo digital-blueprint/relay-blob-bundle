@@ -1447,7 +1447,7 @@ class CurlGetTest extends ApiTestCase
                         'headers' => [
                             'Accept' => 'application/ld+json',
                             'HTTP_ACCEPT' => 'application/ld+json',
-                            'Content-Type' => ($method === 'PATCH') ? 'application/merge-patch+json' : 'application/ld+json',
+                            'Content-Type' => ($method === 'PATCH') ? 'application/merge-patch+json' : (($method === 'POST') ? 'multipart/form-data' : 'application/ld+json'),
                             'Authorization' => 'Bearer 42',
                         ],
                     ];
@@ -2089,6 +2089,7 @@ class CurlGetTest extends ApiTestCase
                     'headers' => [
                         'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
+                        'Content-Type' => 'multipart/form-data',
                         'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                     'extra' => [
@@ -2349,7 +2350,7 @@ class CurlGetTest extends ApiTestCase
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
                         'headers' => [
-                            'Content-Type' => 'form-data',
+                            'Content-Type' => 'multipart/form-data',
                             'Authorization' => 'Bearer 42',
                         ],
                         'extra' => [
@@ -2549,7 +2550,7 @@ class CurlGetTest extends ApiTestCase
                     [
                         'headers' => [
                             'Authorization' => 'Bearer 42',
-                            'Content-Type' => 'form-data',
+                            'Content-Type' => 'multipart/form-data',
                         ],
                         'extra' => [
                             'files' => [
@@ -2750,7 +2751,7 @@ class CurlGetTest extends ApiTestCase
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
                         'headers' => [
-                            'Content-Type' => 'form-data',
+                            'Content-Type' => 'multipart/form-data',
                             'Authorization' => 'Bearer 42',
                         ],
                         'extra' => [
@@ -2942,7 +2943,7 @@ class CurlGetTest extends ApiTestCase
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
                         'headers' => [
-                            'Content-Type' => 'form-data',
+                            'Content-Type' => 'multipart/form-data',
                             'Authorization' => 'Bearer 42',
                         ],
                         'extra' => [
