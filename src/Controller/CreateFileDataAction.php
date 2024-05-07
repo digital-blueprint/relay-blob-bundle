@@ -97,16 +97,11 @@ final class CreateFileDataAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalType', 'blob:create-file-bad-additional-type');
         }
 
-        // check if defined additionalType is valid json
-        if ($additionalType && !json_decode($bucket->getAdditionalTypes()[$additionalType])) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Invalid additionalType json', 'blob:create-file-invalid-additional-type-json');
-        }
-
         $validator = new Validator();
         $metadataDecoded = (object) json_decode($additionalMetadata);
 
         // check if given additionalMetadata json has the same keys like the defined additionalType
-        if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) json_decode($bucket->getAdditionalTypes()[$additionalType])) !== 0) {
+        if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'additionalType mismatch', 'blob:create-file-additional-type-mismatch');
         }
 
@@ -168,7 +163,6 @@ final class CreateFileDataAction extends BaseBlobController
         $bucketQuotaByte = $fileData->getBucket()->getQuota() * 1024 * 1024; // Convert mb to Byte
         $newBucketSizeByte = $bucketsizeByte + $fileData->getFileSize();
         if ($newBucketSizeByte > $bucketQuotaByte) {
-            $this->blobService->sendNotifyQuota($bucket);
             throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached', 'blob:create-file-data-bucket-quota-reached');
         }
 

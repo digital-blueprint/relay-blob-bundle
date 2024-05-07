@@ -103,6 +103,7 @@ class FileDataProvider extends AbstractDataProvider
                 $existsUntil = $body['existsUntil'] ?? '';
                 $notifyEmail = $body['notifyEmail'] ?? '';
                 $file = $body['file'] ?? '';
+                $fileHash = $body['fileHash'] ?? '';
 
                 // throw error if not field is provided
                 if (!$fileName && !$additionalMetadata & !$additionalType && !$prefix && !$existsUntil && !$notifyEmail && !$file) {
@@ -169,6 +170,26 @@ class FileDataProvider extends AbstractDataProvider
 
                 if ($file instanceof UploadedFile) {
                     $oldSize = $fileData->getFileSize();
+
+                    // Check quota
+                    $bucketSize = $this->blobService->getCurrentBucketSize($fileData->getInternalBucketID());
+                    if ($bucketSize !== null) {
+                        $bucketsizeByte = (int) $bucketSize['bucketSize'];
+                    } else {
+                        $bucketsizeByte = 0;
+                    }
+                    $bucketQuotaByte = $fileData->getBucket()->getQuota() * 1024 * 1024; // Convert mb to Byte
+                    $newBucketSizeByte = $bucketsizeByte + $file->getSize();
+                    if ($newBucketSizeByte > $bucketQuotaByte) {
+                        throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached', 'blob:create-file-data-bucket-quota-reached');
+                    }
+
+                    $hash = hash('sha256', $file->getContent());
+
+                    // check hash of file
+                    if ($hash !== $fileHash) {
+                        throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:create-file-data-file-hash-change-forbidden');
+                    }
 
                     $fileData->setFile($file);
                     $fileData->setMimeType($file->getMimeType() ?? '');

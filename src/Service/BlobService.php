@@ -705,28 +705,6 @@ class BlobService
     }
 
     /**
-     * Sends an email that the quota of the bucket is reached.
-     *
-     * @return void
-     */
-    public function sendNotifyQuota(Bucket $bucket)
-    {
-        $notifyQuotaConfig = $bucket->getNotifyQuotaConfig();
-
-        $id = $bucket->getIdentifier();
-        $name = $bucket->getBucketID();
-        $quota = $bucket->getQuota();
-
-        $context = [
-            'internalBucketId' => $id,
-            'bucketId' => $name,
-            'quota' => $quota,
-        ];
-
-        // $this->sendEmail($notifyQuotaConfig, $context);
-    }
-
-    /**
      * Sends reporting and bucket quota warning email if needed.
      *
      * @return void
