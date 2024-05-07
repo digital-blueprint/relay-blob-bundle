@@ -181,14 +181,14 @@ class FileDataProvider extends AbstractDataProvider
                     $bucketQuotaByte = $fileData->getBucket()->getQuota() * 1024 * 1024; // Convert mb to Byte
                     $newBucketSizeByte = $bucketsizeByte + $file->getSize();
                     if ($newBucketSizeByte > $bucketQuotaByte) {
-                        throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached', 'blob:create-file-data-bucket-quota-reached');
+                        throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached', 'blob:patch-file-data-bucket-quota-reached');
                     }
 
                     $hash = hash('sha256', $file->getContent());
 
                     // check hash of file
                     if ($hash !== $fileHash) {
-                        throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:create-file-data-file-hash-change-forbidden');
+                        throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:patch-file-data-file-hash-change-forbidden');
                     }
 
                     $fileData->setFile($file);
