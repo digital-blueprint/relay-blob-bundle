@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.32
+
+* Add support for api-platform 3.3
+
 ## v0.1.31
 
 * Port to PHPUnit 10
