@@ -134,7 +134,7 @@ class FileDataProvider extends AbstractDataProvider
                         $validator = new Validator();
                         $metadataDecoded = json_decode($additionalMetadata);
 
-                        if ($validator->validate($metadataDecoded, (object) json_decode($bucket->getAdditionalTypes()[$storedType])) !== 0) {
+                        if ($validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
                             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata does not fit additionalType schema!', 'blob:patch-file-data-additional-type-mismatch');
                         }
                     }
