@@ -228,12 +228,12 @@ class FileDataProvider extends AbstractDataProvider
                 $bucket = $this->blobService->getBucketByID($bucketID);
                 // check if additionaltype is defined
                 if ($additionalType && !array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
-                    throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalType', 'blob:get-file-data-bad-additional-type');
+                    throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad additionalType', 'blob:get-file-data-bad-additional-type');
                 }
 
                 // check if defined additionalType is valid json
                 if ($additionalType && !json_decode($bucket->getAdditionalTypes()[$additionalType])) {
-                    throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Invalid additionalType json', 'blob:get-file-data-invalid-additional-type-json');
+                    throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Invalid additionalType json', 'blob:get-file-data-invalid-additional-type-json');
                 }
 
                 $validator = new Validator();
@@ -241,7 +241,7 @@ class FileDataProvider extends AbstractDataProvider
 
                 // check if given additionalMetadata json has the same keys like the defined additionalType
                 if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
-                    throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'additionalType mismatch', 'blob:get-file-data-additional-type-mismatch');
+                    throw ApiError::withDetails(Response::HTTP_CONFLICT, 'additionalType mismatch', 'blob:get-file-data-additional-type-mismatch');
                 }
 
                 // check if includeData parameter is set
