@@ -9,6 +9,7 @@ use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Doctrine\ORM\EntityManagerInterface;
+use JsonSchema\Validator;
 use Ramsey\Uuid\Uuid;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
@@ -955,6 +956,52 @@ class BlobService
         } catch (\Exception $e) {
             $this->em->getConnection()->rollBack();
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while removing the file data', 'blob:remove-file-data-save-file-failed');
+        }
+    }
+
+    /**
+     * Checks if given filedata is valid
+     * intented for use before data retrieval using GET.
+     *
+     * @param $fileData    FileData
+     * @param $bucketID    string
+     * @param $errorPrefix string
+     */
+    public function checkFileDataBeforeRetrieval($fileData, $bucketID, $errorPrefix): void
+    {
+        $content = base64_decode(explode(',', $this->getBase64Data($fileData)->getContentUrl())[1], true);
+
+        if (!$content) {
+            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'file data cannot be decoded', $errorPrefix.'-decode-fail');
+        }
+        // check if file integrity should be checked and if so check it
+        if ($this->doFileIntegrityChecks() && $fileData->getFileHash() !== null && hash('sha256', $content) !== $fileData->getFileHash()) {
+            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 file hash doesnt match! File integrity cannot be guaranteed', $errorPrefix.'-file-hash-mismatch');
+        }
+        if ($this->doFileIntegrityChecks() && $fileData->getMetadataHash() !== null && hash('sha256', $fileData->getAdditionalMetadata()) !== $fileData->getMetadataHash()) {
+            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 metadata hash doesnt match! Metadata integrity cannot be guaranteed', $errorPrefix.'-metadata-hash-mismatch');
+        }
+
+        $additionalMetadata = $fileData->getAdditionalMetadata();
+        $additionalType = $fileData->getAdditionalType();
+
+        // check if metadata is a valid json
+        if ($additionalMetadata && !json_decode($additionalMetadata, true)) {
+            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad additionalMetadata', $errorPrefix.'-bad-additional-metadata');
+        }
+
+        $bucket = $this->getBucketByID($bucketID);
+        // check if additionaltype is defined
+        if ($additionalType && !array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
+            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad additionalType', $errorPrefix.'-bad-additional-type');
+        }
+
+        $validator = new Validator();
+        $metadataDecoded = (object) json_decode($additionalMetadata);
+
+        // check if given additionalMetadata json has the same keys like the defined additionalType
+        if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
+            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'additionalType mismatch', $errorPrefix.'-additional-type-mismatch');
         }
     }
 }

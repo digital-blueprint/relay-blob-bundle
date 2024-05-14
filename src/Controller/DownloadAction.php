@@ -31,7 +31,7 @@ class DownloadAction extends BaseBlobController
         DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $request, [], ['GET']);
         // check if identifier is given
         if (!$identifier) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'No identifier set', 'blob:download-file-by-id-missing-identifier');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'No identifier set', $errorPrefix.'-missing-identifier');
         }
 
         $bucketID = rawurldecode($request->get('bucketID', ''));
@@ -43,12 +43,14 @@ class DownloadAction extends BaseBlobController
         $urlMethod = rawurldecode($request->get('method', ''));
         $method = $request->getMethod();
         if ($method !== 'GET' || $urlMethod !== 'GET') {
-            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'action/method is invalid', 'blob:download-file-by-id-invalid-method');
+            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'action/method is invalid', $errorPrefix.'-invalid-method');
         }
 
         // get data associated with the provided identifier
         $fileData = $this->blobService->getFileData($identifier);
         $this->blobService->setBucket($fileData);
+
+        $this->blobService->checkFileDataBeforeRetrieval($fileData, $bucketID, $errorPrefix);
 
         return $this->blobService->getBinaryResponse($fileData);
     }

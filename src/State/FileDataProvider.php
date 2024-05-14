@@ -204,45 +204,8 @@ class FileDataProvider extends AbstractDataProvider
             }
             // check if GET request was used
             elseif ($method === 'GET') {
-                $content = base64_decode(explode(',', $this->blobService->getBase64Data($fileData)->getContentUrl())[1], true);
-
-                if (!$content) {
-                    throw ApiError::withDetails(Response::HTTP_CONFLICT, 'file data cannot be decoded', 'blob:get-file-data-decode-fail');
-                }
-                // check if file integrity should be checked and if so check it
-                if ($this->blobService->doFileIntegrityChecks() && $fileData->getFileHash() !== null && hash('sha256', $content) !== $fileData->getFileHash()) {
-                    throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 file hash doesnt match! File integrity cannot be guaranteed', 'blob:get-file-data-file-hash-mismatch');
-                }
-                if ($this->blobService->doFileIntegrityChecks() && $fileData->getMetadataHash() !== null && hash('sha256', $fileData->getAdditionalMetadata()) !== $fileData->getMetadataHash()) {
-                    throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 metadata hash doesnt match! Metadata integrity cannot be guaranteed', 'blob:get-file-data-metadata-hash-mismatch');
-                }
-
-                $additionalMetadata = $fileData->getAdditionalMetadata();
-                $additionalType = $fileData->getAdditionalType();
-
-                // check if metadata is a valid json
-                if ($additionalMetadata && !json_decode($additionalMetadata, true)) {
-                    throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad additionalMetadata', 'blob:get-file-data-bad-additional-metadata');
-                }
-
-                $bucket = $this->blobService->getBucketByID($bucketID);
-                // check if additionaltype is defined
-                if ($additionalType && !array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
-                    throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad additionalType', 'blob:get-file-data-bad-additional-type');
-                }
-
-                // check if defined additionalType is valid json
-                if ($additionalType && !json_decode($bucket->getAdditionalTypes()[$additionalType])) {
-                    throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Invalid additionalType json', 'blob:get-file-data-invalid-additional-type-json');
-                }
-
-                $validator = new Validator();
-                $metadataDecoded = (object) json_decode($additionalMetadata);
-
-                // check if given additionalMetadata json has the same keys like the defined additionalType
-                if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
-                    throw ApiError::withDetails(Response::HTTP_CONFLICT, 'additionalType mismatch', 'blob:get-file-data-additional-type-mismatch');
-                }
+                $errorPrefix = 'blob:get-file-data';
+                $this->blobService->checkFileDataBeforeRetrieval($fileData, $bucketID, $errorPrefix);
 
                 // check if includeData parameter is set
                 $includeData = $filters['includeData'] ?? '';
