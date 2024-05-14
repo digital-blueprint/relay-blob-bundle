@@ -3,7 +3,8 @@
 ## v0.1.33
 * Fix missing `fileHash` check for file upload in `PATCH`
 * Remove email when the bucket quota is reached
-* json schema validator now expects path to json schema instead of the json schema itself
+* Json schema validator now expects path to json schema instead of the json schema itself
+* Change some `GET` error codes that didnt match for the case
 
 ## v0.1.32
 
