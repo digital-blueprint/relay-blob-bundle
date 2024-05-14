@@ -240,7 +240,7 @@ class FileDataProvider extends AbstractDataProvider
                 $metadataDecoded = (object) json_decode($additionalMetadata);
 
                 // check if given additionalMetadata json has the same keys like the defined additionalType
-                if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) json_decode($bucket->getAdditionalTypes()[$additionalType])) !== 0) {
+                if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
                     throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'additionalType mismatch', 'blob:get-file-data-additional-type-mismatch');
                 }
 
