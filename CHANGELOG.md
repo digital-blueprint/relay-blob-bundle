@@ -5,6 +5,7 @@
 * Remove email when the bucket quota is reached
 * Json schema validator now expects path to json schema instead of the json schema itself
 * Change some `GET` error codes that didnt match for the case
+* Implement output validation for `GET` requests to `/download`
 
 ## v0.1.32
 
