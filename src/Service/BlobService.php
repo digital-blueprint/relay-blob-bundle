@@ -8,6 +8,7 @@ use Dbp\Relay\BlobBundle\Entity\Bucket;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
+use Doctrine\DBAL\Exception;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonSchema\Validator;
 use Ramsey\Uuid\Uuid;
@@ -936,8 +937,9 @@ class BlobService
      * @param $newBucketSizeByte int new bucket size (after file save) in bytes
      *
      * @return void
+     * @throws Exception
      */
-    public function writeToTablesAndRemoveFileData($fileData, $newBucketSizeByte)
+    public function writeToTablesAndRemoveFileData($fileData, $newBucketSizeByte): void
     {
         // prevent negative bucket sizes
         if ($newBucketSizeByte < 0) {
