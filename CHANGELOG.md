@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.1.34
+* Fix bug which set the value of an entry in the `blob_bucket_sizes` to 0
+
 ## v0.1.33
 * Fix missing `fileHash` check for file upload in `PATCH`
 * Remove email when the bucket quota is reached
