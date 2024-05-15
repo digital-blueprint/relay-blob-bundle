@@ -936,7 +936,6 @@ class BlobService
      * @param $fileData          FileData filedata to be saved
      * @param $newBucketSizeByte int new bucket size (after file save) in bytes
      *
-     * @return void
      * @throws Exception
      */
     public function writeToTablesAndRemoveFileData($fileData, $newBucketSizeByte): void
