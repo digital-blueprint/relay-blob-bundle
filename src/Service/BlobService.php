@@ -624,7 +624,7 @@ class BlobService
     public function getAllExpiringFiledatasByBucket(string $bucketID): array
     {
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $expiring = $now->add(new \DateInterval($this->configurationService->getBucketByID($bucketID)->getReportExpiryWhenIn()));
+        $expiring = $now->add(new \DateInterval($this->configurationService->getBucketByInternalID($bucketID)->getReportExpiryWhenIn()));
 
         $query = $this->em
             ->getRepository(FileData::class)
@@ -716,6 +716,19 @@ class BlobService
         $buckets = $this->configurationService->getBuckets();
         foreach ($buckets as $bucket) {
             $this->sendReportingForBucket($bucket);
+            //$this->sendBucketQuotaWarning($bucket);
+        }
+    }
+
+    /**
+     * Sends reporting and bucket quota warning email if needed.
+     *
+     * @return void
+     */
+    public function sendWarning(): void
+    {
+        $buckets = $this->configurationService->getBuckets();
+        foreach ($buckets as $bucket) {
             $this->sendBucketQuotaWarning($bucket);
         }
     }

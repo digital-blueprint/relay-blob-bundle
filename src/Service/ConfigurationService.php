@@ -115,11 +115,11 @@ class ConfigurationService
     /**
      * Gets the reporting interval from the config.
      */
-    /*    public function getQuotaWarningInterval(): mixed
-        {
-            return $this->config['quota_warning_interval'];
-        }
-    */
+    public function getQuotaWarningInterval(): mixed
+    {
+        return $this->config['quota_warning_interval'];
+    }
+
     /**
      * Gets the cleanup interval from the config.
      */

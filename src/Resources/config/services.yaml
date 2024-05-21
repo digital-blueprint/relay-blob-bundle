@@ -39,3 +39,7 @@ services:
   Dbp\Relay\BlobBundle\Cron\BucketSizeCronJob:
     autowire: true
     autoconfigure: true
+
+  Dbp\Relay\BlobBundle\Cron\SendQuotaWarningCronJob:
+    autowire: true
+    autoconfigure: true
