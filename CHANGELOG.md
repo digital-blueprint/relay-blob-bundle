@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.35
+* Fix bug which prevented the sending of the reporting emails
+* Add separate config option for when a quota warning email should be sent
+
 ## v0.1.34
 * Fix bug which set the value of an entry in the `blob_bucket_sizes` to 0
 
