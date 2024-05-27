@@ -2,6 +2,8 @@
 <body>
 <table>
     <tr><th>Weekly reporting of expiring files of bucket {{ bucketId }} ({{ internalBucketId }})</th></tr>
+    <tr><th>This only includes the first 10 files that will expire, for more information please view the files in your bucket.</th></tr>
+    <tr><th>Overall {{ numFiles }} files will be deleted!</th></tr>
     <tr><th>file id</th><th>filename</th> <th>prefix</th><th>date created</th><th>last access</th><th>exists until</th></tr>
     {% for file in files %}
         <tr>

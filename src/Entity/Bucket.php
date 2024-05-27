@@ -56,12 +56,7 @@ class Bucket
     /**
      * @var ?array
      */
-    private $notifyQuotaConfig;
-
-    /**
-     * @var ?array
-     */
-    private $notifyQuotaOverConfig;
+    private $warnQuotaOverConfig;
 
     /**
      * @var ?array
@@ -178,27 +173,15 @@ class Bucket
     {
         $this->linkExpireTime = $linkExpireTime;
     }
-
-    public function getNotifyQuotaConfig(): ?array
+    
+    public function getWarnQuotaOverConfig(): ?array
     {
-        return $this->notifyQuotaConfig;
+        return $this->warnQuotaOverConfig;
     }
 
-    public function setNotifyQuotaConfig(?array $notifyQuotaConfig): self
+    public function setWarnQuotaOverConfig(?array $warnQuotaOverConfig): self
     {
-        $this->notifyQuotaConfig = $notifyQuotaConfig;
-
-        return $this;
-    }
-
-    public function getNotifyQuotaOverConfig(): ?array
-    {
-        return $this->notifyQuotaOverConfig;
-    }
-
-    public function setNotifyQuotaOverConfig(?array $notifyQuotaOverConfig): self
-    {
-        $this->notifyQuotaOverConfig = $notifyQuotaOverConfig;
+        $this->warnQuotaOverConfig = $warnQuotaOverConfig;
 
         return $this;
     }
@@ -268,17 +251,6 @@ class Bucket
         $bucket->setLinkExpireTime((string) $config['link_expire_time']);
 
         if (
-            array_key_exists('notify_quota', $config)
-            && is_array($config['notify_quota'])
-            && !empty($config['notify_quota']['dsn'])
-            && !empty($config['notify_quota']['from'])
-            && !empty($config['notify_quota']['to'])
-            && !empty($config['notify_quota']['subject'])
-            && !empty($config['notify_quota']['html_template'])
-        ) {
-            $bucket->setNotifyQuotaConfig($config['notify_quota']);
-        }
-        if (
             array_key_exists('warn_quota', $config)
             && is_array($config['warn_quota'])
             && !empty($config['warn_quota']['dsn'])
@@ -287,7 +259,7 @@ class Bucket
             && !empty($config['warn_quota']['subject'])
             && !empty($config['warn_quota']['html_template'])
         ) {
-            $bucket->setNotifyQuotaOverConfig($config['warn_quota']);
+            $bucket->setWarnQuotaOverConfig($config['warn_quota']);
         }
         if (
             array_key_exists('reporting', $config)

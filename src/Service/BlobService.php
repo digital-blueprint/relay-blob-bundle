@@ -690,7 +690,7 @@ class BlobService
      */
     public function sendQuotaWarning(Bucket $bucket, float $bucketQuotaByte)
     {
-        $notifyQuotaConfig = $bucket->getNotifyQuotaOverConfig();
+        $notifyQuotaConfig = $bucket->getWarnQuotaOverConfig();
 
         $id = $bucket->getIdentifier();
         $name = $bucket->getBucketID();
@@ -716,14 +716,12 @@ class BlobService
         $buckets = $this->configurationService->getBuckets();
         foreach ($buckets as $bucket) {
             $this->sendReportingForBucket($bucket);
-            //$this->sendBucketQuotaWarning($bucket);
+            // $this->sendBucketQuotaWarning($bucket);
         }
     }
 
     /**
      * Sends reporting and bucket quota warning email if needed.
-     *
-     * @return void
      */
     public function sendWarning(): void
     {
@@ -743,11 +741,11 @@ class BlobService
     public function sendBucketQuotaWarning(Bucket $bucket)
     {
         // Check quota
-        /*$bucketQuotaByte = $this->getCurrentBucketSize($bucket->getIdentifier())['bucketSize'];
+        $bucketQuotaByte = $this->getCurrentBucketSize($bucket->getIdentifier())['bucketSize'];
         $bucketWarningQuotaByte = $bucket->getQuota() * 1024 * 1024 * ($bucket->getNotifyWhenQuotaOver() / 100); // Convert mb to Byte and then calculate the warning quota
         if (floatval($bucketQuotaByte) > floatval($bucketWarningQuotaByte)) {
             $this->sendQuotaWarning($bucket, floatval($bucketQuotaByte));
-        }*/
+        }
     }
 
     /**
@@ -769,7 +767,11 @@ class BlobService
         if (!empty($fileDatas)) {
             // create for each email to be notified an array with expiring filedatas
             $notifyEmails = [];
-            foreach ($fileDatas as $fileData) {
+            foreach ($fileDatas as $key => $fileData) {
+                if ((int) $key === 10) {
+                    break;
+                }
+
                 /* @var ?FileData $fileData */
                 $file['id'] = $fileData->getIdentifier();
                 $file['fileName'] = $fileData->getFileName();
@@ -788,6 +790,7 @@ class BlobService
                     'internalBucketId' => $id,
                     'bucketId' => $name,
                     'files' => $files,
+                    'numFiles' => count($fileDatas),
                 ];
 
                 $config = $reportingConfig;
