@@ -3,6 +3,8 @@
 ## v0.1.35
 * Fix bug which prevented the sending of the reporting emails
 * Add separate config option for when a quota warning email should be sent
+* Minimize the contents of the `reporting` email to prevent it from getting too big (before it had every file that will soon expire in it)
+* Code cleanup
 
 ## v0.1.34
 * Fix bug which set the value of an entry in the `blob_bucket_sizes` to 0
