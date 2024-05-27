@@ -66,6 +66,7 @@ class Kernel extends BaseKernel
             'additional_auth' => false,
             'integrity_check_interval' => '0 0 1 * *',
             'bucket_size_check_interval' => '0 2 * * 1',
+            'quota_warning_interval' => '0 6 * * *',
             //            'database_url' => 'sqlite:///:memory:',
             'buckets' => [
                 'test_bucket' => [
@@ -79,13 +80,6 @@ class Kernel extends BaseKernel
                     'bucket_owner' => 'manuel.kocher@tugraz.at',
                     'max_retention_duration' => 'P1Y',
                     'link_expire_time' => 'PT1M',
-                    'notify_quota' => [
-                        'dsn' => 'smtp:localhost',
-                        'from' => 'noreply@tugraz.at',
-                        'to' => 'tamara.steinwender@tugraz.at',
-                        'subject' => 'Blob notify quota',
-                        'html_template' => 'emails/notify-quota.html.twig',
-                    ],
                     'reporting' => [
                         'dsn' => 'smtp:localhost',
                         'from' => 'noreply@tugraz.at',
@@ -112,13 +106,6 @@ class Kernel extends BaseKernel
                     'bucket_owner' => 'manuel.kocher@tugraz.at',
                     'max_retention_duration' => 'P1Y',
                     'link_expire_time' => 'PT1M',
-                    'notify_quota' => [
-                        'dsn' => 'smtp:localhost',
-                        'from' => 'noreply@tugraz.at',
-                        'to' => 'tamara.steinwender@tugraz.at',
-                        'subject' => 'Blob notify quota',
-                        'html_template' => 'emails/notify-quota.html.twig',
-                    ],
                     'reporting' => [
                         'dsn' => 'smtp:localhost',
                         'from' => 'noreply@tugraz.at',

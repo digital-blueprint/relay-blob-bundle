@@ -173,7 +173,7 @@ class Bucket
     {
         $this->linkExpireTime = $linkExpireTime;
     }
-    
+
     public function getWarnQuotaOverConfig(): ?array
     {
         return $this->warnQuotaOverConfig;
