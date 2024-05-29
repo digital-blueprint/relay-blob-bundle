@@ -978,7 +978,7 @@ class BlobService
 
     /**
      * Checks if given filedata is valid
-     * intented for use before data retrieval using GET.
+     * intended for use before data retrieval using GET.
      *
      * @param $fileData    FileData
      * @param $bucketID    string

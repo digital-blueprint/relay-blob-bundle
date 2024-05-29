@@ -50,7 +50,10 @@ class DownloadAction extends BaseBlobController
         $fileData = $this->blobService->getFileData($identifier);
         $this->blobService->setBucket($fileData);
 
-        $this->blobService->checkFileDataBeforeRetrieval($fileData, $bucketID, $errorPrefix);
+        $disableValidation = $request->get('disableValidation', '');
+        if (!($disableValidation === '1')) {
+            $this->blobService->checkFileDataBeforeRetrieval($fileData, $bucketID, $errorPrefix);
+        }
 
         return $this->blobService->getBinaryResponse($fileData);
     }

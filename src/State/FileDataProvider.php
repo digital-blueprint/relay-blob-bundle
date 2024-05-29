@@ -205,9 +205,15 @@ class FileDataProvider extends AbstractDataProvider
             // check if GET request was used
             elseif ($method === 'GET') {
                 $errorPrefix = 'blob:get-file-data';
-                $this->blobService->checkFileDataBeforeRetrieval($fileData, $bucketID, $errorPrefix);
 
-                // check if includeData parameter is set
+                // check if output validation shouldnt be checked
+                // a user can get the data even if the system usually would throw and invalid data error
+                $disableValidation = $filters['disableValidation'] ?? '';
+                if (!($disableValidation === '1')) {
+                    $this->blobService->checkFileDataBeforeRetrieval($fileData, $bucketID, $errorPrefix);
+                }
+
+                // check if the base64 encoded data should be returned, not only the metadata
                 $includeData = $filters['includeData'] ?? '';
                 if ($includeData === '1') {
                     $fileData = $this->blobService->getBase64Data($fileData);
