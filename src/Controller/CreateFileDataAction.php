@@ -19,14 +19,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 final class CreateFileDataAction extends BaseBlobController
 {
-    /**
-     * @var BlobService
-     */
     private BlobService $blobService;
 
-    /**
-     * @var EventDispatcherInterface
-     */
     private EventDispatcherInterface $eventDispatcher;
 
     public function __construct(BlobService $blobService, EventDispatcherInterface $eventDispatcher)

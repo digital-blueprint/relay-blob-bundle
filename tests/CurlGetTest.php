@@ -14,6 +14,7 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\TestUtils\UserAuthTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -205,7 +206,9 @@ class CurlGetTest extends ApiTestCase
                     .'file='.base64_encode($this->files[0]['content'])
             );
 
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -319,7 +322,8 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[1]['content'])
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -538,7 +542,9 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -862,7 +868,9 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             $fileData = $c->__invoke($requestPost);
             $this->fail('    FileData incorrectly saved: '.$fileData->getIdentifier());
@@ -997,7 +1005,9 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -1124,7 +1134,8 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -1251,7 +1262,8 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -1407,7 +1419,8 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -1534,7 +1547,8 @@ class CurlGetTest extends ApiTestCase
                     "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[$i]['content'])
                 );
-                $c = new CreateFileDataAction($blobService);
+                $eventDispatcher = new EventDispatcher();
+                $c = new CreateFileDataAction($blobService, $eventDispatcher);
                 $c->setContainer($client->getContainer());
                 try {
                     $fileData = $c->__invoke($requestPost);
@@ -1718,7 +1732,8 @@ class CurlGetTest extends ApiTestCase
                     "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[$i]['content'])
                 );
-                $c = new CreateFileDataAction($blobService);
+                $eventDispatcher = new EventDispatcher();
+                $c = new CreateFileDataAction($blobService, $eventDispatcher);
                 $c->setContainer($client->getContainer());
                 try {
                     $fileData = $c->__invoke($requestPost);
@@ -1885,7 +1900,8 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -2249,7 +2265,8 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -2436,7 +2453,8 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -2636,7 +2654,8 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -2837,7 +2856,8 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -3024,7 +3044,8 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -3124,7 +3145,8 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketID=$bucketID"
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
@@ -3280,7 +3302,8 @@ class CurlGetTest extends ApiTestCase
                     "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[$i]['content'])
                 );
-                $c = new CreateFileDataAction($blobService);
+                $eventDispatcher = new EventDispatcher();
+                $c = new CreateFileDataAction($blobService, $eventDispatcher);
                 $c->setContainer($client->getContainer());
                 try {
                     $fileData = $c->__invoke($requestPost);
@@ -3398,7 +3421,8 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
-            $c = new CreateFileDataAction($blobService);
+            $eventDispatcher = new EventDispatcher();
+            $c = new CreateFileDataAction($blobService, $eventDispatcher);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
