@@ -11,7 +11,7 @@ use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use JsonSchema\Validator;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,14 +22,14 @@ final class CreateFileDataAction extends BaseBlobController
     /**
      * @var BlobService
      */
-    private $blobService;
+    private BlobService $blobService;
 
     /**
-     * @var EventDispatcher
+     * @var EventDispatcherInterface
      */
-    private $eventDispatcher;
+    private EventDispatcherInterface $eventDispatcher;
 
-    public function __construct(BlobService $blobService, EventDispatcher $eventDispatcher)
+    public function __construct(BlobService $blobService, EventDispatcherInterface $eventDispatcher)
     {
         $this->blobService = $blobService;
         $this->eventDispatcher = $eventDispatcher;

@@ -14,7 +14,7 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
 use JsonSchema\Validator;
 use Symfony\Bridge\PsrHttpMessage\Factory\UploadedFile;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -34,11 +34,11 @@ class FileDataProvider extends AbstractDataProvider
     private $requestStack;
 
     /**
-     * @var EventDispatcher
+     * @var EventDispatcherInterface
      */
     private $eventDispatcher;
 
-    public function __construct(BlobService $blobService, RequestStack $requestStack, EventDispatcher $eventDispatcher)
+    public function __construct(BlobService $blobService, RequestStack $requestStack, EventDispatcherInterface $eventDispatcher)
     {
         parent::__construct();
         $this->blobService = $blobService;
