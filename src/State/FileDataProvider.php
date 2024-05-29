@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\State;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
+use Dbp\Relay\BlobBundle\Event\ChangeFileDataByPatchSuccessEvent;
+use Dbp\Relay\BlobBundle\Event\DeleteFileDataByDeleteSuccessEvent;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
@@ -12,6 +14,7 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
 use JsonSchema\Validator;
 use Symfony\Bridge\PsrHttpMessage\Factory\UploadedFile;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -30,11 +33,17 @@ class FileDataProvider extends AbstractDataProvider
      */
     private $requestStack;
 
-    public function __construct(BlobService $blobService, RequestStack $requestStack)
+    /**
+     * @var EventDispatcher
+     */
+    private $eventDispatcher;
+
+    public function __construct(BlobService $blobService, RequestStack $requestStack, EventDispatcher $eventDispatcher)
     {
         parent::__construct();
         $this->blobService = $blobService;
         $this->requestStack = $requestStack;
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     protected function isUserGrantedOperationAccess(int $operation): bool
@@ -201,6 +210,9 @@ class FileDataProvider extends AbstractDataProvider
                     $docBucket = $this->blobService->getBucketByInternalIdFromDatabase($fileData->getInternalBucketID());
                     $this->blobService->writeToTablesAndChangeFileData($fileData, $docBucket->getCurrentBucketSize() - $oldSize + $fileData->getFileSize());
                 }
+
+                $patchSuccessEvent = new ChangeFileDataByPatchSuccessEvent($fileData);
+                $this->eventDispatcher->dispatch($patchSuccessEvent);
             }
             // check if GET request was used
             elseif ($method === 'GET') {
@@ -221,6 +233,9 @@ class FileDataProvider extends AbstractDataProvider
                     $fileData = $this->blobService->getLink($fileData);
                 }
             }
+        } else {
+            $deleteSuccessEvent = new DeleteFileDataByDeleteSuccessEvent($fileData);
+            $this->eventDispatcher->dispatch($deleteSuccessEvent);
         }
 
         $this->blobService->saveFileData($fileData);

@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Controller;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
+use Dbp\Relay\BlobBundle\Event\AddFileDataByPostSuccessEvent;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use JsonSchema\Validator;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,9 +24,15 @@ final class CreateFileDataAction extends BaseBlobController
      */
     private $blobService;
 
-    public function __construct(BlobService $blobService)
+    /**
+     * @var EventDispatcher
+     */
+    private $eventDispatcher;
+
+    public function __construct(BlobService $blobService, EventDispatcher $eventDispatcher)
     {
         $this->blobService = $blobService;
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     /**
@@ -167,6 +175,9 @@ final class CreateFileDataAction extends BaseBlobController
         }
 
         $this->blobService->writeToTablesAndSaveFileData($fileData, $newBucketSizeByte);
+
+        $successEvent = new AddFileDataByPostSuccessEvent($fileData);
+        $this->eventDispatcher->dispatch($successEvent);
 
         return $fileData;
     }
