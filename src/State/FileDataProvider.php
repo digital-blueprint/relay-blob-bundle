@@ -221,7 +221,7 @@ class FileDataProvider extends AbstractDataProvider
                 // check if output validation shouldnt be checked
                 // a user can get the data even if the system usually would throw and invalid data error
                 $disableValidation = $filters['disableOutputValidation'] ?? '';
-                if (!($disableValidation === '1') && !$this->blobService->configurationService->getOutputValidation()) {
+                if (!($disableValidation === '1') && $this->blobService->configurationService->getOutputValidationForBucketId($bucketID)) {
                     $this->blobService->checkFileDataBeforeRetrieval($fileData, $bucketID, $errorPrefix);
                 }
 

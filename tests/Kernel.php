@@ -75,6 +75,7 @@ class Kernel extends BaseKernel
                     'bucket_id' => 'test-bucket',
                     'key' => '08d848fd868d83646778b87dd0695b10f59c78e23b286e9884504d1bb43cce93',
                     'quota' => 500, // in MB
+                    'output_validation' => true,
                     'notify_when_quota_over' => 70, // in percent of quota
                     'report_when_expiry_in' => 'P62D', // in Days, 62 = two 31 day months
                     'bucket_owner' => 'manuel.kocher@tugraz.at',
@@ -101,6 +102,7 @@ class Kernel extends BaseKernel
                     'bucket_id' => 'test-bucket-2',
                     'key' => 'f5b08061e9989d0357c4173aa3af9bc05d0400121af5f90a43e6cdb91ff1fbf2',
                     'quota' => 500, // in MB
+                    'output_validation' => true,
                     'notify_when_quota_over' => 70, // in percent of quota
                     'report_when_expiry_in' => 'P62D', // in Days, 62 = two 31 day months
                     'bucket_owner' => 'manuel.kocher@tugraz.at',

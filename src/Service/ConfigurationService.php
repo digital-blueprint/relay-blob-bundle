@@ -128,9 +128,17 @@ class ConfigurationService
         return $this->config['cleanup_interval'];
     }
 
-    public function getOutputValidation(): mixed
+    public function getOutputValidationForBucketId($bucketId): mixed
     {
-        return $this->config['output_validation'];
+        $buckets = $this->config['buckets'];
+
+        foreach ($buckets as $bucket => $bucketConfig) {
+            if ($bucketId === $bucketConfig['bucket_id']) {
+                return $bucketConfig['output_validation'];
+            }
+        }
+
+        return null;
     }
 
     public function doFileIntegrityChecks(): bool

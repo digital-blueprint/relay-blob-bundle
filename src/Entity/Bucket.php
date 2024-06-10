@@ -169,7 +169,6 @@ class Bucket
         return $this->outputValidation;
     }
 
-
     public function getMaxRetentionDuration(): string
     {
         return $this->max_retention_duration;
