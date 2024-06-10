@@ -84,6 +84,11 @@ class Bucket
     #[ORM\Column(type: 'integer')]
     private $currentBucketSize;
 
+    /**
+     * @var bool
+     */
+    private $outputValidation;
+
     public function getIdentifier(): string
     {
         return $this->identifier;
@@ -153,6 +158,17 @@ class Bucket
     {
         $this->quota = $quota;
     }
+
+    public function setOutputValidation(bool $bool): void
+    {
+        $this->outputValidation = $bool;
+    }
+
+    public function getOutputValidation(): bool
+    {
+        return $this->outputValidation;
+    }
+
 
     public function getMaxRetentionDuration(): string
     {
@@ -247,6 +263,7 @@ class Bucket
         $bucket->setReportExpiryWhenIn((string) $config['report_when_expiry_in']);
         $bucket->setKey((string) $config['key']);
         $bucket->setQuota((int) $config['quota']);
+        $bucket->setOutputValidation((bool) $config['output_validation']);
         $bucket->setMaxRetentionDuration((string) $config['max_retention_duration']);
         $bucket->setLinkExpireTime((string) $config['link_expire_time']);
 

@@ -128,6 +128,11 @@ class ConfigurationService
         return $this->config['cleanup_interval'];
     }
 
+    public function getOutputValidation(): mixed
+    {
+        return $this->config['output_validation'];
+    }
+
     public function doFileIntegrityChecks(): bool
     {
         return $this->config['file_integrity_checks'];
