@@ -34,7 +34,7 @@ class DownloadAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'No identifier set', $errorPrefix.'-missing-identifier');
         }
 
-        $bucketID = rawurldecode($request->get('bucketID', ''));
+        $bucketID = rawurldecode($request->get('bucketIdentifier', ''));
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
 
         // check if the signature is valid

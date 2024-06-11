@@ -42,7 +42,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
         $prefix = rawurldecode($prefix);
 
         // verify signature and checksum
-        $bucketID = $request->query->get('bucketID', '');
+        $bucketID = $request->query->get('bucketIdentifier', '');
         assert(is_string($bucketID));
         $startsWith = $request->query->get('startsWith', '');
         assert(is_string($startsWith));

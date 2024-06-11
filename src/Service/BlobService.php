@@ -110,7 +110,7 @@ class BlobService
         // set metadata, bucketID and retentionDuration
         $fileData->setAdditionalMetadata($additionalMetadata);
 
-        $fileData->setInternalBucketID($this->configurationService->getInternalBucketIdByBucketID(rawurldecode($request->get('bucketID', ''))));
+        $fileData->setInternalBucketID($this->configurationService->getInternalBucketIdByBucketID(rawurldecode($request->get('bucketIdentifier', ''))));
         $retentionDuration = $request->get('retentionDuration', '0');
         $fileData->setRetentionDuration($retentionDuration);
 

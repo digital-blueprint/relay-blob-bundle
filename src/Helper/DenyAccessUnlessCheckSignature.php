@@ -98,7 +98,7 @@ class DenyAccessUnlessCheckSignature
         }
 
         /** @var string $bucketID $creationTime $urlMethod */
-        $bucketID = $request->query->get('bucketID', '');
+        $bucketID = $request->query->get('bucketIdentifier', '');
         /** @var string $creationTime */
         $creationTime = $request->query->get('creationTime', '0');
         /** @var string $urlMethod */
@@ -175,13 +175,13 @@ class DenyAccessUnlessCheckSignature
         // either use filters or request to get parameters, depending on which is provided
         if ($filters) {
             $sig = $filters['sig'] ?? '';
-            $bucketID = $filters['bucketID'] ?? '';
+            $bucketID = $filters['bucketIdentifier'] ?? '';
             $creationTime = $filters['creationTime'] ?? '';
             $urlMethod = $filters['method'] ?? '';
         } else {
             // check if signature is present
             $sig = $request->query->get('sig', '');
-            $bucketID = $request->query->get('bucketID', '');
+            $bucketID = $request->query->get('bucketIdentifier', '');
             $creationTime = $request->query->get('creationTime', '');
             $urlMethod = $request->query->get('method', '');
         }

@@ -78,7 +78,7 @@ class FileDataProvider extends AbstractDataProvider
         DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $request, $filters, ['GET', 'PATCH', 'DELETE']);
 
         // get secret of bucket
-        $bucketID = rawurldecode($filters['bucketID']) ?? '';
+        $bucketID = rawurldecode($filters['bucketIdentifier']) ?? '';
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
 
         // check if signature is valid
@@ -104,15 +104,19 @@ class FileDataProvider extends AbstractDataProvider
 
             // check if PATCH request was used
             if ($method === 'PATCH') {
+                // get from body
                 $body = BlobUtils::getFieldsFromPatchRequest($request);
-                $fileName = $body['fileName'] ?? '';
-                $additionalMetadata = $body['additionalMetadata'] ?? '';
-                $additionalType = $body['additionalType'] ?? '';
-                $prefix = $body['prefix'] ?? '';
-                $existsUntil = $body['existsUntil'] ?? '';
-                $notifyEmail = $body['notifyEmail'] ?? '';
                 $file = $body['file'] ?? '';
                 $fileHash = $body['fileHash'] ?? '';
+                $fileName = $body['fileName'] ?? '';
+                $additionalMetadata = $body['metadata'] ?? '';
+                $metadataHash = $body['metadataHash'] ?? '';
+
+                // get from url
+                $additionalType = $filters['type'] ?? '';
+                $prefix = $filters['prefix'] ?? '';
+                $existsUntil = $filters['existsUntil'] ?? '';
+                $notifyEmail = $filters['notifyEmail'] ?? '';
 
                 // throw error if not field is provided
                 if (!$fileName && !$additionalMetadata & !$additionalType && !$prefix && !$existsUntil && !$notifyEmail && !$file) {
@@ -256,7 +260,7 @@ class FileDataProvider extends AbstractDataProvider
         DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $this->requestStack->getCurrentRequest(), $filters, ['GET']);
 
         // get bucketID after check
-        $bucketID = rawurldecode($filters['bucketID'] ?? '');
+        $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');
 
         // get prefix by filters
         $prefix = rawurldecode($filters['prefix'] ?? '');
