@@ -36,27 +36,24 @@ final class CreateFileDataAction extends BaseBlobController
      */
     public function __invoke(Request $request): FileData
     {
-        // check minimal needed parameters for presence and correctness
+        /* check minimal needed parameters for presence and correctness */
         $errorPrefix = 'blob:create-file-data';
         DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $request, [], ['POST']);
 
-        // get url params
+        /* get url params */
         $bucketID = $request->query->get('bucketIdentifier', '');
         $notifyEmail = $request->query->get('notifyEmail', '');
         $prefix = $request->query->get('prefix', '');
         $retentionDuration = $request->query->get('retentionDuration', '');
         $additionalType = $request->query->get('type', '');
 
-        // get params from body
+        /* get params from body */
         $additionalMetadata = $request->request->get('metadata', '');
         $metadataHash = $request->request->get('metadataHash', '');
         $fileName = $request->request->get('fileName', '');
         $fileHash = $request->request->get('fileHash', '');
 
-        // get request method
-        $method = $request->getMethod();
-
-        // check types of params
+        /* check types of params */
         assert(is_string($bucketID));
         assert(is_string($prefix));
         assert(is_string($fileName));
@@ -66,15 +63,14 @@ final class CreateFileDataAction extends BaseBlobController
         assert(is_string($additionalType));
         assert(is_string($additionalMetadata));
 
-        // urldecode according to RFC 3986
+        /* urldecode according to RFC 3986 */
         $bucketID = rawurldecode($bucketID);
         $prefix = rawurldecode($prefix);
-        $fileName = rawurldecode($fileName);
-        $fileHash = rawurldecode($fileHash);
         $notifyEmail = rawurldecode($notifyEmail);
         $retentionDuration = rawurldecode($retentionDuration);
         $additionalType = rawurldecode($additionalType);
 
+        // check content-length header to prevent misleading error messages if the upload is too big for the server to accept
         if ($request->headers->get('Content-Length') && intval($request->headers->get('Content-Length')) !== 0 && intval($request->headers->get('Content-Length')) > BlobUtils::convertFileSizeStringToBytes(ini_get('post_max_size'))) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given file is too large', 'blob:create-file-data-file-too-big');
         }
@@ -94,16 +90,17 @@ final class CreateFileDataAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalMetadata', 'blob:create-file-bad-additional-metadata');
         }
 
+        // get current bucket
         $bucket = $this->blobService->getBucketByID($bucketID);
+
         // check if additionaltype is defined
         if ($additionalType && !array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalType', 'blob:create-file-bad-additional-type');
         }
 
+        /* check if given additionalMetadata json has the same keys like the defined additionalType */
         $validator = new Validator();
         $metadataDecoded = (object) json_decode($additionalMetadata);
-
-        // check if given additionalMetadata json has the same keys like the defined additionalType
         if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'additionalType mismatch', 'blob:create-file-additional-type-mismatch');
         }
@@ -119,9 +116,9 @@ final class CreateFileDataAction extends BaseBlobController
         // check signature and checksum that is stored in signature
         DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService, $this->isGranted('IS_AUTHENTICATED_FULLY'), $this->blobService->checkAdditionalAuth());
 
-        // now, after check of signature and checksum it is safe to do computations
+        /* now, after check of signature and checksum it is safe to do computations */
 
-        // Check retentionDuration & idleRetentionDuration valid durations
+        /* Check retentionDuration & idleRetentionDuration valid durations */
         $fileData->setRetentionDuration($retentionDuration);
         if ($fileData->getRetentionDuration()) {
             $bucketExpireDate = $fileData->getDateCreated()->add(new \DateInterval($bucket->getMaxRetentionDuration()));
@@ -132,13 +129,13 @@ final class CreateFileDataAction extends BaseBlobController
         } else {
             $fileData->setRetentionDuration((string) $bucket->getMaxRetentionDuration());
         }
-        // Set exists until time
+
+        /* set given and calculated values */
         $fileData->setExistsUntil($fileData->getDateCreated()->add(new \DateInterval($fileData->getRetentionDuration())));
-        // Set everything else...
         $fileData->setFileName($fileName);
         $fileData->setNotifyEmail($notifyEmail);
-        $fileData->setAdditionalType($additionalType);
-        $fileData->setAdditionalMetadata($additionalMetadata);
+        $fileData->setType($additionalType);
+        $fileData->setMetadata($additionalMetadata);
 
         // Use given service for bucket
         if (!$bucket->getService()) {
@@ -149,14 +146,20 @@ final class CreateFileDataAction extends BaseBlobController
         $uploadedFile = $fileData->getFile();
 
         $fileData->setMimeType($uploadedFile->getMimeType() ?? '');
-        $hash = hash('sha256', $uploadedFile->getContent());
 
+        /* check hashes of file and metadata */
         // check hash of file
-        if ($hash !== $fileHash) {
+        $hash = hash('sha256', $uploadedFile->getContent());
+        if ($fileHash && $hash !== $fileHash) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:create-file-data-file-hash-change-forbidden');
         }
+        // check hash of metadata
+        $hash = hash('sha256', $additionalMetadata);
+        if ($metadataHash && $hash !== $metadataHash) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Metadata hash change forbidden', 'blob:create-file-data-metadata-hash-change-forbidden');
+        }
 
-        // Check quota
+        /* Check quota */
         $bucketSize = $this->blobService->getCurrentBucketSize($fileData->getInternalBucketID());
         if ($bucketSize !== null) {
             $bucketsizeByte = (int) $bucketSize['bucketSize'];
@@ -169,8 +172,10 @@ final class CreateFileDataAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached', 'blob:create-file-data-bucket-quota-reached');
         }
 
+        // write all relevant data to tables
         $this->blobService->writeToTablesAndSaveFileData($fileData, $newBucketSizeByte);
 
+        /* dispatch POST success event */
         $successEvent = new AddFileDataByPostSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($successEvent);
 

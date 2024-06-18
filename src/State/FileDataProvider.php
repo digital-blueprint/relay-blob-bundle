@@ -104,7 +104,7 @@ class FileDataProvider extends AbstractDataProvider
 
             // check if PATCH request was used
             if ($method === 'PATCH') {
-                // get from body
+                /* get from body */
                 $body = BlobUtils::getFieldsFromPatchRequest($request);
                 $file = $body['file'] ?? '';
                 $fileHash = $body['fileHash'] ?? '';
@@ -112,13 +112,13 @@ class FileDataProvider extends AbstractDataProvider
                 $additionalMetadata = $body['metadata'] ?? '';
                 $metadataHash = $body['metadataHash'] ?? '';
 
-                // get from url
+                /* get from url */
                 $additionalType = $filters['type'] ?? '';
                 $prefix = $filters['prefix'] ?? '';
                 $existsUntil = $filters['existsUntil'] ?? '';
                 $notifyEmail = $filters['notifyEmail'] ?? '';
 
-                // throw error if not field is provided
+                // throw error if no field is provided
                 if (!$fileName && !$additionalMetadata & !$additionalType && !$prefix && !$existsUntil && !$notifyEmail && !$file) {
                     throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'at least one field to patch has to be provided', 'blob:patch-file-data-missing');
                 }
@@ -135,14 +135,14 @@ class FileDataProvider extends AbstractDataProvider
                     if (!array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
                         throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalType', 'blob:patch-file-data-bad-additional-type');
                     }
-                    $fileData->setAdditionalType($additionalType);
+                    $fileData->setType($additionalType);
                 }
 
                 if ($additionalMetadata) {
                     if (!json_decode($additionalMetadata, true)) {
                         throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata is no valid JSON!', 'blob:patch-file-data-bad-additional-metadata');
                     }
-                    $storedType = $fileData->getAdditionalType();
+                    $storedType = $fileData->getType();
                     if ($storedType) {
                         $validator = new Validator();
                         $metadataDecoded = json_decode($additionalMetadata);
@@ -151,8 +151,12 @@ class FileDataProvider extends AbstractDataProvider
                             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata does not fit additionalType schema!', 'blob:patch-file-data-additional-type-mismatch');
                         }
                     }
+                    $hash = hash('sha256', $file->getContent());
+                    if ($metadataHash && $hash !== $metadataHash) {
+                        throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:patch-file-data-file-hash-change-forbidden');
+                    }
                     assert(is_string($additionalMetadata));
-                    $fileData->setAdditionalMetadata($additionalMetadata);
+                    $fileData->setMetadata($additionalMetadata);
                     $fileData->setMetadataHash(hash('sha256', $additionalMetadata));
                 }
 
@@ -197,10 +201,9 @@ class FileDataProvider extends AbstractDataProvider
                         throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached', 'blob:patch-file-data-bucket-quota-reached');
                     }
 
+                    /* check hash of file */
                     $hash = hash('sha256', $file->getContent());
-
-                    // check hash of file
-                    if ($hash !== $fileHash) {
+                    if ($fileHash && $hash !== $fileHash) {
                         throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:patch-file-data-file-hash-change-forbidden');
                     }
 

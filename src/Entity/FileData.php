@@ -103,16 +103,16 @@ class FileData
     /**
      * @var string
      */
-    #[ORM\Column(type: 'json', nullable: true)]
+    #[ORM\Column(name: 'additional_metadata', type: 'json', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
-    private $additionalMetadata;
+    private $metadata;
 
     /**
      * @var string
      */
-    #[ORM\Column(type: 'text', nullable: true)]
+    #[ORM\Column(name: 'additional_type', type: 'text', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
-    private $additionalType;
+    private $type;
 
     /**
      * @var int
@@ -272,24 +272,24 @@ class FileData
         $this->file = $file;
     }
 
-    public function getAdditionalMetadata(): ?string
+    public function getMetadata(): ?string
     {
-        return $this->additionalMetadata;
+        return $this->metadata;
     }
 
-    public function setAdditionalMetadata($additionalMetadata): void
+    public function setMetadata($additionalMetadata): void
     {
-        $this->additionalMetadata = $additionalMetadata;
+        $this->metadata = $additionalMetadata;
     }
 
-    public function getAdditionalType(): ?string
+    public function getType(): ?string
     {
-        return $this->additionalType;
+        return $this->type;
     }
 
-    public function setAdditionalType($additionalType): void
+    public function setType($additionalType): void
     {
-        $this->additionalType = $additionalType;
+        $this->type = $additionalType;
     }
 
     public function getFileSize(): int

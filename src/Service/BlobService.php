@@ -105,10 +105,10 @@ class BlobService
 
         // Check if json is valid
         /** @var string $additionalMetadata */
-        $additionalMetadata = $request->request->get('additionalMetadata', '');
+        $additionalMetadata = $request->request->get('metadata', '');
 
         // set metadata, bucketID and retentionDuration
-        $fileData->setAdditionalMetadata($additionalMetadata);
+        $fileData->setMetadata($additionalMetadata);
 
         $fileData->setInternalBucketID($this->configurationService->getInternalBucketIdByBucketID(rawurldecode($request->get('bucketIdentifier', ''))));
         $retentionDuration = $request->get('retentionDuration', '0');
@@ -317,7 +317,7 @@ class BlobService
                 /** @var FileData $fileData */
                 if ($fileData->getFileHash() !== null && $content !== false && hash('sha256', $content) !== $fileData->getFileHash()) {
                     $invalidDatas[] = $fileData;
-                } elseif ($fileData->getFileHash() !== null && hash('sha256', $fileData->getAdditionalMetadata()) !== $fileData->getMetadataHash()) {
+                } elseif ($fileData->getFileHash() !== null && hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash()) {
                     $invalidDatas[] = $fileData;
                 }
             }
@@ -995,12 +995,12 @@ class BlobService
         if ($this->doFileIntegrityChecks() && $fileData->getFileHash() !== null && hash('sha256', $content) !== $fileData->getFileHash()) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 file hash doesnt match! File integrity cannot be guaranteed', $errorPrefix.'-file-hash-mismatch');
         }
-        if ($this->doFileIntegrityChecks() && $fileData->getMetadataHash() !== null && hash('sha256', $fileData->getAdditionalMetadata()) !== $fileData->getMetadataHash()) {
+        if ($this->doFileIntegrityChecks() && $fileData->getMetadataHash() !== null && hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash()) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 metadata hash doesnt match! Metadata integrity cannot be guaranteed', $errorPrefix.'-metadata-hash-mismatch');
         }
 
-        $additionalMetadata = $fileData->getAdditionalMetadata();
-        $additionalType = $fileData->getAdditionalType();
+        $additionalMetadata = $fileData->getMetadata();
+        $additionalType = $fileData->getType();
 
         // check if metadata is a valid json
         if ($additionalMetadata && !json_decode($additionalMetadata, true)) {
