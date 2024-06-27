@@ -232,12 +232,12 @@ class FileData
         $this->retentionDuration = $retentionDuration;
     }
 
-    public function getExistsUntil(): \DateTimeImmutable
+    public function getExistsUntil(): ?\DateTimeImmutable
     {
         return $this->existsUntil;
     }
 
-    public function setExistsUntil(\DateTimeImmutable $existsUntil): void
+    public function setExistsUntil($existsUntil): void
     {
         $this->existsUntil = $existsUntil;
     }

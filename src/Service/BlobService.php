@@ -305,14 +305,36 @@ class BlobService
         return $fileData;
     }
 
+    /**
+     * @throws \Exception
+     */
     public function checkIntegrity()
     {
         $buckets = $this->configurationService->getBuckets();
         foreach ($buckets as $bucket) {
-            $fileDatas = $this->getFileDataByBucketID($bucket->getIdentifier());
+            try {
+                $fileDatas = $this->getFileDataByBucketID($bucket->getIdentifier());
+            } catch (\Exception $e) {
+                $id = json_decode($e->getMessage(), true, 512, JSON_THROW_ON_ERROR)['errorId'];
+                if ($id === 'blob:file-data-not-found') {
+                    continue;
+                } else {
+                    throw $e;
+                }
+            }
             $invalidDatas = [];
             foreach ($fileDatas as $fileData) {
-                $content = base64_decode(explode(',', $this->getBase64Data($fileData)->getContentUrl())[1], true);
+                try {
+                    $data = $this->getBase64Data($fileData)->getContentUrl();
+                    $content = base64_decode(explode(',', $data)[1], true);
+                } catch (\Exception $e) {
+                    $id = json_decode($e->getMessage(), true, 512, JSON_THROW_ON_ERROR)['errorId'];
+                    if ($id === 'blob-connector-filesystem:file-not-found') {
+                        $content = '';
+                    } else {
+                        throw $e;
+                    }
+                }
 
                 /** @var FileData $fileData */
                 if ($fileData->getFileHash() !== null && $content !== false && hash('sha256', $content) !== $fileData->getFileHash()) {
@@ -321,7 +343,7 @@ class BlobService
                     $invalidDatas[] = $fileData;
                 }
             }
-            $this->sendIntegrityCheckMail($bucket, $invalidDatas);
+            // $this->sendIntegrityCheckMail($bucket, $invalidDatas);
         }
     }
 
@@ -624,19 +646,29 @@ class BlobService
     public function getAllExpiringFiledatasByBucket(string $bucketID): array
     {
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $expiring = $now->add(new \DateInterval($this->configurationService->getBucketByInternalID($bucketID)->getReportExpiryWhenIn()));
+        $expiry = $now->add(new \DateInterval($this->configurationService->getBucketByInternalID($bucketID)->getReportExpiryWhenIn()));
+        $expiring = [];
 
         $query = $this->em
             ->getRepository(FileData::class)
             ->createQueryBuilder('f')
             ->where('f.internalBucketId = :bucketID')
-            ->andWhere('f.existsUntil <= :expiring')
             ->orderBy('f.notifyEmail', 'ASC')
             ->orderBy('f.existsUntil', 'ASC')
-            ->setParameter('bucketID', $bucketID)
-            ->setParameter('expiring', $expiring);
+            ->setParameter('bucketID', $bucketID);
 
-        return $query->getQuery()->getResult();
+        if (!empty($query->getQuery()->getResult())) {
+            /** @var FileData $fileData */
+            foreach ($query->getQuery()->getResult() as $fileData) {
+                if ($fileData->getRetentionDuration() === null) {
+                    if ($fileData->getDateCreated()->add($this->getDefaultRetentionDurationByBucketId($bucketID)) < $expiry) {
+                        $expiring[] = $fileData;
+                    }
+                }
+            }
+        }
+
+        return $expiring;
     }
 
     /**
@@ -680,6 +712,34 @@ class BlobService
         foreach ($invalidFileDatas as $invalidFileData) {
             $invalidFileData = $this->setBucket($invalidFileData);
             $this->removeFileData($invalidFileData);
+        }
+
+        $invalidFileDatas = [];
+
+        foreach ($this->configurationService->getBuckets() as $bucket) {
+            $invalidFileDataQuery = $this->em
+                ->getRepository(FileData::class)
+                ->createQueryBuilder('f')
+                ->where('f.existsUntil IS NULL')
+                ->andWhere('f.internalBucketId = :intBucketId')
+                ->setParameter(':intBucketId', $bucket->getIdentifier())
+                ->getQuery();
+
+            $datas = $invalidFileDataQuery->getResult();
+            $maxDuration = $bucket->getMaxRetentionDuration();
+
+            /** @var FileData $data */
+            foreach ($datas as $data) {
+                if ($data->getDateCreated()->add(new \DateInterval($maxDuration)) < $now) {
+                    $invalidFileDatas[] = $data;
+                }
+            }
+
+            // Remove all links, files and reference
+            foreach ($invalidFileDatas as $invalidFileData) {
+                $invalidFileData = $this->setBucket($invalidFileData);
+                $this->removeFileData($invalidFileData);
+            }
         }
     }
 
@@ -1020,5 +1080,10 @@ class BlobService
         if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'additionalType mismatch', $errorPrefix.'-additional-type-mismatch');
         }
+    }
+
+    public function getDefaultRetentionDurationByBucketId($bucketId): string
+    {
+        return $this->configurationService->getBucketByID($bucketId)->getMaxRetentionDuration();
     }
 }
