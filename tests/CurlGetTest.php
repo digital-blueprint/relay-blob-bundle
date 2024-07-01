@@ -493,7 +493,7 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $retentionDuration = $this->files[0]['retention'];
 
-            $url = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action";
+            $url = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             // =======================================================
             // POST a file
@@ -503,8 +503,6 @@ class CurlGetTest extends ApiTestCase
             $requestBody = [
                 'fileName' => $fileName,
                 'fileHash' => $fileHash,
-                'notifyEmail' => $notifyEmail,
-                'retentionDuration' => $retentionDuration,
             ];
 
             $bodyJson = json_encode($requestBody);
@@ -520,8 +518,6 @@ class CurlGetTest extends ApiTestCase
                 [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ],
                 [],
                 [
@@ -961,13 +957,11 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $requestBody = [
                 'fileName' => $fileName,
                 'fileHash' => $fileHash,
-                'notifyEmail' => $notifyEmail,
-                'retentionDuration' => $retentionDuration,
             ];
 
             $bodyJson = json_encode($requestBody);
@@ -983,8 +977,6 @@ class CurlGetTest extends ApiTestCase
                 [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ],
                 [],
                 [
@@ -1091,13 +1083,11 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $requestBody = [
                 'fileName' => $fileName,
                 'fileHash' => $fileHash,
-                'notifyEmail' => $notifyEmail,
-                'retentionDuration' => $retentionDuration,
             ];
 
             $bodyJson = json_encode($requestBody);
@@ -1113,8 +1103,6 @@ class CurlGetTest extends ApiTestCase
                 [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ],
                 [],
                 [
@@ -1217,13 +1205,11 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $requestBody = [
                 'fileName' => $fileName,
                 'fileHash' => $fileHash,
-                'notifyEmail' => $notifyEmail,
-                'retentionDuration' => $retentionDuration,
             ];
 
             $bodyJson = json_encode($requestBody);
@@ -1239,8 +1225,6 @@ class CurlGetTest extends ApiTestCase
                 [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ],
                 [],
                 [
@@ -1375,13 +1359,11 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $requestBody = [
                 'fileName' => $fileName,
                 'fileHash' => $fileHash,
-                'notifyEmail' => $notifyEmail,
-                'retentionDuration' => $retentionDuration,
             ];
 
             $bodyJson = json_encode($requestBody);
@@ -1397,8 +1379,6 @@ class CurlGetTest extends ApiTestCase
                 [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ],
                 [],
                 [
@@ -1504,13 +1484,11 @@ class CurlGetTest extends ApiTestCase
                 $retentionDuration = $this->files[$i]['retention'];
                 $action = 'POST';
 
-                $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+                $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
                 $requestBody = [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ];
 
                 $bodyJson = json_encode($requestBody);
@@ -1526,8 +1504,6 @@ class CurlGetTest extends ApiTestCase
                     [
                         'fileName' => $fileName,
                         'fileHash' => $fileHash,
-                        'notifyEmail' => $notifyEmail,
-                        'retentionDuration' => $retentionDuration,
                     ],
                     [],
                     [
@@ -1689,13 +1665,11 @@ class CurlGetTest extends ApiTestCase
                 $retentionDuration = $this->files[$i]['retention'];
                 $action = 'POST';
 
-                $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+                $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
                 $requestBody = [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ];
 
                 $bodyJson = json_encode($requestBody);
@@ -1711,8 +1685,6 @@ class CurlGetTest extends ApiTestCase
                     [
                         'fileName' => $fileName,
                         'fileHash' => $fileHash,
-                        'notifyEmail' => $notifyEmail,
-                        'retentionDuration' => $retentionDuration,
                     ],
                     [],
                     [
@@ -1856,13 +1828,11 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $requestBody = [
                 'fileName' => $fileName,
                 'fileHash' => $fileHash,
-                'notifyEmail' => $notifyEmail,
-                'retentionDuration' => $retentionDuration,
             ];
 
             $bodyJson = json_encode($requestBody);
@@ -1878,8 +1848,6 @@ class CurlGetTest extends ApiTestCase
                 [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ],
                 [],
                 [
@@ -2225,13 +2193,11 @@ class CurlGetTest extends ApiTestCase
             $requestBody = [
                 'fileName' => $fileName,
                 'fileHash' => $fileHash,
-                'notifyEmail' => $notifyEmail,
-                'retentionDuration' => $retentionDuration,
             ];
 
             $bodyJson = json_encode($requestBody);
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2244,8 +2210,6 @@ class CurlGetTest extends ApiTestCase
                 [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ],
                 [],
                 [
@@ -2410,13 +2374,11 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $requestBody = [
                 'fileName' => $fileName,
                 'fileHash' => $fileHash,
-                'notifyEmail' => $notifyEmail,
-                'retentionDuration' => $retentionDuration,
             ];
 
             $bodyJson = json_encode($requestBody);
@@ -2432,8 +2394,6 @@ class CurlGetTest extends ApiTestCase
                 [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ],
                 [],
                 [
@@ -2610,13 +2570,11 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $requestBody = [
                 'fileName' => $fileName,
                 'fileHash' => $fileHash,
-                'notifyEmail' => $notifyEmail,
-                'retentionDuration' => $retentionDuration,
             ];
 
             $bodyJson = json_encode($requestBody);
@@ -2632,8 +2590,6 @@ class CurlGetTest extends ApiTestCase
                 [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ],
                 [],
                 [
@@ -2813,13 +2769,11 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $requestBody = [
                 'fileName' => $fileName,
                 'fileHash' => $fileHash,
-                'notifyEmail' => $notifyEmail,
-                'retentionDuration' => $retentionDuration,
             ];
 
             $bodyJson = json_encode($requestBody);
@@ -2835,8 +2789,6 @@ class CurlGetTest extends ApiTestCase
                 [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ],
                 [],
                 [
@@ -3000,13 +2952,11 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $requestBody = [
                 'fileName' => $fileName,
                 'fileHash' => $fileHash,
-                'notifyEmail' => $notifyEmail,
-                'retentionDuration' => $retentionDuration,
             ];
 
             $bodyJson = json_encode($requestBody);
@@ -3022,8 +2972,6 @@ class CurlGetTest extends ApiTestCase
                 [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ],
                 [],
                 [
@@ -3101,13 +3049,11 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $requestBody = [
                 'fileName' => $fileName,
                 'fileHash' => $fileHash,
-                'notifyEmail' => $notifyEmail,
-                'retentionDuration' => $retentionDuration,
             ];
 
             $bodyJson = json_encode($requestBody);
@@ -3123,8 +3069,6 @@ class CurlGetTest extends ApiTestCase
                 [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ],
                 [],
                 [
@@ -3259,13 +3203,11 @@ class CurlGetTest extends ApiTestCase
                 $retentionDuration = $this->files[$i]['retention'];
                 $action = 'POST';
 
-                $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+                $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
                 $requestBody = [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ];
 
                 $bodyJson = json_encode($requestBody);
@@ -3281,8 +3223,6 @@ class CurlGetTest extends ApiTestCase
                     [
                         'fileName' => $fileName,
                         'fileHash' => $fileHash,
-                        'notifyEmail' => $notifyEmail,
-                        'retentionDuration' => $retentionDuration,
                     ],
                     [],
                     [
@@ -3378,13 +3318,11 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/download?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files/download?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $requestBody = [
                 'fileName' => $fileName,
                 'fileHash' => $fileHash,
-                'notifyEmail' => $notifyEmail,
-                'retentionDuration' => $retentionDuration,
             ];
 
             $bodyJson = json_encode($requestBody);
@@ -3400,8 +3338,6 @@ class CurlGetTest extends ApiTestCase
                 [
                     'fileName' => $fileName,
                     'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
                 ],
                 [],
                 [
