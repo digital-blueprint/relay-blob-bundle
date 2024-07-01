@@ -135,6 +135,7 @@ final class CreateFileDataAction extends BaseBlobController
         } else {
             $fileData->setExistsUntil(null);
         }
+
         /* set given and calculated values */
         $fileData->setFileName($fileName);
         $fileData->setNotifyEmail($notifyEmail);

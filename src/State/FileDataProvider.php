@@ -298,7 +298,9 @@ class FileDataProvider extends AbstractDataProvider
                 $fileData = $this->blobService->getLink($fileData);
                 $baseUrl = $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost();
                 $fileData->setContentUrl($this->blobService->generateGETLink($baseUrl, $fileData, $includeData));
-                $fileData->setExistsUntil($fileData->getDateCreated()->add(new \DateInterval($this->blobService->getDefaultRetentionDurationByBucketId($bucketID))));
+                if (!$fileData->getExistsUntil()) {
+                    $fileData->setExistsUntil($fileData->getDateCreated()->add(new \DateInterval($this->blobService->getDefaultRetentionDurationByBucketId($bucketID))));
+                }
             } catch (\Exception $e) {
                 // skip file not found
                 // TODO how to handle this correctly? This should never happen in the first place
