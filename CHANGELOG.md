@@ -5,6 +5,8 @@
 * Add separate config option for when a quota warning email should be sent
 * Minimize the contents of the `reporting` email to prevent it from getting too big (before it had every file that will soon expire in it)
 * Implement the flag `disableValidation` that disables output validation for GET requests if set to `=1`
+* `exists_until` is now set to NULL if should be the max retention duration, to reflect changes in the config immediately
+* Rename `additionalMetadata` to `metadata` and `additionalType` to `type`
 * Code cleanup
 
 ## v0.1.34
