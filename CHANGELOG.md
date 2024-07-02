@@ -7,6 +7,7 @@
 * Implement the flag `disableValidation` that disables output validation for GET requests if set to `=1`
 * `exists_until` is now set to NULL if should be the max retention duration, to reflect changes in the config immediately
 * Rename `additionalMetadata` to `metadata` and `additionalType` to `type`
+* Update documentation
 * Code cleanup
 
 ## v0.1.34
