@@ -133,14 +133,14 @@ class FileDataProvider extends AbstractDataProvider
                     assert(is_string($additionalType));
 
                     if (!array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
-                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad additionalType', 'blob:patch-file-data-bad-additional-type');
+                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad type', 'blob:patch-file-data-bad-type');
                     }
                     $fileData->setType($additionalType);
                 }
 
                 if ($additionalMetadata) {
                     if (!json_decode($additionalMetadata, true)) {
-                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata is no valid JSON!', 'blob:patch-file-data-bad-additional-metadata');
+                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given metadata is no valid JSON!', 'blob:patch-file-data-bad-metadata');
                     }
                     $storedType = $fileData->getType();
                     if ($storedType) {
@@ -148,7 +148,7 @@ class FileDataProvider extends AbstractDataProvider
                         $metadataDecoded = json_decode($additionalMetadata);
 
                         if ($validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
-                            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given additionalMetadata does not fit additionalType schema!', 'blob:patch-file-data-additional-type-mismatch');
+                            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given metadata does not fit type schema!', 'blob:patch-file-data-type-mismatch');
                         }
                     }
                     $hash = hash('sha256', $file->getContent());

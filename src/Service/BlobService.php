@@ -1064,13 +1064,13 @@ class BlobService
 
         // check if metadata is a valid json
         if ($additionalMetadata && !json_decode($additionalMetadata, true)) {
-            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad additionalMetadata', $errorPrefix.'-bad-additional-metadata');
+            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad metadata', $errorPrefix.'-bad-metadata');
         }
 
         $bucket = $this->getBucketByID($bucketID);
         // check if additionaltype is defined
         if ($additionalType && !array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
-            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad additionalType', $errorPrefix.'-bad-additional-type');
+            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
         }
 
         $validator = new Validator();
@@ -1078,7 +1078,7 @@ class BlobService
 
         // check if given additionalMetadata json has the same keys like the defined additionalType
         if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
-            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'additionalType mismatch', $errorPrefix.'-additional-type-mismatch');
+            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'type mismatch', $errorPrefix.'-type-mismatch');
         }
     }
 
