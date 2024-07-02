@@ -103,14 +103,14 @@ class FileData
     /**
      * @var string
      */
-    #[ORM\Column(name: 'additional_metadata', type: 'json', nullable: true)]
+    #[ORM\Column(type: 'json', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
     private $metadata;
 
     /**
      * @var string
      */
-    #[ORM\Column(name: 'additional_type', type: 'text', nullable: true)]
+    #[ORM\Column(type: 'text', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
     private $type;
 
