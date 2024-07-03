@@ -87,7 +87,7 @@ final class CreateFileDataAction extends BaseBlobController
 
         // check if metadata is a valid json
         if ($additionalMetadata && !json_decode($additionalMetadata, true)) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad metadata', 'blob:create-file-bad-metadata');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad metadata', 'blob:create-file-data-bad-metadata');
         }
 
         // get current bucket
@@ -95,14 +95,14 @@ final class CreateFileDataAction extends BaseBlobController
 
         // check if additionaltype is defined
         if ($additionalType && !array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad type', 'blob:create-file-bad-type');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad type', 'blob:create-file-data-bad-type');
         }
 
         /* check if given metadata json has the same keys like the defined type */
         $validator = new Validator();
         $metadataDecoded = (object) json_decode($additionalMetadata);
         if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'type mismatch', 'blob:create-file-type-mismatch');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'type mismatch', 'blob:create-file-data-type-mismatch');
         }
 
         // get the filedata of the request

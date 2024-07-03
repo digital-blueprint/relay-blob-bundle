@@ -153,7 +153,7 @@ class FileDataProvider extends AbstractDataProvider
                     }
                     $hash = hash('sha256', $file->getContent());
                     if ($metadataHash && $hash !== $metadataHash) {
-                        throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:patch-file-data-file-hash-change-forbidden');
+                        throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Metadata hash change forbidden', 'blob:patch-file-data-metadata-hash-change-forbidden');
                     }
                     assert(is_string($additionalMetadata));
                     $fileData->setMetadata($additionalMetadata);
