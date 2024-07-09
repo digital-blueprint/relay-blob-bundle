@@ -1,0 +1,14 @@
+<html>
+<p>
+<p><b>Bucket size check report</b></p>
+<p>If you receive this email, then the size of your blob bucket is different in the blob_files table, the blob_bucket_sizes table and the actual file storage.</p>
+<p>This means that there is some inconsistency between the databases and the actual file storage, and some files might not be retrievable like they are supposed to be.</p>
+<p><b>Internal bucket Id:</b>< {{ internalBucketId }} </p>
+<p><b>Bucket Id:</b>< {{ bucketId }} </p>
+<p><b>Sum of sizes of the blob_files table:</b> {{ blobFilesSize }} </p>
+<p><b>Number of entries in the blob_files table:</b> {{ blobFilesCount }} </p>
+<p><b>Size in the blob_bucket_sizes table:</b> {{ blobBucketSizes }} </p>
+<p><b>Sum of sizes in the storage backend:</b> {{ blobBackendSize }} </p>
+<p><b>Number of files in the storage backend:</b> {{ blobBackendCount }} </p>
+</body>
+</html>

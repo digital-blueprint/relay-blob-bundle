@@ -89,6 +89,11 @@ class Bucket
      */
     private $outputValidation;
 
+    /**
+     * @var ?array
+     */
+    private $bucketSizeConfig;
+
     public function getIdentifier(): string
     {
         return $this->identifier;
@@ -225,6 +230,18 @@ class Bucket
         return $this;
     }
 
+    public function getBucketSizeConfig(): ?array
+    {
+        return $this->bucketSizeConfig;
+    }
+
+    public function setBucketSizeConfig(?array $bucketSizeConfig): self
+    {
+        $this->bucketSizeConfig = $bucketSizeConfig;
+
+        return $this;
+    }
+
     public function getAdditionalTypes(): ?array
     {
         return $this->additionalTypes;
@@ -299,6 +316,18 @@ class Bucket
             && !empty($config['integrity']['html_template'])
         ) {
             $bucket->setIntegrityCheckConfig($config['integrity']);
+        }
+
+        if (
+            array_key_exists('bucket_size', $config)
+            && is_array($config['bucket_size'])
+            && !empty($config['bucket_size']['dsn'])
+            && !empty($config['bucket_size']['from'])
+            && !empty($config['bucket_size']['to'])
+            && !empty($config['bucket_size']['subject'])
+            && !empty($config['bucket_size']['html_template'])
+        ) {
+            $bucket->setBucketSizeConfig($config['bucket_size']);
         }
 
         if (

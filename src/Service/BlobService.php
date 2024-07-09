@@ -311,6 +311,7 @@ class BlobService
     public function checkIntegrity()
     {
         $buckets = $this->configurationService->getBuckets();
+
         foreach ($buckets as $bucket) {
             try {
                 $fileDatas = $this->getFileDataByBucketID($bucket->getIdentifier());
@@ -908,6 +909,7 @@ class BlobService
     {
         $buckets = $this->configurationService->getBuckets();
         foreach ($buckets as $bucket) {
+            $config = $bucket->getBucketSizeConfig();
             $query = $this->em
                 ->getRepository(FileData::class)
                 ->createQueryBuilder('f')
@@ -926,10 +928,38 @@ class BlobService
                 } else {
                     $bucketSize = 0;
                 }
+                $service = $this->datasystemService->getServiceByBucket($bucket);
+                $filebackendSize = $service->getSumOfFilesizesOfBucket($bucket);
+                $filebackendNumOfFiles = $service->getNumberOfFilesInBucket($bucket);
 
-                $bucket = $this->getBucketByInternalIdFromDatabase($bucket->getIdentifier());
-                $bucket->setCurrentBucketSize($bucketSize);
-                $this->saveBucketData($bucket);
+                $dbBucket = $this->getBucketByInternalIdFromDatabase($bucket->getIdentifier());
+                $savedBucketSize = $dbBucket->getCurrentBucketSize();
+
+                $query = $this->em
+                    ->getRepository(FileData::class)
+                    ->createQueryBuilder('f')
+                    ->where('f.internalBucketId = :bucketID')
+                    ->setParameter('bucketID', $bucket->getIdentifier())
+                    ->select('COUNT(f.identifier) as numOfItems');
+
+                $result = $query->getQuery()->getOneOrNullResult();
+
+                if ($result) {
+                    $bucketFilesCount = $result['numOfItems'];
+
+                    if (($bucketSize !== $savedBucketSize || $bucketSize !== $filebackendSize || $savedBucketSize !== $filebackendSize) || $filebackendNumOfFiles !== $bucketFilesCount) {
+                        $context = [
+                            'internalBucketId' => $bucket->getIdentifier(),
+                            'bucketId' => $bucket->getBucketID(),
+                            'blobFilesSize' => $bucketSize,
+                            'blobFilesCount' => $bucketFilesCount,
+                            'blobBucketSizes' => $savedBucketSize,
+                            'blobBackendSize' => $filebackendSize,
+                            'blobBackendCount' => $filebackendNumOfFiles,
+                        ];
+                        $this->sendEmail($config, $context);
+                    }
+                }
             }
         }
     }
