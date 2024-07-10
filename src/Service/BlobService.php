@@ -12,6 +12,7 @@ use Doctrine\DBAL\Exception;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonSchema\Validator;
 use Ramsey\Uuid\Uuid;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -308,7 +309,7 @@ class BlobService
     /**
      * @throws \Exception
      */
-    public function checkIntegrity()
+    public function checkIntegrity(?OutputInterface $out = null, $sendEmail = true)
     {
         $buckets = $this->configurationService->getBuckets();
 
@@ -344,7 +345,12 @@ class BlobService
                     $invalidDatas[] = $fileData;
                 }
             }
-            // $this->sendIntegrityCheckMail($bucket, $invalidDatas);
+
+            if ($sendEmail) {
+                $this->sendIntegrityCheckMail($bucket, $invalidDatas);
+            } elseif (!$sendEmail && $out !== null) {
+                $this->printIntegrityCheck($bucket, $invalidDatas, $out);
+            }
         }
     }
 
@@ -388,6 +394,30 @@ class BlobService
 
             $config = $integrityConfig;
             $this->sendEmail($config, $context);
+        }
+    }
+
+    /**
+     * Checks whether some files will expire soon, and sends a email to the bucket owner
+     * or owner of the file (if configured as notifyEmail).
+     *
+     * @return void
+     *
+     * @throws \Exception
+     */
+    public function printIntegrityCheck(Bucket $bucket, array $invalidDatas, OutputInterface $out)
+    {
+        if (!empty($invalidDatas)) {
+            $out->writeln('Found invalid data for bucket with bucket id: '.$bucket->getBucketID().' and internal bucket id: '.$bucket->getIdentifier());
+            $out->writeln('The following blob file ids contain either invalid filedata or metadata:');
+            // print all identifiers that failed the integrity check
+            foreach ($invalidDatas as $fileData) {
+                /* @var ?FileData $fileData */
+                $out->writeln($fileData->getIdentifier());
+            }
+            $out->writeln(' ');
+        } else {
+            $out->writeln('No invalid data was found!');
         }
     }
 
@@ -905,7 +935,7 @@ class BlobService
         $mailer->send($email);
     }
 
-    public function checkFileSize()
+    public function checkFileSize(?OutputInterface $out = null, $sendEmail = false)
     {
         $buckets = $this->configurationService->getBuckets();
         foreach ($buckets as $bucket) {
@@ -957,11 +987,27 @@ class BlobService
                             'blobBackendSize' => $filebackendSize,
                             'blobBackendCount' => $filebackendNumOfFiles,
                         ];
-                        $this->sendEmail($config, $context);
+
+                        if ($sendEmail) {
+                            $this->sendEmail($config, $context);
+                        } elseif (!$sendEmail && $out !== null) {
+                            $this->printFileSizeCheck($out, $context);
+                        }
                     }
                 }
             }
         }
+    }
+
+    public function printFileSizeCheck(OutputInterface $out, array $context)
+    {
+        $out->writeln('Checking bucket with bucket id: '.$context['bucketId'].' and internal bucket id: '.$context['internalBucketId']);
+        $out->writeln('Sum of sizes of the blob_files table: '.$context['blobFilesSize']);
+        $out->writeln('Number of entries in the blob_files table: '.$context['blobFilesCount']);
+        $out->writeln('Stored sum of sizes in the blob_bucket_sizes table: '.$context['blobBucketSizes']);
+        $out->writeln('Sum of sizes in the storage backend: '.$context['blobBackendSize']);
+        $out->writeln('Number of files in the storage backend: '.$context['blobBackendCount']);
+        $out->writeln(' ');
     }
 
     public function getAdditionalAuthFromConfig()
