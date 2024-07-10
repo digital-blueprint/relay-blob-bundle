@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Tests;
 
+use Dbp\Relay\BlobBundle\Entity\Bucket;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\DatasystemProviderServiceInterface;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -119,5 +120,33 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         self::$data[$fileData->getIdentifier()] = $fileData->getFile();
 
         return $fileData;
+    }
+
+    public function getSumOfFilesizesOfBucket(Bucket $bucket): int
+    {
+        $sumOfFileSizes = 0;
+
+        /** @var FileData $data */
+        foreach (self::$fd as $data) {
+            if ($data->getInternalBucketID() === $bucket->getIdentifier()) {
+                $sumOfFileSizes += $data->getFileSize();
+            }
+        }
+
+        return $sumOfFileSizes;
+    }
+
+    public function getNumberOfFilesInBucket(Bucket $bucket): int
+    {
+        $numOfFiles = 0;
+
+        /** @var FileData $data */
+        foreach (self::$fd as $data) {
+            if ($data->getInternalBucketID() === $bucket->getIdentifier()) {
+                ++$numOfFiles;
+            }
+        }
+
+        return $numOfFiles;
     }
 }
