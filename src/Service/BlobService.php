@@ -696,12 +696,16 @@ class BlobService
             ->orderBy('f.notifyEmail', 'ASC')
             ->orderBy('f.existsUntil', 'ASC')
             ->setParameter('bucketID', $bucketID);
-
-        if (!empty($query->getQuery()->getResult())) {
+        $result = $query->getQuery()->getResult();
+        if (!empty($result)) {
             /** @var FileData $fileData */
             foreach ($query->getQuery()->getResult() as $fileData) {
-                if ($fileData->getRetentionDuration() === null) {
-                    if ($fileData->getDateCreated()->add($this->getDefaultRetentionDurationByBucketId($bucketID)) < $expiry) {
+                if ($fileData->getExistsUntil() === null) {
+                    if ($fileData->getDateCreated()->add(new \DateInterval($this->getDefaultRetentionDurationByInternalBucketId($bucketID))) < $expiry) {
+                        $expiring[] = $fileData;
+                    }
+                } else {
+                    if ($fileData->getExistsUntil() < $expiry) {
                         $expiring[] = $fileData;
                     }
                 }
@@ -816,7 +820,6 @@ class BlobService
         $buckets = $this->configurationService->getBuckets();
         foreach ($buckets as $bucket) {
             $this->sendReportingForBucket($bucket);
-            // $this->sendBucketQuotaWarning($bucket);
         }
     }
 
@@ -898,7 +901,6 @@ class BlobService
                 if ($email) {
                     $config['to'] = $email;
                 }
-
                 $this->sendEmail($config, $context);
             }
         }
@@ -1170,5 +1172,10 @@ class BlobService
     public function getDefaultRetentionDurationByBucketId($bucketId): string
     {
         return $this->configurationService->getBucketByID($bucketId)->getMaxRetentionDuration();
+    }
+
+    public function getDefaultRetentionDurationByInternalBucketId($bucketId): string
+    {
+        return $this->configurationService->getBucketByInternalID($bucketId)->getMaxRetentionDuration();
     }
 }
