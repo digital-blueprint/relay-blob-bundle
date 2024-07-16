@@ -373,17 +373,22 @@ class BlobService
             // create for each email to be notified an array with expiring filedatas
             $files = [];
             foreach ($invalidDatas as $fileData) {
+                $file = [];
                 /* @var ?FileData $fileData */
                 $file['id'] = $fileData->getIdentifier();
                 $file['fileName'] = $fileData->getFileName();
                 $file['prefix'] = $fileData->getPrefix();
                 $file['dateCreated'] = $fileData->getDateCreated()->format('c');
                 $file['lastAccess'] = $fileData->getLastAccess()->format('c');
-                $file['existsUntil'] = $fileData->getExistsUntil()->format('c');
+                if ($fileData->getExistsUntil() !== null) {
+                    $file['existsUntil'] = $fileData->getExistsUntil()->format('c');
+                } else {
+                    $file['existsUntil'] = $fileData->getDateCreated()->add(new \DateInterval($bucket->getMaxRetentionDuration()))->format('c');
+                }
                 if (empty($notifyEmails[$fileData->getNotifyEmail()])) {
                     $notifyEmails[$fileData->getNotifyEmail()] = [];
                 }
-                array_push($files, $file);
+                $files[] = $file;
             }
 
             $context = [
@@ -935,7 +940,7 @@ class BlobService
         $mailer->send($email);
     }
 
-    public function checkFileSize(?OutputInterface $out = null, $sendEmail = false)
+    public function checkFileSize(?OutputInterface $out = null, $sendEmail = true)
     {
         $buckets = $this->configurationService->getBuckets();
         foreach ($buckets as $bucket) {
