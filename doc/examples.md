@@ -324,7 +324,6 @@ $cs = hash('sha256', '/blob/files?bucketID='.$bucketID.'&creationTime='.$creatio
 // create payload for signature
 $payload = [
     'ucs' => $cs,
-    'bcs' => hash('sha256', '{}')
 ];
 
 // 32 byte key required
@@ -447,7 +446,6 @@ $cs = hash('sha256', '/blob/files/'.$id.'?bucketID='.$bucketID.'&creationTime='.
 // create payload for signature
 $payload = [
     'ucs' => $cs,
-    'bcs' => hash('sha256', $body),
 ];
 
 // 32 byte key required

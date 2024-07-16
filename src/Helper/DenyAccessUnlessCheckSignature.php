@@ -64,9 +64,8 @@ class DenyAccessUnlessCheckSignature
         $method = $request->getMethod();
         if ($method === 'POST' || $method === 'PATCH') {
             // check checksum of url and body since both are expected
-            if (!array_key_exists('ucs', $data) || $data['ucs'] !== self::generateSha256FromRequest($request)
-                || !array_key_exists('bcs', $data) || $data['bcs'] !== self::generateSha256FromRequestBody($request)) {
-                throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum bcs or ucs invalid', 'blob:checksum-invalid');
+            if (!array_key_exists('ucs', $data) || $data['ucs'] !== self::generateSha256FromRequest($request)) {
+                throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum ucs invalid', 'blob:checksum-invalid');
             }
         } else {
             // check checksum of only url since no body is expected
@@ -198,7 +197,7 @@ class DenyAccessUnlessCheckSignature
         $creationTime = rawurldecode($creationTime);
         $urlMethod = rawurldecode($urlMethod);
 
-        // check if bucketID is present
+        // check if signature is present
         if (!$sig) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'signature missing', $errorPrefix.'-missing-sig');
         }
@@ -270,30 +269,5 @@ class DenyAccessUnlessCheckSignature
 
         // generate hmac sha256 hash over the uri except the signature part
         return SignatureTools::generateSha256Checksum($url[0]);
-    }
-
-    /**
-     * Generates a sha256 hash from the request body.
-     */
-    public static function generateSha256FromRequestBody(Request $request): string
-    {
-        $body = '';
-
-        // extract data using different methods
-        // for POST
-        if ($request->getMethod() === 'POST') {
-            $body = json_encode($request->request->all(), JSON_FORCE_OBJECT);
-        }
-        // for PATCH
-        elseif ($request->getMethod() === 'PATCH') {
-            $body = BlobUtils::getFieldsFromPatchRequest($request);
-            unset($body['file']);
-            $body = json_encode($body, JSON_FORCE_OBJECT);
-        }
-
-        assert(is_string($body));
-
-        // generate hmac sha256 hash over the body
-        return SignatureTools::generateSha256Checksum($body);
     }
 }
