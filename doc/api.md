@@ -29,7 +29,7 @@ In general, the parameters have to be given in the specified order while optiona
 | `prefix`                                                     | prefix which the file(s) have                                                                                                                          | string        | all valid prefixes               |
 | `startsWith`                                                 | if set, the request operation will affect all prefixes starting with the given prefix                                                                  | int           | `1`                              |
 | `method` (was called `action` until `v0.1.14`)               | method that is used, e.g. `GET` to get files                                                                                                           | string        | `GET`, `POST`, `DELETE`, `PATCH` |
-| `sig`                                                        | signature string of the checksums `ucs` and `bcs`                                                                                                      | string        | all valid signature strings      |
+| `sig`                                                        | signature string of the checksums `ucs`                                                                                                      | string        | all valid signature strings      |
 | `fileName`                                                   | original filename of the file                                                                                                                          | string        | all valid strings                |
 | `fileHash`                                                   | the fileHash of the binary file                                                                                                                        | string        | all valid hash strings           |
 | `includeData` (was called `binary` until `v0.1.14`)          | defines whether the base64 encoded binary data should be returned (=1) or a link to the binary data                                                    | int           | `0` or `1`                       |
@@ -46,9 +46,8 @@ In general, the parameters have to be given in the specified order while optiona
 
     The key should be kept confidential and safe and should NOT be leaked into the frontend or the user! The key has to remain secret!
 
-The signatures are JWTs created with the algorithm `HS256` and are sent as a string. There are two signed items, one is a `SHA-256` checksum `ucs` that was generated using the url and one is a `SHA-256` checksum `bcs` that was generated using the body. `ucs` is needed in every request, while `bcs` is only needed in `POST` and `PATCH` requests!
-Everything beginning from and including `/blob` has to be included when generating the url checksum `ucs`.
-Everything in the body except the `file` formData has to be included when generating the body checksum `bcs`. `POST` and `PATCH` requests should only have multipart/formdata bodys . Everything except the `file` formData needs to be included in the checksum `bcs`.
+The signatures are JWTs created with the algorithm `HS256` and are sent as a string. There is one signed item, a `SHA-256` checksum `ucs` that was generated using the url, and it is needed in every request.
+Everything beginning from and including `/blob` has to be included when generating the url checksum `ucs`. `POST` and `PATCH` requests should only have multipart/formdata bodys.
 The signature then has to be appended at the end of the url using the `sig` parameter.
 The key used for signing and verifying the checksum has to be defined in the blob bucket config and the other backend system communicating with blob.
 
@@ -189,15 +188,15 @@ This means that systems communicating with blob have to also generate their chec
 
 #### GET
 
-| relay:errorId                                       | Status code | Description                                                   | relay:errorDetails | Example |
-|-----------------------------------------------------|-------------|---------------------------------------------------------------|--------------------| ------- |
-| `blob:download-file-by-id-missing-identifier`       | 400         | The identifier `{identifier}` is missing                      | `message`          |         |
-| `blob:download-file-by-id-missing-bucket-id`        | 400         | The bucket id parameter `bucketIdentifier` is missing         | `message`          |         |
-| `blob:download-file-by-id-missing-method`           | 400         | The prefix parameter `prefix` is missing                      | `message`          |         |
-| `blob:download-file-by-id-missing-creation-time`    | 400         | The creation time parameter `creationTime` is missing         | `message`          |         |
-| `blob:download-file-by-id-bucket-id-not-configured` | 400         | The bucket with given `bucketIdentifier` is not configured    | `message`          |         |
-| `blob:download-file-by-id-invalid-method`           | 400         | The action/method combination is not valid                    | `message`          |         |
-| `blob:download-file-by-id-missing-sig`              | 400         | The signature parameter `sig` is missing                      | `message`          |         |
-| `blob:download-file-by-id-creation-time-too-old`    | 403         | The creation time parameter `creationTime` is too old         | `message`          |         |
-| `blob:checksum-invalid`                             | 403         | The checksum `ucs` or `bcs` inside the signature is not valid | `message`          |         |
-| `blob:signature-invalid`                            | 403         | The signature in parameter `sig` is invalid                   | `message`          |         |
+| relay:errorId                                       | Status code | Description                                                | relay:errorDetails | Example |
+|-----------------------------------------------------|-------------|------------------------------------------------------------|--------------------| ------- |
+| `blob:download-file-by-id-missing-identifier`       | 400         | The identifier `{identifier}` is missing                   | `message`          |         |
+| `blob:download-file-by-id-missing-bucket-id`        | 400         | The bucket id parameter `bucketIdentifier` is missing      | `message`          |         |
+| `blob:download-file-by-id-missing-method`           | 400         | The prefix parameter `prefix` is missing                   | `message`          |         |
+| `blob:download-file-by-id-missing-creation-time`    | 400         | The creation time parameter `creationTime` is missing      | `message`          |         |
+| `blob:download-file-by-id-bucket-id-not-configured` | 400         | The bucket with given `bucketIdentifier` is not configured | `message`          |         |
+| `blob:download-file-by-id-invalid-method`           | 400         | The action/method combination is not valid                 | `message`          |         |
+| `blob:download-file-by-id-missing-sig`              | 400         | The signature parameter `sig` is missing                   | `message`          |         |
+| `blob:download-file-by-id-creation-time-too-old`    | 403         | The creation time parameter `creationTime` is too old      | `message`          |         |
+| `blob:checksum-invalid`                             | 403         | The checksum `ucs` inside the signature is not valid       | `message`          |         |
+| `blob:signature-invalid`                            | 403         | The signature in parameter `sig` is invalid                | `message`          |         |
