@@ -180,7 +180,6 @@ class CurlGetTest extends ApiTestCase
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -293,7 +292,6 @@ class CurlGetTest extends ApiTestCase
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
@@ -500,16 +498,8 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "POST file 0 testGetDeleteById\n";
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
@@ -823,18 +813,8 @@ class CurlGetTest extends ApiTestCase
 
             $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-                'notifyEmail' => $notifyEmail,
-                'retentionDuration' => $retentionDuration,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
@@ -959,16 +939,8 @@ class CurlGetTest extends ApiTestCase
 
             $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -1085,16 +1057,8 @@ class CurlGetTest extends ApiTestCase
 
             $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -1143,7 +1107,6 @@ class CurlGetTest extends ApiTestCase
 
                 $payload = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                    'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
                 ];
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
@@ -1207,16 +1170,8 @@ class CurlGetTest extends ApiTestCase
 
             $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -1268,7 +1223,6 @@ class CurlGetTest extends ApiTestCase
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl("{\"fileName\":\"$newFileName\"}"),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
@@ -1361,16 +1315,8 @@ class CurlGetTest extends ApiTestCase
 
             $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -1486,16 +1432,8 @@ class CurlGetTest extends ApiTestCase
 
                 $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
-                $requestBody = [
-                    'fileName' => $fileName,
-                    'fileHash' => $fileHash,
-                ];
-
-                $bodyJson = json_encode($requestBody);
-
                 $data = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                    'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
                 ];
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -1667,16 +1605,8 @@ class CurlGetTest extends ApiTestCase
 
                 $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
-                $requestBody = [
-                    'fileName' => $fileName,
-                    'fileHash' => $fileHash,
-                ];
-
-                $bodyJson = json_encode($requestBody);
-
                 $data = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                    'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
                 ];
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -1830,16 +1760,8 @@ class CurlGetTest extends ApiTestCase
 
             $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -2041,18 +1963,8 @@ class CurlGetTest extends ApiTestCase
                     $connector = '&';
                 }
 
-                $requestBody = [
-                    'fileName' => $fileName,
-                    'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
-                ];
-
-                $bodyJson = json_encode($requestBody);
-
                 $payload = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
-                    'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
                 ];
 
                 if ($i !== count($params) - 1) {
@@ -2135,7 +2047,6 @@ class CurlGetTest extends ApiTestCase
 
                 $payload = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
-                    'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
                 ];
 
                 if ($i !== count($params) - 1) {
@@ -2190,18 +2101,10 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -2376,16 +2279,8 @@ class CurlGetTest extends ApiTestCase
 
             $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -2503,7 +2398,6 @@ class CurlGetTest extends ApiTestCase
 
                 $payload = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
-                    'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
                 ];
                 // get key of wrong bucket
                 $bucket = $configService->getBuckets()[1];
@@ -2572,16 +2466,8 @@ class CurlGetTest extends ApiTestCase
 
             $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -2694,18 +2580,8 @@ class CurlGetTest extends ApiTestCase
                 // url with missing / at the beginning to create a wrong checksum
                 $baseUrl = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action&fileName=test.txt&fileHash=$fileHash";
 
-                $requestBody = [
-                    'fileName' => $fileName,
-                    'fileHash' => $fileHash,
-                    'notifyEmail' => $notifyEmail,
-                    'retentionDuration' => $retentionDuration,
-                ];
-
-                $bodyJson = json_encode($requestBody);
-
                 $payload = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
-                    'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
                 ];
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
@@ -2771,16 +2647,8 @@ class CurlGetTest extends ApiTestCase
 
             $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -2894,7 +2762,6 @@ class CurlGetTest extends ApiTestCase
 
                 $payload = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
-                    'bcs' => $this->generateSha256ChecksumFromUrl('{}'),
                 ];
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
@@ -2954,16 +2821,8 @@ class CurlGetTest extends ApiTestCase
 
             $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -3051,16 +2910,8 @@ class CurlGetTest extends ApiTestCase
 
             $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -3205,16 +3056,8 @@ class CurlGetTest extends ApiTestCase
 
                 $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
-                $requestBody = [
-                    'fileName' => $fileName,
-                    'fileHash' => $fileHash,
-                ];
-
-                $bodyJson = json_encode($requestBody);
-
                 $data = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                    'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
                 ];
 
                 $token = DenyAccessUnlessCheckSignature::create($secret, $data);
@@ -3320,16 +3163,8 @@ class CurlGetTest extends ApiTestCase
 
             $url = "/blob/files/download?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                'bcs' => $this->generateSha256ChecksumFromUrl($bodyJson),
             ];
 
             $token = DenyAccessUnlessCheckSignature::create($secret, $data);
