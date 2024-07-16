@@ -344,6 +344,10 @@ class BlobService
                 } elseif ($fileData->getFileHash() !== null && hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash()) {
                     $invalidDatas[] = $fileData;
                 }
+                // dont overfill the email
+                if ($sendEmail && count($invalidDatas) > 19) {
+                    break;
+                }
             }
 
             if ($sendEmail) {

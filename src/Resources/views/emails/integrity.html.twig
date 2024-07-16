@@ -2,6 +2,7 @@
 <body>
 <p><b>Integrity check report of files of bucket {{ bucketId }} ({{ internalBucketId }})</b></p>
 <p>If there are any files showing up in this email, please check their binary and metadata consistency! The files could be corrupted!</p>
+<tr><td>This only includes the first <b>20 files</b> that are possibly corrupt, for more information please view the files in your bucket.</td></tr>
 <table>
     <tr><th>file id</th><th>filename</th> <th>prefix</th><th>date created</th><th>last access</th><th>exists until</th></tr>
     {% for file in files %}
