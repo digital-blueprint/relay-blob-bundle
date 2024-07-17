@@ -862,6 +862,7 @@ class BlobService
     public function sendReportingForBucket(Bucket $bucket)
     {
         $reportingConfig = $bucket->getReportingConfig();
+        $reportingEmail = $reportingConfig['to'];
 
         $id = $bucket->getIdentifier();
         $name = $bucket->getBucketID();
@@ -882,10 +883,10 @@ class BlobService
                 $file['dateCreated'] = $fileData->getDateCreated()->format('c');
                 $file['lastAccess'] = $fileData->getLastAccess()->format('c');
                 $file['existsUntil'] = $fileData->getExistsUntil()->format('c');
-                if (empty($notifyEmails[$fileData->getNotifyEmail()])) {
-                    $notifyEmails[$fileData->getNotifyEmail()] = [];
+                if (empty($notifyEmails[$reportingEmail])) {
+                    $notifyEmails[$reportingEmail] = [];
                 }
-                array_push($notifyEmails[$fileData->getNotifyEmail()], $file);
+                array_push($notifyEmails[$reportingEmail], $file);
             }
 
             foreach ($notifyEmails as $email => $files) {
@@ -898,9 +899,9 @@ class BlobService
 
                 $config = $reportingConfig;
                 // replace the default email with a given email
-                if ($email) {
+                /*if ($email) {
                     $config['to'] = $email;
-                }
+                }*/
                 $this->sendEmail($config, $context);
             }
         }
