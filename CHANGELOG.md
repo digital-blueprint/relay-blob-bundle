@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.1.36
+* Disable sending the reporting email to the given `notifyEmail` for now since a bug would leak information about the amount of other files getting deleted
+
 ## v0.1.35
 * Fix bug which prevented the sending of the reporting emails
 * Add separate config option for when a quota warning email should be sent
