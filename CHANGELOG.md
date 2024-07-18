@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.1.37
+* Fix bug that made it impossible to change the `type` in some cases in a `PATCH` request
+
 ## v0.1.36
 * Disable sending the reporting email to the given `notifyEmail` for now since a bug would leak information about the amount of other files getting deleted
 
