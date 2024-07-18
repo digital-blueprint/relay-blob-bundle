@@ -129,10 +129,10 @@ class FileDataProvider extends AbstractDataProvider
                 }
                 $bucket = $this->blobService->getBucketByID($bucketID);
 
-                if ($additionalType) {
+                if (array_key_exists('type', $filters)) {
                     assert(is_string($additionalType));
 
-                    if (!array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
+                    if (!empty($additionalType) && !array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
                         throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad type', 'blob:patch-file-data-bad-type');
                     }
                     $fileData->setType($additionalType);
@@ -147,11 +147,11 @@ class FileDataProvider extends AbstractDataProvider
                         $validator = new Validator();
                         $metadataDecoded = json_decode($additionalMetadata);
 
-                        if ($validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
+                        if (array_key_exists('type', $filters) && !empty($additionalType) && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
                             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given metadata does not fit type schema!', 'blob:patch-file-data-type-mismatch');
                         }
                     }
-                    $hash = hash('sha256', $file->getContent());
+                    $hash = hash('sha256', $additionalMetadata);
                     if ($metadataHash && $hash !== $metadataHash) {
                         throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Metadata hash change forbidden', 'blob:patch-file-data-metadata-hash-change-forbidden');
                     }

@@ -61,17 +61,9 @@ class DenyAccessUnlessCheckSignature
     {
         $data = self::verify($secret, $sig);
 
-        $method = $request->getMethod();
-        if ($method === 'POST' || $method === 'PATCH') {
-            // check checksum of url and body since both are expected
-            if (!array_key_exists('ucs', $data) || $data['ucs'] !== self::generateSha256FromRequest($request)) {
-                throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum ucs invalid', 'blob:checksum-invalid');
-            }
-        } else {
-            // check checksum of only url since no body is expected
-            if (!array_key_exists('ucs', $data) || $data['ucs'] !== self::generateSha256FromRequest($request)) {
-                throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum ucs invalid', 'blob:checksum-invalid');
-            }
+        // check checksum of only url since no body is expected
+        if (!array_key_exists('ucs', $data) || $data['ucs'] !== self::generateSha256FromRequest($request)) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum ucs invalid', 'blob:checksum-invalid');
         }
 
         return $data;
