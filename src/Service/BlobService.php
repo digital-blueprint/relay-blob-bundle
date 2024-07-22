@@ -1022,7 +1022,7 @@ class BlobService
         $out->writeln(' ');
     }
 
-    public function getAdditionalAuthFromConfig()
+    public function getAdditionalAuthFromConfig(): bool
     {
         return $this->configurationService->checkAdditionalAuth();
     }

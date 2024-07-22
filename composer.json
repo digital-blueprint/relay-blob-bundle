@@ -8,7 +8,7 @@
         "ext-json": "*",
         "api-platform/core": "^2.7.11 || ^3.2",
         "dbp/relay-blob-library": "^0.2.0",
-        "dbp/relay-core-bundle": "^0.1.153",
+        "dbp/relay-core-bundle": "^0.1.173",
         "doctrine/dbal": "^3.3",
         "doctrine/doctrine-bundle": "^2.11",
         "doctrine/doctrine-migrations-bundle": "^3.3",

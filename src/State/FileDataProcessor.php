@@ -4,41 +4,30 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\State;
 
-use ApiPlatform\Metadata\DeleteOperationInterface;
-use ApiPlatform\Metadata\Operation;
-use ApiPlatform\State\ProcessorInterface;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Dbp\Relay\CoreBundle\Rest\AbstractDataProcessor;
 
-/**
- * @psalm-suppress MissingTemplateParam
- */
-class FileDataProcessor extends AbstractController implements ProcessorInterface
+class FileDataProcessor extends AbstractDataProcessor
 {
-    /**
-     * @var BlobService
-     */
-    private $blobService;
+    private BlobService $blobService;
 
     public function __construct(BlobService $blobService)
     {
+        parent::__construct();
+
         $this->blobService = $blobService;
     }
 
     /**
-     * @return mixed
+     * @throws \Exception
      */
-    public function process($data, Operation $operation, array $uriVariables = [], array $context = [])
+    protected function removeItem(mixed $identifier, mixed $data, array $filters): void
     {
         // no need to check, because signature is checked by getting the data
         assert($data instanceof FileData);
 
-        if ($operation instanceof DeleteOperationInterface) {
-            $docBucket = $this->blobService->getBucketByInternalIdFromDatabase($data->getInternalBucketID());
-            $this->blobService->writeToTablesAndRemoveFileData($data, $docBucket->getCurrentBucketSize() - $data->getFileSize());
-        }
-
-        return $data;
+        $docBucket = $this->blobService->getBucketByInternalIdFromDatabase($data->getInternalBucketID());
+        $this->blobService->writeToTablesAndRemoveFileData($data, $docBucket->getCurrentBucketSize() - $data->getFileSize());
     }
 }

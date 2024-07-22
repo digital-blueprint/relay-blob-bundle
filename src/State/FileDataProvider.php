@@ -23,39 +23,28 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class FileDataProvider extends AbstractDataProvider
 {
-    /**
-     * @var BlobService
-     */
-    private $blobService;
-
-    /**
-     * @var RequestStack
-     */
-    private $requestStack;
-
-    /**
-     * @var EventDispatcherInterface
-     */
-    private $eventDispatcher;
+    private BlobService $blobService;
+    private RequestStack $requestStack;
+    private EventDispatcherInterface $eventDispatcher;
 
     public function __construct(BlobService $blobService, RequestStack $requestStack, EventDispatcherInterface $eventDispatcher)
     {
         parent::__construct();
+
         $this->blobService = $blobService;
         $this->requestStack = $requestStack;
         $this->eventDispatcher = $eventDispatcher;
     }
 
-    protected function isUserGrantedOperationAccess(int $operation): bool
+    protected function requiresAuthentication(int $operation): bool
     {
-        if ($this->blobService->getAdditionalAuthFromConfig()) {
-            return $this->isAuthenticated();
-        } else {
-            return true;
-        }
+        return $this->blobService->getAdditionalAuthFromConfig();
     }
 
-    protected function getItemById(string $id, array $filters = [], array $options = []): ?object
+    /**
+     * @throws \JsonException
+     */
+    protected function getItemById(string $id, array $filters = [], array $options = []): ?FileData
     {
         return $this->getFileDataById($id, $filters);
     }

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+## v0.1.38
+* Update core and adapt signatures of FileDataProvider and FileDataProcessor
+
 ## v0.1.37
 * Fix bug that made it impossible to change the `type` in some cases in a `PATCH` request
 
