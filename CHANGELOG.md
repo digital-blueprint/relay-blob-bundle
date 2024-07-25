@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased
+## v0.1.39
+* Disable reporting emails for now due to potential to run out of memory if database is big
 
 ## v0.1.38
 * Update core and adapt signatures of FileDataProvider and FileDataProcessor
