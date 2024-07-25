@@ -818,9 +818,9 @@ class BlobService
     public function sendReporting()
     {
         $buckets = $this->configurationService->getBuckets();
-        foreach ($buckets as $bucket) {
-            $this->sendReportingForBucket($bucket);
-        }
+        /*foreach ($buckets as $bucket) {
+            // $this->sendReportingForBucket($bucket);
+        }*/
     }
 
     /**

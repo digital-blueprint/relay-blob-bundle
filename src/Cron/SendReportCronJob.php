@@ -39,6 +39,6 @@ class SendReportCronJob implements CronJobInterface
 
     public function run(CronOptions $options): void
     {
-        $this->blobService->sendReporting();
+        // $this->blobService->sendReporting();
     }
 }
