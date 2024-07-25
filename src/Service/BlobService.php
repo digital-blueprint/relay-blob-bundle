@@ -426,7 +426,7 @@ class BlobService
             }
             $out->writeln(' ');
         } else {
-            $out->writeln('No invalid data was found!');
+            $out->writeln('No invalid data was found for bucket with bucket id: '.$bucket->getBucketID().' and internal bucket id'.$bucket->getIdentifier());
         }
     }
 
@@ -950,8 +950,22 @@ class BlobService
     public function checkFileSize(?OutputInterface $out = null, $sendEmail = true)
     {
         $buckets = $this->configurationService->getBuckets();
+
+        // sum of file sizes in the blob_files table
+        $sumBucketSizes = [];
+
+        // sum thats saved for each bucket in the blob_bucket_sizes table
+        $dbBucketSizes = [];
+
+        // number of files that are in each bucket on the file system
+        $countBucketSizes = [];
+
         foreach ($buckets as $bucket) {
             $config = $bucket->getBucketSizeConfig();
+            if (!$sendEmail && $out !== null) {
+                $out->writeln('Retrieving database information for bucket with bucket id: '.$bucket->getBucketID().' and internal bucket id: '.$bucket->getIdentifier());
+                $out->writeln('Calculating sum of fileSizes in the blob_files table ...');
+            }
             $query = $this->em
                 ->getRepository(FileData::class)
                 ->createQueryBuilder('f')
@@ -970,12 +984,17 @@ class BlobService
                 } else {
                     $bucketSize = 0;
                 }
-                $service = $this->datasystemService->getServiceByBucket($bucket);
-                $filebackendSize = $service->getSumOfFilesizesOfBucket($bucket);
-                $filebackendNumOfFiles = $service->getNumberOfFilesInBucket($bucket);
+
+                $sumBucketSizes[$bucket->getIdentifier()] = $bucketSize;
 
                 $dbBucket = $this->getBucketByInternalIdFromDatabase($bucket->getIdentifier());
                 $savedBucketSize = $dbBucket->getCurrentBucketSize();
+
+                $dbBucketSizes[$bucket->getIdentifier()] = $savedBucketSize;
+
+                if (!$sendEmail && $out !== null) {
+                    $out->writeln('Counting number of entries in the blob_files table ...');
+                }
 
                 $query = $this->em
                     ->getRepository(FileData::class)
@@ -989,23 +1008,52 @@ class BlobService
                 if ($result) {
                     $bucketFilesCount = $result['numOfItems'];
 
-                    if (($bucketSize !== $savedBucketSize || $bucketSize !== $filebackendSize || $savedBucketSize !== $filebackendSize) || $filebackendNumOfFiles !== $bucketFilesCount) {
-                        $context = [
-                            'internalBucketId' => $bucket->getIdentifier(),
-                            'bucketId' => $bucket->getBucketID(),
-                            'blobFilesSize' => $bucketSize,
-                            'blobFilesCount' => $bucketFilesCount,
-                            'blobBucketSizes' => $savedBucketSize,
-                            'blobBackendSize' => $filebackendSize,
-                            'blobBackendCount' => $filebackendNumOfFiles,
-                        ];
+                    $countBucketSizes[$bucket->getIdentifier()] = $bucketFilesCount;
+                }
+            }
+            if (!$sendEmail && $out !== null) {
+                $out->writeln(' ');
+            }
+        }
 
-                        if ($sendEmail) {
-                            $this->sendEmail($config, $context);
-                        } elseif (!$sendEmail && $out !== null) {
-                            $this->printFileSizeCheck($out, $context);
-                        }
-                    }
+        foreach ($buckets as $bucket) {
+            if (!$sendEmail && $out !== null) {
+                $out->writeln('Retrieving filesystem information for bucket with bucket id: '.$bucket->getBucketID().' and internal bucket id: '.$bucket->getIdentifier());
+                $out->writeln('Calculating sum of fileSizes in the bucket directory ...');
+            }
+            $service = $this->datasystemService->getServiceByBucket($bucket);
+            $filebackendSize = $service->getSumOfFilesizesOfBucket($bucket);
+
+            if (!$sendEmail && $out !== null) {
+                $out->writeln('Counting number of files in the bucket directory ...');
+            }
+
+            $filebackendNumOfFiles = $service->getNumberOfFilesInBucket($bucket);
+
+            $bucketSize = $sumBucketSizes[$bucket->getIdentifier()];
+            $savedBucketSize = $dbBucketSizes[$bucket->getIdentifier()];
+            $bucketFilesCount = $countBucketSizes[$bucket->getIdentifier()];
+
+            if (($bucketSize !== $savedBucketSize || $bucketSize !== $filebackendSize || $savedBucketSize !== $filebackendSize) || $filebackendNumOfFiles !== $bucketFilesCount) {
+                $context = [
+                    'internalBucketId' => $bucket->getIdentifier(),
+                    'bucketId' => $bucket->getBucketID(),
+                    'blobFilesSize' => $bucketSize,
+                    'blobFilesCount' => $bucketFilesCount,
+                    'blobBucketSizes' => $savedBucketSize,
+                    'blobBackendSize' => $filebackendSize,
+                    'blobBackendCount' => $filebackendNumOfFiles,
+                ];
+
+                if ($sendEmail) {
+                    $this->sendEmail($config, $context);
+                } elseif (!$sendEmail && $out !== null) {
+                    $this->printFileSizeCheck($out, $context);
+                }
+            } else {
+                if (!$sendEmail && $out !== null) {
+                    $out->writeln('Everything as expected!');
+                    $out->writeln(' ');
                 }
             }
         }
@@ -1013,7 +1061,6 @@ class BlobService
 
     public function printFileSizeCheck(OutputInterface $out, array $context)
     {
-        $out->writeln('Checking bucket with bucket id: '.$context['bucketId'].' and internal bucket id: '.$context['internalBucketId']);
         $out->writeln('Sum of sizes of the blob_files table: '.$context['blobFilesSize']);
         $out->writeln('Number of entries in the blob_files table: '.$context['blobFilesCount']);
         $out->writeln('Stored sum of sizes in the blob_bucket_sizes table: '.$context['blobBucketSizes']);
