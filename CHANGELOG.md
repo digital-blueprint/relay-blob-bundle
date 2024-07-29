@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.1.40
+* Optimize `dbp:relay-blob:check-storage` command since it could happen that the doctrine `em` loses connection to the SQL database
+
 ## v0.1.39
 * Disable reporting emails for now due to potential to run out of memory if database is big
 
