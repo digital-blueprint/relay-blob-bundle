@@ -7,7 +7,6 @@ namespace Dbp\Relay\BlobBundle\Command;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class CheckDataIntegrityCommand extends Command
