@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.1.42
+* Disable integrity check cronjob since its inefficient sql uses a lot of memory
+
 ## v0.1.41
 * Optimize dbp:relay-blob:check-integrity` command to either print only the number of affected files or also the ids of the affected files
 
