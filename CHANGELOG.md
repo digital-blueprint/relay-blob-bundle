@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.1.41
+* Optimize dbp:relay-blob:check-integrity` command to either print only the number of affected files or also the ids of the affected files
+
 ## v0.1.40
 * Optimize `dbp:relay-blob:check-storage` command since it could happen that the doctrine `em` loses connection to the SQL database
 
