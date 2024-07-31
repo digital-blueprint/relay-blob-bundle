@@ -309,7 +309,7 @@ class BlobService
     /**
      * @throws \Exception
      */
-    public function checkIntegrity(?OutputInterface $out = null, $sendEmail = true)
+    public function checkIntegrity(?OutputInterface $out = null, $sendEmail = true, $printIds = false)
     {
         $buckets = $this->configurationService->getBuckets();
 
@@ -353,7 +353,7 @@ class BlobService
             if ($sendEmail) {
                 $this->sendIntegrityCheckMail($bucket, $invalidDatas);
             } elseif (!$sendEmail && $out !== null) {
-                $this->printIntegrityCheck($bucket, $invalidDatas, $out);
+                $this->printIntegrityCheck($bucket, $invalidDatas, $out, $printIds);
             }
         }
     }
@@ -414,16 +414,19 @@ class BlobService
      *
      * @throws \Exception
      */
-    public function printIntegrityCheck(Bucket $bucket, array $invalidDatas, OutputInterface $out)
+    public function printIntegrityCheck(Bucket $bucket, array $invalidDatas, OutputInterface $out, bool $printIds = false)
     {
         if (!empty($invalidDatas)) {
             $out->writeln('Found invalid data for bucket with bucket id: '.$bucket->getBucketID().' and internal bucket id: '.$bucket->getIdentifier());
-            $out->writeln('The following blob file ids contain either invalid filedata or metadata:');
-            // print all identifiers that failed the integrity check
-            foreach ($invalidDatas as $fileData) {
-                /* @var ?FileData $fileData */
-                $out->writeln($fileData->getIdentifier());
+            if ($printIds === true) {
+                $out->writeln('The following blob file ids contain either invalid filedata or metadata:');
+                // print all identifiers that failed the integrity check
+                foreach ($invalidDatas as $fileData) {
+                    /* @var ?FileData $fileData */
+                    $out->writeln($fileData->getIdentifier());
+                }
             }
+            $out->writeln('In total, '.count($invalidDatas).' files are invalid!');
             $out->writeln(' ');
         } else {
             $out->writeln('No invalid data was found for bucket with bucket id: '.$bucket->getBucketID().' and internal bucket id'.$bucket->getIdentifier());
