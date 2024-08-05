@@ -193,7 +193,7 @@ resources:
               example: "my-prefix/my-subprefix"
             - name: type
               in: query
-              description: ''
+              description: 'Type of the added metadata'
               type: string
               required: false
               example: "generic_id_card"
