@@ -35,7 +35,7 @@ class DeleteFileDatasByPrefix extends BaseBlobController
 
         // check if the minimal required params are present
         if ($prefix === null) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Signature cannot be checked', 'blob:delete-file-data-by-prefix-prefix-missing');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Prefix is missing', 'blob:delete-file-data-by-prefix-prefix-missing');
         }
 
         assert(is_string($prefix));

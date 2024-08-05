@@ -22,27 +22,21 @@ resources:
           tags: ["Blob"]
           summary: "Get the fileshares of a specific bucket with a specific prefix"
           parameters:
-            - name: bucketID
+            - name: bucketIdentifier
               in: query
               description: 'Identifier of bucket'
               type: string
               required: true
-              example: "1234"
+              example: "01910e0c-036a-734e-a9f1-795d6540ed97"
             - name: creationTime
               in: query
               description: 'Current time in ISO 8601'
               type: string
               required: true
               example: "2019-09-07T-15:50+00"
-            - name: prefix
-              in: query
-              description: 'Prefix of a file collection'
-              type: string
-              required: true
-              example: "my-prefix/my-subprefix"
             - name: method
               in: query
-              description: 'method that gets executed'
+              description: 'Method that gets executed'
               type: string
               required: true
               example: "GET"
@@ -52,12 +46,30 @@ resources:
               type: string
               required: false
               example: "1"
+            - name: prefix
+              in: query
+              description: 'Prefix of a file collection'
+              type: string
+              required: true
+              example: "my-prefix/my-subprefix"
             - name: sig
               in: query
               description: 'Signature containing the checksum required for the check'
               type: string
               required: true
               example: ""
+            - name: page
+              in: query
+              description: 'Page of data that should be accessed'
+              type: string
+              required: false
+              example: "1"
+            - name: perPage
+              in: query
+              description: 'Number of items per page'
+              type: string
+              required: false
+              example: "30"
 
       ApiPlatform\Metadata\Get:
         security: 'is_granted("IS_AUTHENTICATED_FULLY")'
@@ -67,36 +79,30 @@ resources:
           tags: ["Blob"]
           summary: "Get the fileshare of a specific bucket with a specific prefix and a specific id"
           parameters:
-            - name: bucketID
+            - name: bucketIdentifier
               in: query
-              description: 'Identifier of bucket'
+              description: 'Identifier of bucket. Needs to be a UUIDv7.'
               type: string
               required: true
-              example: "1234"
+              example: "01910e0c-036a-734e-a9f1-795d6540ed97"
             - name: creationTime
               in: query
               description: 'Current time in ISO 8601'
               type: string
               required: true
               example: "2019-09-07T-15:50+00 "
-            - name: prefix
-              in: query
-              description: 'Prefix of a file collection'
-              type: string
-              required: true
-              example: "my-prefix/my-subprefix"
-            - name: method
-              in: query
-              description: 'method that gets executed'
-              type: string
-              required: true
-              example: "GET"
             - name: includeData
               in: query
               description: 'If the returned contentUrl is a http link or the base64 encoded data'
               type: string
               required: false
               example: "1"
+            - name: method
+              in: query
+              description: 'Method that gets executed'
+              type: string
+              required: true
+              example: "GET"
             - name: sig
               in: query
               description: 'Signature containing the checksum required for the check'
@@ -115,30 +121,30 @@ resources:
           tags: ["Blob"]
           summary: "Delete a fileshare of a specific bucket with a specific prefix and a specific id"
           parameters:
-            - name: bucketID
+            - name: bucketIdentifier
               in: query
-              description: 'Identifier of bucket'
+              description: 'Identifier of bucket. Needs to be a UUIDv7.'
               type: string
               required: true
-              example: "1234"
+              example: "01910e0c-036a-734e-a9f1-795d6540ed97"
             - name: creationTime
               in: query
               description: 'Current times as ISO 8601'
               type: string
               required: true
               example: "2019-09-07T-15:50+00 "
+            - name: method
+              in: query
+              description: 'Method that gets executed'
+              type: string
+              required: true
+              example: "DELETE"
             - name: prefix
               in: query
               description: 'Prefix of a file collection'
               type: string
               required: true
               example: "my-prefix/my-subprefix"
-            - name: method
-              in: query
-              description: 'method that gets executed'
-              type: string
-              required: true
-              example: "DELETE"
             - name: sig
               in: query
               description: 'Signature containing the checksum required for the check'
@@ -161,42 +167,67 @@ resources:
         openapiContext:
           tags: ["Blob"]
           parameters:
-            - name: bucketID
+            - name: bucketIdentifier
               in: query
-              description: 'Identifier of bucket'
+              description: 'Identifier of bucket. Needs to be a UUIDv7.'
               type: string
               required: true
-              example: "1234"
+              example: "01910e0c-036a-734e-a9f1-795d6540ed97"
             - name: creationTime
               in: query
               description: 'Current time as ISO 8601'
               type: string
               required: true
               example: "2019-09-07T-15:50+00 "
+            - name: method
+              in: query
+              description: 'Method that gets executed'
+              type: string
+              required: true
+              example: "PATCH"
             - name: prefix
               in: query
               description: 'Prefix of a file collection'
               type: string
-              required: true
+              required: false
               example: "my-prefix/my-subprefix"
-            - name: method
+            - name: type
               in: query
-              description: 'method that gets executed'
+              description: ''
               type: string
-              required: true
-              example: "PATCH"
-            - name: fileName
-              in: query
-              description: 'New filename'
-              type: string
-              required: true
-              example: ""
+              required: false
+              example: "generic_id_card"
             - name: sig
               in: query
               description: 'Signature containing the checksum required for the check'
               type: string
               required: true
               example: ""
+          requestBody:
+            content:
+              multipart/form-data:
+                schema:
+                  type: "object"
+                  properties:
+                    file:
+                      type: "string"
+                      format: "binary"
+                    fileName:
+                      description: "Friendly name of the file"
+                      type: "string"
+                      example: "myfile.txt"
+                    fileHash:
+                      description: "Sha256 hash of the file. If one is provided, then it has to match the actual sha256 hash of the uploaded file!"
+                      type: "string"
+                      example: "0938744de39e1afc2d6bca532b937848918c9b4db41689576930d636bd73d275"
+                    metadata:
+                      description: "Metadata for the file"
+                      type: "string"
+                      example: "{\"key\":\"value\"}"
+                    metadataHash:
+                      description: "Sha256 hash of the metadata. If one is provided, then it has to match the actual sha256 hash of the uploaded metadata!"
+                      type: "string"
+                      example: "0938744de39e1afc2d6bca532b937848918c9b4db41689576930d636bd73d275"
 
       ApiPlatform\Metadata\Post:
         security: 'is_granted("IS_AUTHENTICATED_FULLY")'
@@ -208,88 +239,80 @@ resources:
         openapiContext:
           tags: ["Blob"]
           parameters:
-            - name: bucketID
+            - name: bucketIdentifier
               in: query
-              description: 'Identifier of bucket'
+              description: 'Identifier of bucket. Needs to be a UUIDv7.'
               type: string
               required: true
-              example: "1234"
+              example: "01910e0c-036a-734e-a9f1-795d6540ed97"
             - name: creationTime
               in: query
               description: 'Current time as ISO 8601'
               type: string
               required: true
               example: "2019-09-07T-15:50+00 "
-            - name: prefix
-              in: query
-              description: 'Prefix of a file collection'
-              type: string
-              required: true
-              example: "my-prefix/my-subprefix"
             - name: method
               in: query
-              description: 'method that gets executed'
+              description: 'Method that gets executed'
               type: string
               required: true
-              example: "GET"
-            - name: fileName
+              example: "POST"
+            - name: notifyEmail
               in: query
-              description: 'Name of the file to upload'
+              description: 'An email address which gets notified before the files expires'
               type: string
-              required: true
-              example: "test.txt"
-            - name: fileHash
-              in: query
-              description: 'Hash of the file to upload'
-              type: string
-              required: true
-              example: ""
-            - name: sig
-              in: query
-              description: 'Signature containing the checksum required for the check'
-              type: string
-              required: true
+              required: false
               example: ""
             - name: retentionDuration
               in: query
               description: 'Max time in timestamp duration in ISO 8601 format from creation date when file will be deleted'
               type: string
               required: false
-              example: "P2YT6H"
-            - name: notifyEmail
-              in: query
-              description: 'An email address which gets notified before the files expires'
-              type: string
-              required: false
-              example: "test@test.com"
-            - name: additionalMetadata
-              in: query
-              description: 'Additional Metadata for the file'
+              example: "P1D"
+            - name: type
+              in: body
+              description: 'Type of the added metadata'
               type: object
               required: false
-              example: "my File additional Data"
+              example: "generic_id_card"
+            - name: prefix
+              in: query
+              description: 'Prefix of a file collection'
+              type: string
+              required: true
+              example: "my-prefix/my-subprefix"
+            - name: sig
+              in: query
+              description: 'Signature containing the checksum required for the check'
+              type: string
+              required: true
+              example: ""
           requestBody:
             content:
               multipart/form-data:
                 schema:
                   type: "object"
-                  required: ["file", "bucketID"]
+                  required: ["file", "metadata"]
                   properties:
                     file:
                       type: "string"
                       format: "binary"
-                    prefix:
-                      description: "Prefix of the file"
-                      type: "string"
-                      example: "my-prefix/my-subprefix"
                     fileName:
                       description: "Friendly name of the file"
                       type: "string"
-                      example: "myfile"
-                    bucketID:
-                      description: "ID of the bucket"
+                      example: "myfile.txt"
+                    fileHash:
+                      description: "Sha256 hash of the file. If one is provided, then it has to match the actual sha256 hash of the uploaded file!"
                       type: "string"
-                      example: "1234"
+                      example: "0938744de39e1afc2d6bca532b937848918c9b4db41689576930d636bd73d275"
+                    metadata:
+                      description: "Metadata for the file"
+                      type: "string"
+                      example: "{\"key\":\"value\"}"
+                    metadataHash:
+                      description: "Sha256 hash of the metadata. If one is provided, then it has to match the actual sha256 hash of the uploaded metadata!"
+                      type: "string"
+                      example: "0938744de39e1afc2d6bca532b937848918c9b4db41689576930d636bd73d275"
 
       delete_byPrefix:
         security: 'is_granted("IS_AUTHENTICATED_FULLY")'
@@ -305,30 +328,36 @@ resources:
           tags: ["Blob"]
           summary: "Deletes the files of a specific bucket with a specific prefix"
           parameters:
-            - name: bucketID
+            - name: bucketIdentifier
               in: query
-              description: 'Identifier of bucket'
+              description: 'Identifier of bucket. Needs to be a UUIDv7.'
               type: string
               required: true
-              example: "1234"
+              example: "01910e0c-036a-734e-a9f1-795d6540ed97"
             - name: creationTime
               in: query
               description: 'Current time as ISO 8601'
               type: string
               required: true
-              example: "2019-09-07T-15:50+00 "
+              example: "2019-09-07T-15:50+00"
+            - name: method
+              in: query
+              description: 'Method that gets executed'
+              type: string
+              required: true
+              example: "DELETE"
             - name: prefix
               in: query
               description: 'Prefix of a file collection'
               type: string
               required: true
               example: "my-prefix/my-subprefix"
-            - name: method
+            - name: startWith
               in: query
-              description: 'method that gets executed'
+              description: 'If 1, the return value of the request will include all datas of which the prefix begins with the given prefix.'
               type: string
-              required: true
-              example: "DELTEALL"
+              required: false
+              example: "1"
             - name: sig
               in: query
               description: 'Signature containing the checksum required for the check'
@@ -350,12 +379,12 @@ resources:
           tags: ["Blob"]
           summary: "Returns the file with given identifier as a binary response"
           parameters:
-            - name: bucketID
+            - name: bucketIdentifier
               in: query
-              description: 'Identifier of bucket'
+              description: 'Identifier of bucket. Needs to be a UUIDv7.'
               type: string
               required: true
-              example: "1234"
+              example: "01910e0c-036a-734e-a9f1-795d6540ed97"
             - name: creationTime
               in: query
               description: 'Current time as ISO 8601'
@@ -364,7 +393,7 @@ resources:
               example: "2019-09-07T-15:50+00 "
             - name: method
               in: query
-              description: 'method that gets executed'
+              description: 'Method that gets executed'
               type: string
               required: true
               example: "GET"
@@ -383,7 +412,7 @@ resources:
         iri: "https://schema.org/Text"
       fileName:
         iri: "https://schema.org/name"
-      bucketID:
+      bucketIdentifier:
         iri: "https://schema.org/identifier"
       dateCreated:
         iri: "https://schema.org/dateCreated"
