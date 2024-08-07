@@ -9,7 +9,6 @@ use Dbp\Relay\BlobBundle\Event\AddFileDataByPostSuccessEvent;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
-use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use JsonSchema\Constraints\Factory;
 use JsonSchema\Validator;
@@ -25,13 +24,10 @@ final class CreateFileDataAction extends BaseBlobController
 
     private EventDispatcherInterface $eventDispatcher;
 
-    private ConfigurationService $configurationService;
-
-    public function __construct(BlobService $blobService, EventDispatcherInterface $eventDispatcher, ConfigurationService $configurationService)
+    public function __construct(BlobService $blobService, EventDispatcherInterface $eventDispatcher)
     {
         $this->blobService = $blobService;
         $this->eventDispatcher = $eventDispatcher;
-        $this->configurationService = $configurationService;
     }
 
     /**
