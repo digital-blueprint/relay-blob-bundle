@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.43
+* Enable cross-referencing of json schemas in the same directory
+* Add new config key `project_dir`, which should point to the root of the project
+
 ## v0.1.42
 * Disable integrity check cronjob since its inefficient sql uses a lot of memory
 
