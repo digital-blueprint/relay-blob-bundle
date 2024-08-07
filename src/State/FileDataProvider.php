@@ -12,6 +12,7 @@ use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
+use JsonSchema\Constraints\Factory;
 use JsonSchema\Validator;
 use Symfony\Bridge\PsrHttpMessage\Factory\UploadedFile;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -133,7 +134,8 @@ class FileDataProvider extends AbstractDataProvider
                     }
                     $storedType = $fileData->getType();
                     if ($storedType) {
-                        $validator = new Validator();
+                        $schemaStorage = $this->blobService->getJsonSchemaStorageWithAllSchemasInABucket($bucket);
+                        $validator = new Validator(new Factory($schemaStorage));
                         $metadataDecoded = json_decode($additionalMetadata);
 
                         if (array_key_exists('type', $filters) && !empty($additionalType) && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {

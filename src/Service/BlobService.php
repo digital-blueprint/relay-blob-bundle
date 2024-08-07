@@ -10,6 +10,8 @@ use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Doctrine\DBAL\Exception;
 use Doctrine\ORM\EntityManagerInterface;
+use JsonSchema\Constraints\Factory;
+use JsonSchema\SchemaStorage;
 use JsonSchema\Validator;
 use Ramsey\Uuid\Uuid;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -1062,6 +1064,22 @@ class BlobService
         }
     }
 
+    public function getJsonSchemaStorageWithAllSchemasInABucket(Bucket $bucket): SchemaStorage
+    {
+        $schemaStorage = new SchemaStorage();
+        foreach ($bucket->getAdditionalTypes() as $type => $path) {
+            $jsonSchemaObject = json_decode(file_get_contents($path));
+
+            if ($jsonSchemaObject === null) {
+                throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'JSON Schemas for the schema storage could not be loaded', 'blob:create-file-data-json-schema-storage-load-error');
+            }
+
+            $schemaStorage->addSchema('file://'.$this->configurationService->getProjectDir().'/public/'.$type.'.jschema', $jsonSchemaObject);
+        }
+
+        return $schemaStorage;
+    }
+
     public function printFileSizeCheck(OutputInterface $out, array $context)
     {
         $out->writeln('Sum of sizes of the blob_files table: '.$context['blobFilesSize']);
@@ -1210,8 +1228,8 @@ class BlobService
         if ($additionalType && !array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
         }
-
-        $validator = new Validator();
+        $schemaStorage = $this->getJsonSchemaStorageWithAllSchemasInABucket($bucket);
+        $validator = new Validator(new Factory($schemaStorage));
         $metadataDecoded = (object) json_decode($additionalMetadata);
 
         // check if given additionalMetadata json has the same keys like the defined additionalType

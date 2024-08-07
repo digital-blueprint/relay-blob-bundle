@@ -9,7 +9,9 @@ use Dbp\Relay\BlobBundle\Event\AddFileDataByPostSuccessEvent;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
+use JsonSchema\Constraints\Factory;
 use JsonSchema\Validator;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -23,10 +25,13 @@ final class CreateFileDataAction extends BaseBlobController
 
     private EventDispatcherInterface $eventDispatcher;
 
-    public function __construct(BlobService $blobService, EventDispatcherInterface $eventDispatcher)
+    private ConfigurationService $configurationService;
+
+    public function __construct(BlobService $blobService, EventDispatcherInterface $eventDispatcher, ConfigurationService $configurationService)
     {
         $this->blobService = $blobService;
         $this->eventDispatcher = $eventDispatcher;
+        $this->configurationService = $configurationService;
     }
 
     /**
@@ -98,11 +103,16 @@ final class CreateFileDataAction extends BaseBlobController
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad type', 'blob:create-file-data-bad-type');
         }
 
-        /* check if given metadata json has the same keys like the defined type */
-        $validator = new Validator();
-        $metadataDecoded = (object) json_decode($additionalMetadata);
-        if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'type mismatch', 'blob:create-file-data-type-mismatch');
+        if ($additionalType) {
+            /* check if given metadata json has the same keys like the defined type */
+            $schemaStorage = $this->blobService->getJsonSchemaStorageWithAllSchemasInABucket($bucket);
+            $jsonSchemaObject = json_decode(file_get_contents($bucket->getAdditionalTypes()[$additionalType]));
+
+            $validator = new Validator(new Factory($schemaStorage));
+            $metadataDecoded = (object) json_decode($additionalMetadata);
+            if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, $jsonSchemaObject) !== 0) {
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'type mismatch', 'blob:create-file-data-type-mismatch');
+            }
         }
 
         // get the filedata of the request
