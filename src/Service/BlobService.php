@@ -1067,7 +1067,7 @@ class BlobService
     public function getJsonSchemaStorageWithAllSchemasInABucket(Bucket $bucket): SchemaStorage
     {
         $schemaStorage = new SchemaStorage();
-        foreach ($bucket->getAdditionalTypes() as $type => $path) {
+        foreach (($bucket->getAdditionalTypes() ?? []) as $type => $path) {
             $jsonSchemaObject = json_decode(file_get_contents($path));
 
             if ($jsonSchemaObject === null) {
