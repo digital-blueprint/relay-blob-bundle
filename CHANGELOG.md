@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.1.45
+* Add additional information about what went wrong in json schema validation in case of a `type mismatch` error
+
 ## v0.1.44
 * Remove config key `project_dir` again
 
