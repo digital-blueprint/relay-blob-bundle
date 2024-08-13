@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.1.44
+* Remove config key `project_dir` again
+
 ## v0.1.43
 * Enable cross-referencing of json schemas in the same directory
 * Add new config key `project_dir`, which should point to the root of the project
