@@ -1237,7 +1237,11 @@ class BlobService
 
         // check if given additionalMetadata json has the same keys like the defined additionalType
         if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
-            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'type mismatch', $errorPrefix.'-type-mismatch');
+            $messages = [];
+            foreach ($validator->getErrors() as $error) {
+                $messages[] = $error['message'];
+            }
+            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'type mismatch', $errorPrefix.'-type-mismatch', $messages);
         }
     }
 
