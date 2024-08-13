@@ -18,6 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Email;
@@ -42,12 +43,14 @@ class BlobService
      * @var DatasystemProviderService
      */
     private $datasystemService;
+    private KernelInterface $kernel;
 
-    public function __construct(EntityManagerInterface $em, ConfigurationService $configurationService, DatasystemProviderService $datasystemService)
+    public function __construct(EntityManagerInterface $em, ConfigurationService $configurationService, DatasystemProviderService $datasystemService, KernelInterface $kernel)
     {
         $this->em = $em;
         $this->configurationService = $configurationService;
         $this->datasystemService = $datasystemService;
+        $this->kernel = $kernel;
     }
 
     public function setDatasystemService(DatasystemProviderService $datasystemService): void
@@ -1074,7 +1077,7 @@ class BlobService
                 throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'JSON Schemas for the schema storage could not be loaded', 'blob:create-file-data-json-schema-storage-load-error');
             }
 
-            $schemaStorage->addSchema('file://'.$this->configurationService->getProjectDir().'/public/'.$type.'.jschema', $jsonSchemaObject);
+            $schemaStorage->addSchema('file://'.$this->kernel->getProjectDir().'/public/'.$type.'.jschema', $jsonSchemaObject);
         }
 
         return $schemaStorage;

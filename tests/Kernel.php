@@ -67,7 +67,6 @@ class Kernel extends BaseKernel
             'integrity_check_interval' => '0 0 1 * *',
             'bucket_size_check_interval' => '0 2 * * 1',
             'quota_warning_interval' => '0 6 * * *',
-            'project_dir' => '%kernel.project_dir%',
             //            'database_url' => 'sqlite:///:memory:',
             'buckets' => [
                 'test_bucket' => [

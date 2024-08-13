@@ -160,9 +160,4 @@ class ConfigurationService
     {
         return $this->config['bucket_size_check_interval'];
     }
-
-    public function getProjectDir()
-    {
-        return $this->config['project_dir'];
-    }
 }
