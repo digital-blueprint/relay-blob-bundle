@@ -109,7 +109,7 @@ final class CreateFileDataAction extends BaseBlobController
             if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, $jsonSchemaObject) !== 0) {
                 $messages = [];
                 foreach ($validator->getErrors() as $error) {
-                    $messages[] = $error['message'];
+                    $messages[$error['property']] = $error['message'];
                 }
                 throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'type mismatch', 'blob:create-file-data-type-mismatch', $messages);
             }
