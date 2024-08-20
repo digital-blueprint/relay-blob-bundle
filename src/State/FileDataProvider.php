@@ -77,7 +77,7 @@ class FileDataProvider extends AbstractDataProvider
         $fileData = $this->blobService->getFileData($id);
 
         // check if fileData is null
-        if (!$fileData) {
+        if (!$fileData || ($fileData->getExistsUntil() != null && $fileData->getExistsUntil() < new \DateTimeImmutable() ) || ($fileData->getExistsUntil() == null && $fileData->getDateCreated()->add(new \DateInterval($this->blobService->getBucketByID($bucketID)->getMaxRetentionDuration())) < new \DateTimeImmutable())) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
 
@@ -282,16 +282,24 @@ class FileDataProvider extends AbstractDataProvider
         }
 
         // create sharelinks
+        $validFileDatas = [];
         foreach ($fileDatas as $fileData) {
             try {
                 assert($fileData instanceof FileData);
+                if (!$fileData->getExistsUntil()) {
+                    $fileData->setExistsUntil($fileData->getDateCreated()->add(new \DateInterval($this->blobService->getDefaultRetentionDurationByBucketId($bucketID))));
+                }
+
+                if ($fileData->getExistsUntil() < new \DateTimeImmutable()) {
+                    continue;
+                }
+
                 $fileData->setBucket($this->blobService->configurationService->getBucketByID($bucketID));
                 $fileData = $this->blobService->getLink($fileData);
                 $baseUrl = $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost();
                 $fileData->setContentUrl($this->blobService->generateGETLink($baseUrl, $fileData, $includeData));
-                if (!$fileData->getExistsUntil()) {
-                    $fileData->setExistsUntil($fileData->getDateCreated()->add(new \DateInterval($this->blobService->getDefaultRetentionDurationByBucketId($bucketID))));
-                }
+
+                $validFileDatas[] = $fileData;
             } catch (\Exception $e) {
                 // skip file not found
                 // TODO how to handle this correctly? This should never happen in the first place
@@ -301,6 +309,6 @@ class FileDataProvider extends AbstractDataProvider
             }
         }
 
-        return $fileDatas;
+        return $validFileDatas;
     }
 }
