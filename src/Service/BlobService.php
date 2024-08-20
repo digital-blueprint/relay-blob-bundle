@@ -1076,8 +1076,9 @@ class BlobService
             if ($jsonSchemaObject === null) {
                 throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'JSON Schemas for the schema storage could not be loaded', 'blob:create-file-data-json-schema-storage-load-error');
             }
+            $name = explode('/', $path);
 
-            $schemaStorage->addSchema('file://'.$this->kernel->getProjectDir().'/public/'.$type.'.jschema', $jsonSchemaObject);
+            $schemaStorage->addSchema('file://'.$this->kernel->getProjectDir().'/public/'.end($name), $jsonSchemaObject);
         }
 
         return $schemaStorage;
