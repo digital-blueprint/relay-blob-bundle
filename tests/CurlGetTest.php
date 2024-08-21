@@ -991,7 +991,6 @@ class CurlGetTest extends ApiTestCase
                 }
                 echo 'GET one file with wrong method '.$action."\n";
                 $url = '/blob/files/'.$fileData->getIdentifier()."?bucketIdentifier=$bucketID&creationTime=$creationTime&method=".$action;
-                echo $url."\n";
                 $payload = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
