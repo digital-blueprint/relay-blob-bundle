@@ -986,9 +986,12 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
 
             foreach ($actions as $action) {
+                if ($action === 'GET') {
+                    continue;
+                }
                 echo 'GET one file with wrong method '.$action."\n";
-                $url = '/blob/files/".$fileData->getIdentifier()?bucketIdentifier=$bucketID&creationTime=$creationTime&method='.$action;
-
+                $url = '/blob/files/'.$fileData->getIdentifier()."?bucketIdentifier=$bucketID&creationTime=$creationTime&method=".$action;
+                echo $url."\n";
                 $payload = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
@@ -1008,7 +1011,7 @@ class CurlGetTest extends ApiTestCase
                 /** @var Response $response */
                 $response = $client->request('GET', $url.'&sig='.$token, $options);
 
-                $this->assertEquals(400, $response->getStatusCode());
+                $this->assertEquals(405, $response->getStatusCode());
             }
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
