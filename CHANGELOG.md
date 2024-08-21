@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.47
+* Provide `propertyName` in `errorDetail` for error `type mismatch`
+* Make retrieval of expired but not deleted data impossible
+
+## v0.1.46
+* Fix bug that made referencing of json schemas without the extension `.jschema` impossible
+
 ## v0.1.45
 * Add additional information about what went wrong in json schema validation in case of a `type mismatch` error
 
