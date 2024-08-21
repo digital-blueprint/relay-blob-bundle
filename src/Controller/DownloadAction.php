@@ -7,6 +7,7 @@ namespace Dbp\Relay\BlobBundle\Controller;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
+use Ramsey\Uuid\Uuid;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -27,6 +28,10 @@ class DownloadAction extends BaseBlobController
      */
     public function __invoke(Request $request, string $identifier): Response
     {
+        if (!Uuid::isValid($identifier)) {
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'Identifier is in an invalid format!', 'blob:identifier-invalid-format');
+        }
+
         $errorPrefix = 'blob:download-file-by-id';
         DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $request, [], ['GET']);
         // check if identifier is given

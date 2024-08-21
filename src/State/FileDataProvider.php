@@ -14,6 +14,7 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
 use JsonSchema\Constraints\Factory;
 use JsonSchema\Validator;
+use Ramsey\Uuid\Uuid;
 use Symfony\Bridge\PsrHttpMessage\Factory\UploadedFile;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -56,6 +57,10 @@ class FileDataProvider extends AbstractDataProvider
      */
     protected function getFileDataById($id, array $filters): object
     {
+        if (!Uuid::isValid($id)) {
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'Identifier is in an invalid format!', 'blob:identifier-invalid-format');
+        }
+
         // get current request
         $request = $this->requestStack->getCurrentRequest();
 

@@ -6,7 +6,10 @@ namespace Dbp\Relay\BlobBundle\State;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProcessor;
+use Ramsey\Uuid\Uuid;
+use Symfony\Component\HttpFoundation\Response;
 
 class FileDataProcessor extends AbstractDataProcessor
 {
@@ -24,6 +27,10 @@ class FileDataProcessor extends AbstractDataProcessor
      */
     protected function removeItem(mixed $identifier, mixed $data, array $filters): void
     {
+        if (!Uuid::isValid($identifier)) {
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'Identifier is in an invalid format!', 'blob:identifier-invalid-format');
+        }
+
         // no need to check, because signature is checked by getting the data
         assert($data instanceof FileData);
 
