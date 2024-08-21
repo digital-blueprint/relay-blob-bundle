@@ -1,5 +1,8 @@
 # Changelog
 
+## next 
+* Throw 404 if item identifier is in an invalid format
+
 ## v0.1.47
 * Provide `propertyName` in `errorDetail` for error `type mismatch`
 * Make retrieval of expired but not deleted data impossible
