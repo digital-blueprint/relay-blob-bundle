@@ -2,6 +2,7 @@
 
 ## next 
 * Throw 404 if item identifier is in an invalid format
+* Drop support for Symfony 5 and api-platform 2
 
 ## v0.1.47
 * Provide `propertyName` in `errorDetail` for error `type mismatch`
