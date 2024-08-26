@@ -106,7 +106,7 @@ final class CreateFileDataAction extends BaseBlobController
 
             $validator = new Validator(new Factory($schemaStorage));
             $metadataDecoded = (object) json_decode($additionalMetadata);
-            if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, $jsonSchemaObject) !== 0) {
+            if ($additionalType && $validator->validate($metadataDecoded, $jsonSchemaObject) !== 0) {
                 $messages = [];
                 foreach ($validator->getErrors() as $error) {
                     $messages[$error['property']] = $error['message'];
