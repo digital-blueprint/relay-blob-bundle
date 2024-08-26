@@ -14,11 +14,11 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
 use JsonSchema\Constraints\Factory;
 use JsonSchema\Validator;
-use Ramsey\Uuid\Uuid;
 use Symfony\Bridge\PsrHttpMessage\Factory\UploadedFile;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * @extends AbstractDataProvider<FileData>

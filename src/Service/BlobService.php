@@ -13,7 +13,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use JsonSchema\Constraints\Factory;
 use JsonSchema\SchemaStorage;
 use JsonSchema\Validator;
-use Ramsey\Uuid\Uuid;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +21,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 
@@ -74,7 +74,7 @@ class BlobService
     {
         // create new identifier for new file
         $fileData = new FileData();
-        $fileData->setIdentifier(Uuid::uuid7()->toString());
+        $fileData->setIdentifier(Uuid::v7()->toRfc4122());
 
         // get file from request
         /** @var ?UploadedFile $uploadedFile */
