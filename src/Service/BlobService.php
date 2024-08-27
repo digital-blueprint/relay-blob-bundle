@@ -940,6 +940,14 @@ class BlobService
         $mailer->send($email);
     }
 
+    public function checkConfig(): void
+    {
+        // Make sure the schema files exist
+        foreach ($this->configurationService->getBuckets() as $bucket) {
+            $this->getJsonSchemaStorageWithAllSchemasInABucket($bucket);
+        }
+    }
+
     public function checkFileSize(?OutputInterface $out = null, $sendEmail = true)
     {
         $buckets = $this->configurationService->getBuckets();
