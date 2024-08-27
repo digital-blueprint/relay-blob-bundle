@@ -39,6 +39,7 @@ class SendReportCronJob implements CronJobInterface
 
     public function run(CronOptions $options): void
     {
+        assert($this->blobService !== null);
         // $this->blobService->sendReporting();
     }
 }

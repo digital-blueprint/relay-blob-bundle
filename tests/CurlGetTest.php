@@ -703,7 +703,7 @@ class CurlGetTest extends ApiTestCase
     {
         try {
             $client = static::createClient();
-            /** @var BlobService $blobService */
+            /** @var ConfigurationService $configService */
             $configService = $client->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
@@ -1007,7 +1007,6 @@ class CurlGetTest extends ApiTestCase
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
-            echo "\n";
         }
         echo "\n";
     }
@@ -1124,7 +1123,6 @@ class CurlGetTest extends ApiTestCase
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
-            echo "\n";
         }
         echo "\n";
     }
@@ -1270,7 +1268,6 @@ class CurlGetTest extends ApiTestCase
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
-            echo "\n";
         }
         echo "\n";
     }
@@ -1356,7 +1353,7 @@ class CurlGetTest extends ApiTestCase
 
             foreach ($methods as $method) {
                 foreach ($actions as $action) {
-                    if ($method === substr($action, 0, strlen($method)) || ($method === 'POST' && substr($action, 0, 6) === 'CREATE')) {
+                    if ($method === substr($action, 0, strlen($method))) {
                         continue;
                     }
                     echo $method.' file with wrong action '.$action."\n";
@@ -1390,7 +1387,6 @@ class CurlGetTest extends ApiTestCase
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
-            echo "\n";
         }
         echo "\n";
     }

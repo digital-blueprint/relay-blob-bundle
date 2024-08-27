@@ -97,7 +97,7 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
     {
         // if no validUntil is given, use bucket link expiry time per default
         if ($validUntil === '') {
-            $now = new \DateTimeImmutable('now', new DateTimeZone('UTC'));
+            $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
             $now = $now->add(new \DateInterval($fileData->getBucket()->getLinkExpireTime()));
             $validUntil = $now->format('c');
         }

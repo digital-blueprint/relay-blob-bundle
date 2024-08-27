@@ -303,11 +303,6 @@ class BlobService
         // get base64 encoded file with connector
         $fileData = $datasystemService->getBase64Data($fileData);
 
-        // if !fileData, then something went wrong
-        if (!$fileData) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'base64 encoded data could not be generated', 'blob:file-data-invalid');
-        }
-
         return $fileData;
     }
 
@@ -357,7 +352,7 @@ class BlobService
 
             if ($sendEmail) {
                 $this->sendIntegrityCheckMail($bucket, $invalidDatas);
-            } elseif (!$sendEmail && $out !== null) {
+            } elseif ($out !== null) {
                 $this->printIntegrityCheck($bucket, $invalidDatas, $out, $printIds);
             }
         }
@@ -454,11 +449,6 @@ class BlobService
         // get binary response of file with connector
         $response = $datasystemService->getBinaryResponse($fileData);
 
-        // if !response, then something went wrong
-        if (!$response) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Response could not be generated', 'blob:file-data-invalid');
-        }
-
         return $response;
     }
 
@@ -481,11 +471,6 @@ class BlobService
      */
     public function generateGETLink(string $baseUrl, FileData $fileData, string $includeData = ''): string
     {
-        // check if fileData is present
-        if (!$fileData) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:file-data-invalid');
-        }
-
         // set bucket of fileData
         $fileData->setBucket($this->configurationService->getBucketByInternalID($fileData->getInternalBucketID()));
 
@@ -564,7 +549,7 @@ class BlobService
      */
     public function getFileData(string $identifier): FileData
     {
-        /** @var FileData $fileData */
+        /** @var ?FileData $fileData */
         $fileData = $this->em
             ->getRepository(FileData::class)
             ->find($identifier);
@@ -1055,7 +1040,7 @@ class BlobService
 
                 if ($sendEmail) {
                     $this->sendEmail($config, $context);
-                } elseif (!$sendEmail && $out !== null) {
+                } elseif ($out !== null) {
                     $this->printFileSizeCheck($out, $context);
                 }
             } else {

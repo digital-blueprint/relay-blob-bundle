@@ -40,6 +40,7 @@ class IntegrityCronJob implements CronJobInterface
     public function run(CronOptions $options): void
     {
         if ($this->configService->doFileIntegrityChecks()) {
+            assert($this->blobService !== null);
             // $this->blobService->checkIntegrity();
         }
     }

@@ -73,7 +73,7 @@ class FileDataProvider extends AbstractDataProvider
         DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $request, $filters, ['GET', 'PATCH', 'DELETE']);
 
         // get secret of bucket
-        $bucketID = rawurldecode($filters['bucketIdentifier']) ?? '';
+        $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');
         $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
 
         // check if signature is valid
@@ -82,7 +82,7 @@ class FileDataProvider extends AbstractDataProvider
         $fileData = $this->blobService->getFileData($id);
 
         // check if fileData is null
-        if (!$fileData || ($fileData->getDeleteAt() !== null && $fileData->getDeleteAt() < new \DateTimeImmutable()) || ($fileData->getDeleteAt() === null && $fileData->getDateCreated()->add(new \DateInterval($this->blobService->getBucketByID($bucketID)->getMaxRetentionDuration())) < new \DateTimeImmutable())) {
+        if (($fileData->getDeleteAt() !== null && $fileData->getDeleteAt() < new \DateTimeImmutable()) || ($fileData->getDeleteAt() === null && $fileData->getDateCreated()->add(new \DateInterval($this->blobService->getBucketByID($bucketID)->getMaxRetentionDuration())) < new \DateTimeImmutable())) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
 
@@ -93,9 +93,6 @@ class FileDataProvider extends AbstractDataProvider
         if ($method !== 'DELETE') {
             // create shareLink
             $fileData = $this->blobService->getLink($fileData);
-
-            // check if filedata is null
-            assert(!is_null($fileData));
 
             // check if PATCH request was used
             if ($method === 'PATCH') {
