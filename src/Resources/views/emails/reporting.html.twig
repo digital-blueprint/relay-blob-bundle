@@ -4,7 +4,7 @@
     <tr><td>Weekly reporting of expiring files of bucket <b>{{ bucketId }} ({{ internalBucketId }})</b></td></tr>
     <tr><td>This only includes the first <b>10 files</b> that will expire, for more information please view the files in your bucket.</td></tr>
     <tr><td><b>Overall {{ numFiles }} files will be deleted!</b></td></tr>
-    <tr><th>file id</th><th>filename</th> <th>prefix</th><th>date created</th><th>last access</th><th>exists until</th></tr>
+    <tr><th>file id</th><th>filename</th> <th>prefix</th><th>date created</th><th>last access</th><th>delete at</th></tr>
     {% for file in files %}
         <tr>
             <td>{{ file.id|e }}</td>
@@ -12,7 +12,7 @@
             <td>{{ file.prefix|e }}</td>
             <td>{{ file.dateCreated|e }}</td>
             <td>{{ file.lastAccess|e }}</td>
-            <td>{{ file.existsUntil|e }}</td>
+            <td>{{ file.deleteAt|e }}</td>
         </tr>
     {% endfor %}
 

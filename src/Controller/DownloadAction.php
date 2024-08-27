@@ -53,9 +53,8 @@ class DownloadAction extends BaseBlobController
 
         // get data associated with the provided identifier
         $fileData = $this->blobService->getFileData($identifier);
-
         // check if fileData is null
-        if (!$fileData || ($fileData->getExistsUntil() !== null && $fileData->getExistsUntil() < new \DateTimeImmutable()) || ($fileData->getExistsUntil() === null && $fileData->getDateCreated()->add(new \DateInterval($this->blobService->getBucketByID($bucketID)->getMaxRetentionDuration())) < new \DateTimeImmutable())) {
+        if (!$fileData || ($fileData->getDeleteAt() !== null && $fileData->getDeleteAt() < new \DateTimeImmutable()) || ($fileData->getDeleteAt() === null && $fileData->getDateCreated()->add(new \DateInterval($this->blobService->getBucketByID($bucketID)->getMaxRetentionDuration())) < new \DateTimeImmutable())) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
 

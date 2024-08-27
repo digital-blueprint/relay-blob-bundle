@@ -6,7 +6,6 @@ namespace Dbp\Relay\BlobBundle\Tests;
 
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use Dbp\Relay\BlobBundle\Controller\CreateFileDataAction;
-use Dbp\Relay\BlobBundle\Controller\DeleteFileDatasByPrefix;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\Service\ConfigurationService;
@@ -219,7 +218,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
             $this->files[0]['created'] = $fileData->getDateCreated();
-            $this->files[0]['until'] = $fileData->getExistsUntil();
+            $this->files[0]['until'] = $fileData->getDeleteAt();
 
             // =======================================================
             // GET all files
@@ -329,7 +328,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertEquals($this->files[1]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[1]['uuid'] = $fileData->getIdentifier();
             $this->files[1]['created'] = $fileData->getDateCreated();
-            $this->files[1]['until'] = $fileData->getExistsUntil();
+            $this->files[1]['until'] = $fileData->getDeleteAt();
 
             // =======================================================
             // GET all files
@@ -376,7 +375,7 @@ class CurlGetTest extends ApiTestCase
                         $until = $file['created']->add(new \DateInterval($file['retention']));
                         $this->assertEquals(
                             $until->format('c'),
-                            $resultFile['existsUntil'],
+                            $resultFile['deleteAt'],
                             'File retention time not correct.'
                         );
 
@@ -391,40 +390,33 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "DELETE all files (0 and 1)\n";
 
-            $creationTime = rawurlencode(date('c'));
-            $prefix = 'playground';
-            $action = 'DELETE';
-            $url = "/blob/files/?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action";
+            foreach ($data['hydra:member'] as $resultFile) {
+                $url = "/blob/files/{$resultFile['identifier']}?bucketIdentifier=$bucketID&creationTime=$creationTime&method=DELETE";
 
-            $payload = [
-                'ucs' => $this->generateSha256ChecksumFromUrl($url),
-            ];
+                $payload = [
+                    'ucs' => $this->generateSha256ChecksumFromUrl($url),
+                ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
 
-            $requestDelete = Request::create($url.'&sig='.$token, 'DELETE', [], [], [],
-                [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                    'Authorization' => 'Bearer 42',
-                ],
-                "HTTP_ACCEPT: application/ld+json\r\n"
-            );
+                $options = [
+                    'headers' => [
+                        'Authorization' => 'Bearer 42',
+                        'Accept' => 'application/ld+json',
+                        'HTTP_ACCEPT' => 'application/ld+json',
+                    ],
+                ];
 
-            $d = new DeleteFileDatasByPrefix($blobService);
-            $d->setContainer($client->getContainer());
-            try {
-                $d->__invoke($requestDelete);
-            } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
+                $client = $this->withUser('user', [], '42');
+
+                /* @noinspection PhpInternalEntityUsedInspection */
+                $client->getKernelBrowser()->followRedirects(false);
+
+                /** @var Response $response */
+                $response = $client->request('DELETE', $url.'&sig='.$token, $options);
+
+                $this->assertEquals(204, $response->getStatusCode());
             }
-
-            $query = $this->entityManager->getConnection()->createQueryBuilder();
-            $this->files = $query->select('*')
-                ->from('blob_files')
-                ->where("prefix = '$prefix' AND internal_bucket_id = '$bucketID'")
-                ->fetchAllAssociativeIndexed();
-            $this->assertEmpty($this->files, 'Files not deleted');
 
             // =======================================================
             // GET all files
@@ -538,7 +530,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
             $this->files[0]['created'] = $fileData->getDateCreated();
-            $this->files[0]['until'] = $fileData->getExistsUntil();
+            $this->files[0]['until'] = $fileData->getDeleteAt();
             echo "    file identifier='{$this->files[0]['uuid']}' stored.\n";
 
             // =======================================================
@@ -979,7 +971,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
             $this->files[0]['created'] = $fileData->getDateCreated();
-            $this->files[0]['until'] = $fileData->getExistsUntil();
+            $this->files[0]['until'] = $fileData->getDeleteAt();
 
             // =======================================================
             // GET one file with wrong action
@@ -1097,7 +1089,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
             $this->files[0]['created'] = $fileData->getDateCreated();
-            $this->files[0]['until'] = $fileData->getExistsUntil();
+            $this->files[0]['until'] = $fileData->getDeleteAt();
 
             // =======================================================
             // PATCH one file with wrong action
@@ -1212,7 +1204,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
             $this->files[0]['created'] = $fileData->getDateCreated();
-            $this->files[0]['until'] = $fileData->getExistsUntil();
+            $this->files[0]['until'] = $fileData->getDeleteAt();
 
             // =======================================================
             // PATCH one file
@@ -1356,7 +1348,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
             $this->files[0]['created'] = $fileData->getDateCreated();
-            $this->files[0]['until'] = $fileData->getExistsUntil();
+            $this->files[0]['until'] = $fileData->getDeleteAt();
 
             // =======================================================
             // Test methods with wrong method
@@ -1401,179 +1393,6 @@ class CurlGetTest extends ApiTestCase
             echo "\n";
         }
         echo "\n";
-    }
-
-    /**
-     * Integration test: other prefix should remain when deleting one prefix.
-     */
-    public function testDeletePrefixOtherPrefixShouldRemain(): void
-    {
-        try {
-            $client = static::createClient();
-            /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
-
-            $bucket = $configService->getBuckets()[0];
-            $secret = $bucket->getKey();
-            $bucketID = $bucket->getBucketID();
-            $creationTime = rawurlencode(date('c'));
-            $prefix = 'playground';
-
-            // =======================================================
-            // POST two files
-            // =======================================================
-
-            for ($i = 0; $i < 2; ++$i) {
-                $creationTime = rawurlencode(date('c'));
-                $fileName = $this->files[$i]['name'];
-                $fileHash = $this->files[$i]['hash'];
-                $notifyEmail = 'eugen.neuber@tugraz.at';
-                $retentionDuration = $this->files[$i]['retention'];
-                $action = 'POST';
-
-                $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
-
-                $data = [
-                    'ucs' => $this->generateSha256ChecksumFromUrl($url),
-                ];
-
-                $token = DenyAccessUnlessCheckSignature::create($secret, $data);
-
-                $requestPost = Request::create($url.'&sig='.$token, 'POST',
-                    [
-                        'fileName' => $fileName,
-                        'fileHash' => $fileHash,
-                    ],
-                    [],
-                    [
-                        'file' => new UploadedFile($this->files[$i]['path'], $this->files[$i]['name'], $this->files[$i]['mime']),
-                    ],
-                    [
-                        'HTTP_ACCEPT' => 'application/ld+json',
-                    ],
-                    "HTTP_ACCEPT: application/ld+json\r\n"
-                    .'file='.base64_encode($this->files[$i]['content'])
-                );
-                $eventDispatcher = new EventDispatcher();
-                $c = new CreateFileDataAction($blobService, $eventDispatcher);
-                $c->setContainer($client->getContainer());
-                try {
-                    $fileData = $c->__invoke($requestPost);
-                } catch (\Throwable $e) {
-                    echo $e->getTraceAsString()."\n";
-                    $this->fail($e->getMessage());
-                }
-
-                $this->assertNotNull($fileData);
-                $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-                $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
-                $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
-                $this->assertEquals($this->files[$i]['name'], $fileData->getFileName(), 'File name not correct.');
-                $this->files[$i]['uuid'] = $fileData->getIdentifier();
-                $this->files[$i]['created'] = $fileData->getDateCreated();
-                $this->files[$i]['until'] = $fileData->getExistsUntil();
-
-                $prefix = $prefix.$i;
-            }
-
-            // =======================================================
-            // DELETE all files in prefix playground
-            // =======================================================
-            echo "DELETE all files with prefix playground\n";
-            $prefix = 'playground';
-            $url = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=DELETE";
-
-            $payload = [
-                'ucs' => $this->generateSha256ChecksumFromUrl($url),
-            ];
-
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
-
-            $options = [
-                'headers' => [
-                    'Authorization' => 'Bearer 42',
-                    'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
-            ];
-
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects(false);
-
-            $client = $this->withUser('user', [], '42');
-
-            /** @var Response $response */
-            $response = $client->request('DELETE', $url.'&sig='.$token, $options);
-            $this->assertEquals(204, $response->getStatusCode());
-
-            // =======================================================
-            // GET all files in prefix playground0
-            // =======================================================
-            echo "GET all files with prefix playground0\n";
-            $prefix = 'playground0';
-            $url = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
-
-            $payload = [
-                'ucs' => $this->generateSha256ChecksumFromUrl($url),
-            ];
-
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
-
-            $options = [
-                'headers' => [
-                    'Authorization' => 'Bearer 42',
-                    'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
-            ];
-
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects(false);
-
-            $client = $this->withUser('user', [], '42');
-
-            /** @var Response $response */
-            $response = $client->request('GET', $url.'&sig='.$token, $options);
-            $this->assertEquals(200, $response->getStatusCode());
-            // check if the one created element is there
-            $this->assertEquals(1, count(json_decode($response->getContent(), true)['hydra:member']));
-
-            // =======================================================
-            // GET all files in prefix playground
-            // =======================================================
-            echo "GET all files with prefix playground\n";
-            $prefix = 'playground';
-            $url = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
-
-            $payload = [
-                'ucs' => $this->generateSha256ChecksumFromUrl($url),
-            ];
-
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
-
-            $options = [
-                'headers' => [
-                    'Authorization' => 'Bearer 42',
-                    'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
-            ];
-
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects(false);
-
-            $client = $this->withUser('user', [], '42');
-
-            /** @var Response $response */
-            $response = $client->request('GET', $url.'&sig='.$token, $options);
-            $this->assertEquals(200, $response->getStatusCode());
-            // check if the created elements were properly deleted
-            $this->assertEquals(0, count(json_decode($response->getContent(), true)['hydra:member']));
-        } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
-        }
     }
 
     /**
@@ -1645,7 +1464,7 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals($this->files[$i]['name'], $fileData->getFileName(), 'File name not correct.');
                 $this->files[$i]['uuid'] = $fileData->getIdentifier();
                 $this->files[$i]['created'] = $fileData->getDateCreated();
-                $this->files[$i]['until'] = $fileData->getExistsUntil();
+                $this->files[$i]['until'] = $fileData->getDeleteAt();
             }
 
             // =======================================================
@@ -1679,53 +1498,6 @@ class CurlGetTest extends ApiTestCase
             // check if the one created element is there
             $members = json_decode($response->getContent(), true);
             $this->assertEquals('data:text/x-php;base64', substr($members['contentUrl'], 0, strlen('data:text/x-php;base64')));
-        } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
-        }
-    }
-
-    /**
-     * Integration test: delete all with wrong action.
-     */
-    public function testDELETEWithWrongAction(): void
-    {
-        try {
-            $client = static::createClient();
-            /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
-
-            $bucket = $configService->getBuckets()[0];
-            $secret = $bucket->getKey();
-            $bucketID = $bucket->getBucketID();
-            $creationTime = rawurlencode(date('c'));
-            $prefix = 'playground';
-
-            // =======================================================
-            // DELETE all files
-            // =======================================================
-            echo "DELETE all files\n";
-
-            $url = "/blob/files/?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
-
-            $payload = [
-                'ucs' => $this->generateSha256ChecksumFromUrl($url),
-            ];
-
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
-
-            $requestDelete = Request::create($url.'&sig='.$token, 'DELETE', [], [], [],
-                [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
-                "HTTP_ACCEPT: application/ld+json\r\n"
-            );
-            $d = new DeleteFileDatasByPrefix($blobService);
-            $d->__invoke($requestDelete);
-            $this->fail('    Delete by prefix incorrectly succeeded');
-        } catch (ApiError $e) {
-            $this->assertEquals(405, $e->getStatusCode());
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
@@ -1801,16 +1573,15 @@ class CurlGetTest extends ApiTestCase
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
             $this->files[0]['created'] = $fileData->getDateCreated();
-            $this->files[0]['until'] = $fileData->getExistsUntil();
+            $this->files[0]['until'] = $fileData->getDeleteAt();
 
             // =======================================================
             // GET, DELETE all files in prefix playground without creationTime, sig, action, bucketID, prefix
             // =======================================================
-            echo "GET, DELETE all files with prefix playground with missing params\n";
+            echo "GET all files with prefix playground with missing params\n";
 
             $actions = [
                 0 => 'GET',
-                1 => 'DELETE',
             ];
 
             foreach ($actions as $action) {
@@ -2144,7 +1915,7 @@ class CurlGetTest extends ApiTestCase
             $this->files[0]['uuid'] = $fileData->getIdentifier();
             $identifier = $fileData->getIdentifier();
             $this->files[0]['created'] = $fileData->getDateCreated();
-            $this->files[0]['until'] = $fileData->getExistsUntil();
+            $this->files[0]['until'] = $fileData->getDeleteAt();
 
             // =======================================================
             // Check all operations with wrong checksum (in that case missing the first / in the cs generation)
@@ -2180,11 +1951,10 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals(403, $response->getStatusCode());
             }
 
-            echo "Check GET, DELETE operations with wrong checksum\n";
+            echo "Check GET operations with wrong checksum\n";
 
             $actions = [
                 0 => 'GET',
-                1 => 'DELETE',
             ];
 
             foreach ($actions as $action) {
@@ -2320,7 +2090,7 @@ class CurlGetTest extends ApiTestCase
             $this->files[0]['uuid'] = $fileData->getIdentifier();
             $identifier = $fileData->getIdentifier();
             $this->files[0]['created'] = $fileData->getDateCreated();
-            $this->files[0]['until'] = $fileData->getExistsUntil();
+            $this->files[0]['until'] = $fileData->getDeleteAt();
 
             // =======================================================
             // Check all operations with wrong signature
@@ -2360,11 +2130,10 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals(403, $response->getStatusCode());
             }
 
-            echo "Check GET, DELETE operations with wrong signature\n";
+            echo "Check GET operations with wrong signature\n";
 
             $actions = [
                 0 => 'GET',
-                1 => 'DELETE',
             ];
 
             foreach ($actions as $action) {
@@ -2508,16 +2277,15 @@ class CurlGetTest extends ApiTestCase
             $this->files[0]['uuid'] = $fileData->getIdentifier();
             $identifier = $fileData->getIdentifier();
             $this->files[0]['created'] = $fileData->getDateCreated();
-            $this->files[0]['until'] = $fileData->getExistsUntil();
+            $this->files[0]['until'] = $fileData->getDeleteAt();
 
             // =======================================================
             // Check all operations with overdue creationTime
             // =======================================================
-            echo "Check GET, DELETE operations with overdue creationTime\n";
+            echo "Check GET operations with overdue creationTime\n";
 
             $actions = [
                 0 => 'GET',
-                1 => 'DELETE',
             ];
 
             $creationTime = rawurlencode(date('c', time() - 120));
@@ -2547,11 +2315,10 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals(403, $response->getStatusCode());
             }
 
-            echo "Check GET, DELETE operations with overdue creationTime\n";
+            echo "Check GET operations with overdue creationTime\n";
 
             $actions = [
                 0 => 'GET',
-                1 => 'DELETE',
             ];
 
             foreach ($actions as $action) {
@@ -2688,7 +2455,7 @@ class CurlGetTest extends ApiTestCase
             $this->files[0]['uuid'] = $fileData->getIdentifier();
             $identifier = $fileData->getIdentifier();
             $this->files[0]['created'] = $fileData->getDateCreated();
-            $this->files[0]['until'] = $fileData->getExistsUntil();
+            $this->files[0]['until'] = $fileData->getDeleteAt();
 
             // =======================================================
             // Check all operations with unconfigured bucket
@@ -2727,11 +2494,10 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals(400, $response->getStatusCode());
             }
 
-            echo "Check GET, DELETE operations with unconfigured bucket\n";
+            echo "Check GET operations with unconfigured bucket\n";
 
             $actions = [
                 0 => 'GET',
-                1 => 'DELETE',
             ];
 
             foreach ($actions as $action) {
@@ -2788,239 +2554,6 @@ class CurlGetTest extends ApiTestCase
                 );
                 $this->assertEquals(400, $response->getStatusCode());
             }
-        } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
-        }
-    }
-
-    /**
-     * Integration test: Buckt data should be separate.
-     */
-    public function testGETPOSTDELETEforDifferentBuckets(): void
-    {
-        try {
-            $client = static::createClient();
-            /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
-
-            $bucket = $configService->getBuckets()[0];
-            $secret = $bucket->getKey();
-            $bucketID = $bucket->getBucketID();
-            $prefix = 'playground';
-
-            // =======================================================
-            // POST file
-            // =======================================================
-
-            $creationTime = rawurlencode(date('c'));
-            $fileName = $this->files[0]['name'];
-            $fileHash = $this->files[0]['hash'];
-            $notifyEmail = 'eugen.neuber@tugraz.at';
-            $retentionDuration = $this->files[0]['retention'];
-            $action = 'POST';
-
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
-
-            $data = [
-                'ucs' => $this->generateSha256ChecksumFromUrl($url),
-            ];
-
-            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
-
-            $requestPost = Request::create($url.'&sig='.$token, 'POST',
-                [
-                    'fileName' => $fileName,
-                    'fileHash' => $fileHash,
-                ],
-                [],
-                [
-                    'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
-                ],
-                [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
-                "HTTP_ACCEPT: application/ld+json\r\n"
-                .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketIdentifier=$bucketID"
-            );
-            $eventDispatcher = new EventDispatcher();
-            $c = new CreateFileDataAction($blobService, $eventDispatcher);
-            $c->setContainer($client->getContainer());
-            try {
-                $fileData = $c->__invoke($requestPost);
-            } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
-            }
-
-            $this->assertNotNull($fileData);
-            $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
-            $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
-            $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
-            $this->files[0]['uuid'] = $fileData->getIdentifier();
-            $identifier = $fileData->getIdentifier();
-            $this->files[0]['created'] = $fileData->getDateCreated();
-            $this->files[0]['until'] = $fileData->getExistsUntil();
-
-            // =======================================================
-            // Check GET of other bucket shouldnt return file
-            // =======================================================
-            echo "Check GET on other bucket shouldnt return file\n";
-
-            $bucketID = 'test-bucket-2';
-            // get key of wrong bucket
-            $bucket = $configService->getBuckets()[1];
-            $secret = $bucket->getKey();
-
-            // url with missing / at the beginning to create a wrong checksum
-            $baseUrl = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
-
-            $payload = [
-                'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
-            ];
-
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
-
-            $options = [
-                'headers' => [
-                    'Authorization' => 'Bearer 42',
-                    'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
-            ];
-
-            $client = $this->withUser('user', [], '42');
-
-            /** @var Response $response */
-            $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
-            $this->assertEquals(200, $response->getStatusCode());
-            $this->assertEquals([], json_decode($response->getContent(), true)['hydra:member']);
-
-            // =======================================================
-            // POST file in other bucket
-            // =======================================================
-
-            $creationTime = rawurlencode(date('c'));
-            $fileName = $this->files[0]['name'];
-            $fileHash = $this->files[0]['hash'];
-            $notifyEmail = 'eugen.neuber@tugraz.at';
-            $retentionDuration = $this->files[0]['retention'];
-            $action = 'POST';
-
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
-
-            $data = [
-                'ucs' => $this->generateSha256ChecksumFromUrl($url),
-            ];
-
-            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
-
-            $requestPost = Request::create($url.'&sig='.$token, 'POST',
-                [
-                    'fileName' => $fileName,
-                    'fileHash' => $fileHash,
-                ],
-                [],
-                [
-                    'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
-                ],
-                [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
-                "HTTP_ACCEPT: application/ld+json\r\n"
-                .'file='.base64_encode($this->files[0]['content'])
-                ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketIdentifier=$bucketID"
-            );
-            $eventDispatcher = new EventDispatcher();
-            $c = new CreateFileDataAction($blobService, $eventDispatcher);
-            $c->setContainer($client->getContainer());
-            try {
-                $fileData = $c->__invoke($requestPost);
-            } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
-            }
-
-            $this->assertNotNull($fileData);
-            $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
-            $this->assertObjectHasProperty('identifier', $fileData, 'File data has no identifier.');
-            $this->assertTrue(\uuid_is_valid($fileData->getIdentifier()), 'File data identifier is not a valid UUID.');
-            $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
-            $this->files[0]['uuid'] = $fileData->getIdentifier();
-            $identifier = $fileData->getIdentifier();
-            $this->files[0]['created'] = $fileData->getDateCreated();
-            $this->files[0]['until'] = $fileData->getExistsUntil();
-
-            // =======================================================
-            // DELETE all files in other bucket
-            // =======================================================
-
-            echo "Check DELETE on other bucket shouldnt delete original bucket\n";
-
-            $bucketID = 'test-bucket-2';
-            // get key of wrong bucket
-            $bucket = $configService->getBuckets()[1];
-            $secret = $bucket->getKey();
-
-            // url with missing / at the beginning to create a wrong checksum
-            $baseUrl = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=DELETE";
-
-            $payload = [
-                'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
-            ];
-
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
-
-            $options = [
-                'headers' => [
-                    'Authorization' => 'Bearer 42',
-                    'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
-            ];
-
-            $client = $this->withUser('user', [], '42');
-
-            /** @var Response $response */
-            $response = $client->request('DELETE', $baseUrl.'&sig='.$token, $options);
-            $this->assertEquals(204, $response->getStatusCode());
-
-            // =======================================================
-            // Check GET of original bucket should still return file
-            // =======================================================
-            echo "Check GET on original bucket should still return file\n";
-
-            $bucketID = 'test-bucket';
-            // get key of wrong bucket
-            $bucket = $configService->getBuckets()[0];
-            $secret = $bucket->getKey();
-
-            // url with missing / at the beginning to create a wrong checksum
-            $baseUrl = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
-
-            $payload = [
-                'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
-            ];
-
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
-
-            $options = [
-                'headers' => [
-                    'Authorization' => 'Bearer 42',
-                    'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
-            ];
-
-            $client = $this->withUser('user', [], '42');
-
-            /** @var Response $response */
-            $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
-            $this->assertEquals(200, $response->getStatusCode());
-            $this->assertEquals(1, count(json_decode($response->getContent(), true)['hydra:member']));
         } catch (\Throwable $e) {
             echo $e->getTraceAsString()."\n";
             $this->fail($e->getMessage());
@@ -3096,7 +2629,7 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals($this->files[$i]['name'], $fileData->getFileName(), 'File name not correct.');
                 $this->files[$i]['uuid'] = $fileData->getIdentifier();
                 $this->files[$i]['created'] = $fileData->getDateCreated();
-                $this->files[$i]['until'] = $fileData->getExistsUntil();
+                $this->files[$i]['until'] = $fileData->getDeleteAt();
             }
 
             // =======================================================
@@ -3203,7 +2736,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertEquals($this->files[0]['name'], $fileData->getFileName(), 'File name not correct.');
             $this->files[0]['uuid'] = $fileData->getIdentifier();
             $this->files[0]['created'] = $fileData->getDateCreated();
-            $this->files[0]['until'] = $fileData->getExistsUntil();
+            $this->files[0]['until'] = $fileData->getDeleteAt();
 
             // =======================================================
             // GET download one file in prefix playground without creationTime, sig, action, bucketID

@@ -16,7 +16,7 @@ The bundle provides GET endpoints for retrieving file metadata, file binary data
 | `/blob/files`                       | POST   | Used to create a file                                                                       | `bucketIdentifier`, `creationTime`, `prefix`, `method`, `sig` | `notifyEmail`, `retentionDuration`, `type`          | `file`, `fileName`,                          | `metadata`, `fileHash`, `metadataHash` |
 | `/blob/files`                       | DELETE | Used to DELETE the files with given prefix                                                  | `bucketIdentifier`, `creationTime`, `prefix`, `method`, `sig` | `startsWith`                                        | -                                            |                                        |
 | `/blob/files/{identifier}`          | DELETE | Used to DELETE the file with given {id}                                                     | `bucketIdentifier`, `creationTime`, `method`, `sig`           |                                                     | -                                            |                                        |
-| `/blob/files/{identifier}`          | PATCH  | Used to change the filename with given {id}                                                 | `bucketIdentifier`, `creationTime`, `method`, `sig`           | `type`, `existsUntil`, `notifyEmail`                | at least one of the optional body parameters | `file`, `fileName`, `metadata`         |
+| `/blob/files/{identifier}`          | PATCH  | Used to change the filename with given {id}                                                 | `bucketIdentifier`, `creationTime`, `method`, `sig`           | `type`, `deleteAt`, `notifyEmail`                   | at least one of the optional body parameters | `file`, `fileName`, `metadata`         |
 
 In general, the parameters have to be given in the specified order while optional parameters can be selectively left out for the computation of the checksum. The only exception is the `sig` parameter, which always has to be the last parameter.
 
@@ -37,7 +37,7 @@ In general, the parameters have to be given in the specified order while optiona
 | `retentionDuration`                                          | defines the lifespan of the file                                                                                                                       | int           | all non-negative int durations   |
 | `metadata` (was called `additionalMetadata` until `v0.1.35`) | some additional metadata the uploader wants to add                                                                                                     | string / json | all valid json strings           |
 | `type` (was called `additionalType` until `v0.1.35`)         | a type given to the `metadata`. If the type is also defined in the blob bundle config, then the `metadata` is also validated against the given schema. | string        | all valid strings                |
-| `existsUntil`                                                | a timestamp in ISO 8601 that defines how long the resource should exist                                                                                | string        | datetime string                  |
+| `deleteAt`                                                   | a timestamp in ISO 8601 that defines how long the resource should exist                                                                                | string        | datetime string                  |
 | `file`                                                       | the file to upload                                                                                                                                     | file          |                                  |
 
 ## Signature
@@ -155,7 +155,7 @@ This means that systems communicating with blob have to also generate their chec
 | `blob:patch-file-data-bad-type`                       | 400         | The given `type` is not defined in the config                                                                                 |                    |         |
 | `blob:patch-file-data-bad-metadata`                   | 400         | The given `metadata` is no valid JSON                                                                                         |                    |         |
 | `blob:patch-file-data-metadata-does-not-match-type`   | 400         | The given `metadata` does not match the JSON schema defined in `type`                                                         |                    |         |
-| `blob:patch-file-data-exists-until-bad-format`        | 400         | The given `existsUntil` is not a valid DateTime format!                                                                       |                    |         |
+| `blob:patch-file-data-delete-at-bad-format`           | 400         | The given `deleteAt` is not a valid DateTime format!                                                                          |                    |         |
 | `blob:check-signature-creation-time-too-old`          | 403         | The parameter `creationTime` is too old, therefore the request timed out and a new request has to be created, signed and sent | `message`          |         |
 | `blob:patch-file-data-metadata-hash-change-forbidden` | 403         | The given `metadataHash` does not match the calculated hash of the file                                                       |                    |         |
 | `blob:patch-file-data-file-hash-change-forbidden`     | 403         | The given `fileHash` does not match the calculated hash of the file                                                           |                    |         |
@@ -164,7 +164,7 @@ This means that systems communicating with blob have to also generate their chec
 | `blob:get-file-data-by-id-method-not-suitable`        | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
 | `blob:check-signature-method-not-suitable`            | 405         | The method used is not compatible with the method/action specified in the url                                                 | `message`          |         |
 | `blob:file-not-saved`                                 | 500         | File could not be saved!                                                                                                      | `message`          |         |
-| `blob:patch-file-data-bucket-quota-reached`           | 507         | Bucket quota is reached.                                                                                                                              |                    |         |
+| `blob:patch-file-data-bucket-quota-reached`           | 507         | Bucket quota is reached.                                                                                                      |                    |         |
 
 #### DELETE
 

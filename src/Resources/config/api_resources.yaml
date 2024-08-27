@@ -314,57 +314,6 @@ resources:
                       type: "string"
                       example: "0938744de39e1afc2d6bca532b937848918c9b4db41689576930d636bd73d275"
 
-      delete_byPrefix:
-        security: 'is_granted("IS_AUTHENTICATED_FULLY")'
-        class: ApiPlatform\Metadata\Delete
-        method: DELETE
-        controller: Dbp\Relay\BlobBundle\Controller\DeleteFileDatasByPrefix
-        uriTemplate: "/files"
-        normalizationContext:
-          groups: ["BlobFiles:output"]
-          jsonld_embed_context: true
-        read: false
-        openapiContext:
-          tags: ["Blob"]
-          summary: "Deletes the files of a specific bucket with a specific prefix"
-          parameters:
-            - name: bucketIdentifier
-              in: query
-              description: 'Identifier of bucket. Needs to be a UUIDv7.'
-              type: string
-              required: true
-              example: "01910e0c-036a-734e-a9f1-795d6540ed97"
-            - name: creationTime
-              in: query
-              description: 'Current time as ISO 8601'
-              type: string
-              required: true
-              example: "2019-09-07T-15:50+00"
-            - name: method
-              in: query
-              description: 'Method that gets executed'
-              type: string
-              required: true
-              example: "DELETE"
-            - name: prefix
-              in: query
-              description: 'Prefix of a file collection'
-              type: string
-              required: true
-              example: "my-prefix/my-subprefix"
-            - name: startWith
-              in: query
-              description: 'If 1, the return value of the request will include all datas of which the prefix begins with the given prefix.'
-              type: string
-              required: false
-              example: "1"
-            - name: sig
-              in: query
-              description: 'Signature containing the checksum required for the check'
-              type: string
-              required: true
-              example: ""
-
       download:
         security: 'is_granted("IS_AUTHENTICATED_FULLY")'
         class: ApiPlatform\Metadata\Get
@@ -420,7 +369,7 @@ resources:
         iri: "https://schema.org/dateRead"
       retentionDuration:
         iri: "https://schema.org/duration"
-      existsUntil:
+      deleteAt:
         iri: "https://schema.org/expires"
       contentUrl:
         iri: "https://schema.org/url"

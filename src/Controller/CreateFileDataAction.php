@@ -141,9 +141,9 @@ final class CreateFileDataAction extends BaseBlobController
         }
 
         if ($fileData->getRetentionDuration() !== $this->blobService->getDefaultRetentionDurationByBucketId($bucketID)) {
-            $fileData->setExistsUntil($fileData->getDateCreated()->add(new \DateInterval($fileData->getRetentionDuration())));
+            $fileData->setDeleteAt($fileData->getDateCreated()->add(new \DateInterval($fileData->getRetentionDuration())));
         } else {
-            $fileData->setExistsUntil(null);
+            $fileData->setDeleteAt(null);
         }
 
         /* set given and calculated values */

@@ -82,7 +82,7 @@ class FileDataProvider extends AbstractDataProvider
         $fileData = $this->blobService->getFileData($id);
 
         // check if fileData is null
-        if (!$fileData || ($fileData->getExistsUntil() !== null && $fileData->getExistsUntil() < new \DateTimeImmutable()) || ($fileData->getExistsUntil() === null && $fileData->getDateCreated()->add(new \DateInterval($this->blobService->getBucketByID($bucketID)->getMaxRetentionDuration())) < new \DateTimeImmutable())) {
+        if (!$fileData || ($fileData->getDeleteAt() !== null && $fileData->getDeleteAt() < new \DateTimeImmutable()) || ($fileData->getDeleteAt() === null && $fileData->getDateCreated()->add(new \DateInterval($this->blobService->getBucketByID($bucketID)->getMaxRetentionDuration())) < new \DateTimeImmutable())) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
 
@@ -110,11 +110,11 @@ class FileDataProvider extends AbstractDataProvider
                 /* get from url */
                 $additionalType = $filters['type'] ?? '';
                 $prefix = $filters['prefix'] ?? '';
-                $existsUntil = $filters['existsUntil'] ?? '';
+                $deleteAt = $filters['deleteAt'] ?? '';
                 $notifyEmail = $filters['notifyEmail'] ?? '';
 
                 // throw error if no field is provided
-                if (!$fileName && !$additionalMetadata & !$additionalType && !$prefix && !$existsUntil && !$notifyEmail && !$file) {
+                if (!$fileName && !$additionalMetadata & !$additionalType && !$prefix && !$deleteAt && !$notifyEmail && !$file) {
                     throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'at least one field to patch has to be provided', 'blob:patch-file-data-missing');
                 }
 
@@ -161,19 +161,19 @@ class FileDataProvider extends AbstractDataProvider
                     $fileData->setPrefix($prefix);
                 }
 
-                if ($existsUntil) {
-                    assert(is_string($existsUntil));
+                if ($deleteAt) {
+                    assert(is_string($deleteAt));
 
                     // check if date can be created
-                    $date = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $existsUntil);
+                    $date = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $deleteAt);
                     if ($date === false) {
                         // RFC3339_EXTENDED is broken in PHP
-                        $date = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $existsUntil);
+                        $date = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $deleteAt);
                     }
                     if ($date === false) {
-                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given existsUntil is in an invalid format!', 'blob:patch-file-data-exists-until-bad-format');
+                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given deleteAt is in an invalid format!', 'blob:patch-file-data-delete-at-bad-format');
                     }
-                    $fileData->setExistsUntil($date);
+                    $fileData->setDeleteAt($date);
                 }
 
                 if ($notifyEmail) {
@@ -242,8 +242,8 @@ class FileDataProvider extends AbstractDataProvider
         }
 
         $this->blobService->saveFileData($fileData);
-        if ($fileData->getExistsUntil() === null) {
-            $fileData->setExistsUntil($fileData->getDateCreated()->add(new \DateInterval($this->blobService->getDefaultRetentionDurationByBucketId($bucketID))));
+        if ($fileData->getDeleteAt() === null) {
+            $fileData->setDeleteAt($fileData->getDateCreated()->add(new \DateInterval($this->blobService->getDefaultRetentionDurationByBucketId($bucketID))));
         }
 
         return $fileData;
@@ -291,11 +291,11 @@ class FileDataProvider extends AbstractDataProvider
         foreach ($fileDatas as $fileData) {
             try {
                 assert($fileData instanceof FileData);
-                if (!$fileData->getExistsUntil()) {
-                    $fileData->setExistsUntil($fileData->getDateCreated()->add(new \DateInterval($this->blobService->getDefaultRetentionDurationByBucketId($bucketID))));
+                if (!$fileData->getDeleteAt()) {
+                    $fileData->setDeleteAt($fileData->getDateCreated()->add(new \DateInterval($this->blobService->getDefaultRetentionDurationByBucketId($bucketID))));
                 }
 
-                if ($fileData->getExistsUntil() < new \DateTimeImmutable()) {
+                if ($fileData->getDeleteAt() < new \DateTimeImmutable()) {
                     continue;
                 }
 

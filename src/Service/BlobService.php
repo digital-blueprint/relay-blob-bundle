@@ -389,10 +389,10 @@ class BlobService
                 $file['prefix'] = $fileData->getPrefix();
                 $file['dateCreated'] = $fileData->getDateCreated()->format('c');
                 $file['lastAccess'] = $fileData->getLastAccess()->format('c');
-                if ($fileData->getExistsUntil() !== null) {
-                    $file['existsUntil'] = $fileData->getExistsUntil()->format('c');
+                if ($fileData->getDeleteAt() !== null) {
+                    $file['deleteAt'] = $fileData->getDeleteAt()->format('c');
                 } else {
-                    $file['existsUntil'] = $fileData->getDateCreated()->add(new \DateInterval($bucket->getMaxRetentionDuration()))->format('c');
+                    $file['deleteAt'] = $fileData->getDateCreated()->add(new \DateInterval($bucket->getMaxRetentionDuration()))->format('c');
                 }
                 if (empty($notifyEmails[$fileData->getNotifyEmail()])) {
                     $notifyEmails[$fileData->getNotifyEmail()] = [];
@@ -702,18 +702,18 @@ class BlobService
             ->createQueryBuilder('f')
             ->where('f.internalBucketId = :bucketID')
             ->orderBy('f.notifyEmail', 'ASC')
-            ->orderBy('f.existsUntil', 'ASC')
+            ->orderBy('f.deleteAt', 'ASC')
             ->setParameter('bucketID', $bucketID);
         $result = $query->getQuery()->getResult();
         if (!empty($result)) {
             /** @var FileData $fileData */
             foreach ($query->getQuery()->getResult() as $fileData) {
-                if ($fileData->getExistsUntil() === null) {
+                if ($fileData->getDeleteAt() === null) {
                     if ($fileData->getDateCreated()->add(new \DateInterval($this->getDefaultRetentionDurationByInternalBucketId($bucketID))) < $expiry) {
                         $expiring[] = $fileData;
                     }
                 } else {
-                    if ($fileData->getExistsUntil() < $expiry) {
+                    if ($fileData->getDeleteAt() < $expiry) {
                         $expiring[] = $fileData;
                     }
                 }
@@ -741,7 +741,7 @@ class BlobService
     }
 
     /**
-     * Cleans the table from resources that exceeded their existsUntil date.
+     * Cleans the table from resources that exceeded their deleteAt date.
      *
      * @return void
      *
@@ -754,7 +754,7 @@ class BlobService
         $invalidFileDataQuery = $this->em
             ->getRepository(FileData::class)
             ->createQueryBuilder('f')
-            ->where('f.existsUntil < :now')
+            ->where('f.deleteAt < :now')
             ->setParameter('now', $now)
             ->getQuery();
 
@@ -772,7 +772,7 @@ class BlobService
             $invalidFileDataQuery = $this->em
                 ->getRepository(FileData::class)
                 ->createQueryBuilder('f')
-                ->where('f.existsUntil IS NULL')
+                ->where('f.deleteAt IS NULL')
                 ->andWhere('f.internalBucketId = :intBucketId')
                 ->setParameter(':intBucketId', $bucket->getIdentifier())
                 ->getQuery();
@@ -890,7 +890,7 @@ class BlobService
                 $file['prefix'] = $fileData->getPrefix();
                 $file['dateCreated'] = $fileData->getDateCreated()->format('c');
                 $file['lastAccess'] = $fileData->getLastAccess()->format('c');
-                $file['existsUntil'] = $fileData->getExistsUntil()->format('c');
+                $file['deleteAt'] = $fileData->getDeleteAt()->format('c');
                 if (empty($notifyEmails[$reportingEmail])) {
                     $notifyEmails[$reportingEmail] = [];
                 }

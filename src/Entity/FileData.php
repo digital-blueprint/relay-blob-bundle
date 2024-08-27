@@ -86,7 +86,7 @@ class FileData
      */
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['BlobFiles:output', 'BlobFiles:update:exists'])]
-    private $existsUntil;
+    private $deleteAt;
 
     /**
      * @var string
@@ -232,14 +232,14 @@ class FileData
         $this->retentionDuration = $retentionDuration;
     }
 
-    public function getExistsUntil(): ?\DateTimeImmutable
+    public function getDeleteAt(): ?\DateTimeImmutable
     {
-        return $this->existsUntil;
+        return $this->deleteAt;
     }
 
-    public function setExistsUntil($existsUntil): void
+    public function setDeleteAt($deleteAt): void
     {
-        $this->existsUntil = $existsUntil;
+        $this->deleteAt = $deleteAt;
     }
 
     public function getContentUrl(): ?string
