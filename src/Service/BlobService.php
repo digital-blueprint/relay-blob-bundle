@@ -626,6 +626,26 @@ class BlobService
             ->createQueryBuilder('f')
             ->where('f.internalBucketId = :bucketID')
             ->andWhere('f.prefix = :prefix')
+            ->andWhere('f.deleteAt IS NULL')
+            ->orderBy('f.dateCreated', 'ASC')
+            ->setParameter('bucketID', $bucketID)
+            ->setParameter('prefix', $prefix)
+            ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber - 1))
+            ->setMaxResults($maxNumItemsPerPage);
+
+        return $query->getQuery()->getResult();
+    }
+
+    /**
+     * Get all the fileDatas of a given bucketID and prefix with pagination limits.
+     */
+    public function getFileDataByBucketIDAndPrefixAndIncludeDeleteAtWithPagination(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage): array
+    {
+        $query = $this->em
+            ->getRepository(FileData::class)
+            ->createQueryBuilder('f')
+            ->where('f.internalBucketId = :bucketID')
+            ->andWhere('f.prefix = :prefix')
             ->orderBy('f.dateCreated', 'ASC')
             ->setParameter('bucketID', $bucketID)
             ->setParameter('prefix', $prefix)
@@ -639,6 +659,26 @@ class BlobService
      * Get all the fileDatas of a given bucketID that start with prefix with pagination limits.
      */
     public function getFileDataByBucketIDAndStartsWithPrefixWithPagination(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage): array
+    {
+        $query = $this->em
+            ->getRepository(FileData::class)
+            ->createQueryBuilder('f')
+            ->where('f.internalBucketId = :bucketID')
+            ->andWhere('f.prefix LIKE :prefix')
+            ->andWhere('f.deleteAt IS NULL')
+            ->orderBy('f.dateCreated', 'ASC')
+            ->setParameter('bucketID', $bucketID)
+            ->setParameter('prefix', $prefix.'%')
+            ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber - 1))
+            ->setMaxResults($maxNumItemsPerPage);
+
+        return $query->getQuery()->getResult();
+    }
+
+    /**
+     * Get all the fileDatas of a given bucketID that start with prefix with pagination limits.
+     */
+    public function getFileDataByBucketIDAndStartsWithPrefixAndIncludeDeleteAtWithPagination(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage): array
     {
         $query = $this->em
             ->getRepository(FileData::class)

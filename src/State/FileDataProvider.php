@@ -86,6 +86,11 @@ class FileDataProvider extends AbstractDataProvider
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
 
+        $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '');
+        if (!$includeDeleteAt && $fileData->getDeleteAt() !== null) {
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
+        }
+
         // get the current time to save it as last access / last modified
         $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
 
@@ -153,24 +158,28 @@ class FileDataProvider extends AbstractDataProvider
                     $fileData->setMetadataHash(hash('sha256', $additionalMetadata));
                 }
 
-                if ($prefix) {
+                if (array_key_exists('prefix', $filters)) {
                     assert(is_string($prefix));
                     $fileData->setPrefix($prefix);
                 }
 
-                if ($deleteAt) {
+                if (array_key_exists('deleteAt', $filters)) {
                     assert(is_string($deleteAt));
 
-                    // check if date can be created
-                    $date = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $deleteAt);
-                    if ($date === false) {
-                        // RFC3339_EXTENDED is broken in PHP
-                        $date = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $deleteAt);
+                    if (empty($deleteAt)) {
+                        $fileData->setDeleteAt(null);
+                    } else {
+                        // check if date can be created
+                        $date = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $deleteAt);
+                        if ($date === false) {
+                            // RFC3339_EXTENDED is broken in PHP
+                            $date = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $deleteAt);
+                        }
+                        if ($date === false) {
+                            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given deleteAt is in an invalid format!', 'blob:patch-file-data-delete-at-bad-format');
+                        }
+                        $fileData->setDeleteAt($date);
                     }
-                    if ($date === false) {
-                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given deleteAt is in an invalid format!', 'blob:patch-file-data-delete-at-bad-format');
-                    }
-                    $fileData->setDeleteAt($date);
                 }
 
                 if ($notifyEmail) {
@@ -273,13 +282,18 @@ class FileDataProvider extends AbstractDataProvider
         // get includeData param and decode it
         $includeData = rawurldecode($filters['includeData'] ?? '');
         $startsWith = rawurldecode($filters['startsWith'] ?? '');
+        $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '');
         assert(is_string($includeData));
 
         $internalBucketId = $this->blobService->getInternalBucketIdByBucketID($bucketID);
 
         // get file data of bucket for current page, and decide whether prefix should be used as 'startsWith' or not
-        if ($startsWith) {
+        if ($startsWith && $includeDeleteAt) {
+            $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
+        } elseif ($startsWith && !$includeDeleteAt) {
             $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefixWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
+        } elseif (!$startsWith && $includeDeleteAt) {
+            $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
         } else {
             $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
         }
