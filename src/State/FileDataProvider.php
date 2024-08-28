@@ -234,6 +234,7 @@ class FileDataProvider extends AbstractDataProvider
                 }
             }
         } else {
+            $fileData->setBucket($this->blobService->getBucketByInternalID($fileData->getInternalBucketID()));
             $deleteSuccessEvent = new DeleteFileDataByDeleteSuccessEvent($fileData);
             $this->eventDispatcher->dispatch($deleteSuccessEvent);
         }
