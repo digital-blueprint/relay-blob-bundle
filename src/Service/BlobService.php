@@ -852,7 +852,9 @@ class BlobService
     {
         $buckets = $this->configurationService->getBuckets();
         /*foreach ($buckets as $bucket) {
-            // $this->sendReportingForBucket($bucket);
+            if ($bucket->getReportingConfig() !== null) {
+                // $this->sendReportingForBucket($bucket);
+            }
         }*/
     }
 
