@@ -82,11 +82,12 @@ class FileDataProvider extends AbstractDataProvider
         $fileData = $this->blobService->getFileData($id);
 
         // check if fileData is null
-        if (($fileData->getDeleteAt() !== null && $fileData->getDeleteAt() < new \DateTimeImmutable()) || ($fileData->getDeleteAt() === null && $fileData->getDateCreated()->add(new \DateInterval($this->blobService->getBucketByID($bucketID)->getMaxRetentionDuration())) < new \DateTimeImmutable())) {
+        if ($fileData->getDeleteAt() !== null && $fileData->getDeleteAt() < new \DateTimeImmutable()) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
 
         $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '');
+
         if (!$includeDeleteAt && $fileData->getDeleteAt() !== null) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
@@ -292,7 +293,7 @@ class FileDataProvider extends AbstractDataProvider
         // get file data of bucket for current page, and decide whether prefix should be used as 'startsWith' or not
         if ($startsWith && $includeDeleteAt) {
             $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
-        } elseif ($startsWith && $includeDeleteAt !== '') {
+        } elseif ($startsWith && $includeDeleteAt === '') {
             $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefixWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
         } elseif (!$startsWith && $includeDeleteAt) {
             $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);

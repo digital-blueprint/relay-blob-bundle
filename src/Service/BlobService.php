@@ -646,9 +646,11 @@ class BlobService
             ->createQueryBuilder('f')
             ->where('f.internalBucketId = :bucketID')
             ->andWhere('f.prefix = :prefix')
+            ->andWhere('f.deleteAt > :now')
             ->orderBy('f.dateCreated', 'ASC')
             ->setParameter('bucketID', $bucketID)
             ->setParameter('prefix', $prefix)
+            ->setParameter('now', new \DateTime('now'))
             ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber - 1))
             ->setMaxResults($maxNumItemsPerPage);
 
@@ -685,9 +687,11 @@ class BlobService
             ->createQueryBuilder('f')
             ->where('f.internalBucketId = :bucketID')
             ->andWhere('f.prefix LIKE :prefix')
+            ->andWhere('f.deleteAt > :now')
             ->orderBy('f.dateCreated', 'ASC')
             ->setParameter('bucketID', $bucketID)
             ->setParameter('prefix', $prefix.'%')
+            ->setParameter('now', new \DateTime('now'))
             ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber - 1))
             ->setMaxResults($maxNumItemsPerPage);
 
