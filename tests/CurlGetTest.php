@@ -258,7 +258,6 @@ class CurlGetTest extends ApiTestCase
             $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
             $this->assertArrayHasKey('hydra:view', $data);
             $this->assertArrayHasKey('hydra:member', $data);
-            var_dump($data);
             $this->assertArrayHasKey(0, $data['hydra:member']);
             $resultFile = $data['hydra:member'][0];
             $this->assertEquals($prefix, $resultFile['prefix'], 'File data prefix not correct.');
@@ -562,10 +561,6 @@ class CurlGetTest extends ApiTestCase
             $this->assertArrayHasKey($this->files[0]['uuid'], DummyFileSystemService::$fd, 'File data not in dummy store.');
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
-
-            echo $response->getStatusCode()."\n";
-            echo $response->getContent()."\n";
-
             $this->assertEquals(200, $response->getStatusCode());
             // TODO: further checks...
 
