@@ -229,7 +229,7 @@ class CurlGetTest extends ApiTestCase
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
             $action = 'GET';
-            $url = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action";
+            $url = "/blob/files?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=$action&prefix=$prefix";
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -258,6 +258,7 @@ class CurlGetTest extends ApiTestCase
             $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
             $this->assertArrayHasKey('hydra:view', $data);
             $this->assertArrayHasKey('hydra:member', $data);
+            var_dump($data);
             $this->assertArrayHasKey(0, $data['hydra:member']);
             $resultFile = $data['hydra:member'][0];
             $this->assertEquals($prefix, $resultFile['prefix'], 'File data prefix not correct.');
@@ -338,7 +339,7 @@ class CurlGetTest extends ApiTestCase
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $action = 'GET';
-            $url = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action";
+            $url = "/blob/files?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=$action&prefix=$prefix";
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -391,7 +392,7 @@ class CurlGetTest extends ApiTestCase
             echo "DELETE all files (0 and 1)\n";
 
             foreach ($data['hydra:member'] as $resultFile) {
-                $url = "/blob/files/{$resultFile['identifier']}?bucketIdentifier=$bucketID&creationTime=$creationTime&method=DELETE";
+                $url = "/blob/files/{$resultFile['identifier']}?bucketIdentifier=$bucketID&includeDeleteAt=1&creationTime=$creationTime&method=DELETE";
 
                 $payload = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -426,7 +427,7 @@ class CurlGetTest extends ApiTestCase
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $action = 'GET';
-            $url = "/blob/files?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = "/blob/files?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=$action&prefix=$prefix";
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -540,7 +541,7 @@ class CurlGetTest extends ApiTestCase
 
             $creationTime = rawurlencode(date('c'));
 
-            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
+            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=GET";
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -562,6 +563,9 @@ class CurlGetTest extends ApiTestCase
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
 
+            echo $response->getStatusCode()."\n";
+            echo $response->getContent()."\n";
+
             $this->assertEquals(200, $response->getStatusCode());
             // TODO: further checks...
 
@@ -570,7 +574,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "DELETE a file by id\n";
 
-            $url = "/blob/files/{$this->files[0]['uuid']}?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=DELETE";
+            $url = "/blob/files/{$this->files[0]['uuid']}?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&includeDeleteAt=1&method=DELETE";
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -612,7 +616,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             echo "GET all files\n";
 
-            $url = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
+            $url = "/blob/files?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=GET&prefix=$prefix";
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -668,7 +672,7 @@ class CurlGetTest extends ApiTestCase
             $creationTime = rawurlencode(date('c', time() - 3600));
             $prefix = 'playground';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=GET";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=GET&prefix=$prefix";
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1211,7 +1215,7 @@ class CurlGetTest extends ApiTestCase
             $newFileName = 'Test1.php';
             echo 'PATCH one file with method '.$action."\n";
 
-            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
+            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=$action&prefix=$prefix";
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1239,7 +1243,7 @@ class CurlGetTest extends ApiTestCase
             echo "GET file to see if its changed\n";
 
             $action = 'GET';
-            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketIdentifier=$bucketID&creationTime=$creationTime&method=$action";
+            $url = '/blob/files/'.$fileData->getIdentifier()."?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=$action";
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1467,7 +1471,7 @@ class CurlGetTest extends ApiTestCase
             // GET all files in prefix playground
             // =======================================================
             echo "GET all files with prefix playground\n";
-            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&includeData=1&method=GET";
+            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketIdentifier=$bucketID&creationTime=$creationTime&includeData=1&includeDeleteAt=1&method=GET&prefix=$prefix";
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),

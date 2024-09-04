@@ -284,13 +284,15 @@ class FileDataProvider extends AbstractDataProvider
         $startsWith = rawurldecode($filters['startsWith'] ?? '');
         $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '');
         assert(is_string($includeData));
+        assert(is_string($startsWith));
+        assert(is_string($includeDeleteAt));
 
         $internalBucketId = $this->blobService->getInternalBucketIdByBucketID($bucketID);
 
         // get file data of bucket for current page, and decide whether prefix should be used as 'startsWith' or not
         if ($startsWith && $includeDeleteAt) {
             $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
-        } elseif ($startsWith && !$includeDeleteAt) {
+        } elseif ($startsWith && $includeDeleteAt !== '') {
             $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefixWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
         } elseif (!$startsWith && $includeDeleteAt) {
             $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
