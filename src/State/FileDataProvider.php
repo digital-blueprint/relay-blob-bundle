@@ -250,9 +250,6 @@ class FileDataProvider extends AbstractDataProvider
         }
 
         $this->blobService->saveFileData($fileData);
-        if ($fileData->getDeleteAt() === null) {
-            $fileData->setDeleteAt($fileData->getDateCreated()->add(new \DateInterval($this->blobService->getDefaultRetentionDurationByBucketId($bucketID))));
-        }
 
         return $fileData;
     }
@@ -290,6 +287,7 @@ class FileDataProvider extends AbstractDataProvider
 
         $internalBucketId = $this->blobService->getInternalBucketIdByBucketID($bucketID);
 
+
         // get file data of bucket for current page, and decide whether prefix should be used as 'startsWith' or not
         if ($startsWith && $includeDeleteAt) {
             $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
@@ -306,13 +304,6 @@ class FileDataProvider extends AbstractDataProvider
         foreach ($fileDatas as $fileData) {
             try {
                 assert($fileData instanceof FileData);
-                if (!$fileData->getDeleteAt()) {
-                    $fileData->setDeleteAt($fileData->getDateCreated()->add(new \DateInterval($this->blobService->getDefaultRetentionDurationByBucketId($bucketID))));
-                }
-
-                if ($fileData->getDeleteAt() < new \DateTimeImmutable()) {
-                    continue;
-                }
 
                 $fileData->setBucket($this->blobService->configurationService->getBucketByID($bucketID));
                 $fileData = $this->blobService->getLink($fileData);

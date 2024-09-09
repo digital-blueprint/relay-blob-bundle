@@ -722,10 +722,6 @@ class BlobService
      */
     public function getAllExpiringFiledatasByBucket(string $bucketID): array
     {
-        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $expiry = $now->add(new \DateInterval($this->configurationService->getBucketByInternalID($bucketID)->getReportExpiryWhenIn()));
-        $expiring = [];
-
         $query = $this->em
             ->getRepository(FileData::class)
             ->createQueryBuilder('f')
@@ -734,22 +730,10 @@ class BlobService
             ->orderBy('f.deleteAt', 'ASC')
             ->setParameter('bucketID', $bucketID);
         $result = $query->getQuery()->getResult();
-        if (!empty($result)) {
-            /** @var FileData $fileData */
-            foreach ($query->getQuery()->getResult() as $fileData) {
-                if ($fileData->getDeleteAt() === null) {
-                    if ($fileData->getDateCreated()->add(new \DateInterval($this->getDefaultRetentionDurationByInternalBucketId($bucketID))) < $expiry) {
-                        $expiring[] = $fileData;
-                    }
-                } else {
-                    if ($fileData->getDeleteAt() < $expiry) {
-                        $expiring[] = $fileData;
-                    }
-                }
-            }
-        }
 
-        return $expiring;
+        assert(is_array($result));
+
+        return $result;
     }
 
     /**
@@ -783,7 +767,8 @@ class BlobService
         $invalidFileDataQuery = $this->em
             ->getRepository(FileData::class)
             ->createQueryBuilder('f')
-            ->where('f.deleteAt < :now')
+            ->where('f.deleteAt IS NOT NULL')
+            ->AndWhere('f.deleteAt < :now')
             ->setParameter('now', $now)
             ->getQuery();
 
@@ -793,34 +778,6 @@ class BlobService
         foreach ($invalidFileDatas as $invalidFileData) {
             $invalidFileData = $this->setBucket($invalidFileData);
             $this->removeFileData($invalidFileData);
-        }
-
-        $invalidFileDatas = [];
-
-        foreach ($this->configurationService->getBuckets() as $bucket) {
-            $invalidFileDataQuery = $this->em
-                ->getRepository(FileData::class)
-                ->createQueryBuilder('f')
-                ->where('f.deleteAt IS NULL')
-                ->andWhere('f.internalBucketId = :intBucketId')
-                ->setParameter(':intBucketId', $bucket->getIdentifier())
-                ->getQuery();
-
-            $datas = $invalidFileDataQuery->getResult();
-            $maxDuration = $bucket->getMaxRetentionDuration();
-
-            /** @var FileData $data */
-            foreach ($datas as $data) {
-                if ($data->getDateCreated()->add(new \DateInterval($maxDuration)) < $now) {
-                    $invalidFileDatas[] = $data;
-                }
-            }
-
-            // Remove all links, files and reference
-            foreach ($invalidFileDatas as $invalidFileData) {
-                $invalidFileData = $this->setBucket($invalidFileData);
-                $this->removeFileData($invalidFileData);
-            }
         }
     }
 
