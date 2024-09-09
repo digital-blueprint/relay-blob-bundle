@@ -129,18 +129,14 @@ final class CreateFileDataAction extends BaseBlobController
         /* now, after check of signature and checksum it is safe to do computations */
 
         /* Check retentionDuration & idleRetentionDuration valid durations */
-        $fileData->setRetentionDuration($retentionDuration);
-        if ($fileData->getRetentionDuration()) {
-            $bucketExpireDate = $fileData->getDateCreated()->add(new \DateInterval($bucket->getMaxRetentionDuration()));
-            $fileExpireDate = $fileData->getDateCreated()->add(new \DateInterval($fileData->getRetentionDuration()));
-            if ($bucketExpireDate < $fileExpireDate) {
-                $fileData->setRetentionDuration((string) $bucket->getMaxRetentionDuration());
-            }
+
+        if ($retentionDuration) {
+            $fileData->setRetentionDuration($retentionDuration);
         } else {
-            $fileData->setRetentionDuration((string) $bucket->getMaxRetentionDuration());
+            $fileData->setRetentionDuration(null);
         }
 
-        if ($fileData->getRetentionDuration() !== $this->blobService->getDefaultRetentionDurationByBucketId($bucketID)) {
+        if ($fileData->getRetentionDuration() !== null) {
             $fileData->setDeleteAt($fileData->getDateCreated()->add(new \DateInterval($fileData->getRetentionDuration())));
         } else {
             $fileData->setDeleteAt(null);

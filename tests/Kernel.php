@@ -79,7 +79,6 @@ class Kernel extends BaseKernel
                     'notify_when_quota_over' => 70, // in percent of quota
                     'report_when_expiry_in' => 'P62D', // in Days, 62 = two 31 day months
                     'bucket_owner' => 'manuel.kocher@tugraz.at',
-                    'max_retention_duration' => 'P1Y',
                     'link_expire_time' => 'PT1M',
                     'reporting' => [
                         'dsn' => 'smtp:localhost',
@@ -106,7 +105,6 @@ class Kernel extends BaseKernel
                     'notify_when_quota_over' => 70, // in percent of quota
                     'report_when_expiry_in' => 'P62D', // in Days, 62 = two 31 day months
                     'bucket_owner' => 'manuel.kocher@tugraz.at',
-                    'max_retention_duration' => 'P1Y',
                     'link_expire_time' => 'PT1M',
                     'reporting' => [
                         'dsn' => 'smtp:localhost',

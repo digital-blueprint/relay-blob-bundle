@@ -287,7 +287,6 @@ class FileDataProvider extends AbstractDataProvider
 
         $internalBucketId = $this->blobService->getInternalBucketIdByBucketID($bucketID);
 
-
         // get file data of bucket for current page, and decide whether prefix should be used as 'startsWith' or not
         if ($startsWith && $includeDeleteAt) {
             $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
