@@ -1,8 +1,16 @@
 # Changelog
 
-## next 
+## v0.1.49
+* Remove `max_retention_duration` from the bucket config
+
+## v0.1.48
 * Throw 404 if item identifier is in an invalid format
 * Drop support for Symfony 5 and api-platform 2
+* Rename `exists_until` to `delete_at`
+* If `delete_at` is NULL, the file will be kept indefinitely
+* Introduce new parameter `includeDeleteAt` for GET requests. If `=1`, all files where `delete_at` is not NULL will be returned. If not set, files where `delete_at` is not NULL will be ignored.  
+* Optimize SQL queries
+* Fix bulk GET to always return the set page size
 
 ## v0.1.47
 * Provide `propertyName` in `errorDetail` for error `type mismatch`

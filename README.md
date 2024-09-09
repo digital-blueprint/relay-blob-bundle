@@ -71,7 +71,6 @@ dbp_relay_blob:
       notify_when_quota_over: 70 # percent of quota when the bucket owner should be notified that the storage is running out
       report_when_expiry_in: 'P30D' # duration of how much in advance a bucket owner or user should be warned about the deletion of files
       bucket_owner: 'john@example.com' # Email who will be notified when quota is reached
-      max_retention_duration: 'P1Y' # Max retention duration of files in ISO 8601
       link_expire_time: 'P7D' # Max expire time of sharelinks in ISO 8601
       warn_quota: # Notification configuration how emails are sent when the quota is about to be reached
         dsn: '%env(TUGRAZ_MAILER_TRANSPORT_DSN)%'
