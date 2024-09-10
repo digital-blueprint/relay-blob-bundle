@@ -1,4 +1,7 @@
 # Changelog
+## v0.1.52
+* Optimize file cleanUp to prevent the returning of theoretically infinite entries
+
 ## v0.1.51
 * Adapt latest migration description
 
