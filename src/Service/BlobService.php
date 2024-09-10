@@ -594,29 +594,6 @@ class BlobService
     }
 
     /**
-     * Get all the fileDatas of a given bucketID and that starts with prefix.
-     */
-    public function getFileDataByBucketIDAndStartsWithPrefix(string $bucketID, string $prefix): array
-    {
-        $query = $this->em
-            ->getRepository(FileData::class)
-            ->createQueryBuilder('f')
-            ->where('f.internalBucketId = :bucketID')
-            ->andWhere('f.prefix LIKE :prefix')
-            ->orderBy('f.dateCreated', 'ASC')
-            ->setParameter('bucketID', $bucketID)
-            ->setParameter('prefix', $prefix.'%');
-
-        $result = $query->getQuery()->getResult();
-
-        if (!$result) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileDatas was not found!', 'blob:file-data-not-found');
-        }
-
-        return $result;
-    }
-
-    /**
      * Get all the fileDatas of a given bucketID and prefix with pagination limits.
      */
     public function getFileDataByBucketIDAndPrefixWithPagination(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage): array
@@ -720,7 +697,7 @@ class BlobService
      *
      * @throws \Exception
      */
-    public function getAllExpiringFiledatasByBucket(string $bucketID): array
+    public function getAllExpiringFiledatasByBucket(string $bucketID, int $limit = 10): array
     {
         $query = $this->em
             ->getRepository(FileData::class)
@@ -728,7 +705,8 @@ class BlobService
             ->where('f.internalBucketId = :bucketID')
             ->orderBy('f.notifyEmail', 'ASC')
             ->orderBy('f.deleteAt', 'ASC')
-            ->setParameter('bucketID', $bucketID);
+            ->setParameter('bucketID', $bucketID)
+            ->setMaxResults($limit);
         $result = $query->getQuery()->getResult();
 
         assert(is_array($result));
@@ -764,20 +742,28 @@ class BlobService
     {
         // get all invalid filedatas
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $invalidFileDataQuery = $this->em
-            ->getRepository(FileData::class)
-            ->createQueryBuilder('f')
-            ->where('f.deleteAt IS NOT NULL')
-            ->AndWhere('f.deleteAt < :now')
-            ->setParameter('now', $now)
-            ->getQuery();
 
-        $invalidFileDatas = $invalidFileDataQuery->getResult();
+        $maxNumItemsPerPage = 10000;
+        $pagesize = 10000;
 
-        // Remove all links, files and reference
-        foreach ($invalidFileDatas as $invalidFileData) {
-            $invalidFileData = $this->setBucket($invalidFileData);
-            $this->removeFileData($invalidFileData);
+        while ($pagesize === $maxNumItemsPerPage) {
+            $invalidFileDataQuery = $this->em
+                ->getRepository(FileData::class)
+                ->createQueryBuilder('f')
+                ->where('f.deleteAt IS NOT NULL')
+                ->AndWhere('f.deleteAt < :now')
+                ->setParameter('now', $now)
+                ->setMaxResults($maxNumItemsPerPage)
+                ->getQuery();
+
+            $invalidFileDatas = $invalidFileDataQuery->getResult();
+            $pagesize = count($invalidFileDatas);
+
+            // Remove all links, files and reference
+            foreach ($invalidFileDatas as $invalidFileData) {
+                $invalidFileData = $this->setBucket($invalidFileData);
+                $this->removeFileData($invalidFileData);
+            }
         }
     }
 

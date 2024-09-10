@@ -287,6 +287,12 @@ class FileDataProvider extends AbstractDataProvider
 
         $internalBucketId = $this->blobService->getInternalBucketIdByBucketID($bucketID);
 
+        // TODO: make the upper limit configurable
+        // hard limit page size
+        if ($maxNumItemsPerPage > 10000) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Requested too many items per page', $errorPrefix.'-too-many-items-per-page');
+        }
+
         // get file data of bucket for current page, and decide whether prefix should be used as 'startsWith' or not
         if ($startsWith && $includeDeleteAt) {
             $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
