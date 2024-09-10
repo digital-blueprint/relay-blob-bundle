@@ -1,4 +1,9 @@
 # Changelog
+## v0.1.51
+* Adapt latest migration description
+
+## v0.1.50
+* Fix bug that lead to 500 in GET requests
 
 ## v0.1.49
 * Remove `max_retention_duration` from the bucket config
