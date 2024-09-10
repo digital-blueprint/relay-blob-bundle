@@ -13,7 +13,7 @@ final class Version20240827113440 extends EntityManagerMigration
 {
     public function getDescription(): string
     {
-        return 'Rename column bucket_id to internal_bucket_id.';
+        return 'Rename column exists_until to delete_at.';
     }
 
     public function up(Schema $schema): void
