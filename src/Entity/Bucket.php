@@ -46,11 +46,6 @@ class Bucket
     /**
      * @var string
      */
-    private $max_retention_duration;
-
-    /**
-     * @var string
-     */
     private $linkExpireTime;
 
     /**
@@ -174,16 +169,6 @@ class Bucket
         return $this->outputValidation;
     }
 
-    public function getMaxRetentionDuration(): string
-    {
-        return $this->max_retention_duration;
-    }
-
-    public function setMaxRetentionDuration(string $max_retention_duration): void
-    {
-        $this->max_retention_duration = $max_retention_duration;
-    }
-
     public function getLinkExpireTime(): string
     {
         return $this->linkExpireTime;
@@ -280,7 +265,6 @@ class Bucket
         $bucket->setKey((string) $config['key']);
         $bucket->setQuota((int) $config['quota']);
         $bucket->setOutputValidation((bool) $config['output_validation']);
-        $bucket->setMaxRetentionDuration((string) $config['max_retention_duration']);
         $bucket->setLinkExpireTime((string) $config['link_expire_time']);
 
         if (

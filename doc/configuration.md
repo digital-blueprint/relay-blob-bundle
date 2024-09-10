@@ -19,7 +19,6 @@ parameters:
           notify_when_quota_over: 70 # in percent of the quota
           report_when_expiry_in: 'P30D' # in Days
           bucket_owner: '<bucket-owner-email>'
-          max_retention_duration: 'P60D' # how long until new file expires
           link_expire_time: 'PT1M' # how long until link exipres
           policies:
             create: true
