@@ -387,7 +387,7 @@ class BlobService
                 if ($fileData->getDeleteAt() !== null) {
                     $file['deleteAt'] = $fileData->getDeleteAt()->format('c');
                 } else {
-                    $file['deleteAt'] = $fileData->getDateCreated()->add(new \DateInterval($bucket->getMaxRetentionDuration()))->format('c');
+                    $file['deleteAt'] = 'null';
                 }
                 if (empty($notifyEmails[$fileData->getNotifyEmail()])) {
                     $notifyEmails[$fileData->getNotifyEmail()] = [];
@@ -1240,15 +1240,5 @@ class BlobService
             }
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type', $errorPrefix.'-metadata-does-not-match-type', $messages);
         }
-    }
-
-    public function getDefaultRetentionDurationByBucketId($bucketId): string
-    {
-        return $this->configurationService->getBucketByID($bucketId)->getMaxRetentionDuration();
-    }
-
-    public function getDefaultRetentionDurationByInternalBucketId($bucketId): string
-    {
-        return $this->configurationService->getBucketByInternalID($bucketId)->getMaxRetentionDuration();
     }
 }
