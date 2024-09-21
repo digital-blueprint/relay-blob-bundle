@@ -6,7 +6,7 @@
     "require": {
         "php": ">=8.1",
         "ext-json": "*",
-        "api-platform/core": "^3.2",
+        "api-platform/core": "^4.0",
         "dbp/relay-blob-library": "^0.2.0",
         "dbp/relay-core-bundle": "^0.1.173",
         "doctrine/dbal": "^3.3",
