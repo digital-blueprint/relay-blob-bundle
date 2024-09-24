@@ -60,7 +60,7 @@ class BlobService
 
     public function checkConnection()
     {
-        $this->em->getConnection()->connect();
+        $this->em->getConnection()->getNativeConnection();
     }
 
     /**
