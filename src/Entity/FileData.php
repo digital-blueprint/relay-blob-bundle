@@ -13,86 +13,50 @@ use Symfony\Component\Serializer\Annotation\Groups;
 #[ORM\Entity]
 class FileData
 {
-    /**
-     * @var string
-     */
     #[ORM\Id]
     #[ORM\Column(type: 'relay_blob_uuid_binary', unique: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input'])]
-    private $identifier;
+    private string $identifier = '';
 
-    /**
-     * @var string
-     */
     #[ORM\Column(type: 'string', length: 512)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input'])]
-    private $prefix;
+    private string $prefix = '';
 
-    /**
-     * @var string
-     */
     #[ORM\Column(type: 'string', length: 512)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
-    private $fileName;
+    private string $fileName = '';
 
-    /**
-     * @var string
-     */
     #[ORM\Column(type: 'string', length: 255)]
     #[Groups(['BlobFiles:output'])]
-    private $mimeType;
+    private string $mimeType = '';
 
-    /**
-     * @var string
-     */
     #[ORM\Column(type: 'string', length: 50)]
     #[Groups(['BlobFiles:input'])]
-    private $internalBucketId;
+    private string $internalBucketId = '';
 
-    /**
-     * @var Bucket
-     */
-    private $bucket;
+    private ?Bucket $bucket = null;
 
-    /**
-     * @var \DateTimeImmutable
-     */
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['BlobFiles:output'])]
-    private $dateCreated;
+    private \DateTimeImmutable $dateCreated;
 
-    /**
-     * @var \DateTimeImmutable
-     */
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['BlobFiles:output'])]
-    private $dateAccessed;
+    private \DateTimeImmutable $dateAccessed;
 
-    /**
-     * @var \DateTimeImmutable
-     */
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['BlobFiles:output'])]
-    private $dateModified;
+    private \DateTimeImmutable $dateModified;
 
-    /**
-     * @var string|null
-     */
     #[Groups(['BlobFiles:input'])]
-    private $retentionDuration;
+    private ?string $retentionDuration = null;
 
-    /**
-     * @var \DateTimeImmutable
-     */
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['BlobFiles:output', 'BlobFiles:update:exists'])]
-    private $deleteAt;
+    private ?\DateTimeImmutable $deleteAt = null;
 
-    /**
-     * @var string
-     */
     #[Groups(['BlobFiles:output'])]
-    private $contentUrl;
+    private string $contentUrl = '';
 
     /**
      * @var resource
@@ -100,51 +64,33 @@ class FileData
     #[Groups(['BlobFiles:input'])]
     private $file;
 
-    /**
-     * @var string
-     */
     #[ORM\Column(type: 'json', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
-    private $metadata;
+    private string $metadata = '';
 
-    /**
-     * @var string
-     */
     #[ORM\Column(type: 'text', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
-    private $type;
+    private ?string $type = null;
 
-    /**
-     * @var int
-     */
     #[ORM\Column(type: 'integer')]
     #[Groups(['BlobFiles:output'])]
-    private $fileSize;
+    private int $fileSize = 0;
 
-    /**
-     * @var string|null
-     */
-    #[ORM\Column(type: 'string', length: 64)]
+    #[ORM\Column(type: 'string', length: 64, nullable: true)]
     #[Groups(['BlobFiles:output'])]
-    private $fileHash;
+    private ?string $fileHash = null;
 
-    /**
-     * @var string|null
-     */
-    #[ORM\Column(type: 'string', length: 64)]
+    #[ORM\Column(type: 'string', length: 64, nullable: true)]
     #[Groups(['BlobFiles:output'])]
-    private $metadataHash;
+    private ?string $metadataHash = null;
 
-    /**
-     * @var string
-     */
-    #[ORM\Column(type: 'string', length: 255)]
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
-    private $notifyEmail;
+    private ?string $notifyEmail = null;
 
     public function getIdentifier(): string
     {
-        return (string) $this->identifier;
+        return $this->identifier;
     }
 
     public function setIdentifier(string $identifier): void
@@ -182,7 +128,7 @@ class FileData
         $this->internalBucketId = $internalBucketId;
     }
 
-    public function getBucket(): Bucket
+    public function getBucket(): ?Bucket
     {
         return $this->bucket;
     }
@@ -227,7 +173,7 @@ class FileData
         return $this->retentionDuration;
     }
 
-    public function setRetentionDuration($retentionDuration): void
+    public function setRetentionDuration(?string $retentionDuration): void
     {
         $this->retentionDuration = $retentionDuration;
     }
@@ -237,7 +183,7 @@ class FileData
         return $this->deleteAt;
     }
 
-    public function setDeleteAt($deleteAt): void
+    public function setDeleteAt(?\DateTimeImmutable $deleteAt): void
     {
         $this->deleteAt = $deleteAt;
     }
@@ -287,9 +233,9 @@ class FileData
         return $this->type;
     }
 
-    public function setType($additionalType): void
+    public function setType(?string $type): void
     {
-        $this->type = $additionalType;
+        $this->type = $type;
     }
 
     public function getFileSize(): int
@@ -307,7 +253,7 @@ class FileData
         return $this->fileHash;
     }
 
-    public function setFileHash(string $fileHash): void
+    public function setFileHash(?string $fileHash): void
     {
         $this->fileHash = $fileHash;
     }
@@ -317,7 +263,7 @@ class FileData
         return $this->metadataHash;
     }
 
-    public function setMetadataHash(string $metadataHash): void
+    public function setMetadataHash(?string $metadataHash): void
     {
         $this->metadataHash = $metadataHash;
     }
@@ -327,7 +273,7 @@ class FileData
         return $this->notifyEmail;
     }
 
-    public function setNotifyEmail(string $notifyEmail): void
+    public function setNotifyEmail(?string $notifyEmail): void
     {
         $this->notifyEmail = $notifyEmail;
     }

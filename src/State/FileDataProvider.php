@@ -5,37 +5,26 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\State;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
-use Dbp\Relay\BlobBundle\Event\ChangeFileDataByPatchSuccessEvent;
-use Dbp\Relay\BlobBundle\Event\DeleteFileDataByDeleteSuccessEvent;
-use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
-use JsonSchema\Constraints\Factory;
-use JsonSchema\Validator;
-use Symfony\Bridge\PsrHttpMessage\Factory\UploadedFile;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
 
 /**
+ * @internal
+ *
  * @extends AbstractDataProvider<FileData>
  */
 class FileDataProvider extends AbstractDataProvider
 {
-    private BlobService $blobService;
-    private RequestStack $requestStack;
-    private EventDispatcherInterface $eventDispatcher;
-
-    public function __construct(BlobService $blobService, RequestStack $requestStack, EventDispatcherInterface $eventDispatcher)
+    public function __construct(
+        private readonly BlobService $blobService,
+        private readonly RequestStack $requestStack)
     {
         parent::__construct();
-
-        $this->blobService = $blobService;
-        $this->requestStack = $requestStack;
-        $this->eventDispatcher = $eventDispatcher;
     }
 
     protected function requiresAuthentication(int $operation): bool
@@ -61,195 +50,36 @@ class FileDataProvider extends AbstractDataProvider
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'Identifier is in an invalid format!', 'blob:identifier-invalid-format');
         }
 
-        // get current request
         $request = $this->requestStack->getCurrentRequest();
-
-        // get used method of request
         $method = $this->requestStack->getCurrentRequest()->getMethod();
 
         // check if the minimal needed parameters are present and correct
         $errorPrefix = 'blob:get-file-data-by-id';
+        DenyAccessUnlessCheckSignature::checkSignature($errorPrefix, $this->blobService, $request, $filters,
+            ['GET', 'PATCH', 'DELETE'], $this->isAuthenticated(), $this->blobService->checkAdditionalAuth());
 
-        DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $request, $filters, ['GET', 'PATCH', 'DELETE']);
+        // check if output validation shouldn't be checked
+        // a user can get the data even if the system usually would throw and invalid data error
+        $disableOutputValidation = ($filters['disableOutputValidation'] ?? '') === '1';
+        $includeFileContent = ($filters['includeData'] ?? '') === '1';
+        $updateLastAccessTime = $method === 'GET'; // PATCH: saves for itself, DELETE: will be deleted anyway
 
-        // get secret of bucket
+        $fileData = $this->blobService->getFile($id, $disableOutputValidation, $includeFileContent, $updateLastAccessTime);
+
+        $bucket = $this->blobService->ensureBucket($fileData);
         $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');
-        $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
-
-        // check if signature is valid
-        DenyAccessUnlessCheckSignature::checkSignature($secret, $request, $this->blobService, $this->isAuthenticated(), $this->blobService->checkAdditionalAuth());
-        // get file data associated with the given identifier
-        $fileData = $this->blobService->getFileData($id);
-
-        // check if fileData is null
-        if ($fileData->getDeleteAt() !== null && $fileData->getDeleteAt() < new \DateTimeImmutable()) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
+        if ($bucket->getBucketID() !== $bucketID) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
+                'Provided bucket ID does not match with the bucket ID of the file!', 'blob:bucket-id-mismatch');
         }
 
-        $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '');
-
-        if (!$includeDeleteAt && $fileData->getDeleteAt() !== null) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
-        }
-
-        // get the current time to save it as last access / last modified
-        $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-
-        // decide by method what to execute
-        if ($method !== 'DELETE') {
-            // create shareLink
-            $fileData = $this->blobService->getLink($fileData);
-
-            // check if PATCH request was used
-            if ($method === 'PATCH') {
-                /* get from body */
-                $body = BlobUtils::getFieldsFromPatchRequest($request);
-                $file = $body['file'] ?? '';
-                $fileHash = $body['fileHash'] ?? '';
-                $fileName = $body['fileName'] ?? '';
-                $additionalMetadata = $body['metadata'] ?? '';
-                $metadataHash = $body['metadataHash'] ?? '';
-
-                /* get from url */
-                $additionalType = $filters['type'] ?? '';
-                $prefix = $filters['prefix'] ?? '';
-                $deleteAt = $filters['deleteAt'] ?? '';
-                $notifyEmail = $filters['notifyEmail'] ?? '';
-
-                // throw error if no field is provided
-                if (!$fileName && !$additionalMetadata & !$additionalType && !$prefix && !$deleteAt && !$notifyEmail && !$file) {
-                    throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'at least one field to patch has to be provided', 'blob:patch-file-data-missing');
-                }
-
-                if ($fileName) {
-                    assert(is_string($fileName));
-                    $fileData->setFileName($fileName);
-                }
-                $bucket = $this->blobService->getBucketByID($bucketID);
-
-                if (array_key_exists('type', $filters)) {
-                    assert(is_string($additionalType));
-
-                    if (!empty($additionalType) && !array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
-                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad type', 'blob:patch-file-data-bad-type');
-                    }
-                    $fileData->setType($additionalType);
-                }
-
-                if ($additionalMetadata) {
-                    if (!json_decode($additionalMetadata, true)) {
-                        throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given metadata is no valid JSON!', 'blob:patch-file-data-bad-metadata');
-                    }
-                    $storedType = $fileData->getType();
-                    if ($storedType) {
-                        $schemaStorage = $this->blobService->getJsonSchemaStorageWithAllSchemasInABucket($bucket);
-                        $validator = new Validator(new Factory($schemaStorage));
-                        $metadataDecoded = json_decode($additionalMetadata);
-
-                        if (array_key_exists('type', $filters) && !empty($additionalType) && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
-                            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given metadata does not fit type schema!', 'blob:patch-file-data-type-mismatch');
-                        }
-                    }
-                    $hash = hash('sha256', $additionalMetadata);
-                    if ($metadataHash && $hash !== $metadataHash) {
-                        throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Metadata hash change forbidden', 'blob:patch-file-data-metadata-hash-change-forbidden');
-                    }
-                    assert(is_string($additionalMetadata));
-                    $fileData->setMetadata($additionalMetadata);
-                    $fileData->setMetadataHash(hash('sha256', $additionalMetadata));
-                }
-
-                if (array_key_exists('prefix', $filters)) {
-                    assert(is_string($prefix));
-                    $fileData->setPrefix($prefix);
-                }
-
-                if (array_key_exists('deleteAt', $filters)) {
-                    assert(is_string($deleteAt));
-
-                    if (empty($deleteAt)) {
-                        $fileData->setDeleteAt(null);
-                    } else {
-                        // check if date can be created
-                        $date = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $deleteAt);
-                        if ($date === false) {
-                            // RFC3339_EXTENDED is broken in PHP
-                            $date = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $deleteAt);
-                        }
-                        if ($date === false) {
-                            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given deleteAt is in an invalid format!', 'blob:patch-file-data-delete-at-bad-format');
-                        }
-                        $fileData->setDeleteAt($date);
-                    }
-                }
-
-                if ($notifyEmail) {
-                    assert(is_string($notifyEmail));
-                    $fileData->setNotifyEmail($notifyEmail);
-                }
-
-                if ($file instanceof UploadedFile) {
-                    $oldSize = $fileData->getFileSize();
-
-                    // Check quota
-                    $bucketSize = $this->blobService->getCurrentBucketSize($fileData->getInternalBucketID());
-                    if ($bucketSize !== null) {
-                        $bucketsizeByte = (int) $bucketSize['bucketSize'];
-                    } else {
-                        $bucketsizeByte = 0;
-                    }
-                    $bucketQuotaByte = $fileData->getBucket()->getQuota() * 1024 * 1024; // Convert mb to Byte
-                    $newBucketSizeByte = $bucketsizeByte + $file->getSize();
-                    if ($newBucketSizeByte > $bucketQuotaByte) {
-                        throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached', 'blob:patch-file-data-bucket-quota-reached');
-                    }
-
-                    /* check hash of file */
-                    $hash = hash('sha256', $file->getContent());
-                    if ($fileHash && $hash !== $fileHash) {
-                        throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden', 'blob:patch-file-data-file-hash-change-forbidden');
-                    }
-
-                    $fileData->setFile($file);
-                    $fileData->setMimeType($file->getMimeType() ?? '');
-                    $fileData->setFileSize($file->getSize());
-                    $fileData->setFileHash(hash('sha256', $file->getContent()));
-
-                    $fileData->setDateModified($time);
-
-                    $docBucket = $this->blobService->getBucketByInternalIdFromDatabase($fileData->getInternalBucketID());
-                    $this->blobService->writeToTablesAndChangeFileData($fileData, $docBucket->getCurrentBucketSize() - $oldSize + $fileData->getFileSize());
-                }
-
-                $patchSuccessEvent = new ChangeFileDataByPatchSuccessEvent($fileData);
-                $this->eventDispatcher->dispatch($patchSuccessEvent);
+        // don't throw on DELETE and PATCH requests
+        if ($method === 'GET') {
+            $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '');
+            if (!$includeDeleteAt && $fileData->getDeleteAt() !== null) {
+                throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
             }
-            // check if GET request was used
-            elseif ($method === 'GET') {
-                $errorPrefix = 'blob:get-file-data';
-
-                // check if output validation shouldnt be checked
-                // a user can get the data even if the system usually would throw and invalid data error
-                $disableValidation = $filters['disableOutputValidation'] ?? '';
-                if (!($disableValidation === '1') && $this->blobService->configurationService->getOutputValidationForBucketId($bucketID)) {
-                    $this->blobService->checkFileDataBeforeRetrieval($fileData, $bucketID, $errorPrefix);
-                }
-
-                // check if the base64 encoded data should be returned, not only the metadata
-                $includeData = $filters['includeData'] ?? '';
-                if ($includeData === '1') {
-                    $fileData = $this->blobService->getBase64Data($fileData);
-                } else {
-                    $fileData = $this->blobService->getLink($fileData);
-                }
-            }
-        } else {
-            $fileData->setBucket($this->blobService->getBucketByInternalID($fileData->getInternalBucketID()));
-            $deleteSuccessEvent = new DeleteFileDataByDeleteSuccessEvent($fileData);
-            $this->eventDispatcher->dispatch($deleteSuccessEvent);
         }
-
-        $this->blobService->saveFileData($fileData);
 
         return $fileData;
     }
@@ -260,11 +90,12 @@ class FileDataProvider extends AbstractDataProvider
      */
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
-        // set error prefix
         $errorPrefix = 'blob:get-file-data-collection';
 
         // check if minimal parameters for the request are present and valid
-        DenyAccessUnlessCheckSignature::checkMinimalParameters($errorPrefix, $this->blobService, $this->requestStack->getCurrentRequest(), $filters, ['GET']);
+        DenyAccessUnlessCheckSignature::checkSignature($errorPrefix, $this->blobService,
+            $this->requestStack->getCurrentRequest(), $filters, ['GET'],
+            $this->isAuthenticated(), $this->blobService->checkAdditionalAuth());
 
         // get bucketID after check
         $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');
@@ -272,15 +103,11 @@ class FileDataProvider extends AbstractDataProvider
         // get prefix by filters
         $prefix = rawurldecode($filters['prefix'] ?? '');
 
-        // check if signature and checksum is correct
-        $secret = $this->blobService->getSecretOfBucketWithBucketID($bucketID);
-
-        DenyAccessUnlessCheckSignature::checkSignature($secret, $this->requestStack->getCurrentRequest(), $this->blobService, $this->isAuthenticated(), $this->blobService->checkAdditionalAuth());
-
         // get includeData param and decode it
         $includeData = rawurldecode($filters['includeData'] ?? '');
         $startsWith = rawurldecode($filters['startsWith'] ?? '');
         $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '');
+
         assert(is_string($includeData));
         assert(is_string($startsWith));
         assert(is_string($includeDeleteAt));
@@ -304,13 +131,15 @@ class FileDataProvider extends AbstractDataProvider
             $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
         }
 
+        $bucket = $this->blobService->getConfigurationService()->getBucketByID($bucketID);
+
         // create sharelinks
         $validFileDatas = [];
         foreach ($fileDatas as $fileData) {
             try {
                 assert($fileData instanceof FileData);
 
-                $fileData->setBucket($this->blobService->configurationService->getBucketByID($bucketID));
+                $fileData->setBucket($bucket);
                 $fileData = $this->blobService->getLink($fileData);
                 $baseUrl = $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost();
                 $fileData->setContentUrl($this->blobService->generateGETLink($baseUrl, $fileData, $includeData));

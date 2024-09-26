@@ -1,4 +1,11 @@
 # Changelog
+
+## Unreleased
+
+* Add PHP backend FileApi
+* Refactor/restructure/modernize code; remove duplicate code; enhance performance
+* Fix 404 error when deleting/patching a file with retention duration set (includeDeleteAt param missing)
+
 ## v0.1.52
 * Optimize file cleanUp to prevent the returning of theoretically infinite entries
 

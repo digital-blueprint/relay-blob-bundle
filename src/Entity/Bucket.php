@@ -11,83 +11,27 @@ use Ramsey\Uuid\Validator\GenericValidator;
 #[ORM\Entity]
 class Bucket
 {
-    /**
-     * @var string
-     */
     #[ORM\Id]
     #[ORM\Column(type: 'string', length: 36)]
-    private $identifier;
+    private string $identifier = '';
 
-    /**
-     * @var string
-     */
-    private $service;
+    private string $service = '';
+    private string $id = '';
+    private string $reportExpiryWhenIn = '';
+    private string $key = '';
+    private int $quota = 0;
+    private string $linkExpireTime = '';
+    private ?array $warnQuotaOverConfig = null;
+    private ?array $reportingConfig = null;
+    private ?array $integrityCheckConfig = null;
+    private int $notifyWhenQuotaOver = 0;
+    private ?array $additionalTypes = null;
 
-    /**
-     * @var string
-     */
-    private $id;
-
-    /**
-     * @var string
-     */
-    private $reportExpiryWhenIn;
-
-    /**
-     * @var string
-     */
-    private $key;
-
-    /**
-     * @var int
-     */
-    private $quota;
-
-    /**
-     * @var string
-     */
-    private $linkExpireTime;
-
-    /**
-     * @var ?array
-     */
-    private $warnQuotaOverConfig;
-
-    /**
-     * @var ?array
-     */
-    private $reportingConfig;
-
-    /**
-     * @var ?array
-     */
-    private $integrityCheckConfig;
-
-    /**
-     * @var int
-     */
-    private $notifyWhenQuotaOver;
-
-    /**
-     * @var ?array
-     */
-    private $additionalTypes;
-
-    /**
-     * @return int
-     */
     #[ORM\Column(type: 'integer')]
-    private $currentBucketSize;
+    private ?int $currentBucketSize = null;
 
-    /**
-     * @var bool
-     */
-    private $outputValidation;
-
-    /**
-     * @var ?array
-     */
-    private $bucketSizeConfig;
+    private bool $outputValidation = true;
+    private ?array $bucketSizeConfig = null;
 
     public function getIdentifier(): string
     {

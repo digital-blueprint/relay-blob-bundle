@@ -8,6 +8,9 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
+/**
+ * @internal
+ */
 class DatasystemProviderServiceCompilerPass implements CompilerPassInterface
 {
     private const TAG = 'dbp.relay.blob.datasystem_provider_service';

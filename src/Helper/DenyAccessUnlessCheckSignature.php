@@ -57,7 +57,7 @@ class DenyAccessUnlessCheckSignature
      *
      * @throws ApiError
      */
-    public static function verifyChecksumAndSignature(string $secret, string $sig, Request $request): array
+    private static function verifyChecksumAndSignature(string $secret, string $sig, Request $request): array
     {
         $data = self::verify($secret, $sig);
 
@@ -70,112 +70,24 @@ class DenyAccessUnlessCheckSignature
     }
 
     /**
-     * Check presence of minimal parameter set, check creationTime, bucketID and method and verify signature and cs.
-     *
-     * @throws \JsonException
-     */
-    public static function checkSignature(string $secret, Request $request, BlobService $blobService, bool $externallyAuthenicated = true, bool $checkAdditionalAuth = false): void
-    {
-        // check if externally authenticated
-        if ($checkAdditionalAuth && !$externallyAuthenicated) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Not authenticated!', 'blob:not-authenticated');
-        }
-
-        // check if signature is present
-        /** @var string */
-        $sig = $request->query->get('sig', '');
-        if (!$sig) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Signature missing', 'blob:check-signature-missing-sig');
-        }
-
-        /** @var string $bucketID $creationTime $urlMethod */
-        $bucketID = $request->query->get('bucketIdentifier', '');
-        /** @var string $creationTime */
-        $creationTime = $request->query->get('creationTime', '0');
-        /** @var string $urlMethod */
-        $urlMethod = $request->query->get('method', '');
-
-        $bucketID = rawurldecode($bucketID);
-        $creationTime = rawurldecode($creationTime);
-        $urlMethod = rawurldecode($urlMethod);
-        $sig = rawurldecode($sig);
-
-        // check if the minimal params are present
-        if (!$bucketID || !$creationTime || !$urlMethod) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID, creationTime or method parameter missing', 'blob:check-signature-missing-signature-params');
-        }
-
-        // verify signature and checksum
-        DenyAccessUnlessCheckSignature::verifyChecksumAndSignature($secret, $sig, $request);
-
-        // now, after the signature and checksum check it is safe to something
-
-        $bucket = $blobService->configurationService->getBucketByID($bucketID);
-
-        // get the time for which a request should be valid
-        $linkExpiryTime = $bucket->getLinkExpireTime();
-
-        // sub linkexpirytime from now to check if creationTime is too old
-        $now = new \DateTime('now');
-        $expiryTime = $now->sub(new \DateInterval($linkExpiryTime));
-
-        // add linkExpiryTime to now, and allow requests to be only linkExpiryTime in the future
-        $now = new \DateTime('now');
-        $futureBlock = $now->add(new \DateInterval($linkExpiryTime));
-
-        $creationDateTime = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $creationTime);
-        if ($creationDateTime === false) {
-            // RFC3339_EXTENDED is broken in PHP
-            $creationDateTime = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $creationTime);
-        }
-
-        // check if creationTime is in the correct format
-        if ($creationDateTime === false) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Parameter creationTime is in a bad format!', 'blob:check-signature-creation-time-bad-format');
-        }
-
-        // check if request is expired
-        if ($creationDateTime < $expiryTime || $creationDateTime > $futureBlock) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Parameter creationTime too old', 'blob:check-signature-creation-time-too-old');
-        }
-
-        // check action/method
-        $method = $request->getMethod();
-
-        // check if the provided method and action is suitable
-        if (($method === 'GET' && $urlMethod !== 'GET')
-            || ($method === 'DELETE' && $urlMethod !== 'DELETE')
-            || ($method === 'PATCH' && $urlMethod !== 'PATCH')
-            || ($method === 'POST' && $urlMethod !== 'POST')
-        ) {
-            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'Method and/or action not suitable', 'blob:check-signature-method-not-suitable');
-        }
-    }
-
-    /**
      * Checks if the parameters bucketID, creationTime, method and sig are present and valid,
      * either using filter or the request itself.
      * Also checks if the creationTime is too old, the bucket with given ID is configured, and if the specified method is allowed.
      *
-     * @return void
-     *
      * @throws \Exception
      */
-    public static function checkMinimalParameters(string $errorPrefix, BlobService $blobService, Request $request, array $filters = [], array $allowedMethods = [])
+    public static function checkSignature(string $errorPrefix, BlobService $blobService, Request $request,
+        array $filters = [], array $allowedMethods = [], bool $externallyAuthenticated = true, bool $checkAdditionalAuth = false): void
     {
-        // either use filters or request to get parameters, depending on which is provided
-        if ($filters) {
-            $sig = $filters['sig'] ?? '';
-            $bucketID = $filters['bucketIdentifier'] ?? '';
-            $creationTime = $filters['creationTime'] ?? '';
-            $urlMethod = $filters['method'] ?? '';
-        } else {
-            // check if signature is present
-            $sig = $request->query->get('sig', '');
-            $bucketID = $request->query->get('bucketIdentifier', '');
-            $creationTime = $request->query->get('creationTime', '');
-            $urlMethod = $request->query->get('method', '');
+        // check if externally authenticated
+        if ($checkAdditionalAuth && !$externallyAuthenticated) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Not authenticated!', 'blob:not-authenticated');
         }
+
+        $sig = $filters['sig'] ?? '';
+        $bucketID = $filters['bucketIdentifier'] ?? '';
+        $creationTime = $filters['creationTime'] ?? '';
+        $urlMethod = $filters['method'] ?? '';
 
         // check type of params
         assert(is_string($sig));
@@ -206,10 +118,11 @@ class DenyAccessUnlessCheckSignature
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'method is missing', $errorPrefix.'-missing-method');
         }
         // check if bucket with given bucketID is configured
-        $bucket = $blobService->configurationService->getBucketByID($bucketID);
+        $bucket = $blobService->getConfigurationService()->getBucketByID($bucketID);
         if (!$bucket) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID is not configured', $errorPrefix.'-bucket-id-not-configured');
         }
+
         // get link expiry date and current date
         $linkExpiryTime = $bucket->getLinkExpireTime();
 
@@ -247,6 +160,9 @@ class DenyAccessUnlessCheckSignature
         if ($urlMethod !== $method || !in_array($method, $allowedMethods, true)) {
             throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'method is not suitable', $errorPrefix.'-method-not-suitable');
         }
+
+        // verify signature and checksum
+        DenyAccessUnlessCheckSignature::verifyChecksumAndSignature($bucket->getKey(), $sig, $request);
     }
 
     /**

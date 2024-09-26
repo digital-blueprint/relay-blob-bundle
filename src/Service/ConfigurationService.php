@@ -6,6 +6,9 @@ namespace Dbp\Relay\BlobBundle\Service;
 
 use Dbp\Relay\BlobBundle\Entity\Bucket;
 
+/**
+ * @internal
+ */
 class ConfigurationService
 {
     /**
