@@ -11,6 +11,7 @@ use Dbp\Relay\BlobBundle\Event\ChangeFileDataByPatchSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\DeleteFileDataByDeleteSuccessEvent;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
+use Dbp\Relay\CoreBundle\Helpers\Tools;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\NonUniqueResultException;
 use JsonSchema\Constraints\Factory;
@@ -69,6 +70,8 @@ class BlobService
      */
     public function addFile(FileData $fileData): FileData
     {
+        $this->ensureFileDataIsValid($fileData);
+
         // write all relevant data to tables
         $this->writeToTablesAndSaveFileData($fileData, $fileData->getFileSize(), true);
 
@@ -152,60 +155,90 @@ class BlobService
      *
      * @throws \Exception
      */
-    public function createFileData(Request $request): FileData
+    public function createFileDataFromRequest(Request $request): FileData
     {
-        // create new identifier for new file
-        $fileData = new FileData();
-        $fileData->setIdentifier(Uuid::v7()->toRfc4122());
+        /* get url params */
+        $bucketID = $request->query->get('bucketIdentifier');
+        $prefix = $request->query->get('prefix');
+        $notifyEmail = $request->query->get('notifyEmail');
+        $retentionDuration = $request->query->get('retentionDuration', '0');
+        $type = $request->query->get('type');
 
-        // get file from request
-        /** @var ?UploadedFile $uploadedFile */
+        /* get params from body */
+        $metadata = $request->request->get('metadata', '');
+        $fileName = $request->request->get('fileName');
+        $fileHash = $request->request->get('fileHash');
+        $metadataHash = $request->request->get('metadataHash');
+
         $uploadedFile = $request->files->get('file');
+
+        /* check types of params */
+        assert(is_string($bucketID ?? ''));
+        assert(is_string($prefix ?? ''));
+        assert(is_string($fileName ?? ''));
+        assert(is_string($fileHash ?? ''));
+        assert(is_string($notifyEmail ?? ''));
+        assert(is_string($retentionDuration));
+        assert(is_string($type ?? ''));
+        assert(is_string($metadata));
+        assert($uploadedFile === null || $uploadedFile instanceof UploadedFile);
+
+        /* url decode according to RFC 3986 */
+        $bucketID = $bucketID ? rawurldecode($bucketID) : null;
+        $prefix = $prefix ? rawurldecode($prefix) : null;
+        $notifyEmail = $notifyEmail ? rawurldecode($notifyEmail) : null;
+        $retentionDuration = $retentionDuration ? rawurldecode($retentionDuration) : null;
+        $type = $type ? rawurldecode($type) : null;
 
         // check if there is an uploaded file
         if (!$uploadedFile) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'No file with parameter key "file" was received!', 'blob:create-file-data-missing-file');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
+                'No file with parameter key "file" was received!', 'blob:create-file-data-missing-file');
         }
 
         // If the upload failed, figure out why
         if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, $uploadedFile->getErrorMessage(), 'blob:create-file-data-upload-error');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, $uploadedFile->getErrorMessage(),
+                'blob:create-file-data-upload-error');
         }
 
         // check if file is empty
         if ($uploadedFile->getSize() === 0) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Empty files cannot be added!', 'blob:create-file-data-empty-files-not-allowed');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Empty files cannot be added!',
+                'blob:create-file-data-empty-files-not-allowed');
         }
 
-        // set the file in the fileData
-        $fileData->setFile($uploadedFile);
+        if ($fileHash !== null && hash('sha256', $uploadedFile->getContent()) !== $fileHash) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden',
+                'blob:create-file-data-file-hash-change-forbidden');
+        }
 
-        // set prefix, filename and filesize
-        $fileData->setPrefix($request->get('prefix', ''));
-        $fileData->setFileName($request->get('fileName', 'no-name-file.txt'));
+        if ($metadataHash !== null && hash('sha256', $metadata) !== $metadataHash) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Metadata hash change forbidden',
+                'blob:create-file-data-metadata-hash-change-forbidden');
+        }
+
+        $fileData = new FileData();
+        $fileData->setIdentifier(Uuid::v7()->toRfc4122());
+        $fileData->setFileName($fileName);
+        $fileData->setPrefix($prefix);
+        $fileData->setRetentionDuration($retentionDuration);
+        $fileData->setNotifyEmail($notifyEmail);
+        $fileData->setType($type);
+        $fileData->setMetadata($metadata);
+        $fileData->setFileHash($fileHash);
+        $fileData->setMetadataHash($metadataHash);
+        $fileData->setInternalBucketID($this->getConfigurationService()->getInternalBucketIdByBucketID($bucketID));
+        $fileData->setBucket($this->getBucketByID($bucketID));
+        $fileData->setFile($uploadedFile);
+        $fileData->setMimeType($uploadedFile->getMimeType() ?? '');
         $fileData->setFilesize(filesize($uploadedFile->getRealPath()));
 
         // set creationTime and last access time
-        $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $fileData->setDateCreated($time);
-        $fileData->setLastAccess($time);
-        $fileData->setDateModified($time);
-
-        // Check if json is valid
-        /** @var string $additionalMetadata */
-        $additionalMetadata = $request->request->get('metadata', '');
-
-        // set metadata, bucketID and retentionDuration
-        $fileData->setMetadata($additionalMetadata);
-
-        $fileData->setInternalBucketID($this->getConfigurationService()->getInternalBucketIdByBucketID(rawurldecode($request->get('bucketIdentifier', ''))));
-        $retentionDuration = $request->get('retentionDuration', '0');
-        $fileData->setRetentionDuration($retentionDuration);
-
-        if ($this->getConfigurationService()->doFileIntegrityChecks()) {
-            $fileData->setFileHash(hash('sha256', $uploadedFile->getContent()));
-            $fileData->setMetadataHash(hash('sha256', $additionalMetadata));
-        }
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $fileData->setDateCreated($now);
+        $fileData->setLastAccess($now);
+        $fileData->setDateModified($now);
 
         return $fileData;
     }
@@ -946,7 +979,7 @@ class BlobService
         }
     }
 
-    public function getBucketByID($bucketID): ?Bucket
+    public function getBucketByID(string $bucketID): ?Bucket
     {
         return $this->configurationService->getBucketByID($bucketID);
     }
@@ -1233,6 +1266,67 @@ class BlobService
                 $messages[$error['property']] = $error['message'];
             }
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type', $errorPrefix.'-metadata-does-not-match-type', $messages);
+        }
+    }
+
+    /**
+     * @throws ApiError|\DateMalformedIntervalStringException
+     */
+    private function ensureFileDataIsValid(FileData $fileData): void
+    {
+        // check if fileName is set
+        if (Tools::isNullOrEmpty($fileData->getFileName())) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName is missing', 'blob:create-file-data-file-name-missing');
+        }
+
+        // check if prefix is set
+        if (Tools::isNullOrEmpty($fileData->getPrefix())) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'prefix is missing', 'blob:create-file-data-prefix-missing');
+        }
+
+        // TODO: is empty string 'metadata' allowed?
+
+        // check if metadata is a valid json
+        $metadataDecoded = null;
+        if ($fileData->getMetadata()) {
+            $metadataDecoded = json_decode($fileData->getMetadata());
+            if (!$metadataDecoded) {
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad metadata', 'blob:create-file-data-bad-metadata');
+            }
+        }
+
+        $bucket = $this->ensureBucket($fileData);
+
+        // check if additional type is defined
+        if ($fileData->getType() !== null) {
+            if (!array_key_exists($fileData->getType(), $bucket->getAdditionalTypes())) {
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad type', 'blob:create-file-data-bad-type');
+            }
+
+            /* check if given metadata json has the same keys as the defined type */
+            $schemaStorage = $this->getJsonSchemaStorageWithAllSchemasInABucket($bucket);
+            $jsonSchemaObject = json_decode(file_get_contents($bucket->getAdditionalTypes()[$fileData->getType()]));
+
+            $validator = new Validator(new Factory($schemaStorage));
+            if ($validator->validate($metadataDecoded, $jsonSchemaObject) !== 0) {
+                $messages = [];
+                foreach ($validator->getErrors() as $error) {
+                    $messages[$error['property']] = $error['message'];
+                }
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type', 'blob:create-file-data-metadata-does-not-match-type', $messages);
+            }
+        }
+
+        if ($fileData->getRetentionDuration() !== null) {
+            $fileData->setDeleteAt($fileData->getDateCreated()->add(new \DateInterval($fileData->getRetentionDuration())));
+        }
+
+        if ($this->getConfigurationService()->doFileIntegrityChecks()) {
+            $fileData->setFileHash(hash('sha256', $fileData->getFile()->getContent()));
+            $fileData->setMetadataHash(hash('sha256', $fileData->getMetadata()));
+        } else {
+            $fileData->setFileHash(null);
+            $fileData->setMetadataHash(null);
         }
     }
 }

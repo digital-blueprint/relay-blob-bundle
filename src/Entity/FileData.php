@@ -218,12 +218,12 @@ class FileData
         $this->file = $file;
     }
 
-    public function getMetadata(): ?string
+    public function getMetadata(): string
     {
         return $this->metadata;
     }
 
-    public function setMetadata($additionalMetadata): void
+    public function setMetadata(string $additionalMetadata): void
     {
         $this->metadata = $additionalMetadata;
     }
