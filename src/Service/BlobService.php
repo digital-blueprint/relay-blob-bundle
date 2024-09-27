@@ -22,11 +22,15 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
+use Twig\Error\LoaderError;
+use Twig\Error\RuntimeError;
+use Twig\Error\SyntaxError;
 use Twig\Loader\FilesystemLoader;
 
 date_default_timezone_set('UTC');
@@ -69,6 +73,7 @@ class BlobService
         $this->writeToTablesAndSaveFileData($fileData, $fileData->getFileSize(), true);
 
         /* dispatch POST success event */
+        $this->ensureBucket($fileData);
         $successEvent = new AddFileDataByPostSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($successEvent);
 
@@ -90,6 +95,7 @@ class BlobService
             $this->saveFileData($fileData);
         }
 
+        $this->ensureBucket($fileData);
         $patchSuccessEvent = new ChangeFileDataByPatchSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($patchSuccessEvent);
 
@@ -99,10 +105,12 @@ class BlobService
     /**
      * @throws \Exception
      */
-    public function removeFile(FileData $fileData): void
+    public function removeFile(string $identifier, ?FileData $fileData = null): void
     {
+        $fileData ??= $this->getFileData($identifier);
         $this->writeToTablesAndRemoveFileData($fileData, -$fileData->getFileSize());
 
+        $this->ensureBucket($fileData);
         $deleteSuccessEvent = new DeleteFileDataByDeleteSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($deleteSuccessEvent);
     }
@@ -131,7 +139,6 @@ class BlobService
         }
 
         if ($updateLastAccessTimestamp) {
-            // updates last access time
             $this->saveFileData($fileData);
         }
 
@@ -227,9 +234,10 @@ class BlobService
     {
         $bucket = $fileData->getBucket();
         if (!$bucket) {
-            $bucket = $this->getConfigurationService()->getBucketByInternalID($fileData->getInternalBucketID());
+            $bucket = $this->configurationService->getBucketByInternalID($fileData->getInternalBucketID());
             if (!$bucket) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured', 'blob:create-file-data-not-configured-bucket-id');
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured',
+                    'blob:create-file-data-not-configured-bucket-id');
             }
             $fileData->setBucket($bucket);
         }
@@ -511,28 +519,11 @@ class BlobService
      */
     public function getBinaryResponse(FileData $fileData): Response
     {
-        // set bucket of fileData
-        $fileData->setBucket($this->getConfigurationService()->getBucketByInternalID($fileData->getInternalBucketID()));
-
         // get service of bucket
-        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
+        $datasystemService = $this->datasystemService->getServiceByBucket($this->ensureBucket($fileData));
 
         // get binary response of file with connector
-        $response = $datasystemService->getBinaryResponse($fileData);
-
-        return $response;
-    }
-
-    /**
-     * Get the secret of the bucket with given bucketID.
-     *
-     * @param string $bucketID bucketID of bucket from which the secret should be taken
-     */
-    public function getSecretOfBucketWithBucketID(string $bucketID): string
-    {
-        $bucket = $this->getConfigurationService()->getBucketByID($bucketID);
-
-        return $bucket->getKey();
+        return $datasystemService->getBinaryResponse($fileData);
     }
 
     /**
@@ -542,8 +533,7 @@ class BlobService
      */
     public function generateGETLink(string $baseUrl, FileData $fileData, string $includeData = ''): string
     {
-        // set bucket of fileData
-        $fileData->setBucket($this->getConfigurationService()->getBucketByInternalID($fileData->getInternalBucketID()));
+        $this->ensureBucket($fileData);
 
         // get time now
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
@@ -842,7 +832,7 @@ class BlobService
     }
 
     /**
-     * Sends an warning email with information about the buckets used quota.
+     * Sends a warning email with information about the buckets used quota.
      */
     public function sendQuotaWarning(Bucket $bucket, float $bucketQuotaByte): void
     {
@@ -906,6 +896,7 @@ class BlobService
      * or owner of the file (if configured as notifyEmail).
      *
      * @throws \Exception
+     * @throws TransportExceptionInterface
      */
     public function sendReportingForBucket(Bucket $bucket): void
     {
@@ -957,16 +948,16 @@ class BlobService
 
     public function getBucketByID($bucketID): ?Bucket
     {
-        return $this->getConfigurationService()->getBucketByID($bucketID);
+        return $this->configurationService->getBucketByID($bucketID);
     }
 
     /**
      * Wrapper to send an email from a given context.
      *
-     * @throws \Symfony\Component\Mailer\Exception\TransportExceptionInterface
-     * @throws \Twig\Error\LoaderError
-     * @throws \Twig\Error\RuntimeError
-     * @throws \Twig\Error\SyntaxError
+     * @throws TransportExceptionInterface
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
      */
     private function sendEmail(array $config, array $context): void
     {

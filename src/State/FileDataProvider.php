@@ -9,6 +9,7 @@ use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
@@ -44,25 +45,24 @@ class FileDataProvider extends AbstractDataProvider
      * @throws \JsonException
      * @throws \Exception
      */
-    protected function getFileDataById($id, array $filters): object
+    protected function getFileDataById(string $id, array $filters): object
     {
+        $request = $this->requestStack->getCurrentRequest();
+        $isGetRequest = $request->getMethod() === Request::METHOD_GET;
+
+        $errorPrefix = 'blob:get-file-data-by-id';
+        DenyAccessUnlessCheckSignature::checkSignature(
+            $errorPrefix, $this->blobService, $request, $filters, ['GET', 'PATCH', 'DELETE']);
+
         if (!Uuid::isValid($id)) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'Identifier is in an invalid format!', 'blob:identifier-invalid-format');
         }
-
-        $request = $this->requestStack->getCurrentRequest();
-        $method = $this->requestStack->getCurrentRequest()->getMethod();
-
-        // check if the minimal needed parameters are present and correct
-        $errorPrefix = 'blob:get-file-data-by-id';
-        DenyAccessUnlessCheckSignature::checkSignature($errorPrefix, $this->blobService, $request, $filters,
-            ['GET', 'PATCH', 'DELETE'], $this->isAuthenticated(), $this->blobService->checkAdditionalAuth());
 
         // check if output validation shouldn't be checked
         // a user can get the data even if the system usually would throw and invalid data error
         $disableOutputValidation = ($filters['disableOutputValidation'] ?? '') === '1';
         $includeFileContent = ($filters['includeData'] ?? '') === '1';
-        $updateLastAccessTime = $method === 'GET'; // PATCH: saves for itself, DELETE: will be deleted anyway
+        $updateLastAccessTime = $isGetRequest; // PATCH: saves for itself, DELETE: will be deleted anyway
 
         $fileData = $this->blobService->getFile($id, $disableOutputValidation, $includeFileContent, $updateLastAccessTime);
 
@@ -74,7 +74,7 @@ class FileDataProvider extends AbstractDataProvider
         }
 
         // don't throw on DELETE and PATCH requests
-        if ($method === 'GET') {
+        if ($isGetRequest) {
             $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '');
             if (!$includeDeleteAt && $fileData->getDeleteAt() !== null) {
                 throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
@@ -93,9 +93,8 @@ class FileDataProvider extends AbstractDataProvider
         $errorPrefix = 'blob:get-file-data-collection';
 
         // check if minimal parameters for the request are present and valid
-        DenyAccessUnlessCheckSignature::checkSignature($errorPrefix, $this->blobService,
-            $this->requestStack->getCurrentRequest(), $filters, ['GET'],
-            $this->isAuthenticated(), $this->blobService->checkAdditionalAuth());
+        DenyAccessUnlessCheckSignature::checkSignature(
+            $errorPrefix, $this->blobService, $this->requestStack->getCurrentRequest(), $filters, ['GET']);
 
         // get bucketID after check
         $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');

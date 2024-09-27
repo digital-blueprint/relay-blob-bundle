@@ -52,6 +52,11 @@ class FileApi
     public function updateFile(string $identifier, FileData $fileData): FileData
     {
         try {
+            // TODO:
+            // 1. currently fileData needs to be an instance returned by the entity manager,
+            // otherwise the persist will fail. is that an acceptable restriction. alternatively we could
+            // retrieve the file data from the entity manager, copy the contents of the updated file data and persist
+            // 2. is it save to write to fileData/previousFileData or they referencing the same instance?
             $previousFileData = $this->blobService->getFile($identifier, true, false, false);
 
             return $this->blobService->updateFile($fileData, $previousFileData);
@@ -66,8 +71,7 @@ class FileApi
     public function removeFile(string $identifier): void
     {
         try {
-            $fileData = $this->blobService->getFile($identifier, true, false, false);
-            $this->blobService->removeFile($fileData);
+            $this->blobService->removeFile($identifier);
         } catch (\Exception $exception) {
             throw $this->createException($exception);
         }
@@ -81,6 +85,6 @@ class FileApi
             }
         }
 
-        return $exception;
+        return new FileApiException($exception->getMessage(), 0, $exception);
     }
 }

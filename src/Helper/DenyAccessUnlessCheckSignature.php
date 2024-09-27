@@ -77,13 +77,8 @@ class DenyAccessUnlessCheckSignature
      * @throws \Exception
      */
     public static function checkSignature(string $errorPrefix, BlobService $blobService, Request $request,
-        array $filters = [], array $allowedMethods = [], bool $externallyAuthenticated = true, bool $checkAdditionalAuth = false): void
+        array $filters = [], array $allowedMethods = []): void
     {
-        // check if externally authenticated
-        if ($checkAdditionalAuth && !$externallyAuthenticated) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Not authenticated!', 'blob:not-authenticated');
-        }
-
         $sig = $filters['sig'] ?? '';
         $bucketID = $filters['bucketIdentifier'] ?? '';
         $creationTime = $filters['creationTime'] ?? '';

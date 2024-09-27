@@ -9,6 +9,7 @@ use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
+use Dbp\Relay\CoreBundle\Rest\CustomControllerTrait;
 use JsonSchema\Constraints\Factory;
 use JsonSchema\Validator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,6 +20,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 final class CreateFileDataAction extends AbstractController
 {
+    use CustomControllerTrait;
+
     public function __construct(private readonly BlobService $blobService)
     {
     }
@@ -30,10 +33,14 @@ final class CreateFileDataAction extends AbstractController
      */
     public function __invoke(Request $request): FileData
     {
+        if ($this->blobService->getAdditionalAuthFromConfig()) {
+            $this->requireAuthentication();
+        }
+
         /* check minimal needed parameters for presence and correctness */
         $errorPrefix = 'blob:create-file-data';
-        DenyAccessUnlessCheckSignature::checkSignature($errorPrefix, $this->blobService, $request, $request->query->all(),
-            ['POST'], $this->isGranted('IS_AUTHENTICATED_FULLY'), $this->blobService->checkAdditionalAuth());
+        DenyAccessUnlessCheckSignature::checkSignature(
+            $errorPrefix, $this->blobService, $request, $request->query->all(), ['POST']);
 
         /* get url params */
         $bucketID = $request->query->get('bucketIdentifier', '');

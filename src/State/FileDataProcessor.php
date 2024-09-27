@@ -14,7 +14,6 @@ use JsonSchema\Validator;
 use Symfony\Bridge\PsrHttpMessage\Factory\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * @internal
@@ -28,6 +27,11 @@ class FileDataProcessor extends AbstractDataProcessor
         parent::__construct();
     }
 
+    protected function requiresAuthentication(int $operation): bool
+    {
+        return $this->blobService->getAdditionalAuthFromConfig();
+    }
+
     /**
      * NOTE: signature check is already done in the FileDataProvider, which is internally called by ApiPlatform to get the
      * FileData entity with the given identifier.
@@ -39,11 +43,8 @@ class FileDataProcessor extends AbstractDataProcessor
         assert($data instanceof FileData);
         assert($previousData instanceof FileData);
 
-        // important: $fileData needs to be the FileData instance retrieved by the doctrine entity manager
-        // (in the FileDataProvider), otherwise later persist will fail
         $fileData = $data;
         $previousFileData = $previousData;
-
         $request = $this->requestStack->getCurrentRequest();
 
         /* get from body */
@@ -65,8 +66,7 @@ class FileDataProcessor extends AbstractDataProcessor
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'at least one field to patch has to be provided', 'blob:patch-file-data-missing');
         }
 
-        if ($fileName) {
-            // TODO: is empty file name ('') allowed
+        if ($fileName) { // TODO: is empty file name ('') allowed
             assert(is_string($fileName));
             $fileData->setFileName($fileName);
         }
@@ -111,8 +111,7 @@ class FileDataProcessor extends AbstractDataProcessor
             $fileData->setMetadataHash(hash('sha256', $additionalMetadata));
         }
 
-        if ($prefix) {
-            // TODO: is empty prefix ('') allowed?
+        if ($prefix) { // TODO: is empty prefix ('') allowed?
             assert(is_string($prefix));
             $fileData->setPrefix($prefix);
         }
@@ -155,20 +154,16 @@ class FileDataProcessor extends AbstractDataProcessor
     }
 
     /**
+     *  NOTE: signature check is already done in the FileDataProvider, which is internally called by ApiPlatform to get the
+     *  FileData entity with the given identifier.
+     *
      * @throws \Exception
      */
     protected function removeItem(mixed $identifier, mixed $data, array $filters): void
     {
-        // FYI: signature check is already done in the FileDataProvider, which is internally called by ApiPlatform to get the
-        // FileData entity with the given identifier
-
-        if (!Uuid::isValid($identifier)) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'Identifier is in an invalid format!', 'blob:identifier-invalid-format');
-        }
-
         // no need to check, because signature is checked by getting the data
         assert($data instanceof FileData);
 
-        $this->blobService->removeFile($data);
+        $this->blobService->removeFile($identifier, $data);
     }
 }

@@ -95,10 +95,6 @@ class CurlGetTest extends ApiTestCase
                 'method' => $action,
             ];
 
-            echo "GET collection\n";
-
-            // $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
-
             $url = "/blob/files?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
 
             $payload = [
@@ -128,8 +124,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertArrayHasKey('hydra:member', $data);
             $this->assertCount(0, $data['hydra:member'], 'More files than expected');
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
@@ -158,8 +153,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // POST a file
             // =======================================================
-            echo "POST file (0)-\n";
-
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $fileName = $this->files[0]['name'];
@@ -204,12 +197,7 @@ class CurlGetTest extends ApiTestCase
 
             $c = new CreateFileDataAction($blobService);
             $c->setContainer($client->getContainer());
-            try {
-                $fileData = $c->__invoke($requestPost);
-            } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
-            }
+            $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
@@ -223,7 +211,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET all files
             // =======================================================
-            echo "GET all files (0)\n";
 
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
@@ -250,9 +237,6 @@ class CurlGetTest extends ApiTestCase
 
             /** @var \ApiPlatform\Symfony\Bundle\Test\Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
-            if ($response->getStatusCode() !== 200) {
-                echo $response->getContent()."\n";
-            }
             $this->assertEquals(200, $response->getStatusCode());
 
             $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
@@ -270,8 +254,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // POST another file
             // =======================================================
-            echo "POST file 1\n";
-
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
@@ -314,12 +296,7 @@ class CurlGetTest extends ApiTestCase
             $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService);
             $c->setContainer($client->getContainer());
-            try {
-                $fileData = $c->__invoke($requestPost);
-            } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
-            }
+            $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
@@ -333,8 +310,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET all files
             // =======================================================
-            echo "GET all files (0 and 1)\n";
-
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $action = 'GET';
@@ -353,11 +328,6 @@ class CurlGetTest extends ApiTestCase
 
             /** @var \ApiPlatform\Symfony\Bundle\Test\Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
-
-            if ($response->getStatusCode() !== 200) {
-                echo $response->getContent()."\n";
-            }
-
             $this->assertEquals(200, $response->getStatusCode());
 
             $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
@@ -388,8 +358,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // DELETE all files
             // =======================================================
-            echo "DELETE all files (0 and 1)\n";
-
             foreach ($data['hydra:member'] as $resultFile) {
                 $url = "/blob/files/{$resultFile['identifier']}?bucketIdentifier=$bucketID&includeDeleteAt=1&creationTime=$creationTime&method=DELETE";
 
@@ -421,8 +389,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET all files
             // =======================================================
-            echo "GET all files (empty)\n";
-
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $action = 'GET';
@@ -452,8 +418,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertArrayHasKey('hydra:member', $data);
             $this->assertCount(0, $data['hydra:member'], 'More files than expected');
         } catch (\Throwable $e) {
-            //            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
@@ -488,8 +453,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // POST a file
             // =======================================================
-            echo "POST file 0 testGetDeleteById\n";
-
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
@@ -516,12 +479,7 @@ class CurlGetTest extends ApiTestCase
 
             $c = new CreateFileDataAction($blobService);
             $c->setContainer($client->getContainer());
-            try {
-                $fileData = $c->__invoke($requestPost);
-            } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
-            }
+            $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
@@ -531,13 +489,10 @@ class CurlGetTest extends ApiTestCase
             $this->files[0]['uuid'] = $fileData->getIdentifier();
             $this->files[0]['created'] = $fileData->getDateCreated();
             $this->files[0]['until'] = $fileData->getDeleteAt();
-            echo "    file identifier='{$this->files[0]['uuid']}' stored.\n";
 
             // =======================================================
             // GET a file by id
             // =======================================================
-            echo "GET a file by id (0)\n";
-
             $creationTime = rawurlencode(date('c'));
 
             $url = '/blob/files/'.$this->files[0]['uuid']."?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=GET";
@@ -567,8 +522,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // DELETE a file by id
             // =======================================================
-            echo "DELETE a file by id\n";
-
             $url = "/blob/files/{$this->files[0]['uuid']}?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&includeDeleteAt=1&method=DELETE";
 
             $payload = [
@@ -592,10 +545,6 @@ class CurlGetTest extends ApiTestCase
 
             /** @var Response $response */
             $response = $client->request('DELETE', $url.'&sig='.$token, $options);
-
-            if ($response->getStatusCode() !== 200) {
-                echo $response->getContent()."\n";
-            }
             $this->assertEquals(204, $response->getStatusCode());
             // TODO: further checks...
 
@@ -609,8 +558,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET all files
             // =======================================================
-            echo "GET all files\n";
-
             $url = "/blob/files?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=GET&prefix=$prefix";
 
             $payload = [
@@ -642,8 +589,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertArrayHasKey('hydra:member', $data);
             $this->assertCount(0, $data['hydra:member'], 'More files than expected');
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
@@ -659,8 +605,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET a file with expired token
             // =======================================================
-            echo "GET a file with expired token\n";
-
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getBucketID();
@@ -690,8 +634,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertEquals(403, $response->getStatusCode());
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
@@ -715,8 +658,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET a file by unknown id
             // =======================================================
-            echo "GET a file by unknown id\n";
-
             $url = "/blob/files/{$uuid}?prefix=$prefix&bucketIdentifier=$bucketID&creationTime=$creationTime&method=GET";
 
             $payload = [
@@ -742,8 +683,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // DELETE a file by unknown id
             // =======================================================
-            echo "DELETE a file by unknown id\n";
-
             $url = "/blob/files/{$uuid}?prefix=$prefix&bucketIdentifier=$bucketID&creationTime=$creationTime&method=DELETE";
 
             $payload = [
@@ -767,8 +706,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertEquals(404, $response->getStatusCode());
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
@@ -798,8 +736,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // POST a file
             // =======================================================
-            echo "POST file 0 with wrong method\n";
-
             $action = 'GET';
 
             $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
@@ -836,8 +772,7 @@ class CurlGetTest extends ApiTestCase
         } catch (ApiError $e) {
             $this->assertEquals(405, $e->getStatusCode());
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
@@ -861,8 +796,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET all files
             // =======================================================
-            echo "GET all files with wrong method\n";
-
             $url = "/blob/files/?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=DELETE";
 
             $payload = [
@@ -886,8 +819,7 @@ class CurlGetTest extends ApiTestCase
 
             $this->assertEquals(405, $response->getStatusCode());
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
@@ -911,15 +843,11 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET one file
             // =======================================================
-            echo "GET one file with wrong methods\n";
-
             $actions = ['GET', 'DELETE', 'DELETE', 'PATCH', 'POST'];
 
             // =======================================================
             // POST a file
             // =======================================================
-            echo "POST file (0)\n";
-
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $fileName = $this->files[0]['name'];
@@ -959,8 +887,7 @@ class CurlGetTest extends ApiTestCase
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
+                throw $e;
             }
 
             $this->assertNotNull($fileData);
@@ -980,7 +907,6 @@ class CurlGetTest extends ApiTestCase
                 if ($action === 'GET') {
                     continue;
                 }
-                echo 'GET one file with wrong method '.$action."\n";
                 $url = '/blob/files/'.$fileData->getIdentifier()."?bucketIdentifier=$bucketID&creationTime=$creationTime&method=".$action;
                 $payload = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1004,10 +930,8 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals(405, $response->getStatusCode());
             }
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
-        echo "\n";
     }
 
     /**
@@ -1016,7 +940,7 @@ class CurlGetTest extends ApiTestCase
     public function testPATCHWithWrongAction(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->withUser('user', [], '42');
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1030,15 +954,11 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // PATCH one file
             // =======================================================
-            echo "PATCH one file with wrong methods\n";
-
             $actions = ['GET', 'DELETE', 'DELETE', 'GET', 'POST'];
 
             // =======================================================
             // POST a file
             // =======================================================
-            echo "POST file (0)\n";
-
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $fileName = $this->files[0]['name'];
@@ -1076,8 +996,7 @@ class CurlGetTest extends ApiTestCase
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
+                throw $e;
             }
 
             $this->assertNotNull($fileData);
@@ -1094,7 +1013,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
 
             foreach ($actions as $action) {
-                echo 'PATCH one file with wrong method '.$action."\n";
                 $url = '/blob/files/'.$fileData->getIdentifier()."?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName";
 
                 $payload = [
@@ -1105,6 +1023,7 @@ class CurlGetTest extends ApiTestCase
 
                 $options = [
                     'headers' => [
+                        'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
                         'HTTP_ACCEPT' => 'application/ld+json',
                         'Content-Type' => 'application/merge-patch+json',
@@ -1114,16 +1033,16 @@ class CurlGetTest extends ApiTestCase
                 /* @noinspection PhpInternalEntityUsedInspection */
                 $client->getKernelBrowser()->followRedirects();
 
+                $client = $this->withUser('user', [], '42');
+
                 /** @var Response $response */
                 $response = $client->request('PATCH', $url.'&sig='.$token, $options);
-                echo $url."\n";
+
                 $this->assertEquals(405, $response->getStatusCode());
             }
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
-        echo "\n";
     }
 
     /**
@@ -1144,13 +1063,10 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // PATCH one file
             // =======================================================
-            echo "PATCH one file\n";
 
             // =======================================================
             // POST a file
             // =======================================================
-            echo "POST file (0)\n";
-
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $fileName = $this->files[0]['name'];
@@ -1190,8 +1106,7 @@ class CurlGetTest extends ApiTestCase
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
+                throw $e;
             }
 
             $this->assertNotNull($fileData);
@@ -1208,7 +1123,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             $action = 'PATCH';
             $newFileName = 'Test1.php';
-            echo 'PATCH one file with method '.$action."\n";
 
             $url = '/blob/files/'.$fileData->getIdentifier()."?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=$action&prefix=$prefix";
 
@@ -1235,8 +1149,6 @@ class CurlGetTest extends ApiTestCase
             $response = $client->request('PATCH', $url.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
 
-            echo "GET file to see if its changed\n";
-
             $action = 'GET';
             $url = '/blob/files/'.$fileData->getIdentifier()."?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=$action";
 
@@ -1260,15 +1172,12 @@ class CurlGetTest extends ApiTestCase
 
             /** @var \ApiPlatform\Symfony\Bundle\Test\Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options2);
-            echo $response->getContent(false)."\n";
             $this->assertEquals(200, $response->getStatusCode());
             // check if fileName was indeed changed
             $this->assertEquals(json_decode($response->getContent())->fileName, $newFileName);
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
-        echo "\n";
     }
 
     /**
@@ -1330,12 +1239,7 @@ class CurlGetTest extends ApiTestCase
             $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService);
             $c->setContainer($client->getContainer());
-            try {
-                $fileData = $c->__invoke($requestPost);
-            } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
-            }
+            $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
@@ -1355,7 +1259,6 @@ class CurlGetTest extends ApiTestCase
                     if ($method === substr($action, 0, strlen($method))) {
                         continue;
                     }
-                    echo $method.' file with wrong action '.$action."\n";
                     $url = "/blob/files?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&fileName=$fileName";
 
                     $payload = [
@@ -1384,10 +1287,8 @@ class CurlGetTest extends ApiTestCase
                 }
             }
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
-        echo "\n";
     }
 
     /**
@@ -1445,12 +1346,7 @@ class CurlGetTest extends ApiTestCase
                 $eventDispatcher = new EventDispatcher();
                 $c = new CreateFileDataAction($blobService);
                 $c->setContainer($client->getContainer());
-                try {
-                    $fileData = $c->__invoke($requestPost);
-                } catch (\Throwable $e) {
-                    echo $e->getTraceAsString()."\n";
-                    $this->fail($e->getMessage());
-                }
+                $fileData = $c->__invoke($requestPost);
 
                 $this->assertNotNull($fileData);
                 $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
@@ -1465,7 +1361,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET all files in prefix playground
             // =======================================================
-            echo "GET all files with prefix playground\n";
             $url = '/blob/files/'.$this->files[0]['uuid']."?bucketIdentifier=$bucketID&creationTime=$creationTime&includeData=1&includeDeleteAt=1&method=GET&prefix=$prefix";
 
             $payload = [
@@ -1494,8 +1389,7 @@ class CurlGetTest extends ApiTestCase
             $members = json_decode($response->getContent(), true);
             $this->assertEquals('data:text/x-php;base64', substr($members['contentUrl'], 0, strlen('data:text/x-php;base64')));
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
@@ -1505,7 +1399,7 @@ class CurlGetTest extends ApiTestCase
     public function testOperationsWithMissingParameters(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->withUser('user', [], '42');
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1513,7 +1407,6 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getBucketID();
-            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
             // =======================================================
@@ -1551,14 +1444,12 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketIdentifier=$bucketID"
             );
-            $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService);
             $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
+                throw $e;
             }
 
             $this->assertNotNull($fileData);
@@ -1573,8 +1464,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET, DELETE all files in prefix playground without creationTime, sig, action, bucketID, prefix
             // =======================================================
-            echo "GET all files with prefix playground with missing params\n";
-
             $actions = [
                 0 => 'GET',
             ];
@@ -1621,7 +1510,6 @@ class CurlGetTest extends ApiTestCase
                         ],
                     ];
 
-                    echo 'Test url '.$baseUrl.$token;
                     $client = $this->withUser('user', [], '42');
 
                     /** @var Response $response */
@@ -1633,8 +1521,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET, DELETE all files in prefix playground without creationTime, sig, action, bucketID, prefix
             // =======================================================
-            echo "GET, DELETE one file with prefix playground with missing params\n";
-
             $actions = [
                 0 => 'GET',
                 1 => 'DELETE',
@@ -1693,7 +1579,6 @@ class CurlGetTest extends ApiTestCase
 
                     /** @var Response $response */
                     $response = $client->request($action, $baseUrl.$token, $options);
-                    // echo $response->getContent()."\n";
                     $this->assertEquals(400, $response->getStatusCode());
                 }
             }
@@ -1701,9 +1586,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // POST file in prefix playground without creationTime, sig, action, bucketID, prefix, fileName, fileHash
             // =======================================================
-
-            echo "POST one file with prefix playground with missing params\n";
-
             $fileName = $this->files[0]['name'];
             $fileHash = $this->files[0]['hash'];
 
@@ -1783,9 +1665,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // PATCH file in prefix playground without creationTime, sig, action, bucketID, prefix, fileName, fileHash
             // =======================================================
-
-            echo "PATCH one file with prefix playground with missing params\n";
-
             $fileName = $this->files[0]['name'];
 
             $params = [
@@ -1813,18 +1692,13 @@ class CurlGetTest extends ApiTestCase
                     $connector = '&';
                 }
 
-                $payload = [
-                    'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
-                ];
-
                 if ($i !== count($params) - 1) {
                     $baseUrl = $baseUrl.$connector.$params[$j];
                 }
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
-
                 $options = [
                     'headers' => [
+                        'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
                         'HTTP_ACCEPT' => 'application/ld+json',
                         'Content-Type' => 'application/merge-patch+json',
@@ -1832,13 +1706,13 @@ class CurlGetTest extends ApiTestCase
                     'body' => '{}',
                 ];
 
+                $client = $this->withUser('user', [], '42');
                 /** @var Response $response */
                 $response = $client->request('PATCH', $baseUrl, $options);
                 $this->assertEquals(400, $response->getStatusCode());
             }
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
@@ -1895,12 +1769,7 @@ class CurlGetTest extends ApiTestCase
             $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService);
             $c->setContainer($client->getContainer());
-            try {
-                $fileData = $c->__invoke($requestPost);
-            } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
-            }
+            $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
@@ -1915,8 +1784,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // Check all operations with wrong checksum (in that case missing the first / in the cs generation)
             // =======================================================
-            echo "Check GET, DELETE operations with wrong checksum\n";
-
             $actions = [
                 0 => 'GET',
                 1 => 'DELETE',
@@ -1946,8 +1813,6 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals(403, $response->getStatusCode());
             }
 
-            echo "Check GET operations with wrong checksum\n";
-
             $actions = [
                 0 => 'GET',
             ];
@@ -1967,8 +1832,6 @@ class CurlGetTest extends ApiTestCase
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
-
-            echo "Check POST operation with wrong checksum\n";
 
             $actions = [
                 0 => 'POST',
@@ -2012,8 +1875,7 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals(403, $response->getStatusCode());
             }
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
@@ -2070,12 +1932,7 @@ class CurlGetTest extends ApiTestCase
             $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService);
             $c->setContainer($client->getContainer());
-            try {
-                $fileData = $c->__invoke($requestPost);
-            } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
-            }
+            $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
@@ -2090,7 +1947,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // Check all operations with wrong signature
             // =======================================================
-            echo "Check GET, DELETE operations with wrong signature\n";
 
             $actions = [
                 0 => 'GET',
@@ -2125,8 +1981,6 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals(403, $response->getStatusCode());
             }
 
-            echo "Check GET operations with wrong signature\n";
-
             $actions = [
                 0 => 'GET',
             ];
@@ -2150,8 +2004,6 @@ class CurlGetTest extends ApiTestCase
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
-
-            echo "Check POST operation with wrong checksum\n";
 
             $actions = [
                 0 => 'POST',
@@ -2198,8 +2050,7 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals(403, $response->getStatusCode());
             }
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
@@ -2257,12 +2108,7 @@ class CurlGetTest extends ApiTestCase
             $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService);
             $c->setContainer($client->getContainer());
-            try {
-                $fileData = $c->__invoke($requestPost);
-            } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
-            }
+            $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
@@ -2277,8 +2123,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // Check all operations with overdue creationTime
             // =======================================================
-            echo "Check GET operations with overdue creationTime\n";
-
             $actions = [
                 0 => 'GET',
             ];
@@ -2310,8 +2154,6 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals(403, $response->getStatusCode());
             }
 
-            echo "Check GET operations with overdue creationTime\n";
-
             $actions = [
                 0 => 'GET',
             ];
@@ -2332,8 +2174,6 @@ class CurlGetTest extends ApiTestCase
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
-
-            echo "Check POST operation with overdue creationTime\n";
 
             $actions = [
                 0 => 'POST',
@@ -2377,8 +2217,7 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals(403, $response->getStatusCode());
             }
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
@@ -2435,12 +2274,7 @@ class CurlGetTest extends ApiTestCase
             $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService);
             $c->setContainer($client->getContainer());
-            try {
-                $fileData = $c->__invoke($requestPost);
-            } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
-            }
+            $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
             $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
@@ -2455,8 +2289,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // Check all operations with unconfigured bucket
             // =======================================================
-            echo "Check GET, DELETE operations with unconfigured bucket\n";
-
             $actions = [
                 0 => 'GET',
                 1 => 'DELETE',
@@ -2489,8 +2321,6 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals(400, $response->getStatusCode());
             }
 
-            echo "Check GET operations with unconfigured bucket\n";
-
             $actions = [
                 0 => 'GET',
             ];
@@ -2511,8 +2341,6 @@ class CurlGetTest extends ApiTestCase
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
             }
-
-            echo "Check POST operation with unconfigured bucket\n";
 
             $actions = [
                 0 => 'POST',
@@ -2550,8 +2378,7 @@ class CurlGetTest extends ApiTestCase
                 $this->assertEquals(400, $response->getStatusCode());
             }
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
@@ -2610,12 +2437,7 @@ class CurlGetTest extends ApiTestCase
                 $eventDispatcher = new EventDispatcher();
                 $c = new CreateFileDataAction($blobService);
                 $c->setContainer($client->getContainer());
-                try {
-                    $fileData = $c->__invoke($requestPost);
-                } catch (\Throwable $e) {
-                    echo $e->getTraceAsString()."\n";
-                    $this->fail($e->getMessage());
-                }
+                $fileData = $c->__invoke($requestPost);
 
                 $this->assertNotNull($fileData);
                 $this->assertEquals($prefix, $fileData->getPrefix(), 'File data prefix not correct.');
@@ -2630,7 +2452,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET ONE file in prefix playground
             // =======================================================
-            echo "GET download one file with prefix playground\n";
             $url = '/blob/files/'.$this->files[0]['uuid']."/download?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&includeData=1&method=GET";
 
             $payload = [
@@ -2658,8 +2479,7 @@ class CurlGetTest extends ApiTestCase
             $this->assertEquals('string', gettype($response->getContent()));
             // check if the one created element is there
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
@@ -2720,8 +2540,7 @@ class CurlGetTest extends ApiTestCase
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
-                echo $e->getTraceAsString()."\n";
-                $this->fail($e->getMessage());
+                throw $e;
             }
 
             $this->assertNotNull($fileData);
@@ -2736,8 +2555,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET download one file in prefix playground without creationTime, sig, action, bucketID
             // =======================================================
-            echo "GET download one file with prefix playground with missing params\n";
-
             $params = [
                 0 => "bucketIdentifier=$bucketID",
                 1 => "creationTime=$creationTime",
@@ -2790,15 +2607,12 @@ class CurlGetTest extends ApiTestCase
 
                 /** @var Response $response */
                 $response = $client->request('GET', $baseUrl.$token, $options);
-                // echo $response->getContent()."\n";
                 $this->assertEquals(400, $response->getStatusCode());
             }
 
             // =======================================================
             // Check download operations with overdue creationTime
             // =======================================================
-            echo "Check download with overdue creationTime\n";
-
             $creationTime = rawurlencode(date('c', time() - 120));
 
             $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketIdentifier=$bucketID&creationTime=$creationTime&method=GET";
@@ -2826,8 +2640,6 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // Check download with invalid action
             // =======================================================
-            echo "Check download with invalid action\n";
-
             $creationTime = rawurlencode(date('c'));
 
             $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketIdentifier=$bucketID&creationTime=$creationTime&method=DELETE";
@@ -2844,8 +2656,7 @@ class CurlGetTest extends ApiTestCase
             $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
             $this->assertEquals(405, $response->getStatusCode());
         } catch (\Throwable $e) {
-            echo $e->getTraceAsString()."\n";
-            $this->fail($e->getMessage());
+            throw $e;
         }
     }
 
