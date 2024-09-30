@@ -66,7 +66,7 @@ class ConfigurationService
     {
         $buckets = $this->config['buckets'];
 
-        foreach ($buckets as $bucket => $bucketConfig) {
+        foreach ($buckets as $bucketConfig) {
             if ($bucketID === $bucketConfig['bucket_id']) {
                 return Bucket::fromConfig($bucketConfig);
             }
@@ -82,7 +82,7 @@ class ConfigurationService
     {
         $buckets = $this->config['buckets'];
 
-        foreach ($buckets as $bucket => $bucketConfig) {
+        foreach ($buckets as $bucketConfig) {
             if ($bucketID === $bucketConfig['bucket_id']) {
                 return $bucketConfig['internal_bucket_id'];
             }
@@ -98,7 +98,7 @@ class ConfigurationService
     {
         $buckets = $this->config['buckets'];
 
-        foreach ($buckets as $bucket => $bucketConfig) {
+        foreach ($buckets as $bucketConfig) {
             if ($internalBucketID === $bucketConfig['internal_bucket_id']) {
                 return Bucket::fromConfig($bucketConfig);
             }

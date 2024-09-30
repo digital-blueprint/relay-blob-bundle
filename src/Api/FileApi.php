@@ -22,9 +22,11 @@ class FileApi
     /**
      * @throws \Exception
      */
-    public function addFile(FileData $fileData): FileData
+    public function addFile(FileData $fileData, string $bucketConfigIdentifier): FileData
     {
         try {
+            $fileData->setInternalBucketID($this->blobService->getInternalBucketIdByBucketID($bucketConfigIdentifier));
+
             return $this->blobService->addFile($fileData);
         } catch (\Exception $exception) {
             throw $this->createException($exception);

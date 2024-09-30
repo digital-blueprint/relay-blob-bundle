@@ -71,6 +71,10 @@ class BlobService
      */
     public function addFile(FileData $fileData): FileData
     {
+        if ($fileData->getFile() === null) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'file is missing', 'blob:create-file-data-file-missing');
+        }
+
         $fileData->setIdentifier(Uuid::v7()->toRfc4122());
 
         $now = BlobUtils::now();
@@ -84,7 +88,7 @@ class BlobService
         }
 
         $errorPrefix = 'blob:create-file-data';
-        $this->ensureFileDataIsValid($fileData, true, $errorPrefix);
+        $this->ensureFileDataIsValid($fileData, $errorPrefix);
 
         // write all relevant data to tables
         $this->writeToTablesAndSaveFileData($fileData, $fileData->getFileSize(), $errorPrefix);
@@ -107,7 +111,7 @@ class BlobService
         $fileData->setDateModified($now);
 
         $errorPrefix = 'blob:patch-file-data';
-        $this->ensureFileDataIsValid($fileData, false, $errorPrefix);
+        $this->ensureFileDataIsValid($fileData, $errorPrefix);
 
         if ($fileData->getFile() instanceof UploadedFile) {
             $this->writeToTablesAndSaveFileData($fileData, $fileData->getFileSize() - $previousFileData->getFileSize(), $errorPrefix);
@@ -281,7 +285,7 @@ class BlobService
         return $fileData;
     }
 
-    public function getInternalBucketIdByBucketID($bucketID): ?string
+    public function getInternalBucketIdByBucketID(string $bucketID): ?string
     {
         return $this->configurationService->getInternalBucketIdByBucketID($bucketID);
     }
@@ -1307,20 +1311,20 @@ class BlobService
      * @throws ApiError|\DateMalformedIntervalStringException
      * @throws \DateMalformedStringException
      */
-    private function ensureFileDataIsValid(FileData $fileData, bool $isNewFile, string $errorPrefix): void
+    private function ensureFileDataIsValid(FileData $fileData, string $errorPrefix): void
     {
-        if ($isNewFile && $fileData->getFile() === null) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'file is missing', $errorPrefix.'-file-missing');
+        if (Tools::isNullOrEmpty($fileData->getIdentifier())) {
+            throw new \RuntimeException('identifier is missing');
         }
 
-        // check if fileName is set
         if (Tools::isNullOrEmpty($fileData->getFileName())) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName is missing', $errorPrefix.'-file-name-missing');
         }
-
-        // check if prefix is set
         if (Tools::isNullOrEmpty($fileData->getPrefix())) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'prefix is missing', $errorPrefix.'-prefix-missing');
+        }
+        if (Tools::isNullOrEmpty($fileData->getInternalBucketID())) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'internal bucket ID is missing', $errorPrefix.'-internal-bucket-id-missing');
         }
 
         // TODO: is empty string 'metadata' allowed?
