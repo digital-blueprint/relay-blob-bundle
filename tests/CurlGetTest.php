@@ -1174,7 +1174,7 @@ class CurlGetTest extends ApiTestCase
             $response = $client->request('GET', $url.'&sig='.$token, $options2);
             $this->assertEquals(200, $response->getStatusCode());
             // check if fileName was indeed changed
-            $this->assertEquals(json_decode($response->getContent())->fileName, $newFileName);
+            $this->assertEquals($newFileName, json_decode($response->getContent())->fileName);
         } catch (\Throwable $e) {
             throw $e;
         }

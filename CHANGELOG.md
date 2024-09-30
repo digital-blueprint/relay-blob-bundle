@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Centralize set up of FileData from request for POST and PATCH in BlobService
+* Centralize validation of FileData for POST and PATCH in BlobService
 * Add PHP backend FileApi
 * Refactor/restructure/modernize code; remove duplicate code; enhance performance
 * Fix 404 error when deleting/patching a file with retention duration set (includeDeleteAt param missing)

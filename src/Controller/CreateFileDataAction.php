@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Controller;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
-use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
@@ -39,12 +38,13 @@ final class CreateFileDataAction extends AbstractController
         DenyAccessUnlessCheckSignature::checkSignature(
             $errorPrefix, $this->blobService, $request, $request->query->all(), ['POST']);
 
-        // check content-length header to prevent misleading error messages if the upload is too big for the server to accept
-        if ($request->headers->get('Content-Length') && intval($request->headers->get('Content-Length')) !== 0
-            && intval($request->headers->get('Content-Length')) > BlobUtils::convertFileSizeStringToBytes(ini_get('post_max_size'))) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given file is too large', 'blob:create-file-data-file-too-big');
+        if ($request->files->get('file') === null) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
+                'No file with parameter key "file" was received!', 'blob:create-file-data-missing-file');
         }
 
-        return $this->blobService->addFile($this->blobService->createFileDataFromRequest($request));
+        $fileData = $this->blobService->setUpFileDataFromRequest(new FileData(), $request, $errorPrefix);
+
+        return $this->blobService->addFile($fileData);
     }
 }

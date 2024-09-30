@@ -54,9 +54,9 @@ class FileApi
         try {
             // TODO:
             // 1. currently fileData needs to be an instance returned by the entity manager,
-            // otherwise the persist will fail. is that an acceptable restriction. alternatively we could
+            // otherwise the persist will fail. decide if this an acceptable restriction. alternatively we could
             // retrieve the file data from the entity manager, copy the contents of the updated file data and persist
-            // 2. is it save to write to fileData/previousFileData or they referencing the same instance?
+            // 2. check if is save to write to fileData/previousFileData or they referencing the same instance?
             $previousFileData = $this->blobService->getFile($identifier, true, false, false);
 
             return $this->blobService->updateFile($fileData, $previousFileData);

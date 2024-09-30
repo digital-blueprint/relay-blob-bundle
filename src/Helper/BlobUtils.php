@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Request;
 
 class BlobUtils
 {
-    public static function getFieldsFromPatchRequest(Request $request): array
+    public static function convertPatchRequest(Request $request): Request
     {
         /** @var UploadedFileFactoryInterface $uploaded_file_factory */
         $uploaded_file_factory = new Psr17Factory();
@@ -32,9 +32,8 @@ class BlobUtils
 
         // convert back to symfony request to get a symfony uploadedFile instead of a PSR-7 uploadedFile
         $httpFoundationFactory = new HttpFoundationFactory();
-        $symfonyRequest = $httpFoundationFactory->createRequest($psrRequest);
 
-        return array_merge($symfonyRequest->request->all(), $symfonyRequest->files->all());
+        return $httpFoundationFactory->createRequest($psrRequest);
     }
 
     public static function convertFileSizeStringToBytes($sizeStr): int

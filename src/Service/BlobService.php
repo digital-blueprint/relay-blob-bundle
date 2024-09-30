@@ -9,6 +9,7 @@ use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Event\AddFileDataByPostSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\ChangeFileDataByPatchSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\DeleteFileDataByDeleteSuccessEvent;
+use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Helpers\Tools;
@@ -70,10 +71,18 @@ class BlobService
      */
     public function addFile(FileData $fileData): FileData
     {
-        $this->ensureFileDataIsValid($fileData);
+        $fileData->setIdentifier(Uuid::v7()->toRfc4122());
+
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $fileData->setDateCreated($now);
+        $fileData->setLastAccess($now);
+        $fileData->setDateModified($now);
+
+        $errorPrefix = 'blob:create-file-data';
+        $this->ensureFileDataIsValid($fileData, true, $errorPrefix);
 
         // write all relevant data to tables
-        $this->writeToTablesAndSaveFileData($fileData, $fileData->getFileSize(), true);
+        $this->writeToTablesAndSaveFileData($fileData, $fileData->getFileSize(), $errorPrefix);
 
         /* dispatch POST success event */
         $this->ensureBucket($fileData);
@@ -88,12 +97,15 @@ class BlobService
      */
     public function updateFile(FileData $fileData, FileData $previousFileData): FileData
     {
-        if ($fileData->getFile() instanceof UploadedFile) {
-            // get the current time to save it as last access / last modified
-            $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-            $fileData->setDateModified($time);
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $fileData->setLastAccess($now);
+        $fileData->setDateModified($now);
 
-            $this->writeToTablesAndSaveFileData($fileData, $fileData->getFileSize() - $previousFileData->getFileSize(), false);
+        $errorPrefix = 'blob:patch-file-data';
+        $this->ensureFileDataIsValid($fileData, false, $errorPrefix);
+
+        if ($fileData->getFile() instanceof UploadedFile) {
+            $this->writeToTablesAndSaveFileData($fileData, $fileData->getFileSize() - $previousFileData->getFileSize(), $errorPrefix);
         } else {
             $this->saveFileData($fileData);
         }
@@ -125,8 +137,7 @@ class BlobService
     {
         $fileData = $this->getFileData($identifier);
 
-        // check if fileData is null
-        if ($fileData->getDeleteAt() !== null && $fileData->getDeleteAt() < new \DateTimeImmutable()) {
+        if ($fileData->getDeleteAt() !== null && $fileData->getDeleteAt() < new \DateTimeImmutable('now')) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
 
@@ -142,6 +153,7 @@ class BlobService
         }
 
         if ($updateLastAccessTimestamp) {
+            $fileData->setLastAccess(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
             $this->saveFileData($fileData);
         }
 
@@ -155,21 +167,29 @@ class BlobService
      *
      * @throws \Exception
      */
-    public function createFileDataFromRequest(Request $request): FileData
+    public function setUpFileDataFromRequest(FileData $fileData, Request $request, string $errorPrefix): FileData
     {
+        // check content-length header to prevent misleading error messages if the upload is too big for the server to accept
+        if ($request->headers->get('Content-Length') && intval($request->headers->get('Content-Length')) !== 0
+            && intval($request->headers->get('Content-Length')) > BlobUtils::convertFileSizeStringToBytes(ini_get('post_max_size'))) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
+                'Given file is too large', $errorPrefix.'-file-too-big');
+        }
+
         /* get url params */
         $bucketID = $request->query->get('bucketIdentifier');
         $prefix = $request->query->get('prefix');
         $notifyEmail = $request->query->get('notifyEmail');
-        $retentionDuration = $request->query->get('retentionDuration', '0');
+        $retentionDuration = $request->query->get('retentionDuration');
         $type = $request->query->get('type');
 
         /* get params from body */
-        $metadata = $request->request->get('metadata', '');
+        $metadata = $request->request->get('metadata');
         $fileName = $request->request->get('fileName');
         $fileHash = $request->request->get('fileHash');
         $metadataHash = $request->request->get('metadataHash');
 
+        /* get uploaded file */
         $uploadedFile = $request->files->get('file');
 
         /* check types of params */
@@ -178,9 +198,9 @@ class BlobService
         assert(is_string($fileName ?? ''));
         assert(is_string($fileHash ?? ''));
         assert(is_string($notifyEmail ?? ''));
-        assert(is_string($retentionDuration));
+        assert(is_string($retentionDuration ?? ''));
         assert(is_string($type ?? ''));
-        assert(is_string($metadata));
+        assert(is_string($metadata ?? ''));
         assert($uploadedFile === null || $uploadedFile instanceof UploadedFile);
 
         /* url decode according to RFC 3986 */
@@ -190,72 +210,72 @@ class BlobService
         $retentionDuration = $retentionDuration ? rawurldecode($retentionDuration) : null;
         $type = $type ? rawurldecode($type) : null;
 
-        // check if there is an uploaded file
-        if (!$uploadedFile) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
-                'No file with parameter key "file" was received!', 'blob:create-file-data-missing-file');
+        if ($uploadedFile !== null) {
+            if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, $uploadedFile->getErrorMessage(),
+                    $errorPrefix.'-upload-error');
+            }
+            if ($uploadedFile->getSize() === 0) {
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Empty files cannot be added!',
+                    $errorPrefix.'-empty-files-not-allowed');
+            }
+            if ($fileHash !== null && $fileHash !== hash('sha256', $uploadedFile->getContent())) {
+                throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden',
+                    $errorPrefix.'-file-hash-change-forbidden');
+            }
+
+            $fileData->setFile($uploadedFile);
+            $fileData->setMimeType($uploadedFile->getMimeType() ?? '');
+            $fileData->setFilesize(filesize($uploadedFile->getRealPath()));
         }
 
-        // If the upload failed, figure out why
-        if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, $uploadedFile->getErrorMessage(),
-                'blob:create-file-data-upload-error');
+        if ($metadataHash !== null) {
+            if ($metadataHash !== hash('sha256', $metadata)) {
+                throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Metadata hash change forbidden',
+                    $errorPrefix.'-metadata-hash-change-forbidden');
+            }
+        }
+        if ($fileName !== null) {
+            $fileData->setFileName($fileName);
+        }
+        if ($prefix) {
+            $fileData->setPrefix($prefix);
+        }
+        if ($retentionDuration !== null) {
+            $fileData->setRetentionDuration($retentionDuration);
+        }
+        if ($notifyEmail !== null) {
+            $fileData->setNotifyEmail($notifyEmail);
+        }
+        if ($type !== null) {
+            $fileData->setType($type);
+        }
+        if ($metadata !== null) {
+            $fileData->setMetadata($metadata);
+        }
+        if ($fileHash !== null) {
+            $fileData->setFileHash($fileHash);
         }
 
-        // check if file is empty
-        if ($uploadedFile->getSize() === 0) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Empty files cannot be added!',
-                'blob:create-file-data-empty-files-not-allowed');
-        }
-
-        if ($fileHash !== null && hash('sha256', $uploadedFile->getContent()) !== $fileHash) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden',
-                'blob:create-file-data-file-hash-change-forbidden');
-        }
-
-        if ($metadataHash !== null && hash('sha256', $metadata) !== $metadataHash) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Metadata hash change forbidden',
-                'blob:create-file-data-metadata-hash-change-forbidden');
-        }
-
-        $fileData = new FileData();
-        $fileData->setIdentifier(Uuid::v7()->toRfc4122());
-        $fileData->setFileName($fileName);
-        $fileData->setPrefix($prefix);
-        $fileData->setRetentionDuration($retentionDuration);
-        $fileData->setNotifyEmail($notifyEmail);
-        $fileData->setType($type);
-        $fileData->setMetadata($metadata);
-        $fileData->setFileHash($fileHash);
-        $fileData->setMetadataHash($metadataHash);
-        $fileData->setInternalBucketID($this->getConfigurationService()->getInternalBucketIdByBucketID($bucketID));
+        $fileData->setInternalBucketID($this->configurationService->getInternalBucketIdByBucketID($bucketID));
         $fileData->setBucket($this->getBucketByID($bucketID));
-        $fileData->setFile($uploadedFile);
-        $fileData->setMimeType($uploadedFile->getMimeType() ?? '');
-        $fileData->setFilesize(filesize($uploadedFile->getRealPath()));
-
-        // set creationTime and last access time
-        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $fileData->setDateCreated($now);
-        $fileData->setLastAccess($now);
-        $fileData->setDateModified($now);
 
         return $fileData;
     }
 
     public function getInternalBucketIdByBucketID($bucketID): ?string
     {
-        return $this->getConfigurationService()->getInternalBucketIdByBucketID($bucketID);
+        return $this->configurationService->getInternalBucketIdByBucketID($bucketID);
     }
 
     public function doFileIntegrityChecks(): bool
     {
-        return $this->getConfigurationService()->doFileIntegrityChecks();
+        return $this->configurationService->doFileIntegrityChecks();
     }
 
     public function checkAdditionalAuth(): bool
     {
-        return $this->getConfigurationService()->checkAdditionalAuth();
+        return $this->configurationService->checkAdditionalAuth();
     }
 
     /**
@@ -287,10 +307,6 @@ class BlobService
      */
     public function saveFileData(FileData $fileData): void
     {
-        // save last access time
-        $time = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $fileData->setLastAccess($time);
-
         // try to persist fileData, or throw error
         try {
             $this->em->persist($fileData);
@@ -383,7 +399,7 @@ class BlobService
     public function getLink(FileData $fileData): FileData
     {
         // set bucket of fileData by bucketID
-        $fileData->setBucket($this->getConfigurationService()->getBucketByInternalID($fileData->getInternalBucketID()));
+        $fileData->setBucket($this->configurationService->getBucketByInternalID($fileData->getInternalBucketID()));
 
         // get service from bucket
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
@@ -407,7 +423,7 @@ class BlobService
     public function getBase64Data(FileData $fileData): FileData
     {
         // set bucket of fileData
-        $fileData->setBucket($this->getConfigurationService()->getBucketByInternalID($fileData->getInternalBucketID()));
+        $fileData->setBucket($this->configurationService->getBucketByInternalID($fileData->getInternalBucketID()));
 
         // get service of bucket
         $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
@@ -423,7 +439,7 @@ class BlobService
      */
     public function checkIntegrity(?OutputInterface $out = null, $sendEmail = true, $printIds = false)
     {
-        $buckets = $this->getConfigurationService()->getBuckets();
+        $buckets = $this->configurationService->getBuckets();
 
         foreach ($buckets as $bucket) {
             try {
@@ -890,7 +906,7 @@ class BlobService
      */
     public function sendReporting(): void
     {
-        $buckets = $this->getConfigurationService()->getBuckets();
+        $buckets = $this->configurationService->getBuckets();
         /*foreach ($buckets as $bucket) {
             if ($bucket->getReportingConfig() !== null) {
                 // $this->sendReportingForBucket($bucket);
@@ -903,7 +919,7 @@ class BlobService
      */
     public function sendWarning(): void
     {
-        $buckets = $this->getConfigurationService()->getBuckets();
+        $buckets = $this->configurationService->getBuckets();
         foreach ($buckets as $bucket) {
             $this->sendBucketQuotaWarning($bucket);
         }
@@ -1015,14 +1031,14 @@ class BlobService
     public function checkConfig(): void
     {
         // Make sure the schema files exist
-        foreach ($this->getConfigurationService()->getBuckets() as $bucket) {
+        foreach ($this->configurationService->getBuckets() as $bucket) {
             $this->getJsonSchemaStorageWithAllSchemasInABucket($bucket);
         }
     }
 
     public function checkFileSize(?OutputInterface $out = null, $sendEmail = true)
     {
-        $buckets = $this->getConfigurationService()->getBuckets();
+        $buckets = $this->configurationService->getBuckets();
 
         // sum of file sizes in the blob_files table
         $sumBucketSizes = [];
@@ -1161,13 +1177,13 @@ class BlobService
 
     public function getAdditionalAuthFromConfig(): bool
     {
-        return $this->getConfigurationService()->checkAdditionalAuth();
+        return $this->configurationService->checkAdditionalAuth();
     }
 
     /**
      * @throws \Exception
      */
-    public function writeToTablesAndSaveFileData(FileData $fileData, int $bucketSizeDeltaByte, bool $create): void
+    public function writeToTablesAndSaveFileData(FileData $fileData, int $bucketSizeDeltaByte, string $errorPrefix): void
     {
         /* Check quota */
         $bucketQuotaByte = $this->ensureBucket($fileData)->getQuota() * 1024 * 1024; // Convert mb to Byte
@@ -1175,7 +1191,7 @@ class BlobService
         $newBucketSizeByte = max($bucket->getCurrentBucketSize() + $bucketSizeDeltaByte, 0);
         if ($newBucketSizeByte > $bucketQuotaByte) {
             throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached',
-                $create ? 'blob:create-file-data-bucket-quota-reached' : 'blob:patch-file-data-bucket-quota-reached');
+                $errorPrefix.'-bucket-quota-reached');
         }
         $bucket->setCurrentBucketSize($newBucketSizeByte);
 
@@ -1183,7 +1199,7 @@ class BlobService
         $fileData = $this->saveFile($fileData);
         if (!$fileData) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'data upload failed',
-                $create ? 'blob:create-file-data-data-upload-failed' : 'blob:patch-file-data-data-upload-failed');
+                $errorPrefix.'-data-upload-failed');
         }
 
         // try to update bucket size
@@ -1197,7 +1213,7 @@ class BlobService
             $this->em->getConnection()->rollBack();
             $this->removeFileData($fileData);
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while saving the file data',
-                $create ? 'blob:create-file-data-save-file-failed' : 'blob:patch-file-data-save-file-failed');
+                $errorPrefix.'-save-file-failed');
         }
     }
 
@@ -1272,16 +1288,20 @@ class BlobService
     /**
      * @throws ApiError|\DateMalformedIntervalStringException
      */
-    private function ensureFileDataIsValid(FileData $fileData): void
+    private function ensureFileDataIsValid(FileData $fileData, bool $isNewFile, string $errorPrefix): void
     {
+        if ($isNewFile && $fileData->getFile() === null) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'file is missing', $errorPrefix.'-file-missing');
+        }
+
         // check if fileName is set
         if (Tools::isNullOrEmpty($fileData->getFileName())) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName is missing', 'blob:create-file-data-file-name-missing');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName is missing', $errorPrefix.'-file-name-missing');
         }
 
         // check if prefix is set
         if (Tools::isNullOrEmpty($fileData->getPrefix())) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'prefix is missing', 'blob:create-file-data-prefix-missing');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'prefix is missing', $errorPrefix.'-prefix-missing');
         }
 
         // TODO: is empty string 'metadata' allowed?
@@ -1291,7 +1311,7 @@ class BlobService
         if ($fileData->getMetadata()) {
             $metadataDecoded = json_decode($fileData->getMetadata());
             if (!$metadataDecoded) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad metadata', 'blob:create-file-data-bad-metadata');
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad metadata', $errorPrefix.'-bad-metadata');
             }
         }
 
@@ -1300,7 +1320,7 @@ class BlobService
         // check if additional type is defined
         if ($fileData->getType() !== null) {
             if (!array_key_exists($fileData->getType(), $bucket->getAdditionalTypes())) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad type', 'blob:create-file-data-bad-type');
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad type', $errorPrefix.'-bad-type');
             }
 
             /* check if given metadata json has the same keys as the defined type */
@@ -1313,7 +1333,7 @@ class BlobService
                 foreach ($validator->getErrors() as $error) {
                     $messages[$error['property']] = $error['message'];
                 }
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type', 'blob:create-file-data-metadata-does-not-match-type', $messages);
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type', $errorPrefix.'-metadata-does-not-match-type', $messages);
             }
         }
 
@@ -1321,8 +1341,10 @@ class BlobService
             $fileData->setDeleteAt($fileData->getDateCreated()->add(new \DateInterval($fileData->getRetentionDuration())));
         }
 
-        if ($this->getConfigurationService()->doFileIntegrityChecks()) {
-            $fileData->setFileHash(hash('sha256', $fileData->getFile()->getContent()));
+        if ($this->configurationService->doFileIntegrityChecks()) {
+            if ($fileData->getFile() !== null) {
+                $fileData->setFileHash(hash('sha256', $fileData->getFile()->getContent()));
+            }
             $fileData->setMetadataHash(hash('sha256', $fileData->getMetadata()));
         } else {
             $fileData->setFileHash(null);

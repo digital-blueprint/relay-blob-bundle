@@ -58,10 +58,9 @@ class FileDataProvider extends AbstractDataProvider
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'Identifier is in an invalid format!', 'blob:identifier-invalid-format');
         }
 
-        // check if output validation shouldn't be checked
-        // a user can get the data even if the system usually would throw and invalid data error
-        $disableOutputValidation = ($filters['disableOutputValidation'] ?? '') === '1';
-        $includeFileContent = ($filters['includeData'] ?? '') === '1';
+        // if output validation is disabled, a user can get the data even if the system usually would throw and invalid data error
+        $disableOutputValidation = !$isGetRequest || ($filters['disableOutputValidation'] ?? null) === '1';
+        $includeFileContent = $isGetRequest && ($filters['includeData'] ?? null) === '1';
         $updateLastAccessTime = $isGetRequest; // PATCH: saves for itself, DELETE: will be deleted anyway
 
         $fileData = $this->blobService->getFile($id, $disableOutputValidation, $includeFileContent, $updateLastAccessTime);

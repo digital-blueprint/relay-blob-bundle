@@ -270,9 +270,9 @@ resources:
               required: false
               example: "P1D"
             - name: type
-              in: body
+              in: query
               description: 'Type of the added metadata'
-              type: object
+              type: string
               required: false
               example: "generic_id_card"
             - name: prefix
