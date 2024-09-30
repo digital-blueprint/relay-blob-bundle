@@ -122,11 +122,11 @@ class DenyAccessUnlessCheckSignature
         $linkExpiryTime = $bucket->getLinkExpireTime();
 
         // sub linkexpirytime from now to check if creationTime is too old
-        $now = new \DateTime('now');
+        $now = BlobUtils::now();
         $expiryTime = $now->sub(new \DateInterval($linkExpiryTime));
 
         // add linkExpiryTime to now, and allow requests to be only linkExpiryTime in the future
-        $now = new \DateTime('now');
+        $now = BlobUtils::now();
         $futureBlock = $now->add(new \DateInterval($linkExpiryTime));
 
         $creationDateTime = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $creationTime);

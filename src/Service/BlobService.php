@@ -73,10 +73,15 @@ class BlobService
     {
         $fileData->setIdentifier(Uuid::v7()->toRfc4122());
 
-        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $now = BlobUtils::now();
         $fileData->setDateCreated($now);
         $fileData->setLastAccess($now);
         $fileData->setDateModified($now);
+
+        if ($fileData->getRetentionDuration() !== null) {
+            $fileData->setDeleteAt($fileData->getDateCreated()->add(
+                new \DateInterval($fileData->getRetentionDuration())));
+        }
 
         $errorPrefix = 'blob:create-file-data';
         $this->ensureFileDataIsValid($fileData, true, $errorPrefix);
@@ -97,7 +102,7 @@ class BlobService
      */
     public function updateFile(FileData $fileData, FileData $previousFileData): FileData
     {
-        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $now = BlobUtils::now();
         $fileData->setLastAccess($now);
         $fileData->setDateModified($now);
 
@@ -137,7 +142,7 @@ class BlobService
     {
         $fileData = $this->getFileData($identifier);
 
-        if ($fileData->getDeleteAt() !== null && $fileData->getDeleteAt() < new \DateTimeImmutable('now')) {
+        if ($fileData->getDeleteAt() !== null && $fileData->getDeleteAt() < BlobUtils::now()) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
 
@@ -153,7 +158,7 @@ class BlobService
         }
 
         if ($updateLastAccessTimestamp) {
-            $fileData->setLastAccess(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
+            $fileData->setLastAccess(BlobUtils::now());
             $this->saveFileData($fileData);
         }
 
@@ -182,6 +187,7 @@ class BlobService
         $notifyEmail = $request->query->get('notifyEmail');
         $retentionDuration = $request->query->get('retentionDuration');
         $type = $request->query->get('type');
+        $deleteAt = $request->query->get('deleteAt');
 
         /* get params from body */
         $metadata = $request->request->get('metadata');
@@ -243,6 +249,18 @@ class BlobService
         }
         if ($retentionDuration !== null) {
             $fileData->setRetentionDuration($retentionDuration);
+        }
+        if ($deleteAt !== null) {
+            // check if date can be created
+            $date = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $deleteAt);
+            if ($date === false) {
+                // RFC3339_EXTENDED is broken in PHP
+                $date = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $deleteAt);
+            }
+            if ($date === false) {
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given deleteAt is in an invalid format!', 'blob:patch-file-data-delete-at-bad-format');
+            }
+            $fileData->setDeleteAt($date);
         }
         if ($notifyEmail !== null) {
             $fileData->setNotifyEmail($notifyEmail);
@@ -585,7 +603,7 @@ class BlobService
         $this->ensureBucket($fileData);
 
         // get time now
-        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $now = BlobUtils::now();
 
         // generate checksum and encode it in payload
         $payload = [
@@ -739,7 +757,7 @@ class BlobService
             ->orderBy('f.dateCreated', 'ASC')
             ->setParameter('bucketID', $bucketID)
             ->setParameter('prefix', $prefix)
-            ->setParameter('now', new \DateTime('now'))
+            ->setParameter('now', BlobUtils::now())
             ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber - 1))
             ->setMaxResults($maxNumItemsPerPage);
 
@@ -782,7 +800,7 @@ class BlobService
             ->orderBy('f.dateCreated', 'ASC')
             ->setParameter('bucketID', $bucketID)
             ->setParameter('prefix', $prefix.'%')
-            ->setParameter('now', new \DateTime('now'))
+            ->setParameter('now', BlobUtils::now())
             ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber - 1))
             ->setMaxResults($maxNumItemsPerPage);
 
@@ -855,7 +873,7 @@ class BlobService
     public function cleanUp(): void
     {
         // get all invalid filedatas
-        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $now = BlobUtils::now();
 
         $maxNumItemsPerPage = 10000;
         $pagesize = 10000;
@@ -1287,6 +1305,7 @@ class BlobService
 
     /**
      * @throws ApiError|\DateMalformedIntervalStringException
+     * @throws \DateMalformedStringException
      */
     private function ensureFileDataIsValid(FileData $fileData, bool $isNewFile, string $errorPrefix): void
     {
@@ -1333,12 +1352,9 @@ class BlobService
                 foreach ($validator->getErrors() as $error) {
                     $messages[$error['property']] = $error['message'];
                 }
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type', $errorPrefix.'-metadata-does-not-match-type', $messages);
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
+                    'metadata does not match specified type', $errorPrefix.'-metadata-does-not-match-type', $messages);
             }
-        }
-
-        if ($fileData->getRetentionDuration() !== null) {
-            $fileData->setDeleteAt($fileData->getDateCreated()->add(new \DateInterval($fileData->getRetentionDuration())));
         }
 
         if ($this->configurationService->doFileIntegrityChecks()) {

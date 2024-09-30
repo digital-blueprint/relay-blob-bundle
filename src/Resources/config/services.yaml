@@ -52,3 +52,7 @@ services:
     resource: '../../Command'
     autowire: true
     autoconfigure: true
+
+  Dbp\Relay\BlobBundle\Api\FileApi:
+    autowire: true
+    autoconfigure: true

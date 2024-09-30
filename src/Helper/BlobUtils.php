@@ -71,4 +71,9 @@ class BlobUtils
             return $size;
         }
     }
+
+    public static function now(): \DateTimeImmutable
+    {
+        return new \DateTimeImmutable('now');
+    }
 }
