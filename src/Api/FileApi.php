@@ -27,9 +27,13 @@ class FileApi
      */
     public function addFile(FileData $fileData, string $bucketConfigIdentifier): FileData
     {
-        try {
-            $fileData->setInternalBucketID($this->blobService->getInternalBucketIdByBucketID($bucketConfigIdentifier));
+        $internalBucketId = $this->blobService->getInternalBucketIdByBucketID($bucketConfigIdentifier);
+        if ($internalBucketId === null) {
+            throw new FileApiException('bucket not found', FileApiException::BUCKET_NOT_FOUND);
+        }
+        $fileData->setInternalBucketID($internalBucketId);
 
+        try {
             return $this->blobService->addFile($fileData);
         } catch (\Exception $exception) {
             throw $this->createException($exception);
