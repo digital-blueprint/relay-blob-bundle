@@ -46,7 +46,7 @@ class BlobService
     public const DISABLE_OUTPUT_VALIDATION_OPTION = 'disable_output_validation';
     public const UPDATE_LAST_ACCESS_TIMESTAMP_OPTION = 'update_last_access_timestamp';
     public const PREFIX_STARTS_WITH_OPTION = 'prefix_starts_with';
-    public const PREFIX_EQUALS_OPTIONS = 'prefix_equals';
+    public const PREFIX_OPTION = 'prefix_equals';
     public const INCLUDE_DELETE_AT_OPTION = 'include_delete_at';
     public const BASE_URL_OPTION = 'base_url';
 
@@ -188,21 +188,21 @@ class BlobService
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Requested too many items per page', $errorPrefix.'-too-many-items-per-page');
         }
 
-        $prefixStartsWith = $options[self::PREFIX_STARTS_WITH_OPTION] ?? null;
-        $prefixEquals = $options[self::PREFIX_EQUALS_OPTIONS] ?? null;
-        $includeDeleteAt = $options[self::INCLUDE_DELETE_AT_OPTION] ?? null;
-        $includeData = $options[self::INCLUDE_FILE_CONTENTS_OPTION] ?? null;
+        $prefix = $options[self::PREFIX_OPTION] ?? '';
+        $prefixStartsWith = $options[self::PREFIX_STARTS_WITH_OPTION] ?? false;
+        $includeDeleteAt = $options[self::INCLUDE_DELETE_AT_OPTION] ?? false;
+        $includeData = $options[self::INCLUDE_FILE_CONTENTS_OPTION] ?? false;
         $baseUrl = $options[self::BASE_URL_OPTION] ?? '';
 
         // get file data of bucket for current page, and decide whether prefix should be used as 'startsWith' or not
         if ($prefixStartsWith && $includeDeleteAt) {
-            $fileDatas = $this->getFileDataByBucketIDAndStartsWithPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefixStartsWith, $currentPageNumber, $maxNumItemsPerPage);
-        } elseif ($prefixStartsWith && $includeDeleteAt === '') {
-            $fileDatas = $this->getFileDataByBucketIDAndStartsWithPrefixWithPagination($internalBucketId, $prefixStartsWith, $currentPageNumber, $maxNumItemsPerPage);
-        } elseif (!$prefixStartsWith && $includeDeleteAt) {
-            $fileDatas = $this->getFileDataByBucketIDAndPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefixEquals, $currentPageNumber, $maxNumItemsPerPage);
+            $fileDatas = $this->getFileDataByBucketIDAndStartsWithPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
+        } elseif ($prefixStartsWith) {
+            $fileDatas = $this->getFileDataByBucketIDAndStartsWithPrefixWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
+        } elseif ($includeDeleteAt) {
+            $fileDatas = $this->getFileDataByBucketIDAndPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
         } else {
-            $fileDatas = $this->getFileDataByBucketIDAndPrefixWithPagination($internalBucketId, $prefixEquals, $currentPageNumber, $maxNumItemsPerPage);
+            $fileDatas = $this->getFileDataByBucketIDAndPrefixWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
         }
 
         $bucket = $this->configurationService->getBucketByID($bucketIdentifier);
@@ -215,7 +215,7 @@ class BlobService
 
                 $fileData->setBucket($bucket);
                 $fileData = $this->getLink($fileData);
-                $fileData->setContentUrl($this->generateGETLink($baseUrl, $fileData, $includeData));
+                $fileData->setContentUrl($this->generateGETLink($baseUrl, $fileData, $includeData ? '1' : ''));
 
                 $validFileDatas[] = $fileData;
             } catch (\Exception $e) {

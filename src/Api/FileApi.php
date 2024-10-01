@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 class FileApi
 {
     public const PREFIX_STARTS_WITH_OPTION = BlobService::PREFIX_STARTS_WITH_OPTION;
-    public const PREFIX_EQUALS_OPTION = BlobService::PREFIX_EQUALS_OPTIONS;
+    public const PREFIX_OPTION = BlobService::PREFIX_OPTION;
     public const INCLUDE_DELETE_AT_OPTION = BlobService::INCLUDE_DELETE_AT_OPTION;
     public const INCLUDE_FILE_CONTENTS_OPTION = BlobService::INCLUDE_FILE_CONTENTS_OPTION;
     public const DISABLE_OUTPUT_VALIDATION_OPTION = BlobService::DISABLE_OUTPUT_VALIDATION_OPTION;

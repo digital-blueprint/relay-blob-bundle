@@ -96,17 +96,17 @@ class FileDataProvider extends AbstractDataProvider
             'blob:get-file-data-collection', $this->blobService, $this->requestStack->getCurrentRequest(), $filters, ['GET']);
 
         $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');
-        $prefixEquals = rawurldecode($filters['prefix'] ?? '');
+        $prefix = rawurldecode($filters['prefix'] ?? '');
         $includeData = rawurldecode($filters['includeData'] ?? '');
         $prefixStartsWith = rawurldecode($filters['startsWith'] ?? '');
         $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '');
 
         return $this->blobService->getFiles($bucketID, [
             BlobService::BASE_URL_OPTION => $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost(),
-            BlobService::INCLUDE_FILE_CONTENTS_OPTION => $includeData,
-            BlobService::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
-            BlobService::PREFIX_EQUALS_OPTIONS => $prefixEquals,
-            BlobService::PREFIX_STARTS_WITH_OPTION => $prefixStartsWith,
+            BlobService::INCLUDE_FILE_CONTENTS_OPTION => $includeData === '1',
+            BlobService::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt === '1',
+            BlobService::PREFIX_OPTION => $prefix,
+            BlobService::PREFIX_STARTS_WITH_OPTION => $prefixStartsWith === '1',
         ]);
     }
 }
