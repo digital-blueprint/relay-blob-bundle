@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.54
+
 * Centralize set up of FileData from request for POST and PATCH in BlobService
 * Centralize validation of FileData for POST and PATCH in BlobService
 * Add PHP backend FileApi
