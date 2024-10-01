@@ -69,7 +69,7 @@ class Kernel extends BaseKernel
             'quota_warning_interval' => '0 6 * * *',
             //            'database_url' => 'sqlite:///:memory:',
             'buckets' => [
-                'test_bucket' => [
+                [
                     'service' => 'Dbp\Relay\BlobBundle\Tests\DummyFileSystemService',
                     'internal_bucket_id' => '018e0ed8-e6d7-794f-8f60-42efe27ef49e',
                     'bucket_id' => 'test-bucket',
@@ -95,7 +95,7 @@ class Kernel extends BaseKernel
                         'html_template' => 'emails/integrity.html.twig',
                     ],
                 ],
-                'test_bucket2' => [
+                [
                     'service' => 'Dbp\Relay\BlobBundle\Tests\DummyFileSystemService',
                     'internal_bucket_id' => '018e1902-c4b6-7e9a-9488-084daf6b3218',
                     'bucket_id' => 'test-bucket-2',
