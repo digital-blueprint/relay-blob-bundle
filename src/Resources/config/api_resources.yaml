@@ -48,10 +48,16 @@ resources:
               example: "1"
             - name: prefix
               in: query
-              description: 'Prefix of a file collection'
+              description: 'prefix equals filter'
               type: string
-              required: true
+              required: false
               example: "my-prefix/my-subprefix"
+            - name: startsWith
+              in: query
+              description: 'prefix starts with filter'
+              type: string
+              required: false
+              example: "my-prefix"
             - name: sig
               in: query
               description: 'Signature containing the checksum required for the check'

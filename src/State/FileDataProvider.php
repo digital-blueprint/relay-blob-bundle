@@ -63,7 +63,11 @@ class FileDataProvider extends AbstractDataProvider
         $includeFileContent = $isGetRequest && ($filters['includeData'] ?? null) === '1';
         $updateLastAccessTime = $isGetRequest; // PATCH: saves for itself, DELETE: will be deleted anyway
 
-        $fileData = $this->blobService->getFile($id, $disableOutputValidation, $includeFileContent, $updateLastAccessTime);
+        $fileData = $this->blobService->getFile($id, [
+            BlobService::DISABLE_OUTPUT_VALIDATION_OPTION => $disableOutputValidation,
+            BlobService::INCLUDE_FILE_CONTENTS_OPTION => $includeFileContent,
+            BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => $updateLastAccessTime,
+        ]);
 
         $bucket = $this->blobService->ensureBucket($fileData);
         $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');
@@ -84,74 +88,25 @@ class FileDataProvider extends AbstractDataProvider
     }
 
     /**
-     * @throws \JsonException
      * @throws \Exception
      */
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
-        $errorPrefix = 'blob:get-file-data-collection';
+         DenyAccessUnlessCheckSignature::checkSignature(
+            'blob:get-file-data-collection', $this->blobService, $this->requestStack->getCurrentRequest(), $filters, ['GET']);
 
-        // check if minimal parameters for the request are present and valid
-        DenyAccessUnlessCheckSignature::checkSignature(
-            $errorPrefix, $this->blobService, $this->requestStack->getCurrentRequest(), $filters, ['GET']);
-
-        // get bucketID after check
         $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');
-
-        // get prefix by filters
-        $prefix = rawurldecode($filters['prefix'] ?? '');
-
-        // get includeData param and decode it
+        $prefixEquals = rawurldecode($filters['prefix'] ?? '');
         $includeData = rawurldecode($filters['includeData'] ?? '');
-        $startsWith = rawurldecode($filters['startsWith'] ?? '');
+        $prefixStartsWith = rawurldecode($filters['startsWith'] ?? '');
         $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '');
 
-        assert(is_string($includeData));
-        assert(is_string($startsWith));
-        assert(is_string($includeDeleteAt));
-
-        $internalBucketId = $this->blobService->getInternalBucketIdByBucketID($bucketID);
-
-        // TODO: make the upper limit configurable
-        // hard limit page size
-        if ($maxNumItemsPerPage > 10000) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Requested too many items per page', $errorPrefix.'-too-many-items-per-page');
-        }
-
-        // get file data of bucket for current page, and decide whether prefix should be used as 'startsWith' or not
-        if ($startsWith && $includeDeleteAt) {
-            $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
-        } elseif ($startsWith && $includeDeleteAt === '') {
-            $fileDatas = $this->blobService->getFileDataByBucketIDAndStartsWithPrefixWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
-        } elseif (!$startsWith && $includeDeleteAt) {
-            $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
-        } else {
-            $fileDatas = $this->blobService->getFileDataByBucketIDAndPrefixWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
-        }
-
-        $bucket = $this->blobService->getConfigurationService()->getBucketByID($bucketID);
-
-        // create sharelinks
-        $validFileDatas = [];
-        foreach ($fileDatas as $fileData) {
-            try {
-                assert($fileData instanceof FileData);
-
-                $fileData->setBucket($bucket);
-                $fileData = $this->blobService->getLink($fileData);
-                $baseUrl = $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost();
-                $fileData->setContentUrl($this->blobService->generateGETLink($baseUrl, $fileData, $includeData));
-
-                $validFileDatas[] = $fileData;
-            } catch (\Exception $e) {
-                // skip file not found
-                // TODO how to handle this correctly? This should never happen in the first place
-                if ($e->getCode() === 404) {
-                    continue;
-                }
-            }
-        }
-
-        return $validFileDatas;
+        return $this->blobService->getFiles($bucketID, [
+            BlobService::BASE_URL_OPTION => $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost(),
+            BlobService::INCLUDE_FILE_CONTENTS_OPTION => $includeData,
+            BlobService::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
+            BlobService::PREFIX_EQUALS_OPTIONS => $prefixEquals,
+            BlobService::PREFIX_STARTS_WITH_OPTION => $prefixStartsWith,
+        ]);
     }
 }

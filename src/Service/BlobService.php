@@ -42,6 +42,14 @@ date_default_timezone_set('UTC');
  */
 class BlobService
 {
+    public const INCLUDE_FILE_CONTENTS_OPTION = 'include_file_contents';
+    public const DISABLE_OUTPUT_VALIDATION_OPTION = 'disable_output_validation';
+    public const UPDATE_LAST_ACCESS_TIMESTAMP_OPTION = 'update_last_access_timestamp';
+    public const PREFIX_STARTS_WITH_OPTION = 'prefix_starts_with';
+    public const PREFIX_EQUALS_OPTIONS = 'prefix_equals';
+    public const INCLUDE_DELETE_AT_OPTION = 'include_delete_at';
+    public const BASE_URL_OPTION = 'base_url';
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly ConfigurationService $configurationService,
@@ -142,7 +150,7 @@ class BlobService
     /**
      * @throws \Exception
      */
-    public function getFile(string $identifier, bool $disableOutputValidation, bool $includeFileContent, bool $updateLastAccessTimestamp): ?FileData
+    public function getFile(string $identifier, array $options = []): ?FileData
     {
         $fileData = $this->getFileData($identifier);
 
@@ -151,22 +159,75 @@ class BlobService
         }
 
         $bucket = $this->ensureBucket($fileData);
-        if (!$disableOutputValidation && $bucket->getOutputValidation()) {
+        if (!($options[self::DISABLE_OUTPUT_VALIDATION_OPTION] ?? false) && $bucket->getOutputValidation()) {
             $this->checkFileDataBeforeRetrieval($fileData, $bucket, 'blob:get-file-data');
         }
 
-        if ($includeFileContent) {
+        if ($options[self::INCLUDE_FILE_CONTENTS_OPTION] ?? false) {
             $fileData = $this->getBase64Data($fileData);
         } else {
             $fileData = $this->getLink($fileData);
         }
 
-        if ($updateLastAccessTimestamp) {
+        if ($options[self::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION] ?? true) {
             $fileData->setLastAccess(BlobUtils::now());
             $this->saveFileData($fileData);
         }
 
         return $fileData;
+    }
+
+    public function getFiles(string $bucketIdentifier, array $options = [], int $currentPageNumber = 1, int $maxNumItemsPerPage = 30): array
+    {
+        $errorPrefix = 'blob:get-file-data-collection';
+        $internalBucketId = $this->getInternalBucketIdByBucketID($bucketIdentifier);
+
+        // TODO: make the upper limit configurable
+        // hard limit page size
+        if ($maxNumItemsPerPage > 10000) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Requested too many items per page', $errorPrefix.'-too-many-items-per-page');
+        }
+
+        $prefixStartsWith = $options[self::PREFIX_STARTS_WITH_OPTION] ?? null;
+        $prefixEquals = $options[self::PREFIX_EQUALS_OPTIONS] ?? null;
+        $includeDeleteAt = $options[self::INCLUDE_DELETE_AT_OPTION] ?? null;
+        $includeData = $options[self::INCLUDE_FILE_CONTENTS_OPTION] ?? null;
+        $baseUrl = $options[self::BASE_URL_OPTION] ?? '';
+
+        // get file data of bucket for current page, and decide whether prefix should be used as 'startsWith' or not
+        if ($prefixStartsWith && $includeDeleteAt) {
+            $fileDatas = $this->getFileDataByBucketIDAndStartsWithPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefixStartsWith, $currentPageNumber, $maxNumItemsPerPage);
+        } elseif ($prefixStartsWith && $includeDeleteAt === '') {
+            $fileDatas = $this->getFileDataByBucketIDAndStartsWithPrefixWithPagination($internalBucketId, $prefixStartsWith, $currentPageNumber, $maxNumItemsPerPage);
+        } elseif (!$prefixStartsWith && $includeDeleteAt) {
+            $fileDatas = $this->getFileDataByBucketIDAndPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefixEquals, $currentPageNumber, $maxNumItemsPerPage);
+        } else {
+            $fileDatas = $this->getFileDataByBucketIDAndPrefixWithPagination($internalBucketId, $prefixEquals, $currentPageNumber, $maxNumItemsPerPage);
+        }
+
+        $bucket = $this->configurationService->getBucketByID($bucketIdentifier);
+
+        // create sharelinks
+        $validFileDatas = [];
+        foreach ($fileDatas as $fileData) {
+            try {
+                assert($fileData instanceof FileData);
+
+                $fileData->setBucket($bucket);
+                $fileData = $this->getLink($fileData);
+                $fileData->setContentUrl($this->generateGETLink($baseUrl, $fileData, $includeData));
+
+                $validFileDatas[] = $fileData;
+            } catch (\Exception $e) {
+                // skip file not found
+                // TODO how to handle this correctly? This should never happen in the first place
+                if ($e->getCode() === 404) {
+                    continue;
+                }
+            }
+        }
+
+        return $validFileDatas;
     }
 
     /**
@@ -774,6 +835,8 @@ class BlobService
     public function getFileDataByBucketIDAndStartsWithPrefixWithPagination(
         string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage): array
     {
+        $queryBuilder = $this->em->createQueryBuilder();
+
         $query = $this->em
             ->getRepository(FileData::class)
             ->createQueryBuilder('f')
