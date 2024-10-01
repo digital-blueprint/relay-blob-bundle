@@ -40,19 +40,11 @@ class DownloadAction extends AbstractController
                 'Identifier is in an invalid format!', 'blob:identifier-invalid-format');
         }
 
-        // get data associated with the provided identifier
-        $fileData = $this->blobService->getFileData($identifier);
+        $disableOutputValidation = $request->get('disableOutputValidation', '') === '1';
 
-        // check if fileData is null
-        if ($fileData->getDeleteAt() !== null && $fileData->getDeleteAt() < new \DateTimeImmutable()) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
-        }
-
-        $disableValidation = $request->get('disableOutputValidation', '');
-        if (!($disableValidation === '1')) {
-            $this->blobService->checkFileDataBeforeRetrieval($fileData, $this->blobService->ensureBucket($fileData), $errorPrefix);
-        }
-
-        return $this->blobService->getBinaryResponse($fileData);
+        return $this->blobService->getBinaryResponse($identifier, [
+            BlobService::DISABLE_OUTPUT_VALIDATION_OPTION => $disableOutputValidation,
+            BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => true,
+        ]);
     }
 }

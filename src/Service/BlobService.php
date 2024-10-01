@@ -150,7 +150,7 @@ class BlobService
     /**
      * @throws \Exception
      */
-    public function getFile(string $identifier, array $options = []): ?FileData
+    public function getFile(string $identifier, array $options = []): FileData
     {
         $fileData = $this->getFileData($identifier);
 
@@ -296,8 +296,6 @@ class BlobService
             }
 
             $fileData->setFile($uploadedFile);
-            $fileData->setMimeType($uploadedFile->getMimeType() ?? '');
-            $fileData->setFilesize(filesize($uploadedFile->getRealPath()));
         }
 
         if ($metadataHash !== null) {
@@ -647,11 +645,13 @@ class BlobService
     /**
      * Get file as binary response.
      *
-     * @param FileData $fileData fileData from which the file is taken
+     * @throws \Exception
      */
-    public function getBinaryResponse(FileData $fileData): Response
+    public function getBinaryResponse(string $fileIdentifier, array $options = []): Response
     {
-        // get service of bucket
+        $options[self::INCLUDE_FILE_CONTENTS_OPTION] = false;
+        $fileData = $this->getFile($fileIdentifier, $options);
+
         $datasystemService = $this->datasystemService->getServiceByBucket($this->ensureBucket($fileData));
 
         // get binary response of file with connector
@@ -1386,6 +1386,12 @@ class BlobService
         }
         if (Tools::isNullOrEmpty($fileData->getInternalBucketID())) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'internal bucket ID is missing', $errorPrefix.'-internal-bucket-id-missing');
+        }
+
+        if ($fileData->getFile() !== null) {
+            $fileData->setMimeType($fileData->getFile()->getMimeType() ?? '');
+            $fileData->setFilesize(filesize($fileData->getFile()->getRealPath()));
+            // assert(filesize($fileData->getFile()->getRealPath()) === $fileData->getFile()->getSize());
         }
 
         // TODO: is empty string 'metadata' allowed?

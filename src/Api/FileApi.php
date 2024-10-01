@@ -52,6 +52,18 @@ class FileApi
         }
     }
 
+    public function getBinaryFileResponse(string $identifier): Response
+    {
+        try {
+            return $this->blobService->getBinaryResponse($identifier, [
+                BlobService::DISABLE_OUTPUT_VALIDATION_OPTION => true,
+                BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => true,
+            ]);
+        } catch (\Exception $exception) {
+            throw $this->createException($exception);
+        }
+    }
+
     /**
      * @return FileData[]
      *
