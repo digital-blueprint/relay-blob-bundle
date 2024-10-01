@@ -92,7 +92,7 @@ class FileDataProvider extends AbstractDataProvider
      */
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
-         DenyAccessUnlessCheckSignature::checkSignature(
+        DenyAccessUnlessCheckSignature::checkSignature(
             'blob:get-file-data-collection', $this->blobService, $this->requestStack->getCurrentRequest(), $filters, ['GET']);
 
         $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');

@@ -835,8 +835,6 @@ class BlobService
     public function getFileDataByBucketIDAndStartsWithPrefixWithPagination(
         string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage): array
     {
-        $queryBuilder = $this->em->createQueryBuilder();
-
         $query = $this->em
             ->getRepository(FileData::class)
             ->createQueryBuilder('f')
