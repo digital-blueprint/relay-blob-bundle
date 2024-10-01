@@ -195,7 +195,7 @@ class Bucket
         return $this;
     }
 
-    public static function fromConfig(string $bucketId, array $config): Bucket
+    public static function fromConfig(array $config): Bucket
     {
         $bucket = new Bucket();
         if ($config['internal_bucket_id'] && !(new GenericValidator())->validate((string) $config['internal_bucket_id'])) {
@@ -203,7 +203,7 @@ class Bucket
         }
         $bucket->setIdentifier((string) $config['internal_bucket_id']);
         $bucket->setService((string) $config['service']);
-        $bucket->setBucketID($bucketId);
+        $bucket->setBucketID((string) $config['bucket_id']);
         $bucket->setNotifyWhenQuotaOver((int) $config['notify_when_quota_over']);
         $bucket->setReportExpiryWhenIn((string) $config['report_when_expiry_in']);
         $bucket->setKey((string) $config['key']);

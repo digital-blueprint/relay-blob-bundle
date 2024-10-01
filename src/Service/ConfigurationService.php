@@ -11,7 +11,10 @@ use Dbp\Relay\BlobBundle\Entity\Bucket;
  */
 class ConfigurationService
 {
-    private array $config = [];
+    /**
+     * @var array
+     */
+    private $config = [];
 
     public function __construct()
     {
@@ -48,8 +51,8 @@ class ConfigurationService
             return $buckets;
         }
 
-        foreach ($bucketsConfig['buckets'] as $bucketId => $bucketConfig) {
-            $bucket = Bucket::fromConfig($bucketId, $bucketConfig);
+        foreach ($bucketsConfig['buckets'] as $bucketConfig) {
+            $bucket = Bucket::fromConfig($bucketConfig);
             $buckets[] = $bucket;
         }
 
@@ -59,13 +62,13 @@ class ConfigurationService
     /**
      * Returns the bucket object for the given bucketID.
      */
-    public function getBucketByID(string $bucketId): ?Bucket
+    public function getBucketByID(string $bucketID): ?Bucket
     {
         $buckets = $this->config['buckets'];
 
-        foreach ($buckets as $currentBucketID => $bucketConfig) {
-            if ($bucketId === $currentBucketID) {
-                return Bucket::fromConfig($bucketId, $bucketConfig);
+        foreach ($buckets as $bucketConfig) {
+            if ($bucketID === $bucketConfig['bucket_id']) {
+                return Bucket::fromConfig($bucketConfig);
             }
         }
 
@@ -75,12 +78,12 @@ class ConfigurationService
     /**
      * Returns the bucket object for the given bucketID.
      */
-    public function getInternalBucketIdByBucketID(string $bucketId): ?string
+    public function getInternalBucketIdByBucketID(string $bucketID): ?string
     {
         $buckets = $this->config['buckets'];
 
-        foreach ($buckets as $currentBucketID => $bucketConfig) {
-            if ($bucketId === $currentBucketID) {
+        foreach ($buckets as $bucketConfig) {
+            if ($bucketID === $bucketConfig['bucket_id']) {
                 return $bucketConfig['internal_bucket_id'];
             }
         }
@@ -95,9 +98,9 @@ class ConfigurationService
     {
         $buckets = $this->config['buckets'];
 
-        foreach ($buckets as $bucketId => $bucketConfig) {
+        foreach ($buckets as $bucketConfig) {
             if ($internalBucketID === $bucketConfig['internal_bucket_id']) {
-                return Bucket::fromConfig($bucketId, $bucketConfig);
+                return Bucket::fromConfig($bucketConfig);
             }
         }
 
@@ -128,12 +131,12 @@ class ConfigurationService
         return $this->config['cleanup_interval'];
     }
 
-    public function getOutputValidationForBucketId(string $bucketId): mixed
+    public function getOutputValidationForBucketId($bucketId): mixed
     {
         $buckets = $this->config['buckets'];
 
-        foreach ($buckets as $currentBucketID => $bucketConfig) {
-            if ($bucketId === $currentBucketID) {
+        foreach ($buckets as $bucket => $bucketConfig) {
+            if ($bucketId === $bucketConfig['bucket_id']) {
                 return $bucketConfig['output_validation'];
             }
         }

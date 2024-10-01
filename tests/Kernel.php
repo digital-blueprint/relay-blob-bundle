@@ -69,9 +69,10 @@ class Kernel extends BaseKernel
             'quota_warning_interval' => '0 6 * * *',
             //            'database_url' => 'sqlite:///:memory:',
             'buckets' => [
-                'test-bucket' => [
+                'test_bucket' => [
                     'service' => 'Dbp\Relay\BlobBundle\Tests\DummyFileSystemService',
                     'internal_bucket_id' => '018e0ed8-e6d7-794f-8f60-42efe27ef49e',
+                    'bucket_id' => 'test-bucket',
                     'key' => '08d848fd868d83646778b87dd0695b10f59c78e23b286e9884504d1bb43cce93',
                     'quota' => 500, // in MB
                     'output_validation' => true,
@@ -94,9 +95,10 @@ class Kernel extends BaseKernel
                         'html_template' => 'emails/integrity.html.twig',
                     ],
                 ],
-                'test-bucket-2' => [
+                'test_bucket2' => [
                     'service' => 'Dbp\Relay\BlobBundle\Tests\DummyFileSystemService',
                     'internal_bucket_id' => '018e1902-c4b6-7e9a-9488-084daf6b3218',
+                    'bucket_id' => 'test-bucket-2',
                     'key' => 'f5b08061e9989d0357c4173aa3af9bc05d0400121af5f90a43e6cdb91ff1fbf2',
                     'quota' => 500, // in MB
                     'output_validation' => true,
