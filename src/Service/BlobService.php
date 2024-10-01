@@ -194,16 +194,7 @@ class BlobService
         $includeData = $options[self::INCLUDE_FILE_CONTENTS_OPTION] ?? false;
         $baseUrl = $options[self::BASE_URL_OPTION] ?? '';
 
-        // get file data of bucket for current page, and decide whether prefix should be used as 'startsWith' or not
-        if ($prefixStartsWith && $includeDeleteAt) {
-            $fileDatas = $this->getFileDataByBucketIDAndStartsWithPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
-        } elseif ($prefixStartsWith) {
-            $fileDatas = $this->getFileDataByBucketIDAndStartsWithPrefixWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
-        } elseif ($includeDeleteAt) {
-            $fileDatas = $this->getFileDataByBucketIDAndPrefixAndIncludeDeleteAtWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
-        } else {
-            $fileDatas = $this->getFileDataByBucketIDAndPrefixWithPagination($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage);
-        }
+        $fileDatas = $this->getFileDataCollection($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage, $prefixStartsWith, $includeDeleteAt);
 
         $bucket = $this->configurationService->getBucketByID($bucketIdentifier);
 
@@ -786,86 +777,32 @@ class BlobService
         return $fileDatas;
     }
 
-    /**
-     * Get all the fileDatas of a given bucketID and prefix with pagination limits.
-     */
-    public function getFileDataByBucketIDAndPrefixWithPagination(
-        string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage): array
+    public function getFileDataCollection(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage, bool $startsWith, bool $includeDeleteAt)
     {
         $query = $this->em
             ->getRepository(FileData::class)
-            ->createQueryBuilder('f')
-            ->where('f.internalBucketId = :bucketID')
-            ->andWhere('f.prefix = :prefix')
-            ->andWhere('f.deleteAt IS NULL')
+            ->createQueryBuilder('f');
+        $query = $query
+            ->where($query->expr()->eq('f.internalBucketId', ':bucketID'));
+
+        if ($startsWith) {
+            $query = $query->andWhere($query->expr()->like('f.prefix', ':prefix'))
+                ->setParameter('prefix', $prefix.'%');
+        } else {
+            $query = $query->andWhere($query->expr()->eq('f.prefix', ':prefix'))
+                ->setParameter('prefix', $prefix);
+        }
+
+        if ($includeDeleteAt) {
+            $query = $query->andWhere($query->expr()->orX($query->expr()->gt('f.deleteAt', ':now'), $query->expr()->isNull('f.deleteAt')))
+                ->setParameter('now', BlobUtils::now());
+        } else {
+            $query = $query->andWhere($query->expr()->isNull('f.deleteAt'));
+        }
+
+        $query = $query
             ->orderBy('f.dateCreated', 'ASC')
             ->setParameter('bucketID', $bucketID)
-            ->setParameter('prefix', $prefix)
-            ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber - 1))
-            ->setMaxResults($maxNumItemsPerPage);
-
-        return $query->getQuery()->getResult();
-    }
-
-    /**
-     * Get all the fileDatas of a given bucketID and prefix with pagination limits.
-     */
-    public function getFileDataByBucketIDAndPrefixAndIncludeDeleteAtWithPagination(
-        string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage): array
-    {
-        $query = $this->em
-            ->getRepository(FileData::class)
-            ->createQueryBuilder('f')
-            ->where('f.internalBucketId = :bucketID')
-            ->andWhere('f.prefix = :prefix')
-            ->andWhere('f.deleteAt > :now OR f.deleteAt IS NULL')
-            ->orderBy('f.dateCreated', 'ASC')
-            ->setParameter('bucketID', $bucketID)
-            ->setParameter('prefix', $prefix)
-            ->setParameter('now', BlobUtils::now())
-            ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber - 1))
-            ->setMaxResults($maxNumItemsPerPage);
-
-        return $query->getQuery()->getResult();
-    }
-
-    /**
-     * Get all the fileDatas of a given bucketID that start with prefix with pagination limits.
-     */
-    public function getFileDataByBucketIDAndStartsWithPrefixWithPagination(
-        string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage): array
-    {
-        $query = $this->em
-            ->getRepository(FileData::class)
-            ->createQueryBuilder('f')
-            ->where('f.internalBucketId = :bucketID')
-            ->andWhere('f.prefix LIKE :prefix')
-            ->andWhere('f.deleteAt IS NULL')
-            ->orderBy('f.dateCreated', 'ASC')
-            ->setParameter('bucketID', $bucketID)
-            ->setParameter('prefix', $prefix.'%')
-            ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber - 1))
-            ->setMaxResults($maxNumItemsPerPage);
-
-        return $query->getQuery()->getResult();
-    }
-
-    /**
-     * Get all the fileDatas of a given bucketID that start with prefix with pagination limits.
-     */
-    public function getFileDataByBucketIDAndStartsWithPrefixAndIncludeDeleteAtWithPagination(
-        string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage): array
-    {
-        $query = $this->em
-            ->getRepository(FileData::class)
-            ->createQueryBuilder('f')
-            ->where('f.internalBucketId = :bucketID')
-            ->andWhere('f.prefix LIKE :prefix')
-            ->andWhere('f.deleteAt > :now OR f.deleteAt is NULL')
-            ->orderBy('f.dateCreated', 'ASC')
-            ->setParameter('bucketID', $bucketID)
-            ->setParameter('prefix', $prefix.'%')
-            ->setParameter('now', BlobUtils::now())
             ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber - 1))
             ->setMaxResults($maxNumItemsPerPage);
 
