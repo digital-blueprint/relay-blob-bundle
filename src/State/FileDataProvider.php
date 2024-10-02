@@ -12,7 +12,6 @@ use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * @internal
@@ -53,10 +52,6 @@ class FileDataProvider extends AbstractDataProvider
         $errorPrefix = 'blob:get-file-data-by-id';
         DenyAccessUnlessCheckSignature::checkSignature(
             $errorPrefix, $this->blobService, $request, $filters, ['GET', 'PATCH', 'DELETE']);
-
-        if (!Uuid::isValid($id)) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'Identifier is in an invalid format!', 'blob:identifier-invalid-format');
-        }
 
         // if output validation is disabled, a user can get the data even if the system usually would throw and invalid data error
         $disableOutputValidation = !$isGetRequest || ($filters['disableOutputValidation'] ?? null) === '1';

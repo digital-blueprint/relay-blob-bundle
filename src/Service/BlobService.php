@@ -733,6 +733,10 @@ class BlobService
      */
     public function getFileData(string $identifier): FileData
     {
+        if (!Uuid::isValid($identifier)) {
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
+        }
+
         /** @var ?FileData $fileData */
         $fileData = $this->em
             ->getRepository(FileData::class)
@@ -1328,7 +1332,7 @@ class BlobService
         if ($fileData->getFile() !== null) {
             $fileData->setMimeType($fileData->getFile()->getMimeType() ?? '');
             $fileData->setFilesize(filesize($fileData->getFile()->getRealPath()));
-            // assert(filesize($fileData->getFile()->getRealPath()) === $fileData->getFile()->getSize());
+            assert(filesize($fileData->getFile()->getRealPath()) === $fileData->getFile()->getSize());
         }
 
         // TODO: is empty string 'metadata' allowed?

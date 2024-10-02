@@ -6,12 +6,10 @@ namespace Dbp\Relay\BlobBundle\Controller;
 
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
-use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\CustomControllerTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Uid\Uuid;
 
 class DownloadAction extends AbstractController
 {
@@ -34,11 +32,6 @@ class DownloadAction extends AbstractController
         $errorPrefix = 'blob:download-file-by-id';
         DenyAccessUnlessCheckSignature::checkSignature(
             $errorPrefix, $this->blobService, $request, $request->query->all(), ['GET']);
-
-        if (!Uuid::isValid($identifier)) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND,
-                'Identifier is in an invalid format!', 'blob:identifier-invalid-format');
-        }
 
         $disableOutputValidation = $request->get('disableOutputValidation', '') === '1';
 
