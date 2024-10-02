@@ -1331,11 +1331,8 @@ class BlobService
 
         if ($fileData->getFile() !== null) {
             $fileData->setMimeType($fileData->getFile()->getMimeType() ?? '');
-            $fileData->setFilesize(filesize($fileData->getFile()->getRealPath()));
-            assert(filesize($fileData->getFile()->getRealPath()) === $fileData->getFile()->getSize());
+            $fileData->setFilesize($fileData->getFile()->getSize());
         }
-
-        // TODO: is empty string 'metadata' allowed?
 
         // check if metadata is a valid json
         $metadataDecoded = null;
