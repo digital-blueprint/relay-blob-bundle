@@ -40,3 +40,5 @@ parameters:
             subject: 'Blob file deletion reporting'
             html_template: 'emails/reporting.html.twig'
 ```
+
+To generate a key you can use: `openssl rand -hex 32`
