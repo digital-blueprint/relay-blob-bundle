@@ -90,8 +90,6 @@ class BlobService
         $fileData->setLastAccess($now);
         $fileData->setDateModified($now);
 
-
-
         if ($fileData->getRetentionDuration() !== null) {
             $fileData->setDeleteAt($fileData->getDateCreated()->add(
                 new \DateInterval($fileData->getRetentionDuration())));
@@ -107,8 +105,6 @@ class BlobService
         $this->ensureBucket($fileData);
         $successEvent = new AddFileDataByPostSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($successEvent);
-
-
 
         return $fileData;
     }
