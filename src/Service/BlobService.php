@@ -90,6 +90,8 @@ class BlobService
         $fileData->setLastAccess($now);
         $fileData->setDateModified($now);
 
+
+
         if ($fileData->getRetentionDuration() !== null) {
             $fileData->setDeleteAt($fileData->getDateCreated()->add(
                 new \DateInterval($fileData->getRetentionDuration())));
@@ -105,6 +107,8 @@ class BlobService
         $this->ensureBucket($fileData);
         $successEvent = new AddFileDataByPostSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($successEvent);
+
+
 
         return $fileData;
     }
@@ -166,7 +170,7 @@ class BlobService
         if ($options[self::INCLUDE_FILE_CONTENTS_OPTION] ?? false) {
             $fileData = $this->getBase64Data($fileData);
         } else {
-            $fileData = $this->getLink($fileData);
+            $fileData = $this->getLink($options[self::BASE_URL_OPTION] ?? '', $fileData);
         }
 
         if ($options[self::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION] ?? true) {
@@ -205,7 +209,7 @@ class BlobService
                 assert($fileData instanceof FileData);
 
                 $fileData->setBucket($bucket);
-                $fileData = $this->getLink($fileData);
+                $fileData = $this->getLink($baseUrl, $fileData);
                 $fileData->setContentUrl($this->generateGETLink($baseUrl, $fileData, $includeData ? '1' : ''));
 
                 $validFileDatas[] = $fileData;
@@ -331,6 +335,8 @@ class BlobService
 
         $fileData->setInternalBucketID($this->configurationService->getInternalBucketIdByBucketID($bucketID));
         $fileData->setBucket($this->getBucketByID($bucketID));
+
+        $this->getLink($request->getSchemeAndHttpHost(), $fileData);
 
         return $fileData;
     }
@@ -468,21 +474,21 @@ class BlobService
      *
      * @throws \Exception
      */
-    public function getLink(FileData $fileData): FileData
+    public function getLink(string $baseurl, FileData $fileData): FileData
     {
         // set bucket of fileData by bucketID
         $fileData->setBucket($this->configurationService->getBucketByInternalID($fileData->getInternalBucketID()));
 
-        // get service from bucket
-        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
+        // get time now
+        $now = BlobUtils::now();
+
+        // generate checksum and encode it in payload
+        $payload = [
+            'cs' => $this->generateChecksumFromFileData($fileData, 'GET', $now),
+        ];
 
         // get HTTP link with connector for fileData
-        $fileData = $datasystemService->getLink($fileData);
-
-        // if !fileData, then something went wrong
-        if (!$fileData) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Link could not be generated', 'blob:file-data-invalid');
-        }
+        $fileData->setContentUrl($baseurl.$this->generateSignedDownloadUrl($fileData, $now, DenyAccessUnlessCheckSignature::create($fileData->getBucket()->getKey(), $payload)));
 
         return $fileData;
     }
@@ -697,10 +703,23 @@ class BlobService
     public function generateSignedContentUrl(FileData $fileData, string $urlMethod, \DateTimeImmutable $now, string $includeData, string $sig): string
     {
         if ($includeData) {
-            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1&method='.$urlMethod.'&sig='.$sig;
+            return '/blob/files/'.$fileData->getIdentifier().'?bucketIdentifier='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1&method='.$urlMethod.'&sig='.$sig;
         } else {
-            return '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod.'&sig='.$sig;
+            return '/blob/files/'.$fileData->getIdentifier().'?bucketIdentifier='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod.'&sig='.$sig;
         }
+    }
+
+    /**
+     * Generate signed content url for get requests by identifier
+     * This is useful for generating the HTTP contentUrls for every fileData.
+     *
+     * @param FileData           $fileData fileData for which the HTTP url should be generated
+     * @param \DateTimeImmutable $now      timestamp of now which is used as creationTime
+     * @param string             $sig      signature with checksum that is used
+     */
+    public function generateSignedDownloadUrl(FileData $fileData, \DateTimeImmutable $now, string $sig): string
+    {
+        return '/blob/files/'.$fileData->getIdentifier().'/download?bucketIdentifier='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method=GET&sig='.$sig;
     }
 
     /**
@@ -716,10 +735,10 @@ class BlobService
         // check whether includeData should be in url or not
         if (!$includeData) {
             // create url to hash
-            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod;
+            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketIdentifier='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod;
         } else {
             // create url to hash
-            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketID='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1&method='.$urlMethod;
+            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketIdentifier='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1&method='.$urlMethod;
         }
 
         // create sha256 hash

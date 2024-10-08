@@ -62,6 +62,7 @@ class FileDataProvider extends AbstractDataProvider
             BlobService::DISABLE_OUTPUT_VALIDATION_OPTION => $disableOutputValidation,
             BlobService::INCLUDE_FILE_CONTENTS_OPTION => $includeFileContent,
             BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => $updateLastAccessTime,
+            BlobService::BASE_URL_OPTION => $request->getSchemeAndHttpHost(),
         ]);
 
         $bucket = $this->blobService->ensureBucket($fileData);
