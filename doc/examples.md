@@ -408,7 +408,7 @@ Setting:
 Imagine that you have uploaded a file and got back the identifier `4da14ef0-d552-4e27-975e-e1f3db5a0e81`. Therefore, you know that you can rename the file using the `/blob/files/4da14ef0-d552-4e27-975e-e1f3db5a0e81` endpoint.
 However, you also need to specify the `bucketIdentifier`, `creationTime`, `method` and `sig` parameters. You already should know the `bucketIdentifier`, this is the ID of the bucket blob configured for you, lets assume this is `1248`.
 `creationTime` is the creation time of the request and is represented as a ISO8601 URL encoded string. 
-`method` is the method you want the endpoint to perform. For PUT requests, this can only be `PATCH`, all others would fail.
+`method` is the method you want the endpoint to perform. For PATCH requests, this can only be `PATCH`, all others would fail.
 `fileName` is the new file name of the file you want to rename. Assume that the new file name should be `myNewFile.txt`.
 
 Assuming the above mentioned setting, the url part so far would look like this:
@@ -432,7 +432,7 @@ composer require web-token/jwt-core
 composer require web-token/jwt-key-mgmt
 composer require web-token/jwt-signature-algorithm-hmac
 ```
-The following script is a simple example of how to communicate with blob using PUT. Make sure to replace the base url with your blob base url and the identifier, bucketIdentifier, fileName and secretKey with your values.
+The following script is a simple example of how to communicate with blob using PATCH. Make sure to replace the base url with your blob base url and the identifier, bucketIdentifier, fileName and secretKey with your values.
 ```php
 <?php
 require __DIR__ .'/vendor/autoload.php';

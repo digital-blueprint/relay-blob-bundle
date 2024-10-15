@@ -131,11 +131,33 @@ See the [API documentation](doc/api.md).
 
 ### Cleanup Cronjob
 
-`Blob File cleanup`: This cronjob is for cleanup purposes. It starts every hour and deletes old files.
+This cronjob is for cleanup purposes. It starts every hour and deletes old files.
 
 ### Send Report Cronjob
 
-`Blob File send reports`: This cronjob sends reports to given email addresses, or the bucket owner.
+This cronjob sends reports to given email addresses, or the bucket owner.
 In these reports there are all files which are going to be deleted in the timeframe specified in the config. 
 The email address are attached to these files or there is a default in the config.
 This cronjob starts every Monday at 9 o'clock in the Morning (UTC).
+
+### Quota Warning
+
+This cronjob sends reports to the in `warn_quota` configured email.
+This email lets the configured person know before the bucket space is used up.
+An email gets sent after the bucket is filled to a certain percentage, configured with the option `notify_when_quota_over`.
+The option `quota_warning_interval` indicates in which interval this should get checked.
+
+### Bucket Size Check
+
+This cronjob sends reports to the in `bucket_size` configured email.
+This email lets the configured person know if a bucket is inconsistent, either because the number of entries in the table is different than in the storage backend or because the sum of filesizes stored in the database is different than the sum of filesize of the actually stored files.
+An email is sent if some inconsistencies are detected.
+The option `bucket_size_check_interval` indicates in which interval this should get checked.
+
+### Integrity Check
+
+This cronjobs sends reports to the in `integrity` configured email.
+This emails lets the configured person know if the metadata or file integrity checks fail. This means, that the metadata or file hashes, which are stored upon upload, are different then the hashes of the metadata or file that are currently stored. This could indicate bitrot or manual changes in the database or file.
+An email is sent if some inconsistencies are detected.
+The option `integrity_check_interval` indicates in which interval this should get checked.
+The option `file_integrity_checks` can be used to enable or disable the integrity checks.
