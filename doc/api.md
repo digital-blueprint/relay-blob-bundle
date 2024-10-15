@@ -54,6 +54,11 @@ The key used for signing and verifying the checksum has to be defined in the blo
 By default, blob verifies the url by generating the signature of the urlencoded url using [RFC3986](https://datatracker.ietf.org/doc/html/rfc3986). This means that, among other things, `space` get converted to `%20`!
 This means that systems communicating with blob have to also generate their checksum this way. It is not possible to just urlencode the whole url, since this would mean that valid symbols like `/` or `&` would be encoded too. Therefore, it is necessary to urlenode each parameter value separately before appending them in the url.
 
+## Retention
+Files can be set to be automatically deleted at some date in the future. User's of the api can set a timespan for which the uploaded file should be kept by setting the `retentionDuration` parameters to a ISO8601 timespan (e.g. `retentionDuration=P1D` to keep the file for one day).
+This timespan gets converted to a timestamp and stored in the database in the field `delete_at`. After the `delete_at` date a file is not retrievable anymore even if the entry is still available in the database. The database and the file get cleaned up by the cleanup cronjob, which is configured in the config.
+
+
 ## Error codes and descriptions
 
 ### Collection operations (by prefix) `/blob/files`
