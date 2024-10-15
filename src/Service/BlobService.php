@@ -20,7 +20,7 @@ use JsonSchema\SchemaStorage;
 use JsonSchema\Validator;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
@@ -121,7 +121,7 @@ class BlobService
         $errorPrefix = 'blob:patch-file-data';
         $this->ensureFileDataIsValid($fileData, $errorPrefix);
 
-        if ($fileData->getFile() instanceof UploadedFile) {
+        if ($fileData->getFile() instanceof File) {
             $this->writeToTablesAndSaveFileData($fileData, $fileData->getFileSize() - $previousFileData->getFileSize(), $errorPrefix);
         } else {
             $this->saveFileData($fileData);
@@ -263,7 +263,7 @@ class BlobService
         assert(is_string($retentionDuration ?? ''));
         assert(is_string($type ?? ''));
         assert(is_string($metadata ?? ''));
-        assert($uploadedFile === null || $uploadedFile instanceof UploadedFile);
+        assert($uploadedFile === null || $uploadedFile instanceof File);
 
         /* url decode according to RFC 3986 */
         $bucketID = $bucketID ? rawurldecode($bucketID) : null;
@@ -1089,7 +1089,6 @@ class BlobService
         $countBucketSizes = [];
 
         foreach ($buckets as $bucket) {
-            $config = $bucket->getBucketSizeConfig();
             if (!$sendEmail && $out !== null) {
                 $out->writeln('Retrieving database information for bucket with bucket id: '.$bucket->getBucketID().' and internal bucket id: '.$bucket->getIdentifier());
                 $out->writeln('Calculating sum of fileSizes in the blob_files table ...');
@@ -1145,6 +1144,7 @@ class BlobService
         }
 
         foreach ($buckets as $bucket) {
+            $config = $bucket->getBucketSizeConfig();
             if (!$sendEmail && $out !== null) {
                 $out->writeln('Retrieving filesystem information for bucket with bucket id: '.$bucket->getBucketID().' and internal bucket id: '.$bucket->getIdentifier());
                 $out->writeln('Calculating sum of fileSizes in the bucket directory ...');
