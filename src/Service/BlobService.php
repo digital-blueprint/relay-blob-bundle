@@ -21,6 +21,7 @@ use JsonSchema\Validator;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
@@ -273,7 +274,7 @@ class BlobService
         $type = $type ? rawurldecode($type) : null;
 
         if ($uploadedFile !== null) {
-            if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
+            if ($uploadedFile instanceof UploadedFile && $uploadedFile->getError() !== UPLOAD_ERR_OK) {
                 throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, $uploadedFile->getErrorMessage(),
                     $errorPrefix.'-upload-error');
             }
