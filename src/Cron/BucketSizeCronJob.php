@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Cron;
 
-use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Service\BlobChecks;
 use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\CoreBundle\Cron\CronJobInterface;
 use Dbp\Relay\CoreBundle\Cron\CronOptions;
@@ -12,18 +12,18 @@ use Dbp\Relay\CoreBundle\Cron\CronOptions;
 class BucketSizeCronJob implements CronJobInterface
 {
     /**
-     * @var BlobService
+     * @var BlobChecks
      */
-    private $blobService;
+    private $blobChecks;
 
     /**
      * @var ConfigurationService
      */
     private $configService;
 
-    public function __construct(BlobService $blobService, ConfigurationService $configService)
+    public function __construct(BlobChecks $blobChecks, ConfigurationService $configService)
     {
-        $this->blobService = $blobService;
+        $this->blobChecks = $blobChecks;
         $this->configService = $configService;
     }
 
@@ -39,6 +39,6 @@ class BucketSizeCronJob implements CronJobInterface
 
     public function run(CronOptions $options): void
     {
-        $this->blobService->checkFileSize();
+        $this->blobChecks->checkFileSize();
     }
 }

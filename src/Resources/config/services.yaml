@@ -5,6 +5,12 @@ services:
     arguments:
       $em: '@doctrine.orm.dbp_relay_blob_bundle_entity_manager'
 
+  Dbp\Relay\BlobBundle\Service\BlobChecks:
+    autowire: true
+    autoconfigure: true
+    arguments:
+      $em: '@doctrine.orm.dbp_relay_blob_bundle_entity_manager'
+
   Dbp\Relay\BlobBundle\Controller\:
     tags: [ 'controller.service_arguments' ]
     resource: '../../Controller'

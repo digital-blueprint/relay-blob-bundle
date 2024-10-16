@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Command;
 
-use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Service\BlobChecks;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -12,15 +12,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CheckStorageCommand extends Command
 {
     /**
-     * @var BlobService
+     * @var BlobChecks
      */
-    private $blobService;
+    private $blobChecks;
 
-    public function __construct(BlobService $blobService)
+    public function __construct(BlobChecks $blobChecks)
     {
         parent::__construct();
 
-        $this->blobService = $blobService;
+        $this->blobChecks = $blobChecks;
     }
 
     /**
@@ -39,7 +39,7 @@ class CheckStorageCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $output->writeln('Checking the count of items and bucket sizes of the blob_files table, blob_bucket_size table and the data on the file storage backend against each other...');
-        $this->blobService->checkFileSize($output, false);
+        $this->blobChecks->checkFileSize($output, false);
 
         return 0;
     }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Command;
 
-use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Service\BlobChecks;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -12,15 +12,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CheckDataIntegrityCommand extends Command
 {
     /**
-     * @var BlobService
+     * @var BlobChecks
      */
-    private $blobService;
+    private $blobChecks;
 
-    public function __construct(BlobService $blobService)
+    public function __construct(BlobChecks $blobChecks)
     {
         parent::__construct();
 
-        $this->blobService = $blobService;
+        $this->blobChecks = $blobChecks;
     }
 
     /**
@@ -41,7 +41,7 @@ class CheckDataIntegrityCommand extends Command
     {
         $ids = $input->getOption('ids');
         $output->writeln('Checking the integrity of all files and metadata...');
-        $this->blobService->checkIntegrity($output, false, $ids);
+        $this->blobChecks->checkIntegrity($output, false, $ids);
 
         return 0;
     }
