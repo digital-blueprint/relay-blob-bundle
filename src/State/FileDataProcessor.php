@@ -7,6 +7,7 @@ namespace Dbp\Relay\BlobBundle\State;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProcessor;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -17,14 +18,15 @@ class FileDataProcessor extends AbstractDataProcessor
 {
     public function __construct(
         private readonly BlobService $blobService,
-        private readonly RequestStack $requestStack)
+        private readonly RequestStack $requestStack,
+        private readonly ConfigurationService $config)
     {
         parent::__construct();
     }
 
     protected function requiresAuthentication(int $operation): bool
     {
-        return $this->blobService->getAdditionalAuthFromConfig();
+        return $this->config->checkAdditionalAuth();
     }
 
     /**

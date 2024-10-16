@@ -26,7 +26,7 @@ class DownloadAction extends AbstractController
      */
     public function __invoke(Request $request, string $identifier): Response
     {
-        if ($this->blobService->getAdditionalAuthFromConfig()) {
+        if ($this->config->checkAdditionalAuth()) {
             $this->requireAuthentication();
         }
 

@@ -30,7 +30,7 @@ final class CreateFileDataAction extends AbstractController
      */
     public function __invoke(Request $request): FileData
     {
-        if ($this->blobService->getAdditionalAuthFromConfig()) {
+        if ($this->config->checkAdditionalAuth()) {
             $this->requireAuthentication();
         }
 

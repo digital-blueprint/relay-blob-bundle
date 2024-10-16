@@ -688,11 +688,6 @@ class BlobService
         }
     }
 
-    public function getAdditionalAuthFromConfig(): bool
-    {
-        return $this->configurationService->checkAdditionalAuth();
-    }
-
     /**
      * @throws \Exception
      */

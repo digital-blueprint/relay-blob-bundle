@@ -31,7 +31,7 @@ class FileDataProvider extends AbstractDataProvider
 
     protected function requiresAuthentication(int $operation): bool
     {
-        return $this->blobService->getAdditionalAuthFromConfig();
+        return $this->config->checkAdditionalAuth();
     }
 
     /**
