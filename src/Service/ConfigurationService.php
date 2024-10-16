@@ -29,14 +29,6 @@ class ConfigurationService
     }
 
     /**
-     * Returns the config.
-     */
-    public function getConfig(): array
-    {
-        return $this->config;
-    }
-
-    /**
      * Gets all configured bucket objects.
      *
      * @return Bucket[]
@@ -129,19 +121,6 @@ class ConfigurationService
     public function getCleanupInterval(): mixed
     {
         return $this->config['cleanup_interval'];
-    }
-
-    public function getOutputValidationForBucketId($bucketId): mixed
-    {
-        $buckets = $this->config['buckets'];
-
-        foreach ($buckets as $bucket => $bucketConfig) {
-            if ($bucketId === $bucketConfig['bucket_id']) {
-                return $bucketConfig['output_validation'];
-            }
-        }
-
-        return null;
     }
 
     public function doFileIntegrityChecks(): bool

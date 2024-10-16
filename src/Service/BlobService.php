@@ -315,7 +315,7 @@ class BlobService
         }
 
         $fileData->setInternalBucketID($this->configurationService->getInternalBucketIdByBucketID($bucketID));
-        $fileData->setBucket($this->getBucketByID($bucketID));
+        $fileData->setBucket($this->configurationService->getBucketByID($bucketID));
 
         $this->getLink($request->getSchemeAndHttpHost(), $fileData);
 
@@ -425,22 +425,6 @@ class BlobService
 
         // save the file using the connector
         return $datasystemService->saveFile($fileData);
-    }
-
-    /**
-     * Saves the file using the connector.
-     *
-     * @param FileData $fileData fileData that carries the file which should be saved
-     */
-    public function saveFileFromString(FileData $fileData, string $data): ?FileData
-    {
-        // get the service of the bucket
-        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
-
-        // save the file using the connector
-        $fileData = $datasystemService->saveFileFromString($fileData, $data);
-
-        return $fileData;
     }
 
     /**
@@ -618,22 +602,6 @@ class BlobService
     }
 
     /**
-     * Get all the fileDatas of a given bucketID and prefix.
-     */
-    public function getFileDataByBucketIDAndPrefix(string $bucketID, string $prefix): array
-    {
-        $fileDatas = $this->em
-            ->getRepository(FileData::class)
-            ->findBy(['internalBucketId' => $bucketID, 'prefix' => $prefix]);
-
-        if (!$fileDatas) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileDatas was not found!', 'blob:file-data-not-found');
-        }
-
-        return $fileDatas;
-    }
-
-    /**
      * Get all the fileDatas of a given bucketID.
      */
     public function getFileDataByBucketID(string $bucketID): array
@@ -682,28 +650,6 @@ class BlobService
     }
 
     /**
-     * Get all the fileDatas which expire in the defined time period by bucketID.
-     *
-     * @throws \Exception
-     */
-    public function getAllExpiringFiledatasByBucket(string $bucketID, int $limit = 10): array
-    {
-        $query = $this->em
-            ->getRepository(FileData::class)
-            ->createQueryBuilder('f')
-            ->where('f.internalBucketId = :bucketID')
-            ->orderBy('f.notifyEmail', 'ASC')
-            ->orderBy('f.deleteAt', 'ASC')
-            ->setParameter('bucketID', $bucketID)
-            ->setMaxResults($limit);
-        $result = $query->getQuery()->getResult();
-
-        assert(is_array($result));
-
-        return $result;
-    }
-
-    /**
      * Remove a given fileData from the entity manager.
      */
     private function removeFileData(FileData $fileData): void
@@ -746,11 +692,6 @@ class BlobService
                 $this->removeFileData($invalidFileData);
             }
         }
-    }
-
-    public function getBucketByID(string $bucketID): ?Bucket
-    {
-        return $this->configurationService->getBucketByID($bucketID);
     }
 
     public function getAdditionalAuthFromConfig(): bool
