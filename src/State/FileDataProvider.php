@@ -7,6 +7,7 @@ namespace Dbp\Relay\BlobBundle\State;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,7 +23,8 @@ class FileDataProvider extends AbstractDataProvider
 {
     public function __construct(
         private readonly BlobService $blobService,
-        private readonly RequestStack $requestStack)
+        private readonly RequestStack $requestStack,
+        private readonly ConfigurationService $config)
     {
         parent::__construct();
     }
@@ -51,7 +53,7 @@ class FileDataProvider extends AbstractDataProvider
 
         $errorPrefix = 'blob:get-file-data-by-id';
         DenyAccessUnlessCheckSignature::checkSignature(
-            $errorPrefix, $this->blobService, $request, $filters, ['GET', 'PATCH', 'DELETE']);
+            $errorPrefix, $this->config, $request, $filters, ['GET', 'PATCH', 'DELETE']);
 
         // if output validation is disabled, a user can get the data even if the system usually would throw and invalid data error
         $disableOutputValidation = !$isGetRequest || ($filters['disableOutputValidation'] ?? null) === '1';
@@ -83,7 +85,7 @@ class FileDataProvider extends AbstractDataProvider
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
         DenyAccessUnlessCheckSignature::checkSignature(
-            'blob:get-file-data-collection', $this->blobService, $this->requestStack->getCurrentRequest(), $filters, ['GET']);
+            'blob:get-file-data-collection', $this->config, $this->requestStack->getCurrentRequest(), $filters, ['GET']);
 
         $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');
         $prefix = rawurldecode($filters['prefix'] ?? '');

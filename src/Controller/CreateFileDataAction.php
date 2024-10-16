@@ -7,6 +7,7 @@ namespace Dbp\Relay\BlobBundle\Controller;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\CustomControllerTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,7 +19,7 @@ final class CreateFileDataAction extends AbstractController
 {
     use CustomControllerTrait;
 
-    public function __construct(private readonly BlobService $blobService)
+    public function __construct(private readonly BlobService $blobService, private readonly ConfigurationService $config)
     {
     }
 
@@ -36,7 +37,7 @@ final class CreateFileDataAction extends AbstractController
         /* check minimal needed parameters for presence and correctness */
         $errorPrefix = 'blob:create-file-data';
         DenyAccessUnlessCheckSignature::checkSignature(
-            $errorPrefix, $this->blobService, $request, $request->query->all(), ['POST']);
+            $errorPrefix, $this->config, $request, $request->query->all(), ['POST']);
 
         if ($request->files->get('file') === null) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,

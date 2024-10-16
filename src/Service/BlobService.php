@@ -58,11 +58,6 @@ class BlobService
     {
     }
 
-    public function getConfigurationService(): ConfigurationService
-    {
-        return $this->configurationService;
-    }
-
     public function checkConnection(): void
     {
         $this->em->getConnection()->getNativeConnection();
