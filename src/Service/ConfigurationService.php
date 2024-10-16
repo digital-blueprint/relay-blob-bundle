@@ -163,4 +163,22 @@ class ConfigurationService
     {
         return $this->config['bucket_size_check_interval'];
     }
+
+    public function checkConfig(): void
+    {
+        // Make sure the schema files exist and are valid JSON
+        foreach ($this->getBuckets() as $bucket) {
+            foreach ($bucket->getAdditionalTypes() as $path) {
+                $content = file_get_contents($path);
+                if ($content === false) {
+                    throw new \RuntimeException('Failed to read: '.$path);
+                }
+                try {
+                    json_decode($content, flags: JSON_THROW_ON_ERROR);
+                } catch (\Exception $e) {
+                    throw new \RuntimeException('Failed to parse: '.$path.' ('.$e->getMessage().')');
+                }
+            }
+        }
+    }
 }

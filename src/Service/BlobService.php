@@ -15,8 +15,6 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Helpers\Tools;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\NonUniqueResultException;
-use JsonSchema\Constraints\Factory;
-use JsonSchema\SchemaStorage;
 use JsonSchema\Validator;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -24,7 +22,6 @@ use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport;
@@ -56,7 +53,6 @@ class BlobService
         private readonly EntityManagerInterface $em,
         private readonly ConfigurationService $configurationService,
         private DatasystemProviderService $datasystemService,
-        private readonly KernelInterface $kernel,
         private readonly EventDispatcherInterface $eventDispatcher)
     {
     }
@@ -169,7 +165,7 @@ class BlobService
 
         $bucket = $this->ensureBucket($fileData);
         if (!($options[self::DISABLE_OUTPUT_VALIDATION_OPTION] ?? false) && $bucket->getOutputValidation()) {
-            $this->checkFileDataBeforeRetrieval($fileData, $bucket, 'blob:get-file-data');
+            $this->checkFileDataBeforeRetrieval($fileData, 'blob:get-file-data');
         }
 
         if ($options[self::INCLUDE_FILE_CONTENTS_OPTION] ?? false) {
@@ -1071,14 +1067,6 @@ class BlobService
         $mailer->send($email);
     }
 
-    public function checkConfig(): void
-    {
-        // Make sure the schema files exist
-        foreach ($this->configurationService->getBuckets() as $bucket) {
-            $this->getJsonSchemaStorageWithAllSchemasInABucket($bucket);
-        }
-    }
-
     public function checkFileSize(?OutputInterface $out = null, $sendEmail = true)
     {
         $buckets = $this->configurationService->getBuckets();
@@ -1191,23 +1179,6 @@ class BlobService
         }
     }
 
-    public function getJsonSchemaStorageWithAllSchemasInABucket(Bucket $bucket): SchemaStorage
-    {
-        $schemaStorage = new SchemaStorage();
-        foreach (($bucket->getAdditionalTypes() ?? []) as $type => $path) {
-            $jsonSchemaObject = json_decode(file_get_contents($path));
-
-            if ($jsonSchemaObject === null) {
-                throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'JSON Schemas for the schema storage could not be loaded', 'blob:create-file-data-json-schema-storage-load-error');
-            }
-            $name = explode('/', $path);
-
-            $schemaStorage->addSchema('file://'.$this->kernel->getProjectDir().'/public/'.end($name), $jsonSchemaObject);
-        }
-
-        return $schemaStorage;
-    }
-
     private function printFileSizeCheck(OutputInterface $out, array $context): void
     {
         $out->writeln('Sum of sizes of the blob_files table: '.$context['blobFilesSize']);
@@ -1283,11 +1254,51 @@ class BlobService
         }
     }
 
+    public function validateMetadata(FileData $fileData, string $errorPrefix)
+    {
+        $additionalMetadata = $fileData->getMetadata();
+        $additionalType = $fileData->getType();
+
+        if ($additionalMetadata) {
+            // check if metadata is a valid json in all cases
+            try {
+                $metadataDecoded = json_decode($additionalMetadata, false, flags: JSON_THROW_ON_ERROR);
+            } catch (\JsonException $e) {
+                throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad metadata', $errorPrefix.'-bad-metadata');
+            }
+        } else {
+            $metadataDecoded = null;
+        }
+
+        // If additionalType is set the metadata has to match the schema
+        if ($additionalType === null) {
+            return;
+        }
+
+        // check if additionaltype is defined
+        $bucket = $this->ensureBucket($fileData);
+        $additionalTypes = $bucket->getAdditionalTypes();
+        if (!array_key_exists($additionalType, $additionalTypes)) {
+            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
+        }
+
+        $schemaPath = $additionalTypes[$additionalType];
+        $validator = new Validator();
+        $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($schemaPath)]);
+        if (!$validator->isValid()) {
+            $messages = [];
+            foreach ($validator->getErrors() as $error) {
+                $messages[$error['property']] = $error['message'];
+            }
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type', $errorPrefix.'-metadata-does-not-match-type', $messages);
+        }
+    }
+
     /**
      * Checks if given filedata is valid
      * intended for use before data retrieval using GET.
      */
-    public function checkFileDataBeforeRetrieval(FileData $fileData, Bucket $bucket, string $errorPrefix): void
+    public function checkFileDataBeforeRetrieval(FileData $fileData, string $errorPrefix): void
     {
         $content = base64_decode(explode(',', $this->getBase64Data($fileData)->getContentUrl())[1], true);
 
@@ -1302,30 +1313,7 @@ class BlobService
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 metadata hash doesnt match! Metadata integrity cannot be guaranteed', $errorPrefix.'-metadata-hash-mismatch');
         }
 
-        $additionalMetadata = $fileData->getMetadata();
-        $additionalType = $fileData->getType();
-
-        // check if metadata is a valid json
-        if ($additionalMetadata && !json_decode($additionalMetadata, true)) {
-            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad metadata', $errorPrefix.'-bad-metadata');
-        }
-
-        // check if additionaltype is defined
-        if ($additionalType && !array_key_exists($additionalType, $bucket->getAdditionalTypes())) {
-            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
-        }
-        $schemaStorage = $this->getJsonSchemaStorageWithAllSchemasInABucket($bucket);
-        $validator = new Validator(new Factory($schemaStorage));
-        $metadataDecoded = (object) json_decode($additionalMetadata);
-
-        // check if given additionalMetadata json has the same keys like the defined additionalType
-        if ($additionalType && $additionalMetadata && $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($bucket->getAdditionalTypes()[$additionalType])]) !== 0) {
-            $messages = [];
-            foreach ($validator->getErrors() as $error) {
-                $messages[$error['property']] = $error['message'];
-            }
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type', $errorPrefix.'-metadata-does-not-match-type', $messages);
-        }
+        $this->validateMetadata($fileData, $errorPrefix);
     }
 
     /**
@@ -1353,37 +1341,7 @@ class BlobService
             $fileData->setFilesize($fileData->getFile()->getSize());
         }
 
-        // check if metadata is a valid json
-        $metadataDecoded = null;
-        if ($fileData->getMetadata()) {
-            $metadataDecoded = json_decode($fileData->getMetadata());
-            if (!$metadataDecoded) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad metadata', $errorPrefix.'-bad-metadata');
-            }
-        }
-
-        $bucket = $this->ensureBucket($fileData);
-
-        // check if additional type is defined
-        if ($fileData->getType() !== null) {
-            if (!array_key_exists($fileData->getType(), $bucket->getAdditionalTypes())) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Bad type', $errorPrefix.'-bad-type');
-            }
-
-            /* check if given metadata json has the same keys as the defined type */
-            $schemaStorage = $this->getJsonSchemaStorageWithAllSchemasInABucket($bucket);
-            $jsonSchemaObject = json_decode(file_get_contents($bucket->getAdditionalTypes()[$fileData->getType()]));
-
-            $validator = new Validator(new Factory($schemaStorage));
-            if ($validator->validate($metadataDecoded, $jsonSchemaObject) !== 0) {
-                $messages = [];
-                foreach ($validator->getErrors() as $error) {
-                    $messages[$error['property']] = $error['message'];
-                }
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
-                    'metadata does not match specified type', $errorPrefix.'-metadata-does-not-match-type', $messages);
-            }
-        }
+        $this->validateMetadata($fileData, $errorPrefix);
 
         if ($this->configurationService->doFileIntegrityChecks()) {
             if ($fileData->getFile() !== null) {
