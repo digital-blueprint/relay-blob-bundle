@@ -181,15 +181,13 @@ class BlobService
 
         $fileDatas = $this->getFileDataCollection($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage, $prefixStartsWith, $includeDeleteAt);
 
-        $bucket = $this->configurationService->getBucketByID($bucketIdentifier);
-
         // create sharelinks
         $validFileDatas = [];
         foreach ($fileDatas as $fileData) {
             try {
                 assert($fileData instanceof FileData);
 
-                $fileData->setBucket($bucket);
+                $this->ensureBucket($fileData);
                 $fileData = $this->getLink($baseUrl, $fileData);
                 $fileData->setContentUrl($this->generateGETLink($baseUrl, $fileData, $includeData ? '1' : ''));
 
@@ -315,7 +313,7 @@ class BlobService
         }
 
         $fileData->setInternalBucketID($this->configurationService->getInternalBucketIdByBucketID($bucketID));
-        $fileData->setBucket($this->configurationService->getBucketByID($bucketID));
+        $this->ensureBucket($fileData);
 
         $this->getLink($request->getSchemeAndHttpHost(), $fileData);
 
@@ -436,8 +434,7 @@ class BlobService
      */
     public function getLink(string $baseurl, FileData $fileData): FileData
     {
-        // set bucket of fileData by bucketID
-        $fileData->setBucket($this->configurationService->getBucketByInternalID($fileData->getInternalBucketID()));
+        $bucket = $this->ensureBucket($fileData);
 
         // get time now
         $now = BlobUtils::now();
@@ -448,7 +445,7 @@ class BlobService
         ];
 
         // get HTTP link with connector for fileData
-        $fileData->setContentUrl($baseurl.$this->generateSignedDownloadUrl($fileData, $now, DenyAccessUnlessCheckSignature::create($fileData->getBucket()->getKey(), $payload)));
+        $fileData->setContentUrl($baseurl.$this->generateSignedDownloadUrl($fileData, $now, DenyAccessUnlessCheckSignature::create($bucket->getKey(), $payload)));
 
         return $fileData;
     }
@@ -460,11 +457,8 @@ class BlobService
      */
     public function getBase64Data(FileData $fileData): FileData
     {
-        // set bucket of fileData
-        $fileData->setBucket($this->configurationService->getBucketByInternalID($fileData->getInternalBucketID()));
-
         // get service of bucket
-        $datasystemService = $this->datasystemService->getServiceByBucket($fileData->getBucket());
+        $datasystemService = $this->datasystemService->getServiceByBucket($this->ensureBucket($fileData));
 
         // get base64 encoded file with connector
         $fileData = $datasystemService->getBase64Data($fileData);
@@ -495,7 +489,7 @@ class BlobService
      */
     public function generateGETLink(string $baseUrl, FileData $fileData, string $includeData = ''): string
     {
-        $this->ensureBucket($fileData);
+        $bucket = $this->ensureBucket($fileData);
 
         // get time now
         $now = BlobUtils::now();
@@ -508,7 +502,7 @@ class BlobService
         $url = '';
         if (!$includeData) {
             // set content url
-            $filePath = $this->generateSignedContentUrl($fileData, 'GET', $now, $includeData, DenyAccessUnlessCheckSignature::create($fileData->getBucket()->getKey(), $payload));
+            $filePath = $this->generateSignedContentUrl($fileData, 'GET', $now, $includeData, DenyAccessUnlessCheckSignature::create($bucket->getKey(), $payload));
             $url = $baseUrl.'/'.substr($filePath, 1);
         } else {
             try {
