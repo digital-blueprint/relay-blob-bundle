@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Throw 403 if the given 'bucketIdentifer' parameter and the bucket identifier of file in the DB do not match for item operations.
+
 ## v0.1.54
 
 * Centralize set up of FileData from request for POST and PATCH in BlobService

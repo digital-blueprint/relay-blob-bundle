@@ -46,6 +46,7 @@ class BlobService
     public const INCLUDE_FILE_CONTENTS_OPTION = 'include_file_contents';
     public const DISABLE_OUTPUT_VALIDATION_OPTION = 'disable_output_validation';
     public const UPDATE_LAST_ACCESS_TIMESTAMP_OPTION = 'update_last_access_timestamp';
+    public const ASSERT_BUCKET_ID_EQUALS_OPTION = 'assert_bucket_id_equals';
     public const PREFIX_STARTS_WITH_OPTION = 'prefix_starts_with';
     public const PREFIX_OPTION = 'prefix_equals';
     public const INCLUDE_DELETE_AT_OPTION = 'include_delete_at';
@@ -154,6 +155,13 @@ class BlobService
     public function getFile(string $identifier, array $options = []): FileData
     {
         $fileData = $this->getFileData($identifier);
+
+        $bucket = $this->ensureBucket($fileData);
+        if (($bucketIdToMatch = $options[self::ASSERT_BUCKET_ID_EQUALS_OPTION] ?? null) !== null) {
+            if ($bucket->getBucketID() !== $bucketIdToMatch) {
+                throw new ApiError(Response::HTTP_FORBIDDEN);
+            }
+        }
 
         if ($fileData->getDeleteAt() !== null && $fileData->getDeleteAt() < BlobUtils::now()) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
@@ -346,11 +354,6 @@ class BlobService
     public function doFileIntegrityChecks(): bool
     {
         return $this->configurationService->doFileIntegrityChecks();
-    }
-
-    public function checkAdditionalAuth(): bool
-    {
-        return $this->configurationService->checkAdditionalAuth();
     }
 
     /**

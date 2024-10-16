@@ -56,21 +56,15 @@ class FileDataProvider extends AbstractDataProvider
         // if output validation is disabled, a user can get the data even if the system usually would throw and invalid data error
         $disableOutputValidation = !$isGetRequest || ($filters['disableOutputValidation'] ?? null) === '1';
         $includeFileContent = $isGetRequest && ($filters['includeData'] ?? null) === '1';
-        $updateLastAccessTime = $isGetRequest; // PATCH: saves for itself, DELETE: will be deleted anyway
+        $bucketId = rawurldecode($filters['bucketIdentifier'] ?? '');
 
         $fileData = $this->blobService->getFile($id, [
             BlobService::DISABLE_OUTPUT_VALIDATION_OPTION => $disableOutputValidation,
             BlobService::INCLUDE_FILE_CONTENTS_OPTION => $includeFileContent,
-            BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => $updateLastAccessTime,
+            BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => $isGetRequest, // PATCH: saves for itself, DELETE: will be deleted anyway
             BlobService::BASE_URL_OPTION => $request->getSchemeAndHttpHost(),
+            BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION => $bucketId,
         ]);
-
-        $bucket = $this->blobService->ensureBucket($fileData);
-        $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');
-        if ($bucket->getBucketID() !== $bucketID) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
-                'Provided bucket ID does not match with the bucket ID of the file!', 'blob:bucket-id-mismatch');
-        }
 
         // don't throw on DELETE and PATCH requests
         if ($isGetRequest) {
