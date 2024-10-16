@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Service;
 
 use Dbp\Relay\BlobBundle\Entity\Bucket;
+use Dbp\Relay\BlobBundle\Entity\BucketSize;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Event\AddFileDataByPostSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\ChangeFileDataByPatchSuccessEvent;
@@ -398,12 +399,12 @@ class BlobService
      *
      * @throws \Exception
      */
-    public function getBucketByInternalIdFromDatabase(string $bucketId): Bucket
+    public function getBucketSizeByInternalIdFromDatabase(string $bucketId): BucketSize
     {
-        $bucket = $this->em->getRepository(Bucket::class)->find($bucketId);
+        $bucket = $this->em->getRepository(BucketSize::class)->find($bucketId);
 
         if (!$bucket) {
-            $newBucket = new Bucket();
+            $newBucket = new BucketSize();
             $newBucket->setIdentifier($bucketId);
             $newBucket->setCurrentBucketSize(0);
             $this->em->persist($newBucket);
@@ -417,11 +418,11 @@ class BlobService
     /**
      * Used to persist given fileData in entity manager, and automatically adapts last access timestamp.
      *
-     * @param Bucket $bucket bucket to be persisted
+     * @param BucketSize $bucket bucket to be persisted
      *
      * @throws \Exception
      */
-    public function saveBucketData(Bucket $bucket): void
+    public function saveBucketSize(BucketSize $bucket): void
     {
         try {
             $this->em->persist($bucket);
@@ -829,30 +830,6 @@ class BlobService
     }
 
     /**
-     * Get size of the bucket with given bucketID.
-     *
-     * @throws NonUniqueResultException
-     */
-    public function getCurrentBucketSize(Bucket $bucket): int
-    {
-        $currentBucketSize = $bucket->getCurrentBucketSize();
-        if ($currentBucketSize === null) {
-            $query = $this->em
-                ->getRepository(Bucket::class)
-                ->createQueryBuilder('f')
-                ->where('f.identifier = :bucketID')
-                ->setParameter('bucketID', $bucket->getIdentifier())
-                ->select('f.currentBucketSize as bucketSize');
-
-            $oneOrNullResult = $query->getQuery()->getOneOrNullResult();
-            $currentBucketSize = $oneOrNullResult === null ? 0 : $oneOrNullResult['bucketSize'];
-            $bucket->setCurrentBucketSize($currentBucketSize);
-        }
-
-        return $currentBucketSize;
-    }
-
-    /**
      * Get all the fileDatas which expire in the defined time period by bucketID.
      *
      * @throws \Exception
@@ -971,8 +948,9 @@ class BlobService
      */
     public function sendBucketQuotaWarning(Bucket $bucket): void
     {
+        $bucketSize = $this->getBucketSizeByInternalIdFromDatabase($bucket->getIdentifier());
         // Check quota
-        $bucketQuotaByte = $this->getCurrentBucketSize($bucket);
+        $bucketQuotaByte = $bucketSize->getCurrentBucketSize();
         $bucketWarningQuotaByte = $bucket->getQuota() * 1024 * 1024 * ($bucket->getNotifyWhenQuotaOver() / 100); // Convert mb to Byte and then calculate the warning quota
         if (floatval($bucketQuotaByte) > floatval($bucketWarningQuotaByte)) {
             $this->sendQuotaWarning($bucket, floatval($bucketQuotaByte));
@@ -1106,8 +1084,8 @@ class BlobService
 
                 $sumBucketSizes[$bucket->getIdentifier()] = $bucketSize;
 
-                $dbBucket = $this->getBucketByInternalIdFromDatabase($bucket->getIdentifier());
-                $savedBucketSize = $dbBucket->getCurrentBucketSize();
+                $bucketSizeObject = $this->getBucketSizeByInternalIdFromDatabase($bucket->getIdentifier());
+                $savedBucketSize = $bucketSizeObject->getCurrentBucketSize();
 
                 $dbBucketSizes[$bucket->getIdentifier()] = $savedBucketSize;
 
@@ -1201,13 +1179,13 @@ class BlobService
     {
         /* Check quota */
         $bucketQuotaByte = $this->ensureBucket($fileData)->getQuota() * 1024 * 1024; // Convert mb to Byte
-        $bucket = $this->getBucketByInternalIdFromDatabase($fileData->getInternalBucketID());
-        $newBucketSizeByte = max($bucket->getCurrentBucketSize() + $bucketSizeDeltaByte, 0);
+        $bucketSize = $this->getBucketSizeByInternalIdFromDatabase($fileData->getInternalBucketID());
+        $newBucketSizeByte = max($bucketSize->getCurrentBucketSize() + $bucketSizeDeltaByte, 0);
         if ($newBucketSizeByte > $bucketQuotaByte) {
             throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached',
                 $errorPrefix.'-bucket-quota-reached');
         }
-        $bucket->setCurrentBucketSize($newBucketSizeByte);
+        $bucketSize->setCurrentBucketSize($newBucketSizeByte);
 
         // Return correct data for service and save the data
         $fileData = $this->saveFile($fileData);
@@ -1219,7 +1197,7 @@ class BlobService
         // try to update bucket size
         $this->em->getConnection()->beginTransaction();
         try {
-            $this->saveBucketData($bucket);
+            $this->saveBucketSize($bucketSize);
             $this->saveFileData($fileData);
 
             $this->em->getConnection()->commit();
@@ -1236,14 +1214,14 @@ class BlobService
      */
     public function writeToTablesAndRemoveFileData(FileData $fileData, int $bucketSizeDeltaByte): void
     {
-        $bucket = $this->getBucketByInternalIdFromDatabase($fileData->getInternalBucketID());
-        $newBucketSizeByte = max($bucket->getCurrentBucketSize() + $bucketSizeDeltaByte, 0);
-        $bucket->setCurrentBucketSize($newBucketSizeByte);
+        $bucketSize = $this->getBucketSizeByInternalIdFromDatabase($fileData->getInternalBucketID());
+        $newBucketSizeByte = max($bucketSize->getCurrentBucketSize() + $bucketSizeDeltaByte, 0);
+        $bucketSize->setCurrentBucketSize($newBucketSizeByte);
 
         // try to update bucket size
         $this->em->getConnection()->beginTransaction();
         try {
-            $this->saveBucketData($bucket);
+            $this->saveBucketSize($bucketSize);
             $this->removeFileData($fileData);
 
             $this->em->getConnection()->commit();

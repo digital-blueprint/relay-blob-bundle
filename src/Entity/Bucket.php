@@ -4,15 +4,10 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Validator\GenericValidator;
 
-#[ORM\Table(name: 'blob_bucket_sizes')]
-#[ORM\Entity]
 class Bucket
 {
-    #[ORM\Id]
-    #[ORM\Column(type: 'string', length: 36)]
     private string $identifier = '';
 
     private string $service = '';
@@ -26,9 +21,6 @@ class Bucket
     private ?array $integrityCheckConfig = null;
     private int $notifyWhenQuotaOver = 0;
     private ?array $additionalTypes = null;
-
-    #[ORM\Column(type: 'integer')]
-    private ?int $currentBucketSize = null;
 
     private bool $outputValidation = true;
     private ?array $bucketSizeConfig = null;
@@ -183,18 +175,6 @@ class Bucket
         return $this;
     }
 
-    public function getCurrentBucketSize(): ?int
-    {
-        return $this->currentBucketSize;
-    }
-
-    public function setCurrentBucketSize(int $currentBucketSize): self
-    {
-        $this->currentBucketSize = $currentBucketSize;
-
-        return $this;
-    }
-
     public static function fromConfig(array $config): Bucket
     {
         $bucket = new Bucket();
@@ -266,13 +246,5 @@ class Bucket
         }
 
         return $bucket;
-    }
-
-    /**
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->identifier;
     }
 }
