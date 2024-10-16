@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Helper;
 
-use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Component\HttpFoundation\Request;
@@ -76,7 +76,7 @@ class DenyAccessUnlessCheckSignature
      *
      * @throws \Exception
      */
-    public static function checkSignature(string $errorPrefix, BlobService $blobService, Request $request,
+    public static function checkSignature(string $errorPrefix, ConfigurationService $config, Request $request,
         array $filters = [], array $allowedMethods = []): void
     {
         $sig = $filters['sig'] ?? '';
@@ -113,7 +113,7 @@ class DenyAccessUnlessCheckSignature
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'method is missing', $errorPrefix.'-missing-method');
         }
         // check if bucket with given bucketID is configured
-        $bucket = $blobService->getConfigurationService()->getBucketByID($bucketID);
+        $bucket = $config->getBucketByID($bucketID);
         if (!$bucket) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID is not configured', $errorPrefix.'-bucket-id-not-configured');
         }

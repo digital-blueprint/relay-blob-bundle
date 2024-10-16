@@ -6,6 +6,7 @@ namespace Dbp\Relay\BlobBundle\Controller;
 
 use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\CoreBundle\Rest\CustomControllerTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,7 +16,7 @@ class DownloadAction extends AbstractController
 {
     use CustomControllerTrait;
 
-    public function __construct(private readonly BlobService $blobService)
+    public function __construct(private readonly BlobService $blobService, private readonly ConfigurationService $config)
     {
     }
 
@@ -31,7 +32,7 @@ class DownloadAction extends AbstractController
 
         $errorPrefix = 'blob:download-file-by-id';
         DenyAccessUnlessCheckSignature::checkSignature(
-            $errorPrefix, $this->blobService, $request, $request->query->all(), ['GET']);
+            $errorPrefix, $this->config, $request, $request->query->all(), ['GET']);
 
         $disableOutputValidation = $request->get('disableOutputValidation', '') === '1';
 
