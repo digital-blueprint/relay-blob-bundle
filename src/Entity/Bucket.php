@@ -171,9 +171,9 @@ class Bucket
         return $this;
     }
 
-    public function getAdditionalTypes(): ?array
+    public function getAdditionalTypes(): array
     {
-        return $this->additionalTypes;
+        return $this->additionalTypes ?? [];
     }
 
     public function setAdditionalTypes(?array $additionalTypes): self

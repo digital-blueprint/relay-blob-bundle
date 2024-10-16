@@ -10,11 +10,11 @@ use Dbp\Relay\CoreBundle\HealthCheck\CheckResult;
 
 class HealthCheck implements CheckInterface
 {
-    private BlobService $blob;
+    private ConfigurationService $config;
 
-    public function __construct(BlobService $blob)
+    public function __construct(ConfigurationService $config)
     {
-        $this->blob = $blob;
+        $this->config = $config;
     }
 
     public function getName(): string
@@ -40,7 +40,7 @@ class HealthCheck implements CheckInterface
     public function check(CheckOptions $options): array
     {
         return [
-            $this->checkMethod('Check the bundle configuration', [$this->blob, 'checkConfig']),
+            $this->checkMethod('Check the bundle configuration', [$this->config, 'checkConfig']),
         ];
     }
 }
