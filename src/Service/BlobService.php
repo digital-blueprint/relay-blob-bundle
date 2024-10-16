@@ -58,11 +58,6 @@ class BlobService
     {
     }
 
-    public function setDatasystemService(DatasystemProviderService $datasystemService): void
-    {
-        $this->datasystemService = $datasystemService;
-    }
-
     public function getConfigurationService(): ConfigurationService
     {
         return $this->configurationService;
@@ -920,19 +915,6 @@ class BlobService
     /**
      * Sends reporting and bucket quota warning email if needed.
      */
-    public function sendReporting(): void
-    {
-        $buckets = $this->configurationService->getBuckets();
-        /*foreach ($buckets as $bucket) {
-            if ($bucket->getReportingConfig() !== null) {
-                // $this->sendReportingForBucket($bucket);
-            }
-        }*/
-    }
-
-    /**
-     * Sends reporting and bucket quota warning email if needed.
-     */
     public function checkQuotas(): void
     {
         $buckets = $this->configurationService->getBuckets();
@@ -954,61 +936,6 @@ class BlobService
         $bucketWarningQuotaByte = $bucket->getQuota() * 1024 * 1024 * ($bucket->getNotifyWhenQuotaOver() / 100); // Convert mb to Byte and then calculate the warning quota
         if (floatval($bucketQuotaByte) > floatval($bucketWarningQuotaByte)) {
             $this->sendQuotaWarning($bucket, floatval($bucketQuotaByte));
-        }
-    }
-
-    /**
-     * Checks whether some files will expire soon, and sends a email to the bucket owner
-     * or owner of the file (if configured as notifyEmail).
-     *
-     * @throws \Exception
-     * @throws TransportExceptionInterface
-     */
-    public function sendReportingForBucket(Bucket $bucket): void
-    {
-        $reportingConfig = $bucket->getReportingConfig();
-        $reportingEmail = $reportingConfig['to'];
-
-        $id = $bucket->getIdentifier();
-        $name = $bucket->getBucketID();
-        $fileDatas = $this->getAllExpiringFiledatasByBucket($bucket->getIdentifier());
-
-        if (!empty($fileDatas)) {
-            // create for each email to be notified an array with expiring filedatas
-            $notifyEmails = [];
-            foreach ($fileDatas as $key => $fileData) {
-                if ((int) $key === 10) {
-                    break;
-                }
-
-                /* @var ?FileData $fileData */
-                $file['id'] = $fileData->getIdentifier();
-                $file['fileName'] = $fileData->getFileName();
-                $file['prefix'] = $fileData->getPrefix();
-                $file['dateCreated'] = $fileData->getDateCreated()->format('c');
-                $file['lastAccess'] = $fileData->getLastAccess()->format('c');
-                $file['deleteAt'] = $fileData->getDeleteAt()->format('c');
-                if (empty($notifyEmails[$reportingEmail])) {
-                    $notifyEmails[$reportingEmail] = [];
-                }
-                array_push($notifyEmails[$reportingEmail], $file);
-            }
-
-            foreach ($notifyEmails as $email => $files) {
-                $context = [
-                    'internalBucketId' => $id,
-                    'bucketId' => $name,
-                    'files' => $files,
-                    'numFiles' => count($fileDatas),
-                ];
-
-                $config = $reportingConfig;
-                // replace the default email with a given email
-                /*if ($email) {
-                    $config['to'] = $email;
-                }*/
-                $this->sendEmail($config, $context);
-            }
         }
     }
 
