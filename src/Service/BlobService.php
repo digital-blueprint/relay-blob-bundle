@@ -418,11 +418,8 @@ class BlobService
      */
     public function saveFile(FileData $fileData): ?FileData
     {
-        // get the service of the bucket
-        $datasystemService = $this->datasystemService->getServiceByBucket($this->ensureBucket($fileData));
-
         // save the file using the connector
-        return $datasystemService->saveFile($fileData);
+        return $this->getDatasystemProvider($fileData)->saveFile($fileData);
     }
 
     /**
@@ -457,11 +454,8 @@ class BlobService
      */
     public function getBase64Data(FileData $fileData): FileData
     {
-        // get service of bucket
-        $datasystemService = $this->datasystemService->getServiceByBucket($this->ensureBucket($fileData));
-
         // get base64 encoded file with connector
-        $fileData = $datasystemService->getBase64Data($fileData);
+        $fileData = $this->getDatasystemProvider($fileData)->getBase64Data($fileData);
 
         return $fileData;
     }
@@ -476,10 +470,8 @@ class BlobService
         $options[self::INCLUDE_FILE_CONTENTS_OPTION] = false;
         $fileData = $this->getFile($fileIdentifier, $options);
 
-        $datasystemService = $this->datasystemService->getServiceByBucket($this->ensureBucket($fileData));
-
         // get binary response of file with connector
-        return $datasystemService->getBinaryResponse($fileData);
+        return $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData);
     }
 
     /**
@@ -643,6 +635,11 @@ class BlobService
         return $query->getQuery()->getResult();
     }
 
+    public function getDatasystemProvider(FileData $fileData): DatasystemProviderServiceInterface
+    {
+        return $this->datasystemService->getServiceByBucket($this->ensureBucket($fileData));
+    }
+
     /**
      * Remove a given fileData from the entity manager.
      */
@@ -651,8 +648,7 @@ class BlobService
         $this->em->remove($fileData);
         $this->em->flush();
 
-        $datasystemService = $this->datasystemService->getServiceByBucket($this->ensureBucket($fileData));
-        $datasystemService->removeFile($fileData);
+        $this->getDatasystemProvider($fileData)->removeFile($fileData);
     }
 
     /**
