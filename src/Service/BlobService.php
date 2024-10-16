@@ -933,11 +933,11 @@ class BlobService
     /**
      * Sends reporting and bucket quota warning email if needed.
      */
-    public function sendWarning(): void
+    public function checkQuotas(): void
     {
         $buckets = $this->configurationService->getBuckets();
         foreach ($buckets as $bucket) {
-            $this->sendBucketQuotaWarning($bucket);
+            $this->checkBucketQuotaAndSendWarning($bucket);
         }
     }
 
@@ -946,7 +946,7 @@ class BlobService
      *
      * @throws NonUniqueResultException
      */
-    public function sendBucketQuotaWarning(Bucket $bucket): void
+    public function checkBucketQuotaAndSendWarning(Bucket $bucket): void
     {
         $bucketSize = $this->getBucketSizeByInternalIdFromDatabase($bucket->getIdentifier());
         // Check quota
