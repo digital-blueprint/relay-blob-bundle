@@ -12,7 +12,7 @@ class HealthCheck implements CheckInterface
 {
     private ConfigurationService $config;
 
-    public function __construct(ConfigurationService $config)
+    public function __construct(ConfigurationService $config, private BlobService $blobService)
     {
         $this->config = $config;
     }
@@ -41,6 +41,7 @@ class HealthCheck implements CheckInterface
     {
         return [
             $this->checkMethod('Check the bundle configuration', [$this->config, 'checkConfig']),
+            $this->checkMethod('Check if we can connect to the DB', [$this->blobService, 'checkConnection']),
         ];
     }
 }
