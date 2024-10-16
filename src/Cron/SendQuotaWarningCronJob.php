@@ -39,6 +39,6 @@ class SendQuotaWarningCronJob implements CronJobInterface
 
     public function run(CronOptions $options): void
     {
-        $this->blobService->sendWarning();
+        $this->blobService->checkQuotas();
     }
 }
