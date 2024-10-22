@@ -518,8 +518,6 @@ class FileData
     #[Groups(['BlobFiles:input'])]
     private string $internalBucketId = '';
 
-    private ?Bucket $bucket = null;
-
     private ?string $bucketId = '';
 
     #[ORM\Column(type: 'datetime_immutable')]
@@ -612,16 +610,6 @@ class FileData
     public function setInternalBucketID(string $internalBucketId): void
     {
         $this->internalBucketId = $internalBucketId;
-    }
-
-    public function getBucket(): ?Bucket
-    {
-        return $this->bucket;
-    }
-
-    public function setBucket(Bucket $bucket): void
-    {
-        $this->bucket = $bucket;
     }
 
     public function getDateCreated(): \DateTimeImmutable

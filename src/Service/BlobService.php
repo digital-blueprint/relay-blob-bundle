@@ -80,7 +80,7 @@ class BlobService
         $this->writeToTablesAndSaveFileData($fileData, $fileData->getFileSize(), $errorPrefix);
 
         /* dispatch POST success event */
-        $this->ensureBucket($fileData);
+        $this->ensureBucketId($fileData);
         $successEvent = new AddFileDataByPostSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($successEvent);
 
@@ -105,7 +105,7 @@ class BlobService
             $this->saveFileData($fileData);
         }
 
-        $this->ensureBucket($fileData);
+        $this->ensureBucketId($fileData);
         $patchSuccessEvent = new ChangeFileDataByPatchSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($patchSuccessEvent);
 
@@ -120,7 +120,7 @@ class BlobService
         $fileData ??= $this->getFileData($identifier);
         $this->writeToTablesAndRemoveFileData($fileData, -$fileData->getFileSize());
 
-        $this->ensureBucket($fileData);
+        $this->ensureBucketId($fileData);
         $deleteSuccessEvent = new DeleteFileDataByDeleteSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($deleteSuccessEvent);
     }
@@ -132,7 +132,7 @@ class BlobService
     {
         $fileData = $this->getFileData($identifier);
 
-        $bucket = $this->ensureBucket($fileData);
+        $bucket = $this->ensureBucketId($fileData);
         if (($bucketIdToMatch = $options[self::ASSERT_BUCKET_ID_EQUALS_OPTION] ?? null) !== null) {
             if ($bucket->getBucketID() !== $bucketIdToMatch) {
                 throw new ApiError(Response::HTTP_FORBIDDEN);
@@ -143,7 +143,7 @@ class BlobService
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
 
-        $bucket = $this->ensureBucket($fileData);
+        $bucket = $this->ensureBucketId($fileData);
         if (!($options[self::DISABLE_OUTPUT_VALIDATION_OPTION] ?? false) && $bucket->getOutputValidation()) {
             $this->checkFileDataBeforeRetrieval($fileData, 'blob:get-file-data');
         }
@@ -187,7 +187,7 @@ class BlobService
             try {
                 assert($fileData instanceof FileData);
 
-                $this->ensureBucket($fileData);
+                $this->ensureBucketId($fileData);
                 $fileData = $this->getLink($baseUrl, $fileData);
                 $fileData->setContentUrl($this->generateGETLink($baseUrl, $fileData, $includeData ? '1' : ''));
 
@@ -313,7 +313,7 @@ class BlobService
         }
 
         $fileData->setInternalBucketID($this->configurationService->getInternalBucketIdByBucketID($bucketID));
-        $this->ensureBucket($fileData);
+        $this->ensureBucketId($fileData);
 
         $this->getLink($request->getSchemeAndHttpHost(), $fileData);
 
@@ -331,24 +331,24 @@ class BlobService
     }
 
     /**
-     * Sets the bucket of the given fileData and returns the bucket.
+     * Sets the bucket ID of the given fileData and returns the bucket config.
      *
-     * @param FileData $fileData fileData which is missing the bucket
+     * @param FileData $fileData fileData which is missing the bucket ID
      */
-    public function ensureBucket(FileData $fileData): Bucket
+    public function ensureBucketId(FileData $fileData): Bucket
     {
-        $bucket = $fileData->getBucket();
-        if (!$bucket) {
-            $bucket = $this->configurationService->getBucketByInternalID($fileData->getInternalBucketID());
-            if (!$bucket) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured',
-                    'blob:create-file-data-not-configured-bucket-id');
-            }
-            $fileData->setBucket($bucket);
-            $fileData->setBucketId($bucket->getBucketID());
+        $bucketConfig = $this->configurationService->getBucketByInternalID($fileData->getInternalBucketID());
+        if (!$bucketConfig) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured',
+                'blob:create-file-data-not-configured-bucket-id');
         }
 
-        return $bucket;
+        $bucketId = $fileData->getBucketId();
+        if (!$bucketId) {
+            $fileData->setBucketId($bucketConfig->getBucketID());
+        }
+
+        return $bucketConfig;
     }
 
     /**
@@ -432,7 +432,7 @@ class BlobService
      */
     public function getLink(string $baseurl, FileData $fileData): FileData
     {
-        $bucket = $this->ensureBucket($fileData);
+        $bucket = $this->ensureBucketId($fileData);
 
         // get time now
         $now = BlobUtils::now();
@@ -482,7 +482,7 @@ class BlobService
      */
     public function generateGETLink(string $baseUrl, FileData $fileData, string $includeData = ''): string
     {
-        $bucket = $this->ensureBucket($fileData);
+        $bucket = $this->ensureBucketId($fileData);
 
         // get time now
         $now = BlobUtils::now();
@@ -638,7 +638,7 @@ class BlobService
 
     public function getDatasystemProvider(FileData $fileData): DatasystemProviderServiceInterface
     {
-        return $this->datasystemService->getServiceByBucket($this->ensureBucket($fileData));
+        return $this->datasystemService->getServiceByBucket($this->ensureBucketId($fileData));
     }
 
     /**
@@ -691,7 +691,7 @@ class BlobService
     public function writeToTablesAndSaveFileData(FileData $fileData, int $bucketSizeDeltaByte, string $errorPrefix): void
     {
         /* Check quota */
-        $bucketQuotaByte = $this->ensureBucket($fileData)->getQuota() * 1024 * 1024; // Convert mb to Byte
+        $bucketQuotaByte = $this->ensureBucketId($fileData)->getQuota() * 1024 * 1024; // Convert mb to Byte
         $bucketSize = $this->getBucketSizeByInternalIdFromDatabase($fileData->getInternalBucketID());
         $newBucketSizeByte = max($bucketSize->getCurrentBucketSize() + $bucketSizeDeltaByte, 0);
         if ($newBucketSizeByte > $bucketQuotaByte) {
@@ -767,7 +767,7 @@ class BlobService
         }
 
         // check if additionaltype is defined
-        $bucket = $this->ensureBucket($fileData);
+        $bucket = $this->ensureBucketId($fileData);
         $additionalTypes = $bucket->getAdditionalTypes();
         if (!array_key_exists($additionalType, $additionalTypes)) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');

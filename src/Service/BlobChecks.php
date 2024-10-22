@@ -180,13 +180,13 @@ class BlobChecks
                 $out->writeln('Calculating sum of fileSizes in the bucket directory ...');
             }
             $service = $this->datasystemService->getServiceByBucket($bucket);
-            $filebackendSize = $service->getSumOfFilesizesOfBucket($bucket);
+            $filebackendSize = $service->getSumOfFilesizesOfBucket($bucket->getIdentifier());
 
             if (!$sendEmail && $out !== null) {
                 $out->writeln('Counting number of files in the bucket directory ...');
             }
 
-            $filebackendNumOfFiles = $service->getNumberOfFilesInBucket($bucket);
+            $filebackendNumOfFiles = $service->getNumberOfFilesInBucket($bucket->getIdentifier());
 
             $bucketSize = $sumBucketSizes[$bucket->getIdentifier()];
             $savedBucketSize = $dbBucketSizes[$bucket->getIdentifier()];

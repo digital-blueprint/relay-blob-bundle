@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Tests;
 
-use Dbp\Relay\BlobBundle\Entity\Bucket;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\DatasystemProviderServiceInterface;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -71,13 +70,13 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         return true;
     }
 
-    public function getSumOfFilesizesOfBucket(Bucket $bucket): int
+    public function getSumOfFilesizesOfBucket(string $bucketId): int
     {
         $sumOfFileSizes = 0;
 
         /** @var FileData $data */
         foreach (self::$fd as $data) {
-            if ($data->getInternalBucketID() === $bucket->getIdentifier()) {
+            if ($data->getInternalBucketID() === $bucketId) {
                 $sumOfFileSizes += $data->getFileSize();
             }
         }
@@ -85,13 +84,13 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         return $sumOfFileSizes;
     }
 
-    public function getNumberOfFilesInBucket(Bucket $bucket): int
+    public function getNumberOfFilesInBucket(string $bucketId): int
     {
         $numOfFiles = 0;
 
         /** @var FileData $data */
         foreach (self::$fd as $data) {
-            if ($data->getInternalBucketID() === $bucket->getIdentifier()) {
+            if ($data->getInternalBucketID() === $bucketId) {
                 ++$numOfFiles;
             }
         }
