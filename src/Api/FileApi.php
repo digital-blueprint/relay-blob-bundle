@@ -72,7 +72,7 @@ class FileApi
     public function getFiles(string $bucketConfigIdentifier, array $options = [], int $currentPageNumber = 1, int $maxNumItemsPerPage = 30): array
     {
         try {
-            return $this->blobService->getFiles($bucketConfigIdentifier, $options);
+            return $this->blobService->getFiles($bucketConfigIdentifier, $options, $currentPageNumber, $maxNumItemsPerPage);
         } catch (\Exception $exception) {
             throw $this->createException($exception);
         }
