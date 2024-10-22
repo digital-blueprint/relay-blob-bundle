@@ -4,6 +4,11 @@
 
 ## v0.1.56
 
+* FileApi: fix pagination for real
+* Remove unused connector interface methods
+
+## v0.1.56
+
 * FileApi: fix pagination
 * Add getters for the external bucket ID to FileData
 
