@@ -2,7 +2,13 @@
 
 ## Unreleased
 
+## v0.1.55
+
 * Throw 403 if the given 'bucketIdentifer' parameter and the bucket identifier of file in the DB do not match for item operations.
+* Allow File instead of UploadedFile in the internal API
+* Add a health check for the DB connection
+* Fix schema validation in case the CWD was not default server dir
+* Fix contentUrl return value when data is not base64 encoded
 
 ## v0.1.54
 
