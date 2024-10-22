@@ -69,7 +69,7 @@ class FileApi
      *
      * @throws FileApiException
      */
-    public function getFiles(string $bucketConfigIdentifier, array $options = []): array
+    public function getFiles(string $bucketConfigIdentifier, array $options = [], int $currentPageNumber = 1, int $maxNumItemsPerPage = 30): array
     {
         try {
             return $this->blobService->getFiles($bucketConfigIdentifier, $options);
