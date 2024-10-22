@@ -40,8 +40,6 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
         $configs = $container->getExtensionConfig($this->getAlias());
         $config = $this->processConfiguration(new Configuration(), $configs);
 
-        $this->addAllowHeader($container, 'X-Dbp-Signature');
-
         foreach (['doctrine', 'doctrine_migrations'] as $extKey) {
             if (!$container->hasExtension($extKey)) {
                 throw new \Exception("'".$this->getAlias()."' requires the '$extKey' bundle to be loaded!");
