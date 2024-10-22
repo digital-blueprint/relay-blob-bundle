@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## v0.1.56
+## v0.1.57
 
 * FileApi: fix pagination for real
 * Remove unused connector interface methods
