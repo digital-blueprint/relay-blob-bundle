@@ -24,28 +24,6 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         return $fileData;
     }
 
-    public function renameFile(FileData $fileData): ?FileData
-    {
-        self::$fd[$fileData->getIdentifier()] = $fileData;
-
-        return $fileData;
-    }
-
-    public function getLink(FileData $fileData): ?FileData
-    {
-        $identifier = $fileData->getIdentifier();
-        if (!isset(self::$fd[$identifier])) {
-            echo "    DummyFileSystemService::getLink($identifier): not found!\n";
-
-            return null;
-        }
-
-        $fileData->setContentUrl("https://localhost.lan/link/$identifier");
-        self::$fd[$identifier] = $fileData;
-
-        return self::$fd[$identifier];
-    }
-
     public function getBase64Data(FileData $fileData): FileData
     {
         $identifier = $fileData->getIdentifier();
@@ -91,35 +69,6 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         unset(self::$data[$fileData->getIdentifier()]);
 
         return true;
-    }
-
-    public function generateChecksumFromFileData($fileData, $validUntil = ''): ?string
-    {
-        // if no validUntil is given, use bucket link expiry time per default
-        if ($validUntil === '') {
-            $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-            $now = $now->add(new \DateInterval($fileData->getBucket()->getLinkExpireTime()));
-            $validUntil = $now->format('c');
-        }
-
-        // create url to hash
-        $contentUrl = '/blob/filesystem/'.$fileData->getIdentifier().'?validUntil='.$validUntil;
-
-        // create hmac sha256 keyed hash
-        // $cs = hash_hmac('sha256', $contentUrl, $fileData->getBucket()->getKey());
-
-        // create sha256 hash
-        $cs = hash('sha256', $contentUrl);
-
-        return $cs;
-    }
-
-    public function saveFileFromString(FileData $fileData, string $data): ?FileData
-    {
-        self::$fd[$fileData->getIdentifier()] = $fileData;
-        self::$data[$fileData->getIdentifier()] = $fileData->getFile();
-
-        return $fileData;
     }
 
     public function getSumOfFilesizesOfBucket(Bucket $bucket): int
