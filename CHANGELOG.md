@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v0.1.56
+
+* FileApi: fix pagination
+* Add getters for the external bucket ID to FileData
+
 ## v0.1.55
 
 * Throw 403 if the given 'bucketIdentifer' parameter and the bucket identifier of file in the DB do not match for item operations.
