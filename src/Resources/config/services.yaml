@@ -11,12 +11,6 @@ services:
     arguments:
       $em: '@doctrine.orm.dbp_relay_blob_bundle_entity_manager'
 
-  Dbp\Relay\BlobBundle\Controller\:
-    tags: [ 'controller.service_arguments' ]
-    resource: '../../Controller'
-    autowire: true
-    autoconfigure: true
-
   Dbp\Relay\BlobBundle\Configuration\ConfigurationService:
     autowire: true
     autoconfigure: true
@@ -29,8 +23,8 @@ services:
     autowire: true
     autoconfigure: true
 
-  Dbp\Relay\BlobBundle\State\:
-    resource: '../../State'
+  Dbp\Relay\BlobBundle\ApiPlatform\:
+    resource: '../../ApiPlatform'
     autowire: true
     autoconfigure: true
 

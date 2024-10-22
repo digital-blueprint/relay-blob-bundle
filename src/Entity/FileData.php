@@ -13,10 +13,10 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
-use Dbp\Relay\BlobBundle\Controller\CreateFileDataAction;
-use Dbp\Relay\BlobBundle\Controller\DownloadAction;
-use Dbp\Relay\BlobBundle\State\FileDataProcessor;
-use Dbp\Relay\BlobBundle\State\FileDataProvider;
+use Dbp\Relay\BlobBundle\ApiPlatform\CreateFileDataAction;
+use Dbp\Relay\BlobBundle\ApiPlatform\DownloadAction;
+use Dbp\Relay\BlobBundle\ApiPlatform\FileDataProcessor;
+use Dbp\Relay\BlobBundle\ApiPlatform\FileDataProvider;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
