@@ -520,6 +520,8 @@ class FileData
 
     private ?Bucket $bucket = null;
 
+    private ?string $bucketId = '';
+
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['BlobFiles:output'])]
     private \DateTimeImmutable $dateCreated;
@@ -760,5 +762,15 @@ class FileData
     public function setNotifyEmail(?string $notifyEmail): void
     {
         $this->notifyEmail = $notifyEmail;
+    }
+
+    public function getBucketId(): ?string
+    {
+        return $this->bucketId;
+    }
+
+    public function setBucketId(?string $bucketId): void
+    {
+        $this->bucketId = $bucketId;
     }
 }

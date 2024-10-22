@@ -345,6 +345,7 @@ class BlobService
                     'blob:create-file-data-not-configured-bucket-id');
             }
             $fileData->setBucket($bucket);
+            $fileData->setBucketId($bucket->getBucketID());
         }
 
         return $bucket;
