@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v0.1.58
+
+* More pagination fixes
+
 ## v0.1.57
 
 * FileApi: fix pagination for real

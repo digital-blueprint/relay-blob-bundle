@@ -99,6 +99,6 @@ class FileDataProvider extends AbstractDataProvider
             BlobService::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt === '1',
             BlobService::PREFIX_OPTION => $prefix,
             BlobService::PREFIX_STARTS_WITH_OPTION => $prefixStartsWith === '1',
-        ]);
+        ], $currentPageNumber, $maxNumItemsPerPage);
     }
 }
