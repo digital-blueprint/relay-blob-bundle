@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Dbp\Relay\BlobBundle\Entity;
+namespace Dbp\Relay\BlobBundle\Configuration;
 
 use Ramsey\Uuid\Validator\GenericValidator;
 
-class Bucket
+class BucketConfig
 {
     private string $identifier = '';
 
@@ -175,9 +175,9 @@ class Bucket
         return $this;
     }
 
-    public static function fromConfig(array $config): Bucket
+    public static function fromConfig(array $config): BucketConfig
     {
-        $bucket = new Bucket();
+        $bucket = new BucketConfig();
         if ($config['internal_bucket_id'] && !(new GenericValidator())->validate((string) $config['internal_bucket_id'])) {
             throw new \RuntimeException(sprintf('the config entry internal_bucket_id is no valid uuid for bucket \'%s\'', (string) $config['internal_bucket_id']));
         }

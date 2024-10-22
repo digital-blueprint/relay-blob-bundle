@@ -17,7 +17,7 @@ services:
     autowire: true
     autoconfigure: true
 
-  Dbp\Relay\BlobBundle\Service\ConfigurationService:
+  Dbp\Relay\BlobBundle\Configuration\ConfigurationService:
     autowire: true
     autoconfigure: true
 

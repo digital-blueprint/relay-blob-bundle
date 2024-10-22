@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Service;
 
-use Dbp\Relay\BlobBundle\Entity\Bucket;
+use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
+use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\NonUniqueResultException;
@@ -45,7 +46,7 @@ class BlobChecks
      *
      * @throws NonUniqueResultException
      */
-    public function checkBucketQuotaAndSendWarning(Bucket $bucket): void
+    public function checkBucketQuotaAndSendWarning(BucketConfig $bucket): void
     {
         $bucketSize = $this->blobService->getBucketSizeByInternalIdFromDatabase($bucket->getIdentifier());
         // Check quota
@@ -59,7 +60,7 @@ class BlobChecks
     /**
      * Sends a warning email with information about the buckets used quota.
      */
-    public function sendQuotaWarning(Bucket $bucket, float $bucketQuotaByte): void
+    public function sendQuotaWarning(BucketConfig $bucket, float $bucketQuotaByte): void
     {
         $notifyQuotaConfig = $bucket->getWarnQuotaOverConfig();
 
@@ -235,7 +236,7 @@ class BlobChecks
      *
      * @throws \Exception
      */
-    public function sendIntegrityCheckMail(Bucket $bucket, array $invalidDatas)
+    public function sendIntegrityCheckMail(BucketConfig $bucket, array $invalidDatas)
     {
         $integrityConfig = $bucket->getIntegrityCheckConfig();
 
@@ -335,7 +336,7 @@ class BlobChecks
      *
      * @throws \Exception
      */
-    private function printIntegrityCheck(Bucket $bucket, array $invalidDatas, OutputInterface $out, bool $printIds = false)
+    private function printIntegrityCheck(BucketConfig $bucket, array $invalidDatas, OutputInterface $out, bool $printIds = false)
     {
         if (!empty($invalidDatas)) {
             $out->writeln('Found invalid data for bucket with bucket id: '.$bucket->getBucketID().' and internal bucket id: '.$bucket->getIdentifier());

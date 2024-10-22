@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Dbp\Relay\BlobBundle\Service;
-
-use Dbp\Relay\BlobBundle\Entity\Bucket;
+namespace Dbp\Relay\BlobBundle\Configuration;
 
 /**
  * @internal
@@ -31,7 +29,7 @@ class ConfigurationService
     /**
      * Gets all configured bucket objects.
      *
-     * @return Bucket[]
+     * @return BucketConfig[]
      */
     public function getBuckets(): array
     {
@@ -44,7 +42,7 @@ class ConfigurationService
         }
 
         foreach ($bucketsConfig['buckets'] as $bucketConfig) {
-            $bucket = Bucket::fromConfig($bucketConfig);
+            $bucket = BucketConfig::fromConfig($bucketConfig);
             $buckets[] = $bucket;
         }
 
@@ -54,13 +52,13 @@ class ConfigurationService
     /**
      * Returns the bucket object for the given bucketID.
      */
-    public function getBucketByID(string $bucketID): ?Bucket
+    public function getBucketByID(string $bucketID): ?BucketConfig
     {
         $buckets = $this->config['buckets'];
 
         foreach ($buckets as $bucketConfig) {
             if ($bucketID === $bucketConfig['bucket_id']) {
-                return Bucket::fromConfig($bucketConfig);
+                return BucketConfig::fromConfig($bucketConfig);
             }
         }
 
@@ -86,13 +84,13 @@ class ConfigurationService
     /**
      * Returns the bucket object for the given internalBucketID.
      */
-    public function getBucketByInternalID(string $internalBucketID): ?Bucket
+    public function getBucketByInternalID(string $internalBucketID): ?BucketConfig
     {
         $buckets = $this->config['buckets'];
 
         foreach ($buckets as $bucketConfig) {
             if ($internalBucketID === $bucketConfig['internal_bucket_id']) {
-                return Bucket::fromConfig($bucketConfig);
+                return BucketConfig::fromConfig($bucketConfig);
             }
         }
 

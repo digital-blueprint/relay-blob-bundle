@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Cron;
 
+use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Service\BlobChecks;
-use Dbp\Relay\BlobBundle\Service\ConfigurationService;
 use Dbp\Relay\CoreBundle\Cron\CronJobInterface;
 use Dbp\Relay\CoreBundle\Cron\CronOptions;
 
