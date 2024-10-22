@@ -7,7 +7,7 @@ namespace Dbp\Relay\BlobBundle\Tests;
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use Dbp\Relay\BlobBundle\ApiPlatform\CreateFileDataAction;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
-use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
+use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\TestUtils\UserAuthTrait;
@@ -101,7 +101,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
             $url = $url.'&sig='.$token;
             $options = [
                 'headers' => [
@@ -174,7 +174,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+            $token = SignatureUtils::create($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -222,7 +222,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -275,7 +275,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -319,7 +319,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects(false);
@@ -365,7 +365,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -398,7 +398,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
             $options = [
                 'headers' => [
                     'Authorization' => 'Bearer 42',
@@ -457,7 +457,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -501,7 +501,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -528,7 +528,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -564,7 +564,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -617,7 +617,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -664,7 +664,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -689,7 +689,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -744,7 +744,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -802,7 +802,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -862,7 +862,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+            $token = SignatureUtils::create($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -912,7 +912,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -973,7 +973,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+            $token = SignatureUtils::create($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1019,7 +1019,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -1081,7 +1081,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+            $token = SignatureUtils::create($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1130,7 +1130,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -1156,7 +1156,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $options2 = [
                 'headers' => [
@@ -1218,7 +1218,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+            $token = SignatureUtils::create($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1265,7 +1265,7 @@ class CurlGetTest extends ApiTestCase
                         'ucs' => $this->generateSha256ChecksumFromUrl($url),
                     ];
 
-                    $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                    $token = SignatureUtils::create($secret, $payload);
 
                     $options = [
                         'headers' => [
@@ -1326,7 +1326,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+                $token = SignatureUtils::create($secret, $data);
 
                 $requestPost = Request::create($url.'&sig='.$token, 'POST',
                     [
@@ -1367,7 +1367,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -1426,7 +1426,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+            $token = SignatureUtils::create($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1500,7 +1500,7 @@ class CurlGetTest extends ApiTestCase
                         $baseUrl = $baseUrl.$connector.$params[$j];
                     }
 
-                    $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                    $token = SignatureUtils::create($secret, $payload);
 
                     $options = [
                         'headers' => [
@@ -1558,7 +1558,7 @@ class CurlGetTest extends ApiTestCase
                         $baseUrl = $baseUrl.$connector.$params[$j];
                     }
 
-                    $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                    $token = SignatureUtils::create($secret, $payload);
 
                     $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
@@ -1621,7 +1621,7 @@ class CurlGetTest extends ApiTestCase
                     $baseUrl = $baseUrl.$connector.$params[$j];
                 }
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -1749,7 +1749,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+            $token = SignatureUtils::create($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1797,7 +1797,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -1825,7 +1825,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
                 $client = $this->withUser('user', [], '42');
 
                 /** @var Response $response */
@@ -1846,7 +1846,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
@@ -1912,7 +1912,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+            $token = SignatureUtils::create($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1964,7 +1964,7 @@ class CurlGetTest extends ApiTestCase
                 $bucket = $configService->getBuckets()[1];
                 $secret = $bucket->getKey();
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -1996,7 +1996,7 @@ class CurlGetTest extends ApiTestCase
                 $bucket = $configService->getBuckets()[1];
                 $secret = $bucket->getKey();
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $client = $this->withUser('user', [], '42');
 
@@ -2021,7 +2021,7 @@ class CurlGetTest extends ApiTestCase
                 $bucket = $configService->getBuckets()[1];
                 $secret = $bucket->getKey();
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
@@ -2087,7 +2087,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+            $token = SignatureUtils::create($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -2137,7 +2137,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -2166,7 +2166,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $client = $this->withUser('user', [], '42');
 
@@ -2188,7 +2188,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
@@ -2254,7 +2254,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+            $token = SignatureUtils::create($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -2304,7 +2304,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -2333,7 +2333,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $client = $this->withUser('user', [], '42');
 
@@ -2355,7 +2355,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
@@ -2417,7 +2417,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+                $token = SignatureUtils::create($secret, $data);
 
                 $requestPost = Request::create($url.'&sig='.$token, 'POST',
                     [
@@ -2458,7 +2458,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -2517,7 +2517,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $data);
+            $token = SignatureUtils::create($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -2586,7 +2586,7 @@ class CurlGetTest extends ApiTestCase
                     $baseUrl = $baseUrl.$connector.$params[$j];
                 }
 
-                $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+                $token = SignatureUtils::create($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
@@ -2621,7 +2621,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -2648,7 +2648,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
             ];
 
-            $token = DenyAccessUnlessCheckSignature::create($secret, $payload);
+            $token = SignatureUtils::create($secret, $payload);
 
             $client = $this->withUser('user', [], '42');
 

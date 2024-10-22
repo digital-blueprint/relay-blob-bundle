@@ -12,7 +12,7 @@ use Dbp\Relay\BlobBundle\Event\AddFileDataByPostSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\ChangeFileDataByPatchSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\DeleteFileDataByDeleteSuccessEvent;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
-use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
+use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Helpers\Tools;
 use Doctrine\ORM\EntityManagerInterface;
@@ -444,7 +444,7 @@ class BlobService
         ];
 
         // get HTTP link with connector for fileData
-        $fileData->setContentUrl($baseurl.$this->generateSignedDownloadUrl($fileData, $now, DenyAccessUnlessCheckSignature::create($bucket->getKey(), $payload)));
+        $fileData->setContentUrl($baseurl.$this->generateSignedDownloadUrl($fileData, $now, SignatureUtils::create($bucket->getKey(), $payload)));
 
         return $fileData;
     }
@@ -496,7 +496,7 @@ class BlobService
         $url = '';
         if (!$includeData) {
             // set content url
-            $filePath = $this->generateSignedContentUrl($fileData, 'GET', $now, $includeData, DenyAccessUnlessCheckSignature::create($bucket->getKey(), $payload));
+            $filePath = $this->generateSignedContentUrl($fileData, 'GET', $now, $includeData, SignatureUtils::create($bucket->getKey(), $payload));
             $url = $baseUrl.'/'.substr($filePath, 1);
         } else {
             try {

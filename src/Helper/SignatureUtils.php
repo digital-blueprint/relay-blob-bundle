@@ -10,7 +10,7 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class DenyAccessUnlessCheckSignature
+class SignatureUtils
 {
     /**
      * Create a JWS token.
@@ -157,7 +157,7 @@ class DenyAccessUnlessCheckSignature
         }
 
         // verify signature and checksum
-        DenyAccessUnlessCheckSignature::verifyChecksumAndSignature($bucket->getKey(), $sig, $request);
+        SignatureUtils::verifyChecksumAndSignature($bucket->getKey(), $sig, $request);
     }
 
     /**

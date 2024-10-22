@@ -6,7 +6,7 @@ namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\FileData;
-use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
+use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
@@ -52,7 +52,7 @@ class FileDataProvider extends AbstractDataProvider
         $isGetRequest = $request->getMethod() === Request::METHOD_GET;
 
         $errorPrefix = 'blob:get-file-data-by-id';
-        DenyAccessUnlessCheckSignature::checkSignature(
+        SignatureUtils::checkSignature(
             $errorPrefix, $this->config, $request, $filters, ['GET', 'PATCH', 'DELETE']);
 
         // if output validation is disabled, a user can get the data even if the system usually would throw and invalid data error
@@ -84,7 +84,7 @@ class FileDataProvider extends AbstractDataProvider
      */
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
-        DenyAccessUnlessCheckSignature::checkSignature(
+        SignatureUtils::checkSignature(
             'blob:get-file-data-collection', $this->config, $this->requestStack->getCurrentRequest(), $filters, ['GET']);
 
         $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');

@@ -6,7 +6,7 @@ namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\FileData;
-use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
+use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\CustomControllerTrait;
@@ -36,7 +36,7 @@ final class CreateFileDataAction extends AbstractController
 
         /* check minimal needed parameters for presence and correctness */
         $errorPrefix = 'blob:create-file-data';
-        DenyAccessUnlessCheckSignature::checkSignature(
+        SignatureUtils::checkSignature(
             $errorPrefix, $this->config, $request, $request->query->all(), ['POST']);
 
         if ($request->files->get('file') === null) {

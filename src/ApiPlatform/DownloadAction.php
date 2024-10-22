@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
-use Dbp\Relay\BlobBundle\Helper\DenyAccessUnlessCheckSignature;
+use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Rest\CustomControllerTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -31,7 +31,7 @@ class DownloadAction extends AbstractController
         }
 
         $errorPrefix = 'blob:download-file-by-id';
-        DenyAccessUnlessCheckSignature::checkSignature(
+        SignatureUtils::checkSignature(
             $errorPrefix, $this->config, $request, $request->query->all(), ['GET']);
 
         $disableOutputValidation = $request->get('disableOutputValidation', '') === '1';
