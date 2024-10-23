@@ -763,7 +763,7 @@ class BlobService
         }
 
         // If additionalType is set the metadata has to match the schema
-        if ($additionalType === null) {
+        if (!$additionalType) {
             return;
         }
 
