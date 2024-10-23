@@ -794,7 +794,7 @@ class BlobService
     {
         $content = base64_decode(explode(',', $this->getBase64Data($fileData)->getContentUrl())[1], true);
 
-        if (!$content) {
+        if ($content === false) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'file data cannot be decoded', $errorPrefix.'-decode-fail');
         }
         // check if file integrity should be checked and if so check it
