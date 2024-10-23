@@ -297,7 +297,7 @@ class BlobChecks
             $invalidDatas = [];
             foreach ($fileDatas as $fileData) {
                 try {
-                    $data = $this->blobService->getBase64Data($fileData)->getContentUrl();
+                    $data = $this->blobService->getContentUrl($fileData);
                     $content = base64_decode(explode(',', $data)[1], true);
                 } catch (\Exception $e) {
                     $id = json_decode($e->getMessage(), true, 512, JSON_THROW_ON_ERROR)['errorId'];

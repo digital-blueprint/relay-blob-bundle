@@ -15,15 +15,13 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
     public static $fd = [];
     public static $data = [];
 
-    public function saveFile(FileData $fileData): ?FileData
+    public function saveFile(FileData $fileData): void
     {
         self::$fd[$fileData->getIdentifier()] = $fileData;
         self::$data[$fileData->getIdentifier()] = $fileData->getFile();
-
-        return $fileData;
     }
 
-    public function getBase64Data(FileData $fileData): FileData
+    public function getContentUrl(FileData $fileData): string
     {
         $identifier = $fileData->getIdentifier();
         if (!isset(self::$fd[$identifier])) {
@@ -34,12 +32,7 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         $file = file_get_contents(self::$data[$identifier]->getRealPath());
         $mimeType = self::$data[$identifier]->getMimeType();
 
-        $filename = $fileData->getFileName();
-
-        $fileData->setContentUrl('data:'.$mimeType.';base64,'.base64_encode($file));
-        self::$fd[$identifier] = $fileData;
-
-        return self::$fd[$identifier];
+        return 'data:'.$mimeType.';base64,'.base64_encode($file);
     }
 
     public function getBinaryResponse(FileData $fileData): Response
@@ -62,12 +55,10 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         return $response;
     }
 
-    public function removeFile(FileData $fileData): bool
+    public function removeFile(FileData $fileData): void
     {
         unset(self::$fd[$fileData->getIdentifier()]);
         unset(self::$data[$fileData->getIdentifier()]);
-
-        return true;
     }
 
     public function getSumOfFilesizesOfBucket(string $bucketId): int

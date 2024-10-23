@@ -150,7 +150,7 @@ class BlobService
         }
 
         if ($options[self::INCLUDE_FILE_CONTENTS_OPTION] ?? false) {
-            $fileData = $this->getBase64Data($fileData);
+            $fileData->setContentUrl($this->getContentUrl($fileData));
         } else {
             $fileData = $this->getLink($options[self::BASE_URL_OPTION] ?? '', $fileData);
         }
@@ -420,8 +420,14 @@ class BlobService
      */
     public function saveFile(FileData $fileData): ?FileData
     {
-        // save the file using the connector
-        return $this->getDatasystemProvider($fileData)->saveFile($fileData);
+        try {
+            // save the file using the connector
+            $this->getDatasystemProvider($fileData)->saveFile($fileData);
+
+            return $fileData;
+        } catch (\Exception) {
+            return null;
+        }
     }
 
     /**
@@ -454,12 +460,9 @@ class BlobService
      *
      * @param FileData $fileData fileData for which the base64 encoded file should be provided
      */
-    public function getBase64Data(FileData $fileData): FileData
+    public function getContentUrl(FileData $fileData): string
     {
-        // get base64 encoded file with connector
-        $fileData = $this->getDatasystemProvider($fileData)->getBase64Data($fileData);
-
-        return $fileData;
+        return $this->getDatasystemProvider($fileData)->getContentUrl($fileData);
     }
 
     /**
@@ -500,8 +503,7 @@ class BlobService
             $url = $baseUrl.'/'.substr($filePath, 1);
         } else {
             try {
-                $filePath = $this->getBase64Data($fileData)->getContentUrl();
-                $url = $filePath.'';
+                $url = $this->getContentUrl($fileData);
             } catch (\Exception $e) {
                 throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'File went missing', 'blob:file-not-found');
             }
@@ -792,7 +794,7 @@ class BlobService
      */
     public function checkFileDataBeforeRetrieval(FileData $fileData, string $errorPrefix): void
     {
-        $content = base64_decode(explode(',', $this->getBase64Data($fileData)->getContentUrl())[1], true);
+        $content = base64_decode(explode(',', $this->getContentUrl($fileData))[1], true);
 
         if ($content === false) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'file data cannot be decoded', $errorPrefix.'-decode-fail');
