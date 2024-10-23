@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v0.1.60
+
+* Fix reading old files in the DB without a type set
+* Fix reading empty files
+
 ## v0.1.59
 
 * Cleanup of the public PHP API
