@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v0.1.61
+
+* Minor cleanup of the connector interface
+
 ## v0.1.60
 
 * Fix reading old files in the DB without a type set
