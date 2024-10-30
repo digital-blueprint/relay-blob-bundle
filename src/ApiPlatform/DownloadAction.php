@@ -35,9 +35,11 @@ class DownloadAction extends AbstractController
             $errorPrefix, $this->config, $request, $request->query->all(), ['GET']);
 
         $disableOutputValidation = $request->get('disableOutputValidation', '') === '1';
+        $includeDeleteAt = $request->get('includeDeleteAt', '') === '1';
 
         return $this->blobService->getBinaryResponse($identifier, [
             BlobService::DISABLE_OUTPUT_VALIDATION_OPTION => $disableOutputValidation,
+            BlobService::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
             BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => true,
         ]);
     }

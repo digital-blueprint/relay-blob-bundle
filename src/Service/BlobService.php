@@ -140,7 +140,7 @@ class BlobService
             }
         }
 
-        if ($fileData->getDeleteAt() !== null && $fileData->getDeleteAt() < BlobUtils::now()) {
+        if ($fileData->getDeleteAt() !== null && ($fileData->getDeleteAt() < BlobUtils::now() || !($options[self::INCLUDE_DELETE_AT_OPTION] ?? false))) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
 
@@ -225,9 +225,8 @@ class BlobService
         $bucketID = $request->query->get('bucketIdentifier');
         $prefix = $request->query->get('prefix');
         $notifyEmail = $request->query->get('notifyEmail');
-        $retentionDuration = $request->query->get('retentionDuration');
+        $deleteIn = $request->query->get('deleteIn');
         $type = $request->query->get('type');
-        $deleteAt = $request->query->get('deleteAt');
 
         /* get params from body */
         $metadata = $request->request->get('metadata');
@@ -238,13 +237,15 @@ class BlobService
         /* get uploaded file */
         $uploadedFile = $request->files->get('file');
 
+
+
         /* check types of params */
         assert(is_string($bucketID ?? ''));
         assert(is_string($prefix ?? ''));
         assert(is_string($fileName ?? ''));
         assert(is_string($fileHash ?? ''));
         assert(is_string($notifyEmail ?? ''));
-        assert(is_string($retentionDuration ?? ''));
+        assert(is_string($deleteIn ?? ''));
         assert(is_string($type ?? ''));
         assert(is_string($metadata ?? ''));
         assert($uploadedFile === null || $uploadedFile instanceof File);
@@ -253,7 +254,7 @@ class BlobService
         $bucketID = $bucketID ? rawurldecode($bucketID) : null;
         $prefix = $prefix ? rawurldecode($prefix) : null;
         $notifyEmail = $notifyEmail ? rawurldecode($notifyEmail) : null;
-        $retentionDuration = $retentionDuration ? rawurldecode($retentionDuration) : null;
+        $deleteIn = $deleteIn ? rawurldecode($deleteIn) : null;
         $type = $type ? rawurldecode($type) : null;
 
         if ($uploadedFile !== null) {
@@ -285,20 +286,8 @@ class BlobService
         if ($prefix) {
             $fileData->setPrefix($prefix);
         }
-        if ($retentionDuration !== null) {
-            $fileData->setRetentionDuration($retentionDuration);
-        }
-        if ($deleteAt !== null) {
-            // check if date can be created
-            $date = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $deleteAt);
-            if ($date === false) {
-                // RFC3339_EXTENDED is broken in PHP
-                $date = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $deleteAt);
-            }
-            if ($date === false) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Given deleteAt is in an invalid format!', 'blob:patch-file-data-delete-at-bad-format');
-            }
-            $fileData->setDeleteAt($date);
+        if ($deleteIn !== null) {
+            $fileData->setDeleteAt(BlobUtils::now()->add(new \DateInterval($deleteIn)));
         }
         if ($notifyEmail !== null) {
             $fileData->setNotifyEmail($notifyEmail);
