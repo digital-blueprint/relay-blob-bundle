@@ -237,8 +237,6 @@ class BlobService
         /* get uploaded file */
         $uploadedFile = $request->files->get('file');
 
-
-
         /* check types of params */
         assert(is_string($bucketID ?? ''));
         assert(is_string($prefix ?? ''));

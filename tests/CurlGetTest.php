@@ -161,7 +161,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
             $requestBody = [
                 'fileName' => $fileName,
@@ -262,7 +262,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[1]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&retentionDuration=$retentionDuration&notifyEmail=$notifyEmail";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&deleteIn=$retentionDuration&notifyEmail=$notifyEmail";
 
             $requestBody = [
                 'fileName' => $fileName,
@@ -448,7 +448,7 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $retentionDuration = $this->files[0]['retention'];
 
-            $url = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
             // =======================================================
             // POST a file
@@ -856,7 +856,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -967,7 +967,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1075,7 +1075,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1212,7 +1212,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1320,7 +1320,7 @@ class CurlGetTest extends ApiTestCase
                 $retentionDuration = $this->files[$i]['retention'];
                 $action = 'POST';
 
-                $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+                $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
                 $data = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1420,7 +1420,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1743,7 +1743,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -1906,7 +1906,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2081,7 +2081,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2248,7 +2248,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2411,7 +2411,7 @@ class CurlGetTest extends ApiTestCase
                 $retentionDuration = $this->files[$i]['retention'];
                 $action = 'POST';
 
-                $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+                $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
                 $data = [
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2452,7 +2452,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET ONE file in prefix playground
             // =======================================================
-            $url = '/blob/files/'.$this->files[0]['uuid']."/download?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&includeData=1&method=GET";
+            $url = '/blob/files/'.$this->files[0]['uuid']."/download?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&includeData=1&includeDeleteAt=1&method=GET";
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -2511,7 +2511,7 @@ class CurlGetTest extends ApiTestCase
             $retentionDuration = $this->files[0]['retention'];
             $action = 'POST';
 
-            $url = "/blob/files/download?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&retentionDuration=$retentionDuration";
+            $url = "/blob/files/download?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
