@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v0.1.62
+* Rename `retentionDuration` to `deleteIn`
+* Remove `deleteAt` as PATCH parameter
+* Add `deleteIn` to PATCH parameters, patches the `deleteAt` date from the time of the request
+
 ## v0.1.61
 
 * Minor cleanup of the connector interface
