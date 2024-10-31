@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## v0.1.63
+* remove FileData from the connector interface
+
 ## v0.1.62
 * Rename `retentionDuration` to `deleteIn`
 * Remove `deleteAt` as PATCH parameter
