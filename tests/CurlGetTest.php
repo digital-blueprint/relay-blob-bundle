@@ -435,6 +435,7 @@ class CurlGetTest extends ApiTestCase
             $client = $this->withUser('user', [], '42');
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
+            /** @var ConfigurationService $configService */
             $configService = $client->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
@@ -513,7 +514,7 @@ class CurlGetTest extends ApiTestCase
             /* @noinspection PhpInternalEntityUsedInspection */
             $client->getKernelBrowser()->followRedirects();
 
-            $this->assertArrayHasKey($this->files[0]['uuid'], DummyFileSystemService::$fd, 'File data not in dummy store.');
+            $this->assertArrayHasKey($this->files[0]['uuid'], DummyFileSystemService::$data[$bucket->getIdentifier()], 'File data not in dummy store.');
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());

@@ -542,9 +542,6 @@ class FileData
     #[Groups(['BlobFiles:output'])]
     private string $contentUrl = '';
 
-    /**
-     * @var resource
-     */
     #[Groups(['BlobFiles:input'])]
     private $file;
 

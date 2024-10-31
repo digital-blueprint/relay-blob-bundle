@@ -410,7 +410,7 @@ class BlobService
     {
         try {
             // save the file using the connector
-            $this->getDatasystemProvider($fileData)->saveFile($fileData);
+            $this->getDatasystemProvider($fileData)->saveFile($fileData->getInternalBucketID(), $fileData->getIdentifier(), $fileData->getFile());
 
             return $fileData;
         } catch (\Exception) {
@@ -445,7 +445,7 @@ class BlobService
 
     public function getContent(FileData $fileData): string
     {
-        $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData);
+        $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketID(), $fileData->getIdentifier());
 
         if (ob_start() !== true) {
             throw new \RuntimeException();
@@ -489,7 +489,7 @@ class BlobService
         $fileData = $this->getFile($fileIdentifier, $options);
 
         // get binary response of file with connector
-        $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData);
+        $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketID(), $fileData->getIdentifier());
         $response->headers->set('Content-Type', $fileData->getMimeType());
 
         $dispositionHeader = $response->headers->makeDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $fileData->getFileName());
@@ -671,7 +671,7 @@ class BlobService
         $this->em->remove($fileData);
         $this->em->flush();
 
-        $this->getDatasystemProvider($fileData)->removeFile($fileData);
+        $this->getDatasystemProvider($fileData)->removeFile($fileData->getInternalBucketID(), $fileData->getIdentifier());
     }
 
     /**

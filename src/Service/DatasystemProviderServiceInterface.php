@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Service;
 
-use Dbp\Relay\BlobBundle\Entity\FileData;
+use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\Response;
 
 interface DatasystemProviderServiceInterface
 {
-    public function saveFile(FileData $fileData): void;
+    public function saveFile(string $bucketId, string $fileId, File $file): void;
 
-    public function getBinaryResponse(FileData $fileData): Response;
+    public function getBinaryResponse(string $bucketId, string $fileId): Response;
 
-    public function removeFile(FileData $fileData): void;
+    public function removeFile(string $bucketId, string $fileId): void;
 
     public function getSumOfFilesizesOfBucket(string $bucketId): int;
 
