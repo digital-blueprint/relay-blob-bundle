@@ -8,7 +8,6 @@ use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\DatasystemProviderServiceInterface;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
 class DummyFileSystemService implements DatasystemProviderServiceInterface
 {
@@ -21,20 +20,6 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
         self::$data[$fileData->getIdentifier()] = $fileData->getFile();
     }
 
-    public function getContentUrl(FileData $fileData): string
-    {
-        $identifier = $fileData->getIdentifier();
-        if (!isset(self::$fd[$identifier])) {
-            echo "    DummyFileSystemService::getLink($identifier): not found!\n";
-        }
-
-        // build binary response
-        $file = file_get_contents(self::$data[$identifier]->getRealPath());
-        $mimeType = self::$data[$identifier]->getMimeType();
-
-        return 'data:'.$mimeType.';base64,'.base64_encode($file);
-    }
-
     public function getBinaryResponse(FileData $fileData): Response
     {
         $identifier = $fileData->getIdentifier();
@@ -44,13 +29,6 @@ class DummyFileSystemService implements DatasystemProviderServiceInterface
 
         // build binary response
         $response = new BinaryFileResponse(self::$data[$identifier]->getRealPath());
-        $response->headers->set('Content-Type', self::$data[$identifier]->getMimeType());
-        $filename = $fileData->getFileName();
-
-        $response->setContentDisposition(
-            ResponseHeaderBag::DISPOSITION_ATTACHMENT,
-            $filename
-        );
 
         return $response;
     }

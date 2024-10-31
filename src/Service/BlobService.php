@@ -22,6 +22,7 @@ use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Uid\Uuid;
 
 date_default_timezone_set('UTC');
@@ -442,6 +443,28 @@ class BlobService
         return $fileData;
     }
 
+    public function getContent(FileData $fileData): string
+    {
+        $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData);
+
+        if (ob_start() !== true) {
+            throw new \RuntimeException();
+        }
+        try {
+            $response->sendContent();
+            $content = ob_get_contents();
+            if ($content === false) {
+                throw new \RuntimeException(); // @phpstan-ignore-line
+            }
+        } finally {
+            if (ob_end_clean() === false) {
+                throw new \RuntimeException(); // @phpstan-ignore-line
+            }
+        }
+
+        return $content;
+    }
+
     /**
      * Get file content as base64 contentUrl.
      *
@@ -449,7 +472,10 @@ class BlobService
      */
     public function getContentUrl(FileData $fileData): string
     {
-        return $this->getDatasystemProvider($fileData)->getContentUrl($fileData);
+        $mimeType = $fileData->getMimeType();
+        $content = $this->getContent($fileData);
+
+        return 'data:'.$mimeType.';base64,'.base64_encode($content);
     }
 
     /**
@@ -463,7 +489,13 @@ class BlobService
         $fileData = $this->getFile($fileIdentifier, $options);
 
         // get binary response of file with connector
-        return $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData);
+        $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData);
+        $response->headers->set('Content-Type', $fileData->getMimeType());
+
+        $dispositionHeader = $response->headers->makeDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $fileData->getFileName());
+        $response->headers->set('Content-Disposition', $dispositionHeader);
+
+        return $response;
     }
 
     /**
@@ -781,11 +813,8 @@ class BlobService
      */
     public function checkFileDataBeforeRetrieval(FileData $fileData, string $errorPrefix): void
     {
-        $content = base64_decode(explode(',', $this->getContentUrl($fileData))[1], true);
+        $content = $this->getContent($fileData);
 
-        if ($content === false) {
-            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'file data cannot be decoded', $errorPrefix.'-decode-fail');
-        }
         // check if file integrity should be checked and if so check it
         if ($this->doFileIntegrityChecks() && $fileData->getFileHash() !== null && hash('sha256', $content) !== $fileData->getFileHash()) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 file hash doesnt match! File integrity cannot be guaranteed', $errorPrefix.'-file-hash-mismatch');

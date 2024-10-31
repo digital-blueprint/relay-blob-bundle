@@ -13,8 +13,6 @@ interface DatasystemProviderServiceInterface
 
     public function getBinaryResponse(FileData $fileData): Response;
 
-    public function getContentUrl(FileData $fileData): string;
-
     public function removeFile(FileData $fileData): void;
 
     public function getSumOfFilesizesOfBucket(string $bucketId): int;
