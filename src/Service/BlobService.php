@@ -286,7 +286,11 @@ class BlobService
             $fileData->setPrefix($prefix);
         }
         if ($deleteIn !== null) {
-            $fileData->setDeleteAt(BlobUtils::now()->add(new \DateInterval($deleteIn)));
+            if ($deleteIn === 'null') {
+                $fileData->setDeleteAt(null);
+            } else {
+                $fileData->setDeleteAt(BlobUtils::now()->add(new \DateInterval($deleteIn)));
+            }
         }
         if ($notifyEmail !== null) {
             $fileData->setNotifyEmail($notifyEmail);
