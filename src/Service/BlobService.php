@@ -399,7 +399,7 @@ class BlobService
     public function getContent(FileData $fileData): string
     {
         try {
-            // TODO: declare a datasystem-provider exception to catch here instead of the filesystem specific FileNotFoundException
+            // TODO: declare a datasystem-provider exception to catch here instead of the filesystem connector specific FileNotFoundException
             $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketID(), $fileData->getIdentifier());
         } catch (FileNotFoundException) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'File went missing', 'blob:file-not-found');
@@ -447,10 +447,14 @@ class BlobService
     {
         $fileData = $this->getFile($fileIdentifier, $options);
 
-        // get binary response of file with connector
-        $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketID(), $fileData->getIdentifier());
-        $response->headers->set('Content-Type', $fileData->getMimeType());
+        try {
+            // TODO: declare a datasystem-provider exception to catch here instead of the filesystem connector specific FileNotFoundException
+            $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketID(), $fileData->getIdentifier());
+        } catch (FileNotFoundException) {
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'File went missing', 'blob:file-not-found');
+        }
 
+        $response->headers->set('Content-Type', $fileData->getMimeType());
         $dispositionHeader = $response->headers->makeDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $fileData->getFileName());
         $response->headers->set('Content-Disposition', $dispositionHeader);
 
