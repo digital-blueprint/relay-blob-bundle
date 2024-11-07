@@ -155,37 +155,26 @@ class BlobService
     public function getFiles(string $bucketIdentifier, array $options = [], int $currentPageNumber = 1, int $maxNumItemsPerPage = 30): array
     {
         $errorPrefix = 'blob:get-file-data-collection';
-        $internalBucketId = $this->getInternalBucketIdByBucketID($bucketIdentifier);
 
         // TODO: make the upper limit configurable
         // hard limit page size
-        if ($maxNumItemsPerPage > 10000) {
+        if ($maxNumItemsPerPage > 1000) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Requested too many items per page', $errorPrefix.'-too-many-items-per-page');
         }
 
+        $internalBucketId = $this->getInternalBucketIdByBucketID($bucketIdentifier);
         $prefix = $options[self::PREFIX_OPTION] ?? '';
         $prefixStartsWith = $options[self::PREFIX_STARTS_WITH_OPTION] ?? false;
         $includeDeleteAt = $options[self::INCLUDE_DELETE_AT_OPTION] ?? false;
 
-        $fileDatas = $this->getFileDataCollection($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage, $prefixStartsWith, $includeDeleteAt);
+        $fileDataCollection = $this->getFileDataCollection($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage, $prefixStartsWith, $includeDeleteAt);
 
-        // create sharelinks
-        $validFileDatas = [];
-        foreach ($fileDatas as $fileData) {
-            try {
-                assert($fileData instanceof FileData);
-                $fileData->setBucketId($this->configurationService->getBucketByInternalID($fileData->getInternalBucketID())->getBucketID());
-                $validFileDatas[] = $fileData;
-            } catch (\Exception $e) {
-                // skip file not found
-                // TODO how to handle this correctly? This should never happen in the first place
-                if ($e->getCode() === 404) {
-                    continue;
-                }
-            }
+        foreach ($fileDataCollection as $fileData) {
+            assert($fileData instanceof FileData);
+            $fileData->setBucketId($bucketIdentifier);
         }
 
-        return $validFileDatas;
+        return $fileDataCollection;
     }
 
     /**
@@ -403,23 +392,30 @@ class BlobService
             $this->getBucketConfig($fileData)->getKey(), $fileData->getBucketID(), Request::METHOD_GET);
     }
 
+    /**
+     * @throws ApiError
+     */
     public function getContent(FileData $fileData): string
     {
         $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketID(), $fileData->getIdentifier());
 
-        if (ob_start() !== true) {
-            throw new \RuntimeException();
-        }
         try {
-            $response->sendContent();
-            $content = ob_get_contents();
-            if ($content === false) {
-                throw new \RuntimeException(); // @phpstan-ignore-line
+            if (ob_start() !== true) {
+                throw new \RuntimeException();
             }
-        } finally {
-            if (ob_end_clean() === false) {
-                throw new \RuntimeException(); // @phpstan-ignore-line
+            try {
+                $response->sendContent();
+                $content = ob_get_contents();
+                if ($content === false) {
+                    throw new \RuntimeException(); // @phpstan-ignore-line
+                }
+            } finally {
+                if (ob_end_clean() === false) {
+                    throw new \RuntimeException(); // @phpstan-ignore-line
+                }
             }
+        } catch (\RuntimeException) {
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'File went missing', 'blob:file-not-found');
         }
 
         return $content;
@@ -429,6 +425,8 @@ class BlobService
      * Get file content as base64 contentUrl.
      *
      * @param FileData $fileData fileData for which the base64 encoded file should be provided
+     *
+     * @throws ApiError
      */
     public function getContentUrl(FileData $fileData): string
     {
@@ -485,15 +483,9 @@ class BlobService
      */
     public function getFileDataByBucketID(string $bucketID): array
     {
-        $fileDatas = $this->em
+        return $this->em
             ->getRepository(FileData::class)
             ->findBy(['internalBucketId' => $bucketID]);
-
-        if (!$fileDatas) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileDatas was not found!', 'blob:file-data-not-found');
-        }
-
-        return $fileDatas;
     }
 
     public function getFileDataCollection(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage, bool $startsWith, bool $includeDeleteAt)
@@ -683,10 +675,8 @@ class BlobService
      */
     public function checkFileDataBeforeRetrieval(FileData $fileData, string $errorPrefix): void
     {
-        $content = $this->getContent($fileData);
-
         // check if file integrity should be checked and if so check it
-        if ($this->doFileIntegrityChecks() && $fileData->getFileHash() !== null && hash('sha256', $content) !== $fileData->getFileHash()) {
+        if ($this->doFileIntegrityChecks() && $fileData->getFileHash() !== null && hash('sha256', $this->getContent($fileData)) !== $fileData->getFileHash()) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 file hash doesnt match! File integrity cannot be guaranteed', $errorPrefix.'-file-hash-mismatch');
         }
         if ($this->doFileIntegrityChecks() && $fileData->getMetadataHash() !== null

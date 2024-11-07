@@ -10,6 +10,8 @@ use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,8 +21,10 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * @extends AbstractDataProvider<FileData>
  */
-class FileDataProvider extends AbstractDataProvider
+class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     public function __construct(
         private readonly BlobService $blobService,
         private readonly RequestStack $requestStack,
@@ -98,16 +102,27 @@ class FileDataProvider extends AbstractDataProvider
         $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '');
         $request = $this->requestStack->getCurrentRequest();
 
-        foreach ($files = $this->blobService->getFiles($bucketID, [
+        $validFileDataCollection = [];
+        foreach ($this->blobService->getFiles($bucketID, [
             BlobService::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt === '1',
             BlobService::PREFIX_OPTION => $prefix,
             BlobService::PREFIX_STARTS_WITH_OPTION => $prefixStartsWith === '1',
         ], $currentPageNumber, $maxNumItemsPerPage) as $fileData) {
-            $fileData->setContentUrl($includeData ?
-                $this->blobService->getContentUrl($fileData) :
-                $this->blobService->getDownloadLink($request->getSchemeAndHttpHost(), $fileData));
+            try {
+                $fileData->setContentUrl($includeData ?
+                    $this->blobService->getContentUrl($fileData) :
+                    $this->blobService->getDownloadLink($request->getSchemeAndHttpHost(), $fileData));
+                $validFileDataCollection[] = $fileData;
+            } catch (ApiError $apiError) {
+                // skip file not found
+                if ($apiError->getStatusCode() === Response::HTTP_NOT_FOUND) {
+                    // TODO how to handle this correctly? This should never happen in the first place
+                    $this->logger->error(sprintf(__FILE__.':'.__LINE__.': failed to get file content for file ID "%s"', $fileData->getIdentifier()));
+                    continue;
+                }
+            }
         }
 
-        return $files;
+        return $validFileDataCollection;
     }
 }

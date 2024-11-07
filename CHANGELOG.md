@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.66
+
+* throw 404 whenever the file content is requested but not found, except for GET collection, where the file is omitted
+
 ## v0.1.65
 
 * add unit tests and test utils for further blob unit/API tests, as well as blob integration tests in other bundles

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\TestUtils;
 
+use Dbp\Relay\BlobBundle\Api\FileApi;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\Service\DatasystemProviderService;
@@ -34,6 +35,12 @@ class BlobTestUtils
         $datasystemProviderService->addService(new DummyFileSystemService());
 
         return new BlobService($entityManager, $configurationService, $datasystemProviderService, $eventDispatcher);
+    }
+
+    public static function createTestFileApi(EntityManagerInterface $entityManager, ?array $testConfig = null,
+        ?EventSubscriberInterface $eventSubscriber = null): FileApi
+    {
+        return new FileApi(self::createTestBlobService($entityManager, $testConfig, $eventSubscriber));
     }
 
     public static function getTestConfig(): array

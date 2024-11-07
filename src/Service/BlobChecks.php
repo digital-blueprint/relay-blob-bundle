@@ -284,27 +284,13 @@ class BlobChecks
         $buckets = $this->configurationService->getBuckets();
 
         foreach ($buckets as $bucket) {
-            try {
-                $fileDatas = $this->blobService->getFileDataByBucketID($bucket->getIdentifier());
-            } catch (\Exception $e) {
-                $id = json_decode($e->getMessage(), true, 512, JSON_THROW_ON_ERROR)['errorId'];
-                if ($id === 'blob:file-data-not-found') {
-                    continue;
-                } else {
-                    throw $e;
-                }
-            }
             $invalidDatas = [];
-            foreach ($fileDatas as $fileData) {
+            foreach ($this->blobService->getFileDataByBucketID($bucket->getIdentifier()) as $fileData) {
                 try {
                     $content = $this->blobService->getContent($fileData);
-                } catch (\Exception $e) {
-                    $id = json_decode($e->getMessage(), true, 512, JSON_THROW_ON_ERROR)['errorId'];
-                    if ($id === 'blob-connector-filesystem:file-not-found') {
-                        $content = '';
-                    } else {
-                        throw $e;
-                    }
+                } catch (\Exception) {
+                    $invalidDatas[] = $fileData;
+                    continue;
                 }
 
                 /** @var FileData $fileData */
