@@ -163,7 +163,6 @@ class CurlGetTest extends ApiTestCase
                 ],
                 [
                     'Authorization' => 'Bearer 42',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[0]['content'])
@@ -201,7 +200,6 @@ class CurlGetTest extends ApiTestCase
                 'headers' => [
                     'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
 
@@ -256,7 +254,6 @@ class CurlGetTest extends ApiTestCase
                 ],
                 [
                     'Authorization' => 'Bearer 42',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[1]['content'])
@@ -351,7 +348,6 @@ class CurlGetTest extends ApiTestCase
             $options = [
                 'headers' => [
                     'Authorization' => 'Bearer 42',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
 
@@ -420,7 +416,6 @@ class CurlGetTest extends ApiTestCase
                 ],
                 [
                     'Authorization' => 'Bearer 42',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
@@ -445,7 +440,6 @@ class CurlGetTest extends ApiTestCase
             $options = [
                 'headers' => [
                     'Authorization' => 'Bearer 42',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
 
@@ -470,7 +464,6 @@ class CurlGetTest extends ApiTestCase
                 'headers' => [
                     'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
 
@@ -530,7 +523,7 @@ class CurlGetTest extends ApiTestCase
             $creationTime = rawurlencode(date('c', time() - 3600));
             $prefix = 'playground';
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=GET&prefix=$prefix";
+            $url = "/blob/files?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=GET&prefix=$prefix";
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -541,7 +534,6 @@ class CurlGetTest extends ApiTestCase
             $options = [
                 'headers' => [
                     'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
 
@@ -582,14 +574,8 @@ class CurlGetTest extends ApiTestCase
 
             $token = SignatureUtils::createSignature($secret, $payload);
 
-            $options = [
-                'headers' => [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
-            ];
-
             /** @var Response $response */
-            $response = $client->request('GET', $url.'&sig='.$token, $options);
+            $response = $client->request('GET', $url.'&sig='.$token, []);
 
             $this->assertEquals(404, $response->getStatusCode());
 
@@ -607,7 +593,6 @@ class CurlGetTest extends ApiTestCase
             $options = [
                 'headers' => [
                     'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
 
@@ -641,7 +626,7 @@ class CurlGetTest extends ApiTestCase
             $fileHash = $this->files[0]['hash'];
             $retentionDuration = $this->files[0]['retention'];
 
-            $url = "/blob/files/?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime";
+            $url = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime";
 
             // =======================================================
             // POST a file
@@ -667,9 +652,7 @@ class CurlGetTest extends ApiTestCase
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
-                [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
+                [],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
@@ -704,7 +687,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET all files
             // =======================================================
-            $url = "/blob/files/?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=DELETE";
+            $url = "/blob/files?bucketIdentifier=$bucketID&prefix=$prefix&creationTime=$creationTime&method=DELETE";
 
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
@@ -715,7 +698,6 @@ class CurlGetTest extends ApiTestCase
             $options = [
                 'headers' => [
                     'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
 
@@ -777,15 +759,11 @@ class CurlGetTest extends ApiTestCase
                 [],
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
-                ],
-                [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
+                ], [],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketIdentifier=$bucketID"
             );
-            $eventDispatcher = new EventDispatcher();
 
             $c = new CreateFileDataAction($blobService, $configService);
             try {
@@ -821,7 +799,6 @@ class CurlGetTest extends ApiTestCase
                 $options = [
                     'headers' => [
                         'Accept' => 'application/ld+json',
-                        'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                 ];
 
@@ -885,9 +862,7 @@ class CurlGetTest extends ApiTestCase
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
-                [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
+                [],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
@@ -925,7 +900,6 @@ class CurlGetTest extends ApiTestCase
                     'headers' => [
                         'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
-                        'HTTP_ACCEPT' => 'application/ld+json',
                         'Content-Type' => 'application/merge-patch+json',
                     ],
                 ];
@@ -989,7 +963,6 @@ class CurlGetTest extends ApiTestCase
                 ],
                 [
                     'Authorization' => 'Bearer 42',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
@@ -1029,7 +1002,6 @@ class CurlGetTest extends ApiTestCase
                 'headers' => [
                     'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                     'Content-Type' => 'multipart/form-data; boundary=--------------------------1',
                 ],
                 'body' => "----------------------------1\r\nContent-Disposition: form-data; name=\"fileName\"\r\n\r\n$newFileName\r\n----------------------------1--\r\n",
@@ -1112,9 +1084,7 @@ class CurlGetTest extends ApiTestCase
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
-                [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
+                [],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketIdentifier=$bucketID"
@@ -1151,7 +1121,6 @@ class CurlGetTest extends ApiTestCase
                     $options = [
                         'headers' => [
                             'Accept' => 'application/ld+json',
-                            'HTTP_ACCEPT' => 'application/ld+json',
                             'Content-Type' => ($method === 'PATCH') ? 'application/merge-patch+json' : (($method === 'POST') ? 'multipart/form-data' : 'application/ld+json'),
                             'Authorization' => 'Bearer 42',
                         ],
@@ -1213,9 +1182,7 @@ class CurlGetTest extends ApiTestCase
                     [
                         'file' => new UploadedFile($this->files[$i]['path'], $this->files[$i]['name'], $this->files[$i]['mime']),
                     ],
-                    [
-                        'HTTP_ACCEPT' => 'application/ld+json',
-                    ],
+                    [],
                     "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[$i]['content'])
                 );
@@ -1248,7 +1215,6 @@ class CurlGetTest extends ApiTestCase
                 'headers' => [
                     'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
 
@@ -1308,9 +1274,7 @@ class CurlGetTest extends ApiTestCase
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
-                [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
+                [],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketIdentifier=$bucketID"
@@ -1376,7 +1340,6 @@ class CurlGetTest extends ApiTestCase
                         'headers' => [
                             'Authorization' => 'Bearer 42',
                             'Accept' => 'application/ld+json',
-                            'HTTP_ACCEPT' => 'application/ld+json',
                         ],
                     ];
 
@@ -1436,7 +1399,6 @@ class CurlGetTest extends ApiTestCase
                         'headers' => [
                             'Authorization' => 'Bearer 42',
                             'Accept' => 'application/ld+json',
-                            'HTTP_ACCEPT' => 'application/ld+json',
                         ],
                         'extra' => [
                             'files' => [
@@ -1498,7 +1460,6 @@ class CurlGetTest extends ApiTestCase
                         'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
                         'Content-Type' => 'multipart/form-data',
-                        'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                     'extra' => [
                         [
@@ -1570,7 +1531,6 @@ class CurlGetTest extends ApiTestCase
                     'headers' => [
                         'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
-                        'HTTP_ACCEPT' => 'application/ld+json',
                         'Content-Type' => 'application/merge-patch+json',
                     ],
                     'body' => '{}',
@@ -1630,9 +1590,7 @@ class CurlGetTest extends ApiTestCase
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
-                [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
+                [],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
@@ -1671,7 +1629,6 @@ class CurlGetTest extends ApiTestCase
                     'headers' => [
                         'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
-                        'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                 ];
                 $client = $this->setUpTestClient();
@@ -1791,9 +1748,7 @@ class CurlGetTest extends ApiTestCase
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
-                [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
+                [],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
@@ -1836,7 +1791,6 @@ class CurlGetTest extends ApiTestCase
                     'headers' => [
                         'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
-                        'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                 ];
 
@@ -1964,9 +1918,7 @@ class CurlGetTest extends ApiTestCase
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
-                [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
+                [],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketIdentifier=$bucketID"
@@ -2007,7 +1959,6 @@ class CurlGetTest extends ApiTestCase
                     'headers' => [
                         'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
-                        'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                 ];
 
@@ -2129,9 +2080,7 @@ class CurlGetTest extends ApiTestCase
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
-                [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
+                [],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
@@ -2172,7 +2121,6 @@ class CurlGetTest extends ApiTestCase
                     'headers' => [
                         'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
-                        'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                 ];
 
@@ -2289,9 +2237,7 @@ class CurlGetTest extends ApiTestCase
                     [
                         'file' => new UploadedFile($this->files[$i]['path'], $this->files[$i]['name'], $this->files[$i]['mime']),
                     ],
-                    [
-                        'HTTP_ACCEPT' => 'application/ld+json',
-                    ],
+                    [],
                     "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[$i]['content'])
                 );
@@ -2323,7 +2269,6 @@ class CurlGetTest extends ApiTestCase
                 'headers' => [
                     'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
 
@@ -2382,9 +2327,7 @@ class CurlGetTest extends ApiTestCase
                 [
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
-                [
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
+                [],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
@@ -2446,7 +2389,6 @@ class CurlGetTest extends ApiTestCase
                     'headers' => [
                         'Authorization' => 'Bearer 42',
                         'Accept' => 'application/ld+json',
-                        'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                     'extra' => [
                         'files' => [
@@ -2479,7 +2421,6 @@ class CurlGetTest extends ApiTestCase
                 'headers' => [
                     'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
 
