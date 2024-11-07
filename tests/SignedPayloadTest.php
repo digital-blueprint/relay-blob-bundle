@@ -15,16 +15,15 @@ class SignedPayloadTest extends TestCase
             $secret = bin2hex(random_bytes(32));
             $bucketID = '9876';
             $creationTime = date('U');
-            //            $uri = 'http://127.0.0.1:8000/blob/files/';
             $payload = [
                 'bucketID' => $bucketID,
                 'creationTime' => $creationTime,
                 'prefix' => 'MyApp/MyShare',
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
-            $data = SignatureUtils::verify($secret, $token);
+            $data = SignatureUtils::verifySignature($secret, $token);
             $this->assertIsArray($data);
             $this->assertEquals($payload['bucketID'], $data['bucketID']);
             $this->assertEquals($payload['creationTime'], $data['creationTime']);
@@ -40,19 +39,18 @@ class SignedPayloadTest extends TestCase
             $secret = bin2hex(random_bytes(32));
             $bucketID = '9876';
             $creationTime = date('U');
-            //            $uri = 'http://127.0.0.1:8000/blob/files/';
             $payload = [
                 'bucketID' => $bucketID,
                 'creationTime' => $creationTime,
                 'prefix' => 'MyApp/MyShare',
-                'filename' => 'Test.php',
-                'file' => hash('sha256', file_get_contents(__DIR__.'/Test.php')),
+                'filename' => 'text.txt',
+                'file' => hash('sha256', file_get_contents(__DIR__.'/test.txt')),
                 'metadata' => [],
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
-            $data = SignatureUtils::verify($secret, $token);
+            $data = SignatureUtils::verifySignature($secret, $token);
             $this->assertEquals($payload['bucketID'], $data['bucketID']);
             $this->assertEquals($payload['creationTime'], $data['creationTime']);
             $this->assertEquals($payload['prefix'], $data['prefix']);
@@ -69,18 +67,16 @@ class SignedPayloadTest extends TestCase
         try {
             $secret = bin2hex(random_bytes(32));
             $bucketID = '9876';
-            $prefix = urlencode('MyApp/MyShare');
             $creationTime = date('U');
-            //            $uri = "http://127.0.0.1:8000/blob/files/?bucketID=$bucketID&prefix=$prefix&creationTime=$creationTime";
             $payload = [
                 'bucketID' => $bucketID,
                 'creationTime' => $creationTime,
                 'prefix' => 'MyApp/MyShare',
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
-            $data = SignatureUtils::verify($secret, $token);
+            $data = SignatureUtils::verifySignature($secret, $token);
             $this->assertIsArray($data);
             $this->assertEquals($payload['bucketID'], $data['bucketID']);
             $this->assertEquals($payload['creationTime'], $data['creationTime']);

@@ -5,58 +5,51 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Tests;
 
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
+use ApiPlatform\Symfony\Bundle\Test\Client;
 use Dbp\Relay\BlobBundle\ApiPlatform\CreateFileDataAction;
+use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
+use Dbp\Relay\BlobBundle\TestUtils\DummyFileSystemService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
+use Dbp\Relay\CoreBundle\TestUtils\TestClient;
 use Dbp\Relay\CoreBundle\TestUtils\UserAuthTrait;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * TODO: Refactor
+ * - Split tests into smaller chunks
+ * - Don't mix unit tests and API tests (which use a test client/kernel).
+ */
 class CurlGetTest extends ApiTestCase
 {
     use UserAuthTrait;
 
-    /** @var EntityManagerInterface */
-    private $entityManager;
+    private EntityManagerInterface $entityManager;
 
     /** @var array[] */
-    private $files;
+    private array $files;
 
     /**
      * @throws \Exception
      */
     protected function setUp(): void
     {
-        /** @var Kernel $kernel */
-        $kernel = self::bootKernel();
-
-        if ('test' !== $kernel->getEnvironment()) {
-            throw new \RuntimeException('Execution only in Test environment possible!');
-        }
-
-        $this->entityManager = $kernel->getContainer()->get('doctrine.orm.entity_manager');
-        $metaData = $this->entityManager->getMetadataFactory()->getAllMetadata();
-        $schemaTool = new SchemaTool($this->entityManager);
-        $schemaTool->updateSchema($metaData);
-
-        $query = $this->entityManager->getConnection()->createQueryBuilder();
-        $query->delete('blob_files')->executeQuery();
-
         $this->files = [
             0 => [
-                'name' => $n = 'Test.php',
+                'name' => $n = 'test.txt',
                 'path' => $p = __DIR__.'/'.$n,
                 'content' => $c = file_get_contents($p),
                 'hash' => hash('sha256', $c),
                 'size' => strlen($c),
-                'mime' => 'application/x-php',
+                'mime' => 'text/plain',
                 'retention' => 'P1W',
             ],
             1 => [
@@ -69,8 +62,22 @@ class CurlGetTest extends ApiTestCase
                 'retention' => 'P1M',
             ],
         ];
+    }
 
-        // $this->markTestIncomplete();
+    protected function setUpTestClient(): Client
+    {
+        $client = $this->withUser(TestClient::TEST_USER_IDENTIFIER, [], '42');
+        $client->disableReboot(); // allows multiple requests for one client
+        $this->entityManager = BlobApiTest::setUp($client->getContainer());
+
+        return $client;
+    }
+
+    protected function getBucketConfig(Client $client): BucketConfig
+    {
+        $configService = $client->getContainer()->get(ConfigurationService::class);
+
+        return $configService->getBuckets()[0];
     }
 
     /**
@@ -79,40 +86,16 @@ class CurlGetTest extends ApiTestCase
     public function testGet(): void
     {
         try {
-            $client = $this->withUser('user', [], '42');
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $client = $this->setUpTestClient();
+            $bucket = $this->getBucketConfig($client);
+            $url = SignatureUtils::getSignedUrl('/blob/files', $bucket->getKey(), $bucket->getBucketID(), 'GET', ['prefix' => 'playground']);
 
-            $bucket = $configService->getBuckets()[0];
-            $secret = $bucket->getKey();
-            $bucketID = $bucket->getBucketID();
-            $creationTime = rawurlencode(date('c'));
-            $prefix = 'playground';
-            $action = 'GET';
-            $payload = [
-                'bucketIdentifier' => $bucketID,
-                'creationTime' => $creationTime,
-                'prefix' => $prefix,
-                'method' => $action,
-            ];
-
-            $url = "/blob/files?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action";
-
-            $payload = [
-                'ucs' => $this->generateSha256ChecksumFromUrl($url),
-            ];
-
-            $token = SignatureUtils::create($secret, $payload);
-            $url = $url.'&sig='.$token;
             $options = [
                 'headers' => [
                     'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
-
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects();
 
             /** @var Response $response */
             $response = $client->request('GET', $url, $options);
@@ -140,13 +123,13 @@ class CurlGetTest extends ApiTestCase
     public function testPostGetDelete(): void
     {
         try {
-            $client = $this->withUser('user', [], '42');
+            $client = $this->setUpTestClient();
 
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
 
-            $bucket = $configService->getBuckets()[0];
+            $bucket = $this->getBucketConfig($client);
             $secret = $bucket->getKey();
             $bucketID = $bucket->getBucketID();
 
@@ -163,18 +146,11 @@ class CurlGetTest extends ApiTestCase
 
             $url = "/blob/files?bucketIdentifier=$bucketID&creationTime=$creationTime&prefix=$prefix&method=$action&notifyEmail=$notifyEmail&deleteIn=$retentionDuration";
 
-            $requestBody = [
-                'fileName' => $fileName,
-                'fileHash' => $fileHash,
-            ];
-
-            $bodyJson = json_encode($requestBody);
-
             $data = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $data);
+            $token = SignatureUtils::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -193,10 +169,7 @@ class CurlGetTest extends ApiTestCase
                     .'file='.base64_encode($this->files[0]['content'])
             );
 
-            $eventDispatcher = new EventDispatcher();
-
             $c = new CreateFileDataAction($blobService, $configService);
-            $c->setContainer($client->getContainer());
             $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
@@ -222,7 +195,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -231,9 +204,6 @@ class CurlGetTest extends ApiTestCase
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
-
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects();
 
             /** @var \ApiPlatform\Symfony\Bundle\Test\Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -269,13 +239,11 @@ class CurlGetTest extends ApiTestCase
                 'fileHash' => $fileHash,
             ];
 
-            $bodyJson = json_encode($requestBody);
-
             $payload = [
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -293,9 +261,8 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[1]['content'])
             );
-            $eventDispatcher = new EventDispatcher();
+
             $c = new CreateFileDataAction($blobService, $configService);
-            $c->setContainer($client->getContainer());
             $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
@@ -319,12 +286,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
-
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects(false);
-
-            $client = $this->withUser('user', [], '42');
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             /** @var \ApiPlatform\Symfony\Bundle\Test\Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -365,20 +327,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = SignatureUtils::create($secret, $payload);
-
-                $options = [
-                    'headers' => [
-                        'Authorization' => 'Bearer 42',
-                        'Accept' => 'application/ld+json',
-                        'HTTP_ACCEPT' => 'application/ld+json',
-                    ],
-                ];
-
-                $client = $this->withUser('user', [], '42');
-
-                /* @noinspection PhpInternalEntityUsedInspection */
-                $client->getKernelBrowser()->followRedirects(false);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
                 /** @var Response $response */
                 $response = $client->request('DELETE', $url.'&sig='.$token, $options);
@@ -398,7 +347,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
             $options = [
                 'headers' => [
                     'Authorization' => 'Bearer 42',
@@ -406,7 +355,7 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            $client = $this->withUser('user', [], '42');
+            $client = $this->setUpTestClient();
 
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -432,7 +381,7 @@ class CurlGetTest extends ApiTestCase
     public function testGetDeleteById(): void
     {
         try {
-            $client = $this->withUser('user', [], '42');
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             /** @var ConfigurationService $configService */
@@ -458,7 +407,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -476,10 +425,8 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
-            $eventDispatcher = new EventDispatcher();
 
             $c = new CreateFileDataAction($blobService, $configService);
-            $c->setContainer($client->getContainer());
             $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
@@ -494,16 +441,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET a file by id
             // =======================================================
-            $creationTime = rawurlencode(date('c'));
-
-            $url = '/blob/files/'.$this->files[0]['uuid']."?bucketIdentifier=$bucketID&creationTime=$creationTime&includeDeleteAt=1&method=GET";
-
-            $payload = [
-                'ucs' => $this->generateSha256ChecksumFromUrl($url),
-            ];
-
-            $token = SignatureUtils::create($secret, $payload);
-
+            $url = SignatureUtils::getSignedUrl('/blob/files/'.$this->files[0]['uuid'], $secret, $bucketID, 'GET', ['includeDeleteAt' => '1']);
             $options = [
                 'headers' => [
                     'Authorization' => 'Bearer 42',
@@ -511,12 +449,9 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects();
-
             $this->assertArrayHasKey($this->files[0]['uuid'], DummyFileSystemService::$data[$bucket->getIdentifier()], 'File data not in dummy store.');
             /** @var Response $response */
-            $response = $client->request('GET', $url.'&sig='.$token, $options);
+            $response = $client->request('GET', $url, $options);
             $this->assertEquals(200, $response->getStatusCode());
             // TODO: further checks...
 
@@ -529,7 +464,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -538,11 +473,6 @@ class CurlGetTest extends ApiTestCase
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
-
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects(false);
-
-            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('DELETE', $url.'&sig='.$token, $options);
@@ -565,20 +495,8 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
-
-            $options = [
-                'headers' => [
-                    'Authorization' => 'Bearer 42',
-                    'Accept' => 'application/ld+json',
-                    'HTTP_ACCEPT' => 'application/ld+json',
-                ],
-            ];
-
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects();
-
-            $client = $this->withUser('user', [], '42');
+            $token = SignatureUtils::createSignature($secret, $payload);
+            $client = $this->setUpTestClient();
 
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -600,7 +518,7 @@ class CurlGetTest extends ApiTestCase
     public function testGetExpired(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->setUpTestClient();
             $configService = $client->getContainer()->get(ConfigurationService::class);
 
             // =======================================================
@@ -618,7 +536,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -626,9 +544,6 @@ class CurlGetTest extends ApiTestCase
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
-
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects();
 
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -645,7 +560,7 @@ class CurlGetTest extends ApiTestCase
     public function testGetDeleteByUnknownId(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->setUpTestClient();
             /** @var ConfigurationService $configService */
             $configService = $client->getContainer()->get(ConfigurationService::class);
 
@@ -665,16 +580,13 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
-
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects();
 
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -690,7 +602,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -698,9 +610,6 @@ class CurlGetTest extends ApiTestCase
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
-
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects(false);
 
             /** @var Response $response */
             $response = $client->request('DELETE', $url.'&sig='.$token, $options);
@@ -717,7 +626,7 @@ class CurlGetTest extends ApiTestCase
     public function testPostWithWrongAction(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -745,7 +654,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -764,10 +673,8 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
-            $eventDispatcher = new EventDispatcher();
 
             $c = new CreateFileDataAction($blobService, $configService);
-            $c->setContainer($client->getContainer());
             $fileData = $c->__invoke($requestPost);
             $this->fail('    FileData incorrectly saved: '.$fileData->getIdentifier());
         } catch (ApiError $e) {
@@ -783,7 +690,7 @@ class CurlGetTest extends ApiTestCase
     public function testGetAllWithWrongAction(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -803,7 +710,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -811,9 +718,6 @@ class CurlGetTest extends ApiTestCase
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
-
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects();
 
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -830,7 +734,7 @@ class CurlGetTest extends ApiTestCase
     public function testGETWithWrongAction(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -863,7 +767,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $data);
+            $token = SignatureUtils::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -884,7 +788,6 @@ class CurlGetTest extends ApiTestCase
             $eventDispatcher = new EventDispatcher();
 
             $c = new CreateFileDataAction($blobService, $configService);
-            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -913,7 +816,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -921,9 +824,6 @@ class CurlGetTest extends ApiTestCase
                         'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                 ];
-
-                /* @noinspection PhpInternalEntityUsedInspection */
-                $client->getKernelBrowser()->followRedirects();
 
                 /** @var Response $response */
                 $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -941,7 +841,7 @@ class CurlGetTest extends ApiTestCase
     public function testPATCHWithWrongAction(): void
     {
         try {
-            $client = $this->withUser('user', [], '42');
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -974,7 +874,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $data);
+            $token = SignatureUtils::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -993,7 +893,6 @@ class CurlGetTest extends ApiTestCase
             );
             $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService, $configService);
-            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -1020,7 +919,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -1031,12 +930,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                 ];
 
-                /* @noinspection PhpInternalEntityUsedInspection */
-                $client->getKernelBrowser()->followRedirects();
-
-                $client = $this->withUser('user', [], '42');
-
-                /** @var Response $response */
+                $client = $this->setUpTestClient();
                 $response = $client->request('PATCH', $url.'&sig='.$token, $options);
 
                 $this->assertEquals(405, $response->getStatusCode());
@@ -1052,7 +946,7 @@ class CurlGetTest extends ApiTestCase
     public function testPATCH(): void
     {
         try {
-            $client = $this->withUser('user', [], '42');
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1082,7 +976,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $data);
+            $token = SignatureUtils::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1101,9 +995,7 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketIdentifier=$bucketID"
             );
-            $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService, $configService);
-            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -1131,7 +1023,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -1143,10 +1035,6 @@ class CurlGetTest extends ApiTestCase
                 'body' => "----------------------------1\r\nContent-Disposition: form-data; name=\"fileName\"\r\n\r\n$newFileName\r\n----------------------------1--\r\n",
             ];
 
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects();
-
-            /** @var Response $response */
             $response = $client->request('PATCH', $url.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
 
@@ -1157,19 +1045,13 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             $options2 = [
                 'headers' => [
                     'Authorization' => 'Bearer 42',
                 ],
             ];
-
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects();
-
-            // get new token to make it work for some reason
-            $client = $this->withUser('user', [], '42');
 
             /** @var \ApiPlatform\Symfony\Bundle\Test\Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options2);
@@ -1187,7 +1069,7 @@ class CurlGetTest extends ApiTestCase
     public function testAllMethodsWithWrongActions(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1219,7 +1101,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $data);
+            $token = SignatureUtils::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1237,9 +1119,7 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketIdentifier=$bucketID"
             );
-            $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService, $configService);
-            $c->setContainer($client->getContainer());
             $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
@@ -1266,7 +1146,7 @@ class CurlGetTest extends ApiTestCase
                         'ucs' => $this->generateSha256ChecksumFromUrl($url),
                     ];
 
-                    $token = SignatureUtils::create($secret, $payload);
+                    $token = SignatureUtils::createSignature($secret, $payload);
 
                     $options = [
                         'headers' => [
@@ -1277,12 +1157,7 @@ class CurlGetTest extends ApiTestCase
                         ],
                     ];
 
-                    /* @noinspection PhpInternalEntityUsedInspection */
-                    $client->getKernelBrowser()->followRedirects();
-
-                    $client = $this->withUser('user', [], '42');
-
-                    /** @var Response $response */
+                    $client = $this->setUpTestClient();
                     $response = $client->request($method, $url.'&sig='.$token, $options);
                     $this->assertEquals(405, $response->getStatusCode());
                 }
@@ -1298,7 +1173,7 @@ class CurlGetTest extends ApiTestCase
     public function testRedirectToBinary(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1327,7 +1202,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = SignatureUtils::create($secret, $data);
+                $token = SignatureUtils::createSignature($secret, $data);
 
                 $requestPost = Request::create($url.'&sig='.$token, 'POST',
                     [
@@ -1346,7 +1221,6 @@ class CurlGetTest extends ApiTestCase
                 );
                 $eventDispatcher = new EventDispatcher();
                 $c = new CreateFileDataAction($blobService, $configService);
-                $c->setContainer($client->getContainer());
                 $fileData = $c->__invoke($requestPost);
 
                 $this->assertNotNull($fileData);
@@ -1368,7 +1242,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -1378,17 +1252,13 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects(false);
-
-            $client = $this->withUser('user', [], '42');
-
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
             // check if the one created element is there
             $members = json_decode($response->getContent(), true);
-            $this->assertEquals('data:text/x-php;base64', substr($members['contentUrl'], 0, strlen('data:text/x-php;base64')));
+            $expected = 'data:'.$this->files[0]['mime'].';base64';
+            $this->assertEquals($expected, substr($members['contentUrl'], 0, strlen($expected)));
         } catch (\Throwable $e) {
             throw $e;
         }
@@ -1400,7 +1270,7 @@ class CurlGetTest extends ApiTestCase
     public function testOperationsWithMissingParameters(): void
     {
         try {
-            $client = $this->withUser('user', [], '42');
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1427,7 +1297,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $data);
+            $token = SignatureUtils::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1446,7 +1316,6 @@ class CurlGetTest extends ApiTestCase
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketIdentifier=$bucketID"
             );
             $c = new CreateFileDataAction($blobService, $configService);
-            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -1501,7 +1370,7 @@ class CurlGetTest extends ApiTestCase
                         $baseUrl = $baseUrl.$connector.$params[$j];
                     }
 
-                    $token = SignatureUtils::create($secret, $payload);
+                    $token = SignatureUtils::createSignature($secret, $payload);
 
                     $options = [
                         'headers' => [
@@ -1511,7 +1380,7 @@ class CurlGetTest extends ApiTestCase
                         ],
                     ];
 
-                    $client = $this->withUser('user', [], '42');
+                    $client = $this->setUpTestClient();
 
                     /** @var Response $response */
                     $response = $client->request($action, $baseUrl.$token, $options);
@@ -1559,7 +1428,7 @@ class CurlGetTest extends ApiTestCase
                         $baseUrl = $baseUrl.$connector.$params[$j];
                     }
 
-                    $token = SignatureUtils::create($secret, $payload);
+                    $token = SignatureUtils::createSignature($secret, $payload);
 
                     $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
@@ -1576,7 +1445,7 @@ class CurlGetTest extends ApiTestCase
                         ],
                     ];
 
-                    $client = $this->withUser('user', [], '42');
+                    $client = $this->setUpTestClient();
 
                     /** @var Response $response */
                     $response = $client->request($action, $baseUrl.$token, $options);
@@ -1622,7 +1491,7 @@ class CurlGetTest extends ApiTestCase
                     $baseUrl = $baseUrl.$connector.$params[$j];
                 }
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -1656,7 +1525,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                 ];
 
-                $client = $this->withUser('user', [], '42');
+                $client = $this->setUpTestClient();
 
                 /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.$token, $options);
@@ -1707,7 +1576,7 @@ class CurlGetTest extends ApiTestCase
                     'body' => '{}',
                 ];
 
-                $client = $this->withUser('user', [], '42');
+                $client = $this->setUpTestClient();
                 /** @var Response $response */
                 $response = $client->request('PATCH', $baseUrl, $options);
                 $this->assertEquals(400, $response->getStatusCode());
@@ -1723,7 +1592,7 @@ class CurlGetTest extends ApiTestCase
     public function testOperationsWithCorrectSignatureButWrongChecksum(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1750,7 +1619,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $data);
+            $token = SignatureUtils::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1767,9 +1636,7 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
-            $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService, $configService);
-            $c->setContainer($client->getContainer());
             $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
@@ -1798,7 +1665,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -1807,7 +1674,7 @@ class CurlGetTest extends ApiTestCase
                         'HTTP_ACCEPT' => 'application/ld+json',
                     ],
                 ];
-                $client = $this->withUser('user', [], '42');
+                $client = $this->setUpTestClient();
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -1826,8 +1693,8 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::create($secret, $payload);
-                $client = $this->withUser('user', [], '42');
+                $token = SignatureUtils::createSignature($secret, $payload);
+                $client = $this->setUpTestClient();
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -1847,11 +1714,11 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
-                $client = $this->withUser('user', [], '42');
+                $client = $this->setUpTestClient();
 
                 /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
@@ -1886,7 +1753,7 @@ class CurlGetTest extends ApiTestCase
     public function testOperationsWithCorrectChecksumButWrongSignature(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1913,7 +1780,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $data);
+            $token = SignatureUtils::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1930,9 +1797,7 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
-            $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService, $configService);
-            $c->setContainer($client->getContainer());
             $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
@@ -1965,7 +1830,7 @@ class CurlGetTest extends ApiTestCase
                 $bucket = $configService->getBuckets()[1];
                 $secret = $bucket->getKey();
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -1975,7 +1840,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                 ];
 
-                $client = $this->withUser('user', [], '42');
+                $client = $this->setUpTestClient();
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -1997,9 +1862,9 @@ class CurlGetTest extends ApiTestCase
                 $bucket = $configService->getBuckets()[1];
                 $secret = $bucket->getKey();
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
-                $client = $this->withUser('user', [], '42');
+                $client = $this->setUpTestClient();
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -2022,11 +1887,11 @@ class CurlGetTest extends ApiTestCase
                 $bucket = $configService->getBuckets()[1];
                 $secret = $bucket->getKey();
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
-                $client = $this->withUser('user', [], '42');
+                $client = $this->setUpTestClient();
 
                 /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
@@ -2061,7 +1926,7 @@ class CurlGetTest extends ApiTestCase
     public function testOperationsWithOverdueCreationTime(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -2088,7 +1953,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $data);
+            $token = SignatureUtils::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -2106,9 +1971,7 @@ class CurlGetTest extends ApiTestCase
                 .'file='.base64_encode($this->files[0]['content'])
                 ."&fileName={$this->files[0]['name']}&prefix=$prefix&bucketIdentifier=$bucketID"
             );
-            $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService, $configService);
-            $c->setContainer($client->getContainer());
             $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
@@ -2138,7 +2001,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -2148,7 +2011,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                 ];
 
-                $client = $this->withUser('user', [], '42');
+                $client = $this->setUpTestClient();
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -2167,9 +2030,9 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
-                $client = $this->withUser('user', [], '42');
+                $client = $this->setUpTestClient();
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -2189,11 +2052,11 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
-                $client = $this->withUser('user', [], '42');
+                $client = $this->setUpTestClient();
 
                 /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
@@ -2228,7 +2091,7 @@ class CurlGetTest extends ApiTestCase
     public function testOperationsWithUnconfiguredBucket(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -2255,7 +2118,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $data);
+            $token = SignatureUtils::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -2272,9 +2135,7 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
-            $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService, $configService);
-            $c->setContainer($client->getContainer());
             $fileData = $c->__invoke($requestPost);
 
             $this->assertNotNull($fileData);
@@ -2305,7 +2166,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -2315,7 +2176,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                 ];
 
-                $client = $this->withUser('user', [], '42');
+                $client = $this->setUpTestClient();
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -2334,9 +2195,9 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
-                $client = $this->withUser('user', [], '42');
+                $client = $this->setUpTestClient();
 
                 /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -2356,11 +2217,11 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
-                $client = $this->withUser('user', [], '42');
+                $client = $this->setUpTestClient();
 
                 /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
@@ -2389,7 +2250,7 @@ class CurlGetTest extends ApiTestCase
     public function testBinaryDownload(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -2397,7 +2258,6 @@ class CurlGetTest extends ApiTestCase
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
             $bucketID = $bucket->getBucketID();
-            $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
 
             // =======================================================
@@ -2418,7 +2278,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = SignatureUtils::create($secret, $data);
+                $token = SignatureUtils::createSignature($secret, $data);
 
                 $requestPost = Request::create($url.'&sig='.$token, 'POST',
                     [
@@ -2435,9 +2295,7 @@ class CurlGetTest extends ApiTestCase
                     "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[$i]['content'])
                 );
-                $eventDispatcher = new EventDispatcher();
                 $c = new CreateFileDataAction($blobService, $configService);
-                $c->setContainer($client->getContainer());
                 $fileData = $c->__invoke($requestPost);
 
                 $this->assertNotNull($fileData);
@@ -2459,7 +2317,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -2468,11 +2326,6 @@ class CurlGetTest extends ApiTestCase
                     'HTTP_ACCEPT' => 'application/ld+json',
                 ],
             ];
-
-            /* @noinspection PhpInternalEntityUsedInspection */
-            $client->getKernelBrowser()->followRedirects(false);
-
-            $client = $this->withUser('user', [], '42');
 
             /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -2490,7 +2343,7 @@ class CurlGetTest extends ApiTestCase
     public function testDownloadWithInvalidOrMissingParameters(): void
     {
         try {
-            $client = static::createClient();
+            $client = $this->setUpTestClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -2518,7 +2371,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::create($secret, $data);
+            $token = SignatureUtils::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -2535,9 +2388,7 @@ class CurlGetTest extends ApiTestCase
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
             );
-            $eventDispatcher = new EventDispatcher();
             $c = new CreateFileDataAction($blobService, $configService);
-            $c->setContainer($client->getContainer());
             try {
                 $fileData = $c->__invoke($requestPost);
             } catch (\Throwable $e) {
@@ -2587,7 +2438,7 @@ class CurlGetTest extends ApiTestCase
                     $baseUrl = $baseUrl.$connector.$params[$j];
                 }
 
-                $token = SignatureUtils::create($secret, $payload);
+                $token = SignatureUtils::createSignature($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
@@ -2604,7 +2455,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                 ];
 
-                $client = $this->withUser('user', [], '42');
+                $client = $this->setUpTestClient();
 
                 /** @var Response $response */
                 $response = $client->request('GET', $baseUrl.$token, $options);
@@ -2622,7 +2473,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
             ];
 
-            $token = SignatureUtils::create($secret, $payload);
+            $token = SignatureUtils::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -2632,7 +2483,7 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            $client = $this->withUser('user', [], '42');
+            $client = $this->setUpTestClient();
 
             /** @var Response $response */
             $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
@@ -2641,20 +2492,10 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // Check download with invalid action
             // =======================================================
-            $creationTime = rawurlencode(date('c'));
-
-            $baseUrl = '/blob/files/'.$this->files[0]['uuid']."?bucketIdentifier=$bucketID&creationTime=$creationTime&method=DELETE";
-
-            $payload = [
-                'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
-            ];
-
-            $token = SignatureUtils::create($secret, $payload);
-
-            $client = $this->withUser('user', [], '42');
-
-            /** @var Response $response */
-            $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
+            $baseUrl = '/blob/files/'.$this->files[0]['uuid'];
+            $url = SignatureUtils::getSignedUrl($baseUrl, $secret, $bucketID, 'DELETE');
+            $client = $this->setUpTestClient();
+            $response = $client->request('GET', $url, $options);
             $this->assertEquals(405, $response->getStatusCode());
         } catch (\Throwable $e) {
             throw $e;

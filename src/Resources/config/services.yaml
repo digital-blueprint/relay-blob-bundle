@@ -56,3 +56,7 @@ services:
   Dbp\Relay\BlobBundle\Api\FileApi:
     autowire: true
     autoconfigure: true
+
+  Dbp\Relay\BlobBundle\TestUtils\DummyFileSystemService:
+    autowire: true
+    autoconfigure: true

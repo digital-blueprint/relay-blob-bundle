@@ -47,7 +47,8 @@ final class CreateFileDataAction extends AbstractController
         $fileData = $this->blobService->setUpFileDataFromRequest(new FileData(), $request, $errorPrefix);
 
         $fileData = $this->blobService->addFile($fileData);
-        $this->blobService->getLink($request->getSchemeAndHttpHost(), $fileData);
+
+        $fileData->setContentUrl($this->blobService->getDownloadLink($request->getSchemeAndHttpHost(), $fileData));
 
         return $fileData;
     }

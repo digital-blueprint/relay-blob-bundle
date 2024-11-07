@@ -32,14 +32,12 @@ date_default_timezone_set('UTC');
  */
 class BlobService
 {
-    public const INCLUDE_FILE_CONTENTS_OPTION = 'include_file_contents';
     public const DISABLE_OUTPUT_VALIDATION_OPTION = 'disable_output_validation';
     public const UPDATE_LAST_ACCESS_TIMESTAMP_OPTION = 'update_last_access_timestamp';
     public const ASSERT_BUCKET_ID_EQUALS_OPTION = 'assert_bucket_id_equals';
     public const PREFIX_STARTS_WITH_OPTION = 'prefix_starts_with';
     public const PREFIX_OPTION = 'prefix_equals';
     public const INCLUDE_DELETE_AT_OPTION = 'include_delete_at';
-    public const BASE_URL_OPTION = 'base_url';
 
     public function __construct(
         private readonly EntityManagerInterface $em,
@@ -82,7 +80,6 @@ class BlobService
         $this->writeToTablesAndSaveFileData($fileData, $fileData->getFileSize(), $errorPrefix);
 
         /* dispatch POST success event */
-        $this->ensureBucketId($fileData);
         $successEvent = new AddFileDataByPostSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($successEvent);
 
@@ -107,7 +104,6 @@ class BlobService
             $this->saveFileData($fileData);
         }
 
-        $this->ensureBucketId($fileData);
         $patchSuccessEvent = new ChangeFileDataByPatchSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($patchSuccessEvent);
 
@@ -122,7 +118,6 @@ class BlobService
         $fileData ??= $this->getFileData($identifier);
         $this->writeToTablesAndRemoveFileData($fileData, -$fileData->getFileSize());
 
-        $this->ensureBucketId($fileData);
         $deleteSuccessEvent = new DeleteFileDataByDeleteSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($deleteSuccessEvent);
     }
@@ -134,9 +129,8 @@ class BlobService
     {
         $fileData = $this->getFileData($identifier);
 
-        $bucket = $this->ensureBucketId($fileData);
         if (($bucketIdToMatch = $options[self::ASSERT_BUCKET_ID_EQUALS_OPTION] ?? null) !== null) {
-            if ($bucket->getBucketID() !== $bucketIdToMatch) {
+            if ($fileData->getBucketID() !== $bucketIdToMatch) {
                 throw new ApiError(Response::HTTP_FORBIDDEN);
             }
         }
@@ -145,15 +139,9 @@ class BlobService
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
 
-        $bucket = $this->ensureBucketId($fileData);
+        $bucket = $this->getBucketConfig($fileData);
         if (!($options[self::DISABLE_OUTPUT_VALIDATION_OPTION] ?? false) && $bucket->getOutputValidation()) {
             $this->checkFileDataBeforeRetrieval($fileData, 'blob:get-file-data');
-        }
-
-        if ($options[self::INCLUDE_FILE_CONTENTS_OPTION] ?? false) {
-            $fileData->setContentUrl($this->getContentUrl($fileData));
-        } else {
-            $fileData = $this->getLink($options[self::BASE_URL_OPTION] ?? '', $fileData);
         }
 
         if ($options[self::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION] ?? true) {
@@ -178,8 +166,6 @@ class BlobService
         $prefix = $options[self::PREFIX_OPTION] ?? '';
         $prefixStartsWith = $options[self::PREFIX_STARTS_WITH_OPTION] ?? false;
         $includeDeleteAt = $options[self::INCLUDE_DELETE_AT_OPTION] ?? false;
-        $includeData = $options[self::INCLUDE_FILE_CONTENTS_OPTION] ?? false;
-        $baseUrl = $options[self::BASE_URL_OPTION] ?? '';
 
         $fileDatas = $this->getFileDataCollection($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage, $prefixStartsWith, $includeDeleteAt);
 
@@ -188,11 +174,7 @@ class BlobService
         foreach ($fileDatas as $fileData) {
             try {
                 assert($fileData instanceof FileData);
-
-                $this->ensureBucketId($fileData);
-                $fileData = $this->getLink($baseUrl, $fileData);
-                $fileData->setContentUrl($this->generateGETLink($baseUrl, $fileData, $includeData ? '1' : ''));
-
+                $fileData->setBucketId($this->configurationService->getBucketByInternalID($fileData->getInternalBucketID())->getBucketID());
                 $validFileDatas[] = $fileData;
             } catch (\Exception $e) {
                 // skip file not found
@@ -256,6 +238,8 @@ class BlobService
         $deleteIn = $deleteIn ? rawurldecode($deleteIn) : null;
         $type = $type ? rawurldecode($type) : null;
 
+        $fileData->setBucketId($bucketID);
+
         if ($uploadedFile !== null) {
             if ($uploadedFile instanceof UploadedFile && $uploadedFile->getError() !== UPLOAD_ERR_OK) {
                 throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, $uploadedFile->getErrorMessage(),
@@ -305,11 +289,6 @@ class BlobService
             $fileData->setFileHash($fileHash);
         }
 
-        $fileData->setInternalBucketID($this->configurationService->getInternalBucketIdByBucketID($bucketID));
-        $this->ensureBucketId($fileData);
-
-        $this->getLink($request->getSchemeAndHttpHost(), $fileData);
-
         return $fileData;
     }
 
@@ -328,20 +307,9 @@ class BlobService
      *
      * @param FileData $fileData fileData which is missing the bucket ID
      */
-    public function ensureBucketId(FileData $fileData): BucketConfig
+    public function getBucketConfig(FileData $fileData): BucketConfig
     {
-        $bucketConfig = $this->configurationService->getBucketByInternalID($fileData->getInternalBucketID());
-        if (!$bucketConfig) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketID is not configured',
-                'blob:create-file-data-not-configured-bucket-id');
-        }
-
-        $bucketId = $fileData->getBucketId();
-        if (!$bucketId) {
-            $fileData->setBucketId($bucketConfig->getBucketID());
-        }
-
-        return $bucketConfig;
+        return $this->configurationService->getBucketByID($fileData->getBucketId());
     }
 
     /**
@@ -429,22 +397,10 @@ class BlobService
      *
      * @throws \Exception
      */
-    public function getLink(string $baseurl, FileData $fileData): FileData
+    public function getDownloadLink(string $baseurl, FileData $fileData): string
     {
-        $bucket = $this->ensureBucketId($fileData);
-
-        // get time now
-        $now = BlobUtils::now();
-
-        // generate checksum and encode it in payload
-        $payload = [
-            'cs' => $this->generateChecksumFromFileData($fileData, 'GET', $now),
-        ];
-
-        // get HTTP link with connector for fileData
-        $fileData->setContentUrl($baseurl.$this->generateSignedDownloadUrl($fileData, $now, SignatureUtils::create($bucket->getKey(), $payload)));
-
-        return $fileData;
+        return $baseurl.SignatureUtils::getSignedUrl('/blob/files/'.$fileData->getIdentifier().'/download',
+            $this->getBucketConfig($fileData)->getKey(), $fileData->getBucketID(), Request::METHOD_GET);
     }
 
     public function getContent(FileData $fileData): string
@@ -489,7 +445,6 @@ class BlobService
      */
     public function getBinaryResponse(string $fileIdentifier, array $options = []): Response
     {
-        $options[self::INCLUDE_FILE_CONTENTS_OPTION] = false;
         $fileData = $this->getFile($fileIdentifier, $options);
 
         // get binary response of file with connector
@@ -500,97 +455,6 @@ class BlobService
         $response->headers->set('Content-Disposition', $dispositionHeader);
 
         return $response;
-    }
-
-    /**
-     * Generate HTTP link to blob resource.
-     *
-     * @throws \JsonException
-     */
-    public function generateGETLink(string $baseUrl, FileData $fileData, string $includeData = ''): string
-    {
-        $bucket = $this->ensureBucketId($fileData);
-
-        // get time now
-        $now = BlobUtils::now();
-
-        // generate checksum and encode it in payload
-        $payload = [
-            'cs' => $this->generateChecksumFromFileData($fileData, 'GET', $now, $includeData),
-        ];
-
-        $url = '';
-        if (!$includeData) {
-            // set content url
-            $filePath = $this->generateSignedContentUrl($fileData, 'GET', $now, $includeData, SignatureUtils::create($bucket->getKey(), $payload));
-            $url = $baseUrl.'/'.substr($filePath, 1);
-        } else {
-            try {
-                $url = $this->getContentUrl($fileData);
-            } catch (\Exception $e) {
-                throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'File went missing', 'blob:file-not-found');
-            }
-        }
-
-        // build and return HTTP path
-        return $url;
-    }
-
-    /**
-     * Generate signed content url for get requests by identifier
-     * This is useful for generating the HTTP contentUrls for every fileData.
-     *
-     * @param FileData           $fileData    fileData for which the HTTP url should be generated
-     * @param string             $urlMethod   method which is used
-     * @param \DateTimeImmutable $now         timestamp of now which is used as creationTime
-     * @param string             $includeData specifies whether includeData should be =1 or left out
-     * @param string             $sig         signature with checksum that is used
-     */
-    public function generateSignedContentUrl(FileData $fileData, string $urlMethod, \DateTimeImmutable $now, string $includeData, string $sig): string
-    {
-        if ($includeData) {
-            return '/blob/files/'.$fileData->getIdentifier().'?bucketIdentifier='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1&method='.$urlMethod.'&sig='.$sig;
-        } else {
-            return '/blob/files/'.$fileData->getIdentifier().'?bucketIdentifier='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod.'&sig='.$sig;
-        }
-    }
-
-    /**
-     * Generate signed content url for get requests by identifier
-     * This is useful for generating the HTTP contentUrls for every fileData.
-     *
-     * @param FileData           $fileData fileData for which the HTTP url should be generated
-     * @param \DateTimeImmutable $now      timestamp of now which is used as creationTime
-     * @param string             $sig      signature with checksum that is used
-     */
-    public function generateSignedDownloadUrl(FileData $fileData, \DateTimeImmutable $now, string $sig): string
-    {
-        return '/blob/files/'.$fileData->getIdentifier().'/download?bucketIdentifier='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method=GET&sig='.$sig;
-    }
-
-    /**
-     * Generate the sha256 hash from a HTTP url.
-     *
-     * @param FileData           $fileData    fileData for which the HTTP url should be generated
-     * @param string             $urlMethod   method used in the request
-     * @param \DateTimeImmutable $now         timestamp of now which is used as creationTime
-     * @param string             $includeData specified whether includeData should be =1 or left out
-     */
-    public function generateChecksumFromFileData(FileData $fileData, string $urlMethod, \DateTimeImmutable $now, string $includeData = ''): ?string
-    {
-        // check whether includeData should be in url or not
-        if (!$includeData) {
-            // create url to hash
-            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketIdentifier='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&method='.$urlMethod;
-        } else {
-            // create url to hash
-            $contentUrl = '/blob/files/'.$fileData->getIdentifier().'?bucketIdentifier='.$fileData->getInternalBucketID().'&creationTime='.rawurlencode($now->format('c')).'&includeData=1&method='.$urlMethod;
-        }
-
-        // create sha256 hash
-        $cs = hash('sha256', $contentUrl);
-
-        return $cs;
     }
 
     /**
@@ -610,6 +474,8 @@ class BlobService
         if (!$fileData) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
+
+        $fileData->setBucketId($this->configurationService->getBucketByInternalID($fileData->getInternalBucketID())->getBucketID());
 
         return $fileData;
     }
@@ -664,7 +530,7 @@ class BlobService
 
     public function getDatasystemProvider(FileData $fileData): DatasystemProviderServiceInterface
     {
-        return $this->datasystemService->getServiceByBucket($this->ensureBucketId($fileData));
+        return $this->datasystemService->getServiceByBucket($this->getBucketConfig($fileData));
     }
 
     /**
@@ -717,7 +583,7 @@ class BlobService
     public function writeToTablesAndSaveFileData(FileData $fileData, int $bucketSizeDeltaByte, string $errorPrefix): void
     {
         /* Check quota */
-        $bucketQuotaByte = $this->ensureBucketId($fileData)->getQuota() * 1024 * 1024; // Convert mb to Byte
+        $bucketQuotaByte = $this->getBucketConfig($fileData)->getQuota() * 1024 * 1024; // Convert mb to Byte
         $bucketSize = $this->getBucketSizeByInternalIdFromDatabase($fileData->getInternalBucketID());
         $newBucketSizeByte = max($bucketSize->getCurrentBucketSize() + $bucketSizeDeltaByte, 0);
         if ($newBucketSizeByte > $bucketQuotaByte) {
@@ -793,7 +659,7 @@ class BlobService
         }
 
         // check if additionaltype is defined
-        $bucket = $this->ensureBucketId($fileData);
+        $bucket = $this->getBucketConfig($fileData);
         $additionalTypes = $bucket->getAdditionalTypes();
         if (!array_key_exists($additionalType, $additionalTypes)) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
@@ -839,16 +705,16 @@ class BlobService
         if (Tools::isNullOrEmpty($fileData->getIdentifier())) {
             throw new \RuntimeException('identifier is missing');
         }
-
         if (Tools::isNullOrEmpty($fileData->getFileName())) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName is missing', $errorPrefix.'-file-name-missing');
         }
         if (Tools::isNullOrEmpty($fileData->getPrefix())) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'prefix is missing', $errorPrefix.'-prefix-missing');
         }
-        if (Tools::isNullOrEmpty($fileData->getInternalBucketID())) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'internal bucket ID is missing', $errorPrefix.'-internal-bucket-id-missing');
+        if (Tools::isNullOrEmpty($fileData->getBucketId())) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucket ID is missing', $errorPrefix.'-bucket-id-missing');
         }
+        $fileData->setInternalBucketID($this->configurationService->getInternalBucketIdByBucketID($fileData->getBucketId()));
 
         if ($fileData->getFile() !== null) {
             $fileData->setMimeType($fileData->getFile()->getMimeType() ?? '');

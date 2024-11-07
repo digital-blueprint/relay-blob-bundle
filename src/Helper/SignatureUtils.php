@@ -13,32 +13,32 @@ use Symfony\Component\HttpFoundation\Response;
 class SignatureUtils
 {
     /**
-     * Create a JWS token.
+     * Create a signature (JWS token).
      *
      * @param string $secret  to create the (symmetric) JWK from
      * @param array  $payload to create the token from
      *
      * @throws \JsonException
      */
-    public static function create(string $secret, array $payload): string
+    public static function createSignature(string $secret, array $payload): string
     {
         return SignatureTools::create($secret, $payload);
     }
 
     /**
-     * Verify a JWS token.
+     * Verify a signature (JWS token).
      *
-     * @param string $secret to create the (symmetric) JWK from
-     * @param string $token  to verify
+     * @param string $secret    to create the (symmetric) JWK from
+     * @param string $signature to verify
      *
      * @return array extracted payload from token
      *
      * @throws ApiError
      */
-    public static function verify(string $secret, string $token): array
+    public static function verifySignature(string $secret, string $signature): array
     {
         try {
-            $payload = SignatureTools::verify($secret, $token);
+            $payload = SignatureTools::verify($secret, $signature);
         } catch (\Exception $e) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature invalid', 'blob:signature-invalid');
         }
@@ -49,24 +49,20 @@ class SignatureUtils
     /**
      * Verify a JWS token and the checksum inside the signature.
      *
-     * @param string  $secret  to create the (symmetric) JWK from
-     * @param string  $sig     to verify
-     * @param Request $request incoming request
-     *
-     * @return array extracted payload from token
+     * @param string $secret     to create the (symmetric) JWK from
+     * @param string $sig        to verify
+     * @param string $requestUri incoming request URI
      *
      * @throws ApiError
      */
-    private static function verifyChecksumAndSignature(string $secret, string $sig, Request $request): array
+    private static function verifyChecksumAndSignature(string $secret, string $sig, string $requestUri): void
     {
-        $data = self::verify($secret, $sig);
+        $data = self::verifySignature($secret, $sig);
 
         // check checksum of only url since no body is expected
-        if (!array_key_exists('ucs', $data) || $data['ucs'] !== self::generateSha256FromRequest($request)) {
+        if (!array_key_exists('ucs', $data) || $data['ucs'] !== self::generateSha256FromRequest($requestUri)) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum ucs invalid', 'blob:checksum-invalid');
         }
-
-        return $data;
     }
 
     /**
@@ -157,20 +153,38 @@ class SignatureUtils
         }
 
         // verify signature and checksum
-        SignatureUtils::verifyChecksumAndSignature($bucket->getKey(), $sig, $request);
+        SignatureUtils::verifyChecksumAndSignature($bucket->getKey(), $sig, $request->getRequestUri());
     }
 
     /**
      * Generates a sha256 hash from the request url except with the trailing &sig part cut out.
      */
-    public static function generateSha256FromRequest(Request $request): string
+    public static function generateSha256FromRequest(string $requestUri): string
     {
-        // remove signature part of uri
-        $url = explode('&sig=', $request->getRequestUri());
+        $url = explode('&sig=', $requestUri);
 
-        assert(is_string($url[0]));
-
-        // generate hmac sha256 hash over the uri except the signature part
         return SignatureTools::generateSha256Checksum($url[0]);
+    }
+
+    public static function getSignedUrl(string $url, string $secret, string $bucketIdentifier, string $method, array $additionalQueryParameters = [], ?string $creationTime = null): string
+    {
+        $creationTime ??= rawurlencode(date('c'));
+        $url = "$url?bucketIdentifier=$bucketIdentifier&creationTime=$creationTime&method=$method";
+
+        foreach ($additionalQueryParameters as $key => $value) {
+            $url .= "&$key=".rawurlencode($value);
+        }
+
+        $payload = [
+            'ucs' => SignatureTools::generateSha256Checksum($url),
+        ];
+
+        try {
+            $signature = self::createSignature($secret, $payload);
+        } catch (\JsonException) {
+            throw new \RuntimeException('JSON encoding payload failed');
+        }
+
+        return $url.'&sig='.$signature;
     }
 }

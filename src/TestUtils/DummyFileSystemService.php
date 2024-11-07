@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Dbp\Relay\BlobBundle\Tests;
+namespace Dbp\Relay\BlobBundle\TestUtils;
 
 use Dbp\Relay\BlobBundle\Service\DatasystemProviderServiceInterface;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* add unit tests and test utils for further blob unit/API tests, as well as blob integration tests in other bundles
+* fix download link (contentUrl attribute, when 'includeData' is not requested)
+
 ## v0.1.63
 * remove FileData from the connector interface
 

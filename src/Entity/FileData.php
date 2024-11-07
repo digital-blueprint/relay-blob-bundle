@@ -18,6 +18,7 @@ use Dbp\Relay\BlobBundle\ApiPlatform\DownloadAction;
 use Dbp\Relay\BlobBundle\ApiPlatform\FileDataProcessor;
 use Dbp\Relay\BlobBundle\ApiPlatform\FileDataProvider;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ApiResource(
@@ -500,15 +501,15 @@ class FileData
     #[ORM\Column(type: 'relay_blob_uuid_binary', unique: true)]
     #[ApiProperty(identifier: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input'])]
-    private string $identifier = '';
+    private ?string $identifier = null;
 
     #[ORM\Column(type: 'string', length: 512)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input'])]
-    private string $prefix = '';
+    private ?string $prefix = null;
 
     #[ORM\Column(type: 'string', length: 512)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
-    private string $fileName = '';
+    private ?string $fileName = null;
 
     #[ORM\Column(type: 'string', length: 255)]
     #[Groups(['BlobFiles:output'])]
@@ -516,38 +517,37 @@ class FileData
 
     #[ORM\Column(type: 'string', length: 50)]
     #[Groups(['BlobFiles:input'])]
-    private string $internalBucketId = '';
+    private ?string $internalBucketId = null;
 
-    private ?string $bucketId = '';
-
-    #[ORM\Column(type: 'datetime_immutable')]
-    #[Groups(['BlobFiles:output'])]
-    private \DateTimeImmutable $dateCreated;
+    private ?string $bucketId = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['BlobFiles:output'])]
-    private \DateTimeImmutable $dateAccessed;
+    private ?\DateTimeImmutable $dateCreated = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['BlobFiles:output'])]
-    private \DateTimeImmutable $dateModified;
+    private ?\DateTimeImmutable $dateAccessed = null;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    #[Groups(['BlobFiles:output'])]
+    private ?\DateTimeImmutable $dateModified = null;
 
     #[Groups(['BlobFiles:input'])]
     private ?string $retentionDuration = null;
 
-    #[ORM\Column(type: 'datetime_immutable')]
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:update:exists'])]
     private ?\DateTimeImmutable $deleteAt = null;
 
     #[Groups(['BlobFiles:output'])]
-    private string $contentUrl = '';
+    private ?string $contentUrl = null;
 
-    #[Groups(['BlobFiles:input'])]
-    private $file;
+    private ?File $file = null;
 
     #[ORM\Column(type: 'json', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
-    private string $metadata = '';
+    private string $metadata = ''; // TODO: make ?string with default null as soon as table column is marked nullable
 
     #[ORM\Column(type: 'text', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
@@ -569,22 +569,22 @@ class FileData
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
     private ?string $notifyEmail = null;
 
-    public function getIdentifier(): string
+    public function getIdentifier(): ?string
     {
         return $this->identifier;
     }
 
-    public function setIdentifier(string $identifier): void
+    public function setIdentifier(?string $identifier): void
     {
         $this->identifier = $identifier;
     }
 
-    public function getFileName(): string
+    public function getFileName(): ?string
     {
         return $this->fileName;
     }
 
-    public function setFileName(string $fileName): void
+    public function setFileName(?string $fileName): void
     {
         $this->fileName = $fileName;
     }
@@ -594,47 +594,47 @@ class FileData
         return $this->mimeType;
     }
 
-    public function setMimeType(string $mimeType): void
+    public function setMimeType(?string $mimeType): void
     {
         $this->mimeType = $mimeType;
     }
 
-    public function getInternalBucketID(): string
+    public function getInternalBucketID(): ?string
     {
         return $this->internalBucketId;
     }
 
-    public function setInternalBucketID(string $internalBucketId): void
+    public function setInternalBucketID(?string $internalBucketId): void
     {
         $this->internalBucketId = $internalBucketId;
     }
 
-    public function getDateCreated(): \DateTimeImmutable
+    public function getDateCreated(): ?\DateTimeImmutable
     {
         return $this->dateCreated;
     }
 
-    public function setDateCreated(\DateTimeImmutable $dateCreated): void
+    public function setDateCreated(?\DateTimeImmutable $dateCreated): void
     {
         $this->dateCreated = $dateCreated;
     }
 
-    public function getLastAccess(): \DateTimeImmutable
+    public function getLastAccess(): ?\DateTimeImmutable
     {
         return $this->dateAccessed;
     }
 
-    public function setLastAccess(\DateTimeImmutable $dateAccessed): void
+    public function setLastAccess(?\DateTimeImmutable $dateAccessed): void
     {
         $this->dateAccessed = $dateAccessed;
     }
 
-    public function getDateModified(): \DateTimeImmutable
+    public function getDateModified(): ?\DateTimeImmutable
     {
         return $this->dateModified;
     }
 
-    public function setDateModified(\DateTimeImmutable $dateModified): void
+    public function setDateModified(?\DateTimeImmutable $dateModified): void
     {
         $this->dateModified = $dateModified;
     }
@@ -664,37 +664,37 @@ class FileData
         return $this->contentUrl;
     }
 
-    public function setContentUrl(string $contentUrl): void
+    public function setContentUrl(?string $contentUrl): void
     {
         $this->contentUrl = $contentUrl;
     }
 
-    public function getPrefix(): string
+    public function getPrefix(): ?string
     {
         return $this->prefix;
     }
 
-    public function setPrefix(string $prefix): void
+    public function setPrefix(?string $prefix): void
     {
         $this->prefix = $prefix;
     }
 
-    public function getFile()
+    public function getFile(): ?File
     {
         return $this->file;
     }
 
-    public function setFile($file): void
+    public function setFile(?File $file): void
     {
         $this->file = $file;
     }
 
-    public function getMetadata(): string
+    public function getMetadata(): ?string
     {
         return $this->metadata;
     }
 
-    public function setMetadata(string $additionalMetadata): void
+    public function setMetadata(?string $additionalMetadata): void
     {
         $this->metadata = $additionalMetadata;
     }

@@ -14,7 +14,6 @@ class FileApi
     public const PREFIX_STARTS_WITH_OPTION = BlobService::PREFIX_STARTS_WITH_OPTION;
     public const PREFIX_OPTION = BlobService::PREFIX_OPTION;
     public const INCLUDE_DELETE_AT_OPTION = BlobService::INCLUDE_DELETE_AT_OPTION;
-    public const INCLUDE_FILE_CONTENTS_OPTION = BlobService::INCLUDE_FILE_CONTENTS_OPTION;
     public const DISABLE_OUTPUT_VALIDATION_OPTION = BlobService::DISABLE_OUTPUT_VALIDATION_OPTION;
     public const UPDATE_LAST_ACCESS_TIMESTAMP_OPTION = BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION;
 
@@ -23,15 +22,15 @@ class FileApi
     }
 
     /**
+     * @param string|null $bucketConfigIdentifier @deprecated Set bucket ID in fileData instead
+     *
      * @throws FileApiException
      */
-    public function addFile(FileData $fileData, string $bucketConfigIdentifier): FileData
+    public function addFile(FileData $fileData, ?string $bucketConfigIdentifier = null): FileData
     {
-        $internalBucketId = $this->blobService->getInternalBucketIdByBucketID($bucketConfigIdentifier);
-        if ($internalBucketId === null) {
-            throw new FileApiException('bucket not found', FileApiException::BUCKET_NOT_FOUND);
+        if ($bucketConfigIdentifier) {
+            $fileData->setBucketId($bucketConfigIdentifier);
         }
-        $fileData->setInternalBucketID($internalBucketId);
 
         try {
             return $this->blobService->addFile($fileData);
@@ -52,6 +51,9 @@ class FileApi
         }
     }
 
+    /**
+     * @throws FileApiException
+     */
     public function getBinaryFileResponse(string $identifier): Response
     {
         try {
@@ -91,7 +93,6 @@ class FileApi
             // 2. check if is save to write to fileData/previousFileData or they referencing the same instance?
             $previousFileData = $this->blobService->getFile($identifier, [
                 BlobService::DISABLE_OUTPUT_VALIDATION_OPTION => true,
-                BlobService::INCLUDE_FILE_CONTENTS_OPTION => false,
                 BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => false,
             ]);
 
