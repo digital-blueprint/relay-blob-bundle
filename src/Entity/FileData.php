@@ -547,7 +547,7 @@ class FileData
 
     #[ORM\Column(type: 'json', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
-    private string $metadata = ''; // TODO: make ?string with default null as soon as table column is marked nullable
+    private ?string $metadata = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]

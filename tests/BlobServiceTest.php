@@ -50,7 +50,7 @@ class BlobServiceTest extends ApiTestCase
         $this->assertEquals($file->getFilename(), $fileData->getFileName());
         $this->assertEquals($testBucketConfig['bucket_id'], $fileData->getBucketId());
         $this->assertEquals($testBucketConfig['internal_bucket_id'], $fileData->getInternalBucketID());
-        $this->assertEquals('', $fileData->getMetadata());
+        $this->assertNull($fileData->getMetadata());
         $this->assertEquals('text/plain', $fileData->getMimeType());
         $this->assertEquals(12, $fileData->getFileSize());
         $this->assertNull($fileData->getFileHash());

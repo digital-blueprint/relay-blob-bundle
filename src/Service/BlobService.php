@@ -639,13 +639,13 @@ class BlobService
 
     public function validateMetadata(FileData $fileData, string $errorPrefix)
     {
-        $additionalMetadata = $fileData->getMetadata();
+        $metadata = $fileData->getMetadata();
         $additionalType = $fileData->getType();
 
-        if ($additionalMetadata) {
+        if ($metadata !== null) {
             // check if metadata is a valid json in all cases
             try {
-                $metadataDecoded = json_decode($additionalMetadata, false, flags: JSON_THROW_ON_ERROR);
+                $metadataDecoded = json_decode($metadata, false, flags: JSON_THROW_ON_ERROR);
             } catch (\JsonException $e) {
                 throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad metadata', $errorPrefix.'-bad-metadata');
             }
@@ -689,7 +689,8 @@ class BlobService
         if ($this->doFileIntegrityChecks() && $fileData->getFileHash() !== null && hash('sha256', $content) !== $fileData->getFileHash()) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 file hash doesnt match! File integrity cannot be guaranteed', $errorPrefix.'-file-hash-mismatch');
         }
-        if ($this->doFileIntegrityChecks() && $fileData->getMetadataHash() !== null && hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash()) {
+        if ($this->doFileIntegrityChecks() && $fileData->getMetadataHash() !== null
+            && ($fileData->getMetadata() === null || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 metadata hash doesnt match! Metadata integrity cannot be guaranteed', $errorPrefix.'-metadata-hash-mismatch');
         }
 
@@ -723,14 +724,9 @@ class BlobService
 
         $this->validateMetadata($fileData, $errorPrefix);
 
-        if ($this->configurationService->doFileIntegrityChecks()) {
-            if ($fileData->getFile() !== null) {
-                $fileData->setFileHash(hash('sha256', $fileData->getFile()->getContent()));
-            }
-            $fileData->setMetadataHash(hash('sha256', $fileData->getMetadata()));
-        } else {
-            $fileData->setFileHash(null);
-            $fileData->setMetadataHash(null);
-        }
+        $fileData->setFileHash($this->configurationService->doFileIntegrityChecks() && $fileData->getFile() !== null ?
+            hash('sha256', $fileData->getFile()->getContent()) : null);
+        $fileData->setMetadataHash($this->configurationService->doFileIntegrityChecks() && $fileData->getMetadata() !== null ?
+            hash('sha256', $fileData->getMetadata()) : null);
     }
 }

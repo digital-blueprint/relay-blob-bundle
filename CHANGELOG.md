@@ -1,9 +1,14 @@
 # Changelog
 
-## Unreleased
+## v0.1.165
 
 * add unit tests and test utils for further blob unit/API tests, as well as blob integration tests in other bundles
 * fix download link (contentUrl attribute, when 'includeData' is not requested)
+* make attribute 'metadata' nullable
+
+## v0.1.164
+
+* Allow null as value for deleteIn to PATCH the deleteAt date
 
 ## v0.1.63
 * remove FileData from the connector interface

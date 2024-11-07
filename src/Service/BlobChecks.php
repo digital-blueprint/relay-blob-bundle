@@ -308,9 +308,10 @@ class BlobChecks
                 }
 
                 /** @var FileData $fileData */
-                if ($fileData->getFileHash() !== null && $content !== false && hash('sha256', $content) !== $fileData->getFileHash()) {
+                if ($fileData->getFileHash() !== null && hash('sha256', $content) !== $fileData->getFileHash()) {
                     $invalidDatas[] = $fileData;
-                } elseif ($fileData->getFileHash() !== null && hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash()) {
+                } elseif ($fileData->getMetadataHash() !== null
+                    && ($fileData->getMetadata() === null || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
                     $invalidDatas[] = $fileData;
                 }
                 // dont overfill the email
