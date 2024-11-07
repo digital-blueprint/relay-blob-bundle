@@ -18,6 +18,7 @@ use Dbp\Relay\CoreBundle\Helpers\Tools;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonSchema\Validator;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
@@ -397,25 +398,26 @@ class BlobService
      */
     public function getContent(FileData $fileData): string
     {
-        $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketID(), $fileData->getIdentifier());
-
         try {
-            if (ob_start() !== true) {
-                throw new \RuntimeException();
-            }
-            try {
-                $response->sendContent();
-                $content = ob_get_contents();
-                if ($content === false) {
-                    throw new \RuntimeException(); // @phpstan-ignore-line
-                }
-            } finally {
-                if (ob_end_clean() === false) {
-                    throw new \RuntimeException(); // @phpstan-ignore-line
-                }
-            }
-        } catch (\RuntimeException) {
+            // TODO: declare a datasystem-provider exception to catch here instead of the filesystem specific FileNotFoundException
+            $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketID(), $fileData->getIdentifier());
+        } catch (FileNotFoundException) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'File went missing', 'blob:file-not-found');
+        }
+
+        if (ob_start() !== true) {
+            throw new \RuntimeException();
+        }
+        try {
+            $response->sendContent();
+            $content = ob_get_contents();
+            if ($content === false) {
+                throw new \RuntimeException(); // @phpstan-ignore-line
+            }
+        } finally {
+            if (ob_end_clean() === false) {
+                throw new \RuntimeException(); // @phpstan-ignore-line
+            }
         }
 
         return $content;
