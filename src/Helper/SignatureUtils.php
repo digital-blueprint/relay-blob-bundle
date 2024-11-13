@@ -79,18 +79,21 @@ class SignatureUtils
         $bucketID = $filters['bucketIdentifier'] ?? '';
         $creationTime = $filters['creationTime'] ?? '';
         $urlMethod = $filters['method'] ?? '';
+        $expiryDuration = $filters['expireIn'] ?? '';
 
         // check type of params
         assert(is_string($sig));
         assert(is_string($bucketID));
         assert(is_string($creationTime));
         assert(is_string($urlMethod));
+        assert(is_string($expiryDuration));
 
         // decode params according to RFC3986
         $sig = rawurldecode($sig);
         $bucketID = rawurldecode($bucketID);
         $creationTime = rawurldecode($creationTime);
         $urlMethod = rawurldecode($urlMethod);
+        $expiryDuration = rawurldecode($expiryDuration);
 
         // check if signature is present
         if (!$sig) {
@@ -114,8 +117,15 @@ class SignatureUtils
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID is not configured', $errorPrefix.'-bucket-id-not-configured');
         }
 
-        // get link expiry date and current date
-        $linkExpiryTime = $bucket->getLinkExpireTime();
+        if ($expiryDuration) {
+            if (BlobUtils::now()->add(new \DateInterval($expiryDuration)) > BlobUtils::now()->add(new \DateInterval($bucket->getLinkExpireTime()))) {
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'expireIn is too big!', $errorPrefix.'-expireIn-too-big');
+            }
+            $linkExpiryTime = $expiryDuration;
+        } else {
+            // get link expiry date and current date
+            $linkExpiryTime = $bucket->getLinkExpireTime();
+        }
 
         // sub linkexpirytime from now to check if creationTime is too old
         $now = BlobUtils::now();
