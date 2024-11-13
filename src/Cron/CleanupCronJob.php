@@ -34,6 +34,9 @@ class CleanupCronJob implements CronJobInterface
         return $this->configService->getCleanupInterval();
     }
 
+    /**
+     * @throws \Exception
+     */
     public function run(CronOptions $options): void
     {
         $this->blobService->cleanUp();

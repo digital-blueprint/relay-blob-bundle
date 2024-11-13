@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\TestUtils;
 
+use Dbp\Relay\BlobBundle\Entity\FileData;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -40,5 +41,12 @@ class TestEntityManager
     public function getEntityManager(): EntityManager
     {
         return $this->entityManager;
+    }
+
+    public function getFileDataById(string $identifier): ?FileData
+    {
+        return $this->entityManager
+            ->getRepository(FileData::class)
+            ->find($identifier);
     }
 }

@@ -109,7 +109,7 @@ class SignatureUtils
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'method is missing', $errorPrefix.'-missing-method');
         }
         // check if bucket with given bucketID is configured
-        $bucket = $config->getBucketByID($bucketID);
+        $bucket = $config->getBucketById($bucketID);
         if (!$bucket) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID is not configured', $errorPrefix.'-bucket-id-not-configured');
         }

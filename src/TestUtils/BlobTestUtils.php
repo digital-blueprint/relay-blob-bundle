@@ -32,7 +32,7 @@ class BlobTestUtils
         $configurationService->setConfig($testConfig ?? self::getTestConfig());
 
         $datasystemProviderService = new DatasystemProviderService();
-        $datasystemProviderService->addService(new DummyFileSystemService());
+        $datasystemProviderService->addService(new TestDatasystemProviderService());
 
         return new BlobService($entityManager, $configurationService, $datasystemProviderService, $eventDispatcher);
     }
@@ -56,7 +56,7 @@ class BlobTestUtils
             'quota_warning_interval' => '0 6 * * *',
             'buckets' => [
                 [
-                    'service' => 'Dbp\Relay\BlobBundle\TestUtils\DummyFileSystemService',
+                    'service' => 'Dbp\Relay\BlobBundle\TestUtils\TestDatasystemProviderService',
                     'internal_bucket_id' => '018e0ed8-e6d7-794f-8f60-42efe27ef49e',
                     'bucket_id' => 'test-bucket',
                     'key' => '08d848fd868d83646778b87dd0695b10f59c78e23b286e9884504d1bb43cce93',
@@ -82,7 +82,7 @@ class BlobTestUtils
                     ],
                 ],
                 [
-                    'service' => 'Dbp\Relay\BlobBundle\TestUtils\DummyFileSystemService',
+                    'service' => 'Dbp\Relay\BlobBundle\TestUtils\TestDatasystemProviderService',
                     'internal_bucket_id' => '018e1902-c4b6-7e9a-9488-084daf6b3218',
                     'bucket_id' => 'test-bucket-2',
                     'key' => 'f5b08061e9989d0357c4173aa3af9bc05d0400121af5f90a43e6cdb91ff1fbf2',

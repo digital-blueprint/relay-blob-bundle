@@ -3,6 +3,10 @@
 ## v0.1.66
 
 * throw 404 whenever the file content is requested but not found, except for GET collection, where the file is omitted
+* allow removal of files when the file is not found in the datasystem backend
+* update bucket size on autodeletion (cleanup) of files
+* resolve bucket ID confusion 
+* add tests
 
 ## v0.1.65
 

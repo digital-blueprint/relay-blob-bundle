@@ -34,7 +34,7 @@ class ApiTest extends ApiTestCase
         $bucketConfig = self::getTestBucketConfig();
 
         $url = '/blob/files/404';
-        $url = SignatureUtils::getSignedUrl($url, $bucketConfig->getKey(), $bucketConfig->getBucketID(), 'GET');
+        $url = SignatureUtils::getSignedUrl($url, $bucketConfig->getKey(), $bucketConfig->getBucketId(), 'GET');
 
         $response = $this->testClient->get($url);
         $this->assertEquals(Response::HTTP_NOT_FOUND, $response->getStatusCode());

@@ -74,7 +74,7 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
 
         $fileData->setContentUrl($isGetRequest && $includeData ?
             $this->blobService->getContentUrl($fileData) :
-            $this->blobService->getDownloadLink($request->getSchemeAndHttpHost(), $fileData));
+            $this->blobService->getDownloadUrl($request->getSchemeAndHttpHost(), $fileData));
 
         // don't throw on DELETE and PATCH requests
         if ($isGetRequest) {
@@ -111,7 +111,7 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
             try {
                 $fileData->setContentUrl($includeData ?
                     $this->blobService->getContentUrl($fileData) :
-                    $this->blobService->getDownloadLink($request->getSchemeAndHttpHost(), $fileData));
+                    $this->blobService->getDownloadUrl($request->getSchemeAndHttpHost(), $fileData));
                 $validFileDataCollection[] = $fileData;
             } catch (ApiError $apiError) {
                 // skip file not found

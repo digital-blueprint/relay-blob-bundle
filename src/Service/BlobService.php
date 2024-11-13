@@ -17,6 +17,8 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Helpers\Tools;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonSchema\Validator;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
 use Symfony\Component\HttpFoundation\File\File;
@@ -31,8 +33,10 @@ date_default_timezone_set('UTC');
 /**
  * @internal
  */
-class BlobService
+class BlobService implements LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     public const DISABLE_OUTPUT_VALIDATION_OPTION = 'disable_output_validation';
     public const UPDATE_LAST_ACCESS_TIMESTAMP_OPTION = 'update_last_access_timestamp';
     public const ASSERT_BUCKET_ID_EQUALS_OPTION = 'assert_bucket_id_equals';
@@ -44,8 +48,8 @@ class BlobService
         private readonly EntityManagerInterface $em,
         private readonly ConfigurationService $configurationService,
         private DatasystemProviderService $datasystemService,
-        private readonly EventDispatcherInterface $eventDispatcher)
-    {
+        private readonly EventDispatcherInterface $eventDispatcher
+    ) {
     }
 
     public function checkConnection(): void
@@ -71,14 +75,15 @@ class BlobService
 
         if ($fileData->getRetentionDuration() !== null) {
             $fileData->setDeleteAt($fileData->getDateCreated()->add(
-                new \DateInterval($fileData->getRetentionDuration())));
+                new \DateInterval($fileData->getRetentionDuration())
+            ));
         }
 
         $errorPrefix = 'blob:create-file-data';
         $this->ensureFileDataIsValid($fileData, $errorPrefix);
 
         // write all relevant data to tables
-        $this->writeToTablesAndSaveFileData($fileData, $fileData->getFileSize(), $errorPrefix);
+        $this->saveFileDataAndFile($fileData, $fileData->getFileSize(), $errorPrefix);
 
         /* dispatch POST success event */
         $successEvent = new AddFileDataByPostSuccessEvent($fileData);
@@ -100,7 +105,7 @@ class BlobService
         $this->ensureFileDataIsValid($fileData, $errorPrefix);
 
         if ($fileData->getFile() instanceof File) {
-            $this->writeToTablesAndSaveFileData($fileData, $fileData->getFileSize() - $previousFileData->getFileSize(), $errorPrefix);
+            $this->saveFileDataAndFile($fileData, $fileData->getFileSize() - $previousFileData->getFileSize(), $errorPrefix);
         } else {
             $this->saveFileData($fileData);
         }
@@ -114,13 +119,15 @@ class BlobService
     /**
      * @throws \Exception
      */
-    public function removeFile(string $identifier, ?FileData $fileData = null): void
+    public function removeFile(string $identifier, ?FileData $fileData = null, bool $dispatchEvent = true): void
     {
         $fileData ??= $this->getFileData($identifier);
-        $this->writeToTablesAndRemoveFileData($fileData, -$fileData->getFileSize());
+        $this->removeFileDataAndFile($fileData, -$fileData->getFileSize());
 
-        $deleteSuccessEvent = new DeleteFileDataByDeleteSuccessEvent($fileData);
-        $this->eventDispatcher->dispatch($deleteSuccessEvent);
+        if ($dispatchEvent) {
+            $deleteSuccessEvent = new DeleteFileDataByDeleteSuccessEvent($fileData);
+            $this->eventDispatcher->dispatch($deleteSuccessEvent);
+        }
     }
 
     /**
@@ -129,9 +136,10 @@ class BlobService
     public function getFile(string $identifier, array $options = []): FileData
     {
         $fileData = $this->getFileData($identifier);
+        $bucketConfig = $this->getBucketConfig($fileData);
 
         if (($bucketIdToMatch = $options[self::ASSERT_BUCKET_ID_EQUALS_OPTION] ?? null) !== null) {
-            if ($fileData->getBucketID() !== $bucketIdToMatch) {
+            if ($bucketConfig->getBucketId() !== $bucketIdToMatch) {
                 throw new ApiError(Response::HTTP_FORBIDDEN);
             }
         }
@@ -140,8 +148,7 @@ class BlobService
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
         }
 
-        $bucket = $this->getBucketConfig($fileData);
-        if (!($options[self::DISABLE_OUTPUT_VALIDATION_OPTION] ?? false) && $bucket->getOutputValidation()) {
+        if (!($options[self::DISABLE_OUTPUT_VALIDATION_OPTION] ?? false) && $bucketConfig->getOutputValidation()) {
             $this->checkFileDataBeforeRetrieval($fileData, 'blob:get-file-data');
         }
 
@@ -190,8 +197,11 @@ class BlobService
         // check content-length header to prevent misleading error messages if the upload is too big for the server to accept
         if ($request->headers->get('Content-Length') && intval($request->headers->get('Content-Length')) !== 0
             && intval($request->headers->get('Content-Length')) > BlobUtils::convertFileSizeStringToBytes(ini_get('post_max_size'))) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
-                'Given file is too large', $errorPrefix.'-file-too-big');
+            throw ApiError::withDetails(
+                Response::HTTP_BAD_REQUEST,
+                'Given file is too large',
+                $errorPrefix.'-file-too-big'
+            );
         }
 
         /* get url params */
@@ -232,16 +242,25 @@ class BlobService
 
         if ($uploadedFile !== null) {
             if ($uploadedFile instanceof UploadedFile && $uploadedFile->getError() !== UPLOAD_ERR_OK) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, $uploadedFile->getErrorMessage(),
-                    $errorPrefix.'-upload-error');
+                throw ApiError::withDetails(
+                    Response::HTTP_BAD_REQUEST,
+                    $uploadedFile->getErrorMessage(),
+                    $errorPrefix.'-upload-error'
+                );
             }
             if ($uploadedFile->getSize() === 0) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Empty files cannot be added!',
-                    $errorPrefix.'-empty-files-not-allowed');
+                throw ApiError::withDetails(
+                    Response::HTTP_BAD_REQUEST,
+                    'Empty files cannot be added!',
+                    $errorPrefix.'-empty-files-not-allowed'
+                );
             }
             if ($fileHash !== null && $fileHash !== hash('sha256', $uploadedFile->getContent())) {
-                throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'File hash change forbidden',
-                    $errorPrefix.'-file-hash-change-forbidden');
+                throw ApiError::withDetails(
+                    Response::HTTP_FORBIDDEN,
+                    'File hash change forbidden',
+                    $errorPrefix.'-file-hash-change-forbidden'
+                );
             }
 
             $fileData->setFile($uploadedFile);
@@ -249,8 +268,11 @@ class BlobService
 
         if ($metadataHash !== null) {
             if ($metadataHash !== hash('sha256', $metadata)) {
-                throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Metadata hash change forbidden',
-                    $errorPrefix.'-metadata-hash-change-forbidden');
+                throw ApiError::withDetails(
+                    Response::HTTP_FORBIDDEN,
+                    'Metadata hash change forbidden',
+                    $errorPrefix.'-metadata-hash-change-forbidden'
+                );
             }
         }
         if ($fileName !== null) {
@@ -293,13 +315,18 @@ class BlobService
     }
 
     /**
-     * Sets the bucket ID of the given fileData and returns the bucket config.
+     * Returns the bucket config for the given file.
      *
-     * @param FileData $fileData fileData which is missing the bucket ID
+     * @throws \Exception
      */
     public function getBucketConfig(FileData $fileData): BucketConfig
     {
-        return $this->configurationService->getBucketByID($fileData->getBucketId());
+        if ($fileData->getInternalBucketId() === null
+            || ($bucket = $this->configurationService->getBucketByInternalID($fileData->getInternalBucketId())) === null) {
+            throw new \Exception('failed to get bucket config for file data');
+        }
+
+        return $bucket;
     }
 
     /**
@@ -316,25 +343,25 @@ class BlobService
             $this->em->persist($fileData);
             $this->em->flush();
         } catch (\Exception $e) {
-            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'File could not be saved!',
-                'blob:file-not-saved', ['message' => $e->getMessage()]);
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'File could not be saved!',
+                'blob:file-not-saved',
+                ['message' => $e->getMessage()]
+            );
         }
     }
 
     /**
-     * Used to get a bucket from the db using doctrine.
-     *
-     * @param string $bucketId internal bucket ID of the bucket
-     *
      * @throws \Exception
      */
-    public function getBucketSizeByInternalIdFromDatabase(string $bucketId): BucketSize
+    public function getBucketSizeByInternalIdFromDatabase(string $internalBucketId): BucketSize
     {
-        $bucket = $this->em->getRepository(BucketSize::class)->find($bucketId);
+        $bucket = $this->em->getRepository(BucketSize::class)->find($internalBucketId);
 
         if (!$bucket) {
             $newBucket = new BucketSize();
-            $newBucket->setIdentifier($bucketId);
+            $newBucket->setIdentifier($internalBucketId);
             $newBucket->setCurrentBucketSize(0);
             $this->em->persist($newBucket);
             $this->em->flush();
@@ -362,21 +389,23 @@ class BlobService
     }
 
     /**
-     * Saves the file using the connector.
-     *
-     * @param FileData $fileData fileData that carries the file which should be saved
-     *
-     * @throws \Exception
+     * @throws ApiError
      */
-    public function saveFile(FileData $fileData): ?FileData
+    private function saveFileToDatasystemService(FileData $fileData, string $errorPrefix): void
     {
         try {
-            // save the file using the connector
-            $this->getDatasystemProvider($fileData)->saveFile($fileData->getInternalBucketID(), $fileData->getIdentifier(), $fileData->getFile());
-
-            return $fileData;
-        } catch (\Exception) {
-            return null;
+            $this->getDatasystemProvider($fileData)->saveFile(
+                $fileData->getInternalBucketId(),
+                $fileData->getIdentifier(),
+                $fileData->getFile()
+            );
+        } catch (\Exception $exception) {
+            $this->logger->error(sprintf('saving file to datasystem service failed: %s', $exception->getMessage()));
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'saving file to datasystem service failed',
+                $errorPrefix.'-saving-file-failed'
+            );
         }
     }
 
@@ -387,10 +416,16 @@ class BlobService
      *
      * @throws \Exception
      */
-    public function getDownloadLink(string $baseurl, FileData $fileData): string
+    public function getDownloadUrl(string $baseurl, FileData $fileData): string
     {
-        return $baseurl.SignatureUtils::getSignedUrl('/blob/files/'.$fileData->getIdentifier().'/download',
-            $this->getBucketConfig($fileData)->getKey(), $fileData->getBucketID(), Request::METHOD_GET);
+        $bucketConfig = $this->getBucketConfig($fileData);
+
+        return $baseurl.SignatureUtils::getSignedUrl(
+            '/blob/files/'.$fileData->getIdentifier().'/download',
+            $bucketConfig->getKey(),
+            $bucketConfig->getBucketId(),
+            Request::METHOD_GET
+        );
     }
 
     /**
@@ -400,7 +435,7 @@ class BlobService
     {
         try {
             // TODO: declare a datasystem-provider exception to catch here instead of the filesystem connector specific FileNotFoundException
-            $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketID(), $fileData->getIdentifier());
+            $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketId(), $fileData->getIdentifier());
         } catch (FileNotFoundException) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'File went missing', 'blob:file-not-found');
         }
@@ -449,7 +484,7 @@ class BlobService
 
         try {
             // TODO: declare a datasystem-provider exception to catch here instead of the filesystem connector specific FileNotFoundException
-            $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketID(), $fileData->getIdentifier());
+            $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketId(), $fileData->getIdentifier());
         } catch (FileNotFoundException) {
             throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'File went missing', 'blob:file-not-found');
         }
@@ -467,7 +502,11 @@ class BlobService
     public function getFileData(string $identifier): FileData
     {
         if (!Uuid::isValid($identifier)) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
+            throw ApiError::withDetails(
+                Response::HTTP_NOT_FOUND,
+                'FileData was not found!',
+                'blob:file-data-not-found'
+            );
         }
 
         /** @var ?FileData $fileData */
@@ -476,10 +515,16 @@ class BlobService
             ->find($identifier);
 
         if (!$fileData) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
+            throw ApiError::withDetails(
+                Response::HTTP_NOT_FOUND,
+                'FileData was not found!',
+                'blob:file-data-not-found'
+            );
         }
 
-        $fileData->setBucketId($this->configurationService->getBucketByInternalID($fileData->getInternalBucketID())->getBucketID());
+        $fileData->setBucketId(
+            $this->configurationService->getBucketIdByInternalBucketID($fileData->getInternalBucketId())
+        );
 
         return $fileData;
     }
@@ -538,8 +583,36 @@ class BlobService
     {
         $this->em->remove($fileData);
         $this->em->flush();
+    }
 
-        $this->getDatasystemProvider($fileData)->removeFile($fileData->getInternalBucketID(), $fileData->getIdentifier());
+    private function removeFileFromDatasystemService(FileData $fileData, string $errorPrefix): void
+    {
+        try {
+            $this->getDatasystemProvider($fileData)->removeFile($fileData->getInternalBucketId(), $fileData->getIdentifier());
+        } catch (\Exception $exception) {
+            if ($exception instanceof FileNotFoundException) {
+                // log and continue
+                $this->logger->error(
+                    sprintf(
+                        'failed to remove file \'%s\' from datasystem service: file not found',
+                        $fileData->getIdentifier()
+                    )
+                );
+            } else {
+                $this->logger->error(
+                    sprintf(
+                        'failed to remove file \'%s\' from datasystem service: %s',
+                        $fileData->getIdentifier(),
+                        $exception->getMessage()
+                    )
+                );
+                throw ApiError::withDetails(
+                    Response::HTTP_INTERNAL_SERVER_ERROR,
+                    'Error while removing file from datasystem service',
+                    $errorPrefix.'-removing-file-failed'
+                );
+            }
+        }
     }
 
     /**
@@ -549,55 +622,47 @@ class BlobService
      */
     public function cleanUp(): void
     {
-        // get all invalid filedatas
         $now = BlobUtils::now();
-
         $maxNumItemsPerPage = 10000;
-        $pagesize = 10000;
 
-        while ($pagesize === $maxNumItemsPerPage) {
-            $invalidFileDataQuery = $this->em
+        do {
+            $fileDataCollectionToDelete = $this->em
                 ->getRepository(FileData::class)
                 ->createQueryBuilder('f')
                 ->where('f.deleteAt IS NOT NULL')
-                ->AndWhere('f.deleteAt < :now')
+                ->andWhere('f.deleteAt < :now')
                 ->setParameter('now', $now)
                 ->setMaxResults($maxNumItemsPerPage)
-                ->getQuery();
+                ->getQuery()
+                ->getResult();
 
-            $invalidFileDatas = $invalidFileDataQuery->getResult();
-            $pagesize = count($invalidFileDatas);
-
-            // Remove all links, files and reference
-            foreach ($invalidFileDatas as $invalidFileData) {
-                $this->removeFileData($invalidFileData);
+            foreach ($fileDataCollectionToDelete as $fileDataToDelete) {
+                assert($fileDataToDelete instanceof FileData);
+                $this->removeFile($fileDataToDelete->getIdentifier(), $fileDataToDelete, false);
             }
-        }
+        } while (count($fileDataCollectionToDelete) === $maxNumItemsPerPage);
     }
 
     /**
+     * @throws ApiError
      * @throws \Exception
      */
-    public function writeToTablesAndSaveFileData(FileData $fileData, int $bucketSizeDeltaByte, string $errorPrefix): void
+    public function saveFileDataAndFile(FileData $fileData, int $bucketSizeDeltaByte, string $errorPrefix): void
     {
         /* Check quota */
         $bucketQuotaByte = $this->getBucketConfig($fileData)->getQuota() * 1024 * 1024; // Convert mb to Byte
-        $bucketSize = $this->getBucketSizeByInternalIdFromDatabase($fileData->getInternalBucketID());
+        $bucketSize = $this->getBucketSizeByInternalIdFromDatabase($fileData->getInternalBucketId());
         $newBucketSizeByte = max($bucketSize->getCurrentBucketSize() + $bucketSizeDeltaByte, 0);
         if ($newBucketSizeByte > $bucketQuotaByte) {
-            throw ApiError::withDetails(Response::HTTP_INSUFFICIENT_STORAGE, 'Bucket quota is reached',
-                $errorPrefix.'-bucket-quota-reached');
+            throw ApiError::withDetails(
+                Response::HTTP_INSUFFICIENT_STORAGE,
+                'Bucket quota is reached',
+                $errorPrefix.'-bucket-quota-reached'
+            );
         }
         $bucketSize->setCurrentBucketSize($newBucketSizeByte);
+        $this->saveFileToDatasystemService($fileData, $errorPrefix);
 
-        // Return correct data for service and save the data
-        $fileData = $this->saveFile($fileData);
-        if (!$fileData) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'data upload failed',
-                $errorPrefix.'-data-upload-failed');
-        }
-
-        // try to update bucket size
         $this->em->getConnection()->beginTransaction();
         try {
             $this->saveBucketSize($bucketSize);
@@ -605,19 +670,27 @@ class BlobService
 
             $this->em->getConnection()->commit();
         } catch (\Exception $e) {
+            $this->logger->error(sprintf(
+                'failed to save file data for \'%s\': %s',
+                $fileData->getIdentifier(),
+                $e->getMessage()
+            ));
             $this->em->getConnection()->rollBack();
-            $this->removeFileData($fileData);
-            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while saving the file data',
-                $errorPrefix.'-save-file-failed');
+            $this->removeFileFromDatasystemService($fileData, $errorPrefix);
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'Error while saving the file data',
+                $errorPrefix.'-save-file-failed'
+            );
         }
     }
 
     /**
      * @throws \Exception
      */
-    public function writeToTablesAndRemoveFileData(FileData $fileData, int $bucketSizeDeltaByte): void
+    public function removeFileDataAndFile(FileData $fileData, int $bucketSizeDeltaByte): void
     {
-        $bucketSize = $this->getBucketSizeByInternalIdFromDatabase($fileData->getInternalBucketID());
+        $bucketSize = $this->getBucketSizeByInternalIdFromDatabase($fileData->getInternalBucketId());
         $newBucketSizeByte = max($bucketSize->getCurrentBucketSize() + $bucketSizeDeltaByte, 0);
         $bucketSize->setCurrentBucketSize($newBucketSizeByte);
 
@@ -626,16 +699,20 @@ class BlobService
         try {
             $this->saveBucketSize($bucketSize);
             $this->removeFileData($fileData);
+            $this->removeFileFromDatasystemService($fileData, 'blob:remove-file');
 
             $this->em->getConnection()->commit();
         } catch (\Exception $e) {
             $this->em->getConnection()->rollBack();
-            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Error while removing the file data',
-                'blob:remove-file-data-save-file-failed');
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'Error while removing the file data',
+                'blob:remove-file-data-save-file-failed'
+            );
         }
     }
 
-    public function validateMetadata(FileData $fileData, string $errorPrefix)
+    public function validateMetadata(FileData $fileData, string $errorPrefix): void
     {
         $metadata = $fileData->getMetadata();
         $additionalType = $fileData->getType();
@@ -711,7 +788,7 @@ class BlobService
         if (Tools::isNullOrEmpty($fileData->getBucketId())) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucket ID is missing', $errorPrefix.'-bucket-id-missing');
         }
-        $fileData->setInternalBucketID($this->configurationService->getInternalBucketIdByBucketID($fileData->getBucketId()));
+        $fileData->setInternalBucketId($this->configurationService->getInternalBucketIdByBucketID($fileData->getBucketId()));
 
         if ($fileData->getFile() !== null) {
             $fileData->setMimeType($fileData->getFile()->getMimeType() ?? '');

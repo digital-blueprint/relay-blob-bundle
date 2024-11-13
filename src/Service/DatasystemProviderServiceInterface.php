@@ -9,13 +9,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 interface DatasystemProviderServiceInterface
 {
-    public function saveFile(string $bucketId, string $fileId, File $file): void;
+    public function saveFile(string $internalBucketId, string $fileId, File $file): void;
 
-    public function getBinaryResponse(string $bucketId, string $fileId): Response;
+    public function getBinaryResponse(string $internalBucketId, string $fileId): Response;
 
-    public function removeFile(string $bucketId, string $fileId): void;
+    public function removeFile(string $internalBucketId, string $fileId): void;
 
-    public function getSumOfFilesizesOfBucket(string $bucketId): int;
+    public function getSumOfFilesizesOfBucket(string $internalBucketId): int;
 
-    public function getNumberOfFilesInBucket(string $bucketId): int;
+    public function getNumberOfFilesInBucket(string $internalBucketId): int;
 }

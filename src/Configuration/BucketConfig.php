@@ -8,10 +8,10 @@ use Ramsey\Uuid\Validator\GenericValidator;
 
 class BucketConfig
 {
-    private string $identifier = '';
+    private string $internalBucketId = '';
 
     private string $service = '';
-    private string $id = '';
+    private string $bucketId = '';
     private string $reportExpiryWhenIn = '';
     private string $key = '';
     private int $quota = 0;
@@ -25,14 +25,14 @@ class BucketConfig
     private bool $outputValidation = true;
     private ?array $bucketSizeConfig = null;
 
-    public function getIdentifier(): string
+    public function getInternalBucketId(): string
     {
-        return $this->identifier;
+        return $this->internalBucketId;
     }
 
-    public function setIdentifier(string $identifier): void
+    public function setInternalBucketId(string $internalId): void
     {
-        $this->identifier = $identifier;
+        $this->internalBucketId = $internalId;
     }
 
     public function getService(): string
@@ -45,14 +45,14 @@ class BucketConfig
         $this->service = $service;
     }
 
-    public function getBucketID(): string
+    public function getBucketId(): string
     {
-        return $this->id;
+        return $this->bucketId;
     }
 
-    public function setBucketID(string $id): void
+    public function setBucketId(string $id): void
     {
-        $this->id = $id;
+        $this->bucketId = $id;
     }
 
     public function getReportExpiryWhenIn(): string
@@ -181,9 +181,9 @@ class BucketConfig
         if ($config['internal_bucket_id'] && !(new GenericValidator())->validate((string) $config['internal_bucket_id'])) {
             throw new \RuntimeException(sprintf('the config entry internal_bucket_id is no valid uuid for bucket \'%s\'', (string) $config['internal_bucket_id']));
         }
-        $bucket->setIdentifier((string) $config['internal_bucket_id']);
+        $bucket->setInternalBucketId((string) $config['internal_bucket_id']);
         $bucket->setService((string) $config['service']);
-        $bucket->setBucketID((string) $config['bucket_id']);
+        $bucket->setBucketId((string) $config['bucket_id']);
         $bucket->setNotifyWhenQuotaOver((int) $config['notify_when_quota_over']);
         $bucket->setReportExpiryWhenIn((string) $config['report_when_expiry_in']);
         $bucket->setKey((string) $config['key']);

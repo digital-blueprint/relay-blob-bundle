@@ -45,10 +45,11 @@ class BlobChecks
      * Checks whether the bucket is filled to a preconfigured percentage, and sends a warning email if so.
      *
      * @throws NonUniqueResultException
+     * @throws \Exception
      */
     public function checkBucketQuotaAndSendWarning(BucketConfig $bucket): void
     {
-        $bucketSize = $this->blobService->getBucketSizeByInternalIdFromDatabase($bucket->getIdentifier());
+        $bucketSize = $this->blobService->getBucketSizeByInternalIdFromDatabase($bucket->getInternalBucketId());
         // Check quota
         $bucketQuotaByte = $bucketSize->getCurrentBucketSize();
         $bucketWarningQuotaByte = $bucket->getQuota() * 1024 * 1024 * ($bucket->getNotifyWhenQuotaOver() / 100); // Convert mb to Byte and then calculate the warning quota
@@ -64,8 +65,8 @@ class BlobChecks
     {
         $notifyQuotaConfig = $bucket->getWarnQuotaOverConfig();
 
-        $id = $bucket->getIdentifier();
-        $name = $bucket->getBucketID();
+        $id = $bucket->getInternalBucketId();
+        $name = $bucket->getBucketId();
         $quota = $bucket->getQuota();
 
         $context = [
@@ -106,6 +107,12 @@ class BlobChecks
         $mailer->send($email);
     }
 
+    /**
+     * @throws SyntaxError
+     * @throws TransportExceptionInterface
+     * @throws RuntimeError
+     * @throws LoaderError
+     */
     public function checkFileSize(?OutputInterface $out = null, $sendEmail = true)
     {
         $buckets = $this->configurationService->getBuckets();
@@ -121,14 +128,14 @@ class BlobChecks
 
         foreach ($buckets as $bucket) {
             if (!$sendEmail && $out !== null) {
-                $out->writeln('Retrieving database information for bucket with bucket id: '.$bucket->getBucketID().' and internal bucket id: '.$bucket->getIdentifier());
+                $out->writeln('Retrieving database information for bucket with bucket id: '.$bucket->getBucketId().' and internal bucket id: '.$bucket->getInternalBucketId());
                 $out->writeln('Calculating sum of fileSizes in the blob_files table ...');
             }
             $query = $this->em
                 ->getRepository(FileData::class)
                 ->createQueryBuilder('f')
                 ->where('f.internalBucketId = :bucketID')
-                ->setParameter('bucketID', $bucket->getIdentifier())
+                ->setParameter('bucketID', $bucket->getInternalBucketId())
                 ->select('SUM(f.fileSize) as bucketSize');
 
             $result = $query->getQuery()->getOneOrNullResult();
@@ -143,12 +150,13 @@ class BlobChecks
                     $bucketSize = 0;
                 }
 
-                $sumBucketSizes[$bucket->getIdentifier()] = $bucketSize;
+                $sumBucketSizes[$bucket->getInternalBucketId()] = $bucketSize;
 
-                $bucketSizeObject = $this->blobService->getBucketSizeByInternalIdFromDatabase($bucket->getIdentifier());
+                $bucketSizeObject = $this->blobService->getBucketSizeByInternalIdFromDatabase(
+                    $bucket->getInternalBucketId());
                 $savedBucketSize = $bucketSizeObject->getCurrentBucketSize();
 
-                $dbBucketSizes[$bucket->getIdentifier()] = $savedBucketSize;
+                $dbBucketSizes[$bucket->getInternalBucketId()] = $savedBucketSize;
 
                 if (!$sendEmail && $out !== null) {
                     $out->writeln('Counting number of entries in the blob_files table ...');
@@ -158,7 +166,7 @@ class BlobChecks
                     ->getRepository(FileData::class)
                     ->createQueryBuilder('f')
                     ->where('f.internalBucketId = :bucketID')
-                    ->setParameter('bucketID', $bucket->getIdentifier())
+                    ->setParameter('bucketID', $bucket->getInternalBucketId())
                     ->select('COUNT(f.identifier) as numOfItems');
 
                 $result = $query->getQuery()->getOneOrNullResult();
@@ -166,7 +174,7 @@ class BlobChecks
                 if ($result) {
                     $bucketFilesCount = $result['numOfItems'];
 
-                    $countBucketSizes[$bucket->getIdentifier()] = $bucketFilesCount;
+                    $countBucketSizes[$bucket->getInternalBucketId()] = $bucketFilesCount;
                 }
             }
             if (!$sendEmail && $out !== null) {
@@ -177,26 +185,26 @@ class BlobChecks
         foreach ($buckets as $bucket) {
             $config = $bucket->getBucketSizeConfig();
             if (!$sendEmail && $out !== null) {
-                $out->writeln('Retrieving filesystem information for bucket with bucket id: '.$bucket->getBucketID().' and internal bucket id: '.$bucket->getIdentifier());
+                $out->writeln('Retrieving filesystem information for bucket with bucket id: '.$bucket->getBucketId().' and internal bucket id: '.$bucket->getInternalBucketId());
                 $out->writeln('Calculating sum of fileSizes in the bucket directory ...');
             }
             $service = $this->datasystemService->getServiceByBucket($bucket);
-            $filebackendSize = $service->getSumOfFilesizesOfBucket($bucket->getIdentifier());
+            $filebackendSize = $service->getSumOfFilesizesOfBucket($bucket->getInternalBucketId());
 
             if (!$sendEmail && $out !== null) {
                 $out->writeln('Counting number of files in the bucket directory ...');
             }
 
-            $filebackendNumOfFiles = $service->getNumberOfFilesInBucket($bucket->getIdentifier());
+            $filebackendNumOfFiles = $service->getNumberOfFilesInBucket($bucket->getInternalBucketId());
 
-            $bucketSize = $sumBucketSizes[$bucket->getIdentifier()];
-            $savedBucketSize = $dbBucketSizes[$bucket->getIdentifier()];
-            $bucketFilesCount = $countBucketSizes[$bucket->getIdentifier()];
+            $bucketSize = $sumBucketSizes[$bucket->getInternalBucketId()];
+            $savedBucketSize = $dbBucketSizes[$bucket->getInternalBucketId()];
+            $bucketFilesCount = $countBucketSizes[$bucket->getInternalBucketId()];
 
             if (($bucketSize !== $savedBucketSize || $bucketSize !== $filebackendSize || $savedBucketSize !== $filebackendSize) || $filebackendNumOfFiles !== $bucketFilesCount) {
                 $context = [
-                    'internalBucketId' => $bucket->getIdentifier(),
-                    'bucketId' => $bucket->getBucketID(),
+                    'internalBucketId' => $bucket->getInternalBucketId(),
+                    'bucketId' => $bucket->getBucketId(),
                     'blobFilesSize' => $bucketSize,
                     'blobFilesCount' => $bucketFilesCount,
                     'blobBucketSizes' => $savedBucketSize,
@@ -240,8 +248,8 @@ class BlobChecks
     {
         $integrityConfig = $bucket->getIntegrityCheckConfig();
 
-        $id = $bucket->getIdentifier();
-        $name = $bucket->getBucketID();
+        $id = $bucket->getInternalBucketId();
+        $name = $bucket->getBucketId();
 
         if (!empty($invalidDatas)) {
             // create for each email to be notified an array with expiring filedatas
@@ -285,7 +293,7 @@ class BlobChecks
 
         foreach ($buckets as $bucket) {
             $invalidDatas = [];
-            foreach ($this->blobService->getFileDataByBucketID($bucket->getIdentifier()) as $fileData) {
+            foreach ($this->blobService->getFileDataByBucketID($bucket->getInternalBucketId()) as $fileData) {
                 try {
                     $content = $this->blobService->getContent($fileData);
                 } catch (\Exception) {
@@ -325,7 +333,7 @@ class BlobChecks
     private function printIntegrityCheck(BucketConfig $bucket, array $invalidDatas, OutputInterface $out, bool $printIds = false)
     {
         if (!empty($invalidDatas)) {
-            $out->writeln('Found invalid data for bucket with bucket id: '.$bucket->getBucketID().' and internal bucket id: '.$bucket->getIdentifier());
+            $out->writeln('Found invalid data for bucket with bucket id: '.$bucket->getBucketId().' and internal bucket id: '.$bucket->getInternalBucketId());
             if ($printIds === true) {
                 $out->writeln('The following blob file ids contain either invalid filedata or metadata:');
                 // print all identifiers that failed the integrity check
@@ -337,7 +345,7 @@ class BlobChecks
             $out->writeln('In total, '.count($invalidDatas).' files are invalid!');
             $out->writeln(' ');
         } else {
-            $out->writeln('No invalid data was found for bucket with bucket id: '.$bucket->getBucketID().' and internal bucket id'.$bucket->getIdentifier());
+            $out->writeln('No invalid data was found for bucket with bucket id: '.$bucket->getBucketId().' and internal bucket id'.$bucket->getInternalBucketId());
         }
     }
 }

@@ -12,7 +12,7 @@ use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
-use Dbp\Relay\BlobBundle\TestUtils\DummyFileSystemService;
+use Dbp\Relay\BlobBundle\TestUtils\TestDatasystemProviderService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\TestUtils\TestClient;
 use Dbp\Relay\CoreBundle\TestUtils\UserAuthTrait;
@@ -88,7 +88,7 @@ class CurlGetTest extends ApiTestCase
         try {
             $client = $this->setUpTestClient();
             $bucket = $this->getBucketConfig($client);
-            $url = SignatureUtils::getSignedUrl('/blob/files', $bucket->getKey(), $bucket->getBucketID(), 'GET', ['prefix' => 'playground']);
+            $url = SignatureUtils::getSignedUrl('/blob/files', $bucket->getKey(), $bucket->getBucketId(), 'GET', ['prefix' => 'playground']);
 
             $options = [
                 'headers' => [
@@ -131,7 +131,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $this->getBucketConfig($client);
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getBucketID();
+            $bucketID = $bucket->getBucketId();
 
             // =======================================================
             // POST a file
@@ -385,7 +385,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getBucketID();
+            $bucketID = $bucket->getBucketId();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $notifyEmail = 'eugen.neuber@tugraz.at';
@@ -443,7 +443,7 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            $this->assertArrayHasKey($this->files[0]['uuid'], DummyFileSystemService::$data[$bucket->getIdentifier()], 'File data not in dummy store.');
+            $this->assertArrayHasKey($this->files[0]['uuid'], TestDatasystemProviderService::$data[$bucket->getInternalBucketId()], 'File data not in dummy store.');
             /** @var Response $response */
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(200, $response->getStatusCode());
@@ -558,7 +558,7 @@ class CurlGetTest extends ApiTestCase
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
-            $bucketID = $bucket->getBucketID();
+            $bucketID = $bucket->getBucketId();
             $creationTime = rawurlencode(date('c'));
             $prefix = 'playground';
             $uuid = Uuid::v4();

@@ -599,12 +599,12 @@ class FileData
         $this->mimeType = $mimeType;
     }
 
-    public function getInternalBucketID(): ?string
+    public function getInternalBucketId(): ?string
     {
         return $this->internalBucketId;
     }
 
-    public function setInternalBucketID(?string $internalBucketId): void
+    public function setInternalBucketId(?string $internalBucketId): void
     {
         $this->internalBucketId = $internalBucketId;
     }
