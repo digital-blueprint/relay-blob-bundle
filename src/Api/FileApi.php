@@ -105,10 +105,10 @@ class FileApi
     /**
      * @throws FileApiException
      */
-    public function removeFile(string $identifier, bool $dispatchEvent = false): void
+    public function removeFile(string $identifier): void
     {
         try {
-            $this->blobService->removeFile($identifier, null, $dispatchEvent);
+            $this->blobService->removeFile($identifier);
         } catch (\Exception $exception) {
             throw $this->createException($exception);
         }

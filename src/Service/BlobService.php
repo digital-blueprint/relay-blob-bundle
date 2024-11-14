@@ -20,7 +20,6 @@ use JsonSchema\Validator;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
@@ -119,15 +118,13 @@ class BlobService implements LoggerAwareInterface
     /**
      * @throws \Exception
      */
-    public function removeFile(string $identifier, ?FileData $fileData = null, bool $dispatchEvent = true): void
+    public function removeFile(string $identifier, ?FileData $fileData = null): void
     {
         $fileData ??= $this->getFileData($identifier);
         $this->removeFileDataAndFile($fileData, -$fileData->getFileSize());
 
-        if ($dispatchEvent) {
-            $deleteSuccessEvent = new DeleteFileDataByDeleteSuccessEvent($fileData);
-            $this->eventDispatcher->dispatch($deleteSuccessEvent);
-        }
+        $deleteSuccessEvent = new DeleteFileDataByDeleteSuccessEvent($fileData);
+        $this->eventDispatcher->dispatch($deleteSuccessEvent);
     }
 
     /**
@@ -433,12 +430,7 @@ class BlobService implements LoggerAwareInterface
      */
     public function getContent(FileData $fileData): string
     {
-        try {
-            // TODO: declare a datasystem-provider exception to catch here instead of the filesystem connector specific FileNotFoundException
-            $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketId(), $fileData->getIdentifier());
-        } catch (FileNotFoundException) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'File went missing', 'blob:file-not-found');
-        }
+        $response = $this->getBinaryResponseInternal($fileData);
 
         if (ob_start() !== true) {
             throw new \RuntimeException();
@@ -481,13 +473,7 @@ class BlobService implements LoggerAwareInterface
     public function getBinaryResponse(string $fileIdentifier, array $options = []): Response
     {
         $fileData = $this->getFile($fileIdentifier, $options);
-
-        try {
-            // TODO: declare a datasystem-provider exception to catch here instead of the filesystem connector specific FileNotFoundException
-            $response = $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketId(), $fileData->getIdentifier());
-        } catch (FileNotFoundException) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'File went missing', 'blob:file-not-found');
-        }
+        $response = $this->getBinaryResponseInternal($fileData);
 
         $response->headers->set('Content-Type', $fileData->getMimeType());
         $dispositionHeader = $response->headers->makeDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $fileData->getFileName());
@@ -585,33 +571,23 @@ class BlobService implements LoggerAwareInterface
         $this->em->flush();
     }
 
-    private function removeFileFromDatasystemService(FileData $fileData, string $errorPrefix): void
+    private function removeFileFromDatasystemService(FileData $fileData): void
     {
         try {
             $this->getDatasystemProvider($fileData)->removeFile($fileData->getInternalBucketId(), $fileData->getIdentifier());
         } catch (\Exception $exception) {
-            if ($exception instanceof FileNotFoundException) {
-                // log and continue
-                $this->logger->error(
-                    sprintf(
-                        'failed to remove file \'%s\' from datasystem service: file not found',
-                        $fileData->getIdentifier()
-                    )
-                );
-            } else {
-                $this->logger->error(
-                    sprintf(
-                        'failed to remove file \'%s\' from datasystem service: %s',
-                        $fileData->getIdentifier(),
-                        $exception->getMessage()
-                    )
-                );
-                throw ApiError::withDetails(
-                    Response::HTTP_INTERNAL_SERVER_ERROR,
-                    'Error while removing file from datasystem service',
-                    $errorPrefix.'-removing-file-failed'
-                );
-            }
+            $this->logger->error(
+                sprintf(
+                    'failed to remove file \'%s\' from datasystem service: %s',
+                    $fileData->getIdentifier(),
+                    $exception->getMessage()
+                )
+            );
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'Error while removing file from datasystem service',
+                'blob:removing-file-from-datasystem-service-failed'
+            );
         }
     }
 
@@ -638,7 +614,7 @@ class BlobService implements LoggerAwareInterface
 
             foreach ($fileDataCollectionToDelete as $fileDataToDelete) {
                 assert($fileDataToDelete instanceof FileData);
-                $this->removeFile($fileDataToDelete->getIdentifier(), $fileDataToDelete, false);
+                $this->removeFile($fileDataToDelete->getIdentifier(), $fileDataToDelete);
             }
         } while (count($fileDataCollectionToDelete) === $maxNumItemsPerPage);
     }
@@ -676,7 +652,10 @@ class BlobService implements LoggerAwareInterface
                 $e->getMessage()
             ));
             $this->em->getConnection()->rollBack();
-            $this->removeFileFromDatasystemService($fileData, $errorPrefix);
+            try {
+                $this->removeFileFromDatasystemService($fileData);
+            } catch (\Exception) {
+            }
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
                 'Error while saving the file data',
@@ -699,10 +678,17 @@ class BlobService implements LoggerAwareInterface
         try {
             $this->saveBucketSize($bucketSize);
             $this->removeFileData($fileData);
-            $this->removeFileFromDatasystemService($fileData, 'blob:remove-file');
+            $this->removeFileFromDatasystemService($fileData);
 
             $this->em->getConnection()->commit();
-        } catch (\Exception $e) {
+        } catch (\Exception $exception) {
+            $this->logger->error(
+                sprintf(
+                    'failed to save file \'%s\' to datasystem service: %s',
+                    $fileData->getIdentifier(),
+                    $exception->getMessage()
+                )
+            );
             $this->em->getConnection()->rollBack();
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
@@ -801,5 +787,23 @@ class BlobService implements LoggerAwareInterface
             hash('sha256', $fileData->getFile()->getContent()) : null);
         $fileData->setMetadataHash($this->configurationService->doFileIntegrityChecks() && $fileData->getMetadata() !== null ?
             hash('sha256', $fileData->getMetadata()) : null);
+    }
+
+    private function getBinaryResponseInternal(FileData $fileData): Response
+    {
+        try {
+            return $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketId(), $fileData->getIdentifier());
+        } catch (\Exception $exception) {
+            $this->logger->error(sprintf(
+                'failed to get file \'%s\' from datasystem service backend: %s',
+                $fileData->getIdentifier(),
+                $exception->getMessage()
+            ));
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'Failed to get file from storage backend',
+                'blob:failed-to-get-file-from-datasystem-service'
+            );
+        }
     }
 }

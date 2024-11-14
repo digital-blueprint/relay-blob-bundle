@@ -28,8 +28,8 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
     public function __construct(
         private readonly BlobService $blobService,
         private readonly RequestStack $requestStack,
-        private readonly ConfigurationService $config)
-    {
+        private readonly ConfigurationService $config
+    ) {
         parent::__construct();
     }
 
@@ -57,7 +57,12 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
 
         $errorPrefix = 'blob:get-file-data-by-id';
         SignatureUtils::checkSignature(
-            $errorPrefix, $this->config, $request, $filters, ['GET', 'PATCH', 'DELETE']);
+            $errorPrefix,
+            $this->config,
+            $request,
+            $filters,
+            ['GET', 'PATCH', 'DELETE']
+        );
 
         // if output validation is disabled, a user can get the data even if the system usually would throw and invalid data error
         $disableOutputValidation = !$isGetRequest || ($filters['disableOutputValidation'] ?? null) === '1';
@@ -93,7 +98,12 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
         SignatureUtils::checkSignature(
-            'blob:get-file-data-collection', $this->config, $this->requestStack->getCurrentRequest(), $filters, ['GET']);
+            'blob:get-file-data-collection',
+            $this->config,
+            $this->requestStack->getCurrentRequest(),
+            $filters,
+            ['GET']
+        );
 
         $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');
         $prefix = rawurldecode($filters['prefix'] ?? '');
@@ -108,19 +118,10 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
             BlobService::PREFIX_OPTION => $prefix,
             BlobService::PREFIX_STARTS_WITH_OPTION => $prefixStartsWith === '1',
         ], $currentPageNumber, $maxNumItemsPerPage) as $fileData) {
-            try {
-                $fileData->setContentUrl($includeData ?
-                    $this->blobService->getContentUrl($fileData) :
-                    $this->blobService->getDownloadUrl($request->getSchemeAndHttpHost(), $fileData));
-                $validFileDataCollection[] = $fileData;
-            } catch (ApiError $apiError) {
-                // skip file not found
-                if ($apiError->getStatusCode() === Response::HTTP_NOT_FOUND) {
-                    // TODO how to handle this correctly? This should never happen in the first place
-                    $this->logger->error(sprintf(__FILE__.':'.__LINE__.': failed to get file content for file ID "%s"', $fileData->getIdentifier()));
-                    continue;
-                }
-            }
+            $fileData->setContentUrl($includeData ?
+                $this->blobService->getContentUrl($fileData) :
+                $this->blobService->getDownloadUrl($request->getSchemeAndHttpHost(), $fileData));
+            $validFileDataCollection[] = $fileData;
         }
 
         return $validFileDataCollection;

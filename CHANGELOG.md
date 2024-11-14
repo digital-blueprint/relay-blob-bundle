@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+* Always throw a 500 error, if retrieving or deleting a file fails (throws an exception) in the datasystem service
+* Trigger delete success event for autodeleted files too
+
 ## v0.1.66
 
 * throw 404 whenever the file content is requested but not found, except for GET collection, where the file is omitted
