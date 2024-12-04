@@ -626,7 +626,7 @@ class BlobService implements LoggerAwareInterface
             );
         }
 
-        /** @var ?FileData $fileData */
+        /** @var ?BucketLock $lock */
         $lock = $this->em
             ->getRepository(BucketLock::class)
             ->find($identifier);
