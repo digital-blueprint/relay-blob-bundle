@@ -56,20 +56,20 @@ use Symfony\Component\Serializer\Annotation\Groups;
                         'example' => 'P1D',
                     ],
                     [
-                        'name' => 'method',
-                        'in' => 'query',
-                        'description' => 'Method that gets executed',
-                        'type' => 'string',
-                        'required' => true,
-                        'example' => 'GET',
-                    ],
-                    [
                         'name' => 'includeData',
                         'in' => 'query',
                         'description' => 'If the returned contentUrl is a http link or the base64 encoded data',
                         'type' => 'string',
                         'required' => false,
                         'example' => '1',
+                    ],
+                    [
+                        'name' => 'method',
+                        'in' => 'query',
+                        'description' => 'Method that gets executed',
+                        'type' => 'string',
+                        'required' => true,
+                        'example' => 'GET',
                     ],
                     [
                         'name' => 'prefix',
@@ -153,7 +153,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
                     [
                         'name' => 'includeData',
                         'in' => 'query',
-                        'description' => 'If the returned contentUrl is a http link or the base64 encoded data',
+                        'description' => 'If the returned contentUrl contains base64 encoded data or not',
                         'type' => 'string',
                         'required' => false,
                         'example' => '1',
@@ -161,7 +161,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
                     [
                         'name' => 'method',
                         'in' => 'query',
-                        'description' => 'Method that gets executed',
+                        'description' => 'HTTP method used for the request',
                         'type' => 'string',
                         'required' => true,
                         'example' => 'GET',
@@ -196,7 +196,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
                     [
                         'name' => 'creationTime',
                         'in' => 'query',
-                        'description' => 'Current times as ATOM',
+                        'description' => 'Current times as ATOM / RFC 3339',
                         'type' => 'string',
                         'required' => true,
                         'example' => '2024-09-25T12:51:01+00:00',
@@ -212,7 +212,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
                     [
                         'name' => 'method',
                         'in' => 'query',
-                        'description' => 'Method that gets executed',
+                        'description' => 'HTTP method used for the request',
                         'type' => 'string',
                         'required' => true,
                         'example' => 'DELETE',
@@ -254,10 +254,18 @@ use Symfony\Component\Serializer\Annotation\Groups;
                     [
                         'name' => 'creationTime',
                         'in' => 'query',
-                        'description' => 'Current time as ATOM',
+                        'description' => 'Current time as ATOM / RFC 3339',
                         'type' => 'string',
                         'required' => true,
                         'example' => '2024-09-25T12:51:01+00:00',
+                    ],
+                    [
+                        'name' => 'deleteIn',
+                        'in' => 'query',
+                        'description' => 'ISO8601 duration from creation date until the file will be deleted',
+                        'type' => 'string',
+                        'required' => false,
+                        'example' => 'P1D',
                     ],
                     [
                         'name' => 'expireIn',
@@ -270,7 +278,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
                     [
                         'name' => 'method',
                         'in' => 'query',
-                        'description' => 'Method that gets executed',
+                        'description' => 'HTTP method used for the request',
                         'type' => 'string',
                         'required' => true,
                         'example' => 'PATCH',
@@ -372,26 +380,10 @@ use Symfony\Component\Serializer\Annotation\Groups;
                     [
                         'name' => 'creationTime',
                         'in' => 'query',
-                        'description' => 'Current time as ATOM',
+                        'description' => 'Current time as ATOM / RFC 3339',
                         'type' => 'string',
                         'required' => true,
                         'example' => '2024-09-25T12:51:01+00:00',
-                    ],
-                    [
-                        'name' => 'method',
-                        'in' => 'query',
-                        'description' => 'Method that gets executed',
-                        'type' => 'string',
-                        'required' => true,
-                        'example' => 'POST',
-                    ],
-                    [
-                        'name' => 'notifyEmail',
-                        'in' => 'query',
-                        'description' => 'An email address which gets notified before the files expires',
-                        'type' => 'string',
-                        'required' => false,
-                        'example' => '',
                     ],
                     [
                         'name' => 'deleteIn',
@@ -410,12 +402,20 @@ use Symfony\Component\Serializer\Annotation\Groups;
                         'example' => 'P1D',
                     ],
                     [
-                        'name' => 'type',
+                        'name' => 'method',
                         'in' => 'query',
-                        'description' => 'Type of the added metadata',
+                        'description' => 'Method that gets executed',
+                        'type' => 'string',
+                        'required' => true,
+                        'example' => 'POST',
+                    ],
+                    [
+                        'name' => 'notifyEmail',
+                        'in' => 'query',
+                        'description' => 'An email address which gets notified before the files expires',
                         'type' => 'string',
                         'required' => false,
-                        'example' => 'generic_id_card',
+                        'example' => '',
                     ],
                     [
                         'name' => 'prefix',
@@ -424,6 +424,14 @@ use Symfony\Component\Serializer\Annotation\Groups;
                         'type' => 'string',
                         'required' => true,
                         'example' => 'my-prefix/my-subprefix',
+                    ],
+                    [
+                        'name' => 'type',
+                        'in' => 'query',
+                        'description' => 'Type of the added metadata',
+                        'type' => 'string',
+                        'required' => false,
+                        'example' => 'generic_id_card',
                     ],
                     [
                         'name' => 'sig',
@@ -439,7 +447,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
                         'multipart/form-data' => [
                             'schema' => [
                                 'type' => 'object',
-                                'required' => ['file', 'fileName', 'metadata'],
+                                'required' => ['file', 'fileName'],
                                 'properties' => [
                                     'file' => [
                                         'type' => 'string',

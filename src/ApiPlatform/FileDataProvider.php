@@ -70,6 +70,15 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
         $includeData = ($filters['includeData'] ?? null) === '1';
         $bucketId = rawurldecode($filters['bucketIdentifier'] ?? '');
 
+        $lock = $this->blobService->getBucketLockByInternalBucketIdAndMethod($this->blobService->getInternalBucketIdByBucketID($bucketId), $filters['method']);
+        if ($lock !== null && $lock) {
+            throw ApiError::withDetails(
+                Response::HTTP_FORBIDDEN,
+                $filters['method'].' is locked for this bucket',
+                'blob:bucket-locked'
+            );
+        }
+
         $fileData = $this->blobService->getFile($id, [
             BlobService::DISABLE_OUTPUT_VALIDATION_OPTION => $disableOutputValidation,
             BlobService::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
@@ -112,6 +121,14 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
         $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '');
         $request = $this->requestStack->getCurrentRequest();
 
+        $lock = $this->blobService->getBucketLockByInternalBucketIdAndMethod($this->blobService->getInternalBucketIdByBucketID($bucketID), $filters['method']);
+        if ($lock !== null && $lock) {
+            throw ApiError::withDetails(
+                Response::HTTP_FORBIDDEN,
+                $filters['method'].' is locked for this bucket',
+                'blob:bucket-locked'
+            );
+        }
         $validFileDataCollection = [];
         foreach ($this->blobService->getFiles($bucketID, [
             BlobService::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt === '1',

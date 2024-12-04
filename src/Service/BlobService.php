@@ -6,6 +6,7 @@ namespace Dbp\Relay\BlobBundle\Service;
 
 use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
+use Dbp\Relay\BlobBundle\Entity\BucketLock;
 use Dbp\Relay\BlobBundle\Entity\BucketSize;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Event\AddFileDataByPostSuccessEvent;
@@ -17,6 +18,7 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Helpers\Tools;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonSchema\Validator;
+use Proxies\__CG__\Dbp\Relay\BlobBundle\Entity\Bucket;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -137,7 +139,7 @@ class BlobService implements LoggerAwareInterface
 
         if (($bucketIdToMatch = $options[self::ASSERT_BUCKET_ID_EQUALS_OPTION] ?? null) !== null) {
             if ($bucketConfig->getBucketId() !== $bucketIdToMatch) {
-                throw new ApiError(Response::HTTP_FORBIDDEN);
+                throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'GET is locked', 'blob:get-locked');
             }
         }
 
@@ -236,6 +238,15 @@ class BlobService implements LoggerAwareInterface
         $type = $type ? rawurldecode($type) : null;
 
         $fileData->setBucketId($bucketID);
+
+        $lock = $this->getBucketLockByInternalBucketIdAndMethod($this->getInternalBucketIdByBucketID($bucketID), $request->getMethod());
+        if ($lock !== null && $lock) {
+            throw ApiError::withDetails(
+                Response::HTTP_FORBIDDEN,
+                $request->getMethod().' is locked for this bucket',
+                'blob:bucket-locked-post'
+            );
+        }
 
         if ($uploadedFile !== null) {
             if ($uploadedFile instanceof UploadedFile && $uploadedFile->getError() !== UPLOAD_ERR_OK) {
@@ -513,6 +524,137 @@ class BlobService implements LoggerAwareInterface
         );
 
         return $fileData;
+    }
+
+    /**
+     * Get BucketLock of given identifier.
+     */
+    public function addBucketLock(mixed $lock): void
+    {
+        // try to persist BucketLock, or throw error
+        try {
+            $this->em->persist($lock);
+            $this->em->flush();
+        } catch (\Exception $e) {
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'BucketLock could not be saved!',
+                'blob:bucket-lock-not-saved',
+                ['message' => $e->getMessage()]
+            );
+        }
+    }
+
+    public function getBucketLockByInternalBucketId(string $internalBucketId): ?BucketLock
+    {
+        return $this->em->getRepository(BucketLock::class)->findOneBy(['internalBucketId' => $internalBucketId]);
+    }
+
+    public function getBucketLockByInternalBucketIdAndMethod(string $internalBucketId, string $method): ?bool
+    {
+        $lock = $this->getBucketLockByInternalBucketId($internalBucketId);
+        if ($lock === null) {
+            return null;
+        }
+
+        if ($method === Request::METHOD_GET) {
+            return $lock->getGetLock();
+        } elseif ($method === Request::METHOD_DELETE) {
+            return $lock->getDeleteLock();
+        } elseif ($method === Request::METHOD_PATCH) {
+            return $lock->getPatchLock();
+        } elseif ($method === Request::METHOD_POST) {
+            return $lock->getPostLock();
+        } else {
+            return null;
+        }
+    }
+
+    public function getPostBucketLockByInternalBucketId(string $internalBucketId): bool
+    {
+        $lock = $this->getBucketLockByInternalBucketId($internalBucketId);
+        if ($lock === null) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketLock could not be found!',
+                'blob:bucket-lock-not-found');
+        }
+
+        return $lock->getPostLock();
+    }
+
+    public function getPatchBucketLockByInternalBucketId(string $internalBucketId): bool
+    {
+        $lock = $this->getBucketLockByInternalBucketId($internalBucketId);
+        if ($lock === null) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketLock could not be found!',
+                'blob:bucket-lock-not-found');
+        }
+
+        return $lock->getPatchLock();
+    }
+
+    public function getDeleteBucketLockByInternalBucketId(string $internalBucketId): bool
+    {
+        $lock = $this->getBucketLockByInternalBucketId($internalBucketId);
+        if ($lock === null) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketLock could not be found!',
+                'blob:bucket-lock-not-found');
+        }
+
+        return $lock->getDeleteLock();
+    }
+
+    /**
+     * Remove a given fileData from the entity manager.
+     */
+    public function removeBucketLock(string $identifier): void
+    {
+        $lock = $this->getBucketLock($identifier);
+        $this->em->remove($lock);
+        $this->em->flush();
+    }
+
+    /**
+     * Get BucketLock for bucket with given identifier.
+     */
+    public function getBucketLock(string $identifier): BucketLock
+    {
+        if (!Uuid::isValid($identifier)) {
+            throw ApiError::withDetails(
+                Response::HTTP_NOT_FOUND,
+                'BucketLock was not found!',
+                'blob:bucket-lock-not-found'
+            );
+        }
+
+        /** @var ?FileData $fileData */
+        $lock = $this->em
+            ->getRepository(BucketLock::class)
+            ->find($identifier);
+
+        if (!$lock) {
+            throw ApiError::withDetails(
+                Response::HTTP_NOT_FOUND,
+                'BucketLock was not found!',
+                'blob:bucket-lock-not-found'
+            );
+        }
+
+        return $lock;
+    }
+
+    /**
+     * Update BucketLock by given parameters.
+     */
+    public function updateBucketLock(string $id, array $filters, mixed $data): void
+    {
+        if (!Uuid::isValid($id)) {
+            throw ApiError::withDetails(
+                Response::HTTP_NOT_FOUND,
+                'BucketLock was not found!',
+                'blob:bucket-lock-not-found'
+            );
+        }
+        $this->addBucketLock($data);
     }
 
     /**
