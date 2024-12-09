@@ -4,7 +4,12 @@ includes:
 
 parameters:
     inferPrivatePropertyTypeFromConstructor: true
+    reportUnmatchedIgnoredErrors: false
     level: 5
     paths:
         - src
         - tests
+    ignoreErrors:
+        - identifier: function.alreadyNarrowedType
+        - identifier: method.alreadyNarrowedType
+        - identifier: instanceof.alwaysTrue

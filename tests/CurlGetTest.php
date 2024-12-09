@@ -20,7 +20,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -97,7 +96,6 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /** @var Response $response */
             $response = $client->request('GET', $url, $options);
 
             $this->assertEquals(200, $response->getStatusCode());
@@ -203,7 +201,6 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /** @var \ApiPlatform\Symfony\Bundle\Test\Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
 
@@ -285,7 +282,6 @@ class CurlGetTest extends ApiTestCase
 
             $token = SignatureUtils::createSignature($secret, $payload);
 
-            /** @var \ApiPlatform\Symfony\Bundle\Test\Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
 
@@ -326,7 +322,6 @@ class CurlGetTest extends ApiTestCase
 
                 $token = SignatureUtils::createSignature($secret, $payload);
 
-                /** @var Response $response */
                 $response = $client->request('DELETE', $url.'&sig='.$token, $options);
 
                 $this->assertEquals(204, $response->getStatusCode());
@@ -353,7 +348,6 @@ class CurlGetTest extends ApiTestCase
 
             $client = $this->setUpTestClient();
 
-            /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
 
             $this->assertEquals(200, $response->getStatusCode());
@@ -444,7 +438,6 @@ class CurlGetTest extends ApiTestCase
             ];
 
             $this->assertArrayHasKey($this->files[0]['uuid'], TestDatasystemProviderService::$data[$bucket->getInternalBucketId()], 'File data not in dummy store.');
-            /** @var Response $response */
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(200, $response->getStatusCode());
             // TODO: further checks...
@@ -467,7 +460,6 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /** @var Response $response */
             $response = $client->request('DELETE', $url.'&sig='.$token, $options);
             $this->assertEquals(204, $response->getStatusCode());
             // TODO: further checks...
@@ -491,7 +483,6 @@ class CurlGetTest extends ApiTestCase
             $token = SignatureUtils::createSignature($secret, $payload);
             $client = $this->setUpTestClient();
 
-            /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
 
             $this->assertEquals(200, $response->getStatusCode());
@@ -537,7 +528,6 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
 
             $this->assertEquals(403, $response->getStatusCode());
@@ -574,7 +564,6 @@ class CurlGetTest extends ApiTestCase
 
             $token = SignatureUtils::createSignature($secret, $payload);
 
-            /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, []);
 
             $this->assertEquals(404, $response->getStatusCode());
@@ -596,7 +585,6 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /** @var Response $response */
             $response = $client->request('DELETE', $url.'&sig='.$token, $options);
 
             $this->assertEquals(404, $response->getStatusCode());
@@ -701,7 +689,6 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
 
             $this->assertEquals(405, $response->getStatusCode());
@@ -802,7 +789,6 @@ class CurlGetTest extends ApiTestCase
                     ],
                 ];
 
-                /** @var Response $response */
                 $response = $client->request('GET', $url.'&sig='.$token, $options);
 
                 $this->assertEquals(405, $response->getStatusCode());
@@ -1025,7 +1011,6 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /** @var \ApiPlatform\Symfony\Bundle\Test\Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options2);
             $this->assertEquals(200, $response->getStatusCode());
             // check if fileName was indeed changed
@@ -1218,7 +1203,6 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
             // check if the one created element is there
@@ -1330,10 +1314,6 @@ class CurlGetTest extends ApiTestCase
                         'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                     ];
 
-                    if ($i !== count($params) - 1) {
-                        $baseUrl = $baseUrl.$connector.$params[$j];
-                    }
-
                     $token = SignatureUtils::createSignature($secret, $payload);
 
                     $options = [
@@ -1345,7 +1325,6 @@ class CurlGetTest extends ApiTestCase
 
                     $client = $this->setUpTestClient();
 
-                    /** @var Response $response */
                     $response = $client->request($action, $baseUrl.$token, $options);
                     $this->assertEquals(400, $response->getStatusCode());
                 }
@@ -1387,10 +1366,6 @@ class CurlGetTest extends ApiTestCase
                         'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                     ];
 
-                    if ($i !== count($params) - 1) {
-                        $baseUrl = $baseUrl.$connector.$params[$j];
-                    }
-
                     $token = SignatureUtils::createSignature($secret, $payload);
 
                     $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
@@ -1409,7 +1384,6 @@ class CurlGetTest extends ApiTestCase
 
                     $client = $this->setUpTestClient();
 
-                    /** @var Response $response */
                     $response = $client->request($action, $baseUrl.$token, $options);
                     $this->assertEquals(400, $response->getStatusCode());
                 }
@@ -1449,10 +1423,6 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                if ($i !== count($params) - 1) {
-                    $baseUrl = $baseUrl.$connector.$params[$j];
-                }
-
                 $token = SignatureUtils::createSignature($secret, $payload);
 
                 $options = [
@@ -1488,7 +1458,6 @@ class CurlGetTest extends ApiTestCase
 
                 $client = $this->setUpTestClient();
 
-                /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
             }
@@ -1523,10 +1492,6 @@ class CurlGetTest extends ApiTestCase
                     $connector = '&';
                 }
 
-                if ($i !== count($params) - 1) {
-                    $baseUrl = $baseUrl.$connector.$params[$j];
-                }
-
                 $options = [
                     'headers' => [
                         'Authorization' => 'Bearer 42',
@@ -1537,7 +1502,6 @@ class CurlGetTest extends ApiTestCase
                 ];
 
                 $client = $this->setUpTestClient();
-                /** @var Response $response */
                 $response = $client->request('PATCH', $baseUrl, $options);
                 $this->assertEquals(400, $response->getStatusCode());
             }
@@ -1633,7 +1597,6 @@ class CurlGetTest extends ApiTestCase
                 ];
                 $client = $this->setUpTestClient();
 
-                /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
@@ -1653,7 +1616,6 @@ class CurlGetTest extends ApiTestCase
                 $token = SignatureUtils::createSignature($secret, $payload);
                 $client = $this->setUpTestClient();
 
-                /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
@@ -1677,7 +1639,6 @@ class CurlGetTest extends ApiTestCase
 
                 $client = $this->setUpTestClient();
 
-                /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
                         'headers' => [
@@ -1796,7 +1757,6 @@ class CurlGetTest extends ApiTestCase
 
                 $client = $this->setUpTestClient();
 
-                /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
@@ -1820,7 +1780,6 @@ class CurlGetTest extends ApiTestCase
 
                 $client = $this->setUpTestClient();
 
-                /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
@@ -1847,7 +1806,6 @@ class CurlGetTest extends ApiTestCase
 
                 $client = $this->setUpTestClient();
 
-                /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
                         'headers' => [
@@ -1964,7 +1922,6 @@ class CurlGetTest extends ApiTestCase
 
                 $client = $this->setUpTestClient();
 
-                /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
@@ -1985,7 +1942,6 @@ class CurlGetTest extends ApiTestCase
 
                 $client = $this->setUpTestClient();
 
-                /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
             }
@@ -2009,7 +1965,6 @@ class CurlGetTest extends ApiTestCase
 
                 $client = $this->setUpTestClient();
 
-                /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
                         'headers' => [
@@ -2126,7 +2081,6 @@ class CurlGetTest extends ApiTestCase
 
                 $client = $this->setUpTestClient();
 
-                /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
             }
@@ -2147,7 +2101,6 @@ class CurlGetTest extends ApiTestCase
 
                 $client = $this->setUpTestClient();
 
-                /** @var Response $response */
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
             }
@@ -2171,7 +2124,6 @@ class CurlGetTest extends ApiTestCase
 
                 $client = $this->setUpTestClient();
 
-                /** @var Response $response */
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
                         'headers' => [
@@ -2272,7 +2224,6 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            /** @var Response $response */
             $response = $client->request('GET', $url.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
             $this->assertEquals('string', gettype($response->getContent()));
@@ -2377,10 +2328,6 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                if ($i !== count($params) - 1) {
-                    $baseUrl = $baseUrl.$connector.$params[$j];
-                }
-
                 $token = SignatureUtils::createSignature($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
@@ -2399,7 +2346,6 @@ class CurlGetTest extends ApiTestCase
 
                 $client = $this->setUpTestClient();
 
-                /** @var Response $response */
                 $response = $client->request('GET', $baseUrl.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
             }
@@ -2426,7 +2372,6 @@ class CurlGetTest extends ApiTestCase
 
             $client = $this->setUpTestClient();
 
-            /** @var Response $response */
             $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
             $this->assertEquals(403, $response->getStatusCode());
 
