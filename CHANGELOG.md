@@ -2,8 +2,13 @@
 
 ## Unreleased
 
+## v0.1.67
+
 * Always throw a 500 error, if retrieving or deleting a file fails (throws an exception) in the datasystem service
 * Trigger delete success event for autodeleted files too
+* Add optional expireIn parameter to all urls
+* Test with PHP 8.4
+* Port to phpstan 2
 
 ## v0.1.66
 
