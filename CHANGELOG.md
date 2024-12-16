@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## v0.1.68
+
+* Various connector interface changes:
+  * add getFileHash() method, for getting the hash of a file without downloading it
+  * add hasFile() method, for checking if a file exists
+  * add listFiles() method, for iterating over all files
+  * add getFileSize() method, for getting the size of a file without downloading it
+  * remove getSumOfFilesizesOfBucket() method, use getFileSize() instead
+  * remove getNumberOfFilesInBucket() method, use listFiles() instead
+
 ## v0.1.67
 
 * Always throw a 500 error, if retrieving or deleting a file fails (throws an exception) in the datasystem service
