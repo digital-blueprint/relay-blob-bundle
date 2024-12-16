@@ -9,6 +9,8 @@ use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\NonUniqueResultException;
+use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Mailer;
@@ -294,15 +296,19 @@ class BlobChecks
     public function checkIntegrity(?OutputInterface $out = null, $sendEmail = true, $printIds = false)
     {
         $buckets = $this->configurationService->getBuckets();
+        $someOut = $out ?? new NullOutput();
 
         foreach ($buckets as $bucket) {
             $invalidDatas = [];
             $fileDataList = $this->blobService->getFileDataByBucketID($bucket->getInternalBucketId());
+            $progressBar = new ProgressBar($someOut, count($fileDataList));
+            $progressBar->start();
             foreach ($fileDataList as $fileData) {
                 try {
                     $fileHash = $this->blobService->getFileHash($fileData);
                 } catch (\Exception) {
                     $invalidDatas[] = $fileData;
+                    $progressBar->advance();
                     continue;
                 }
 
@@ -312,11 +318,14 @@ class BlobChecks
                     && ($fileData->getMetadata() === null || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
                     $invalidDatas[] = $fileData;
                 }
+                $progressBar->advance();
                 // dont overfill the email
                 if ($sendEmail && count($invalidDatas) > 19) {
                     break;
                 }
             }
+            $progressBar->finish();
+            $someOut->writeln('');
 
             if ($sendEmail) {
                 $this->sendIntegrityCheckMail($bucket, $invalidDatas);
