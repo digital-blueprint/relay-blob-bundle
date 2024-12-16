@@ -169,9 +169,9 @@ class BlobServiceTest extends ApiTestCase
         $this->assertNull($fileData->getDeleteAt());
         $this->assertNull($fileData->getNotifyEmail());
         $this->assertNull($fileData->getContentUrl());
-
         $provider = $this->blobService->getDatasystemProvider($fileData);
         $this->assertTrue($provider->hasFile($fileData->getInternalBucketId(), $fileData->getIdentifier()));
+        $this->assertSame($provider->getFileHash($fileData->getInternalBucketId(), $fileData->getIdentifier()), hash('sha256', $newFile->getContent()));
 
         $this->assertSame($this->blobService->getContent($fileData), $newFile->getContent());
 

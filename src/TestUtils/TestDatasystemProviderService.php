@@ -42,6 +42,10 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
 
     public function removeFile(string $internalBucketId, string $fileId): void
     {
+        if (!isset($this->data[$internalBucketId][$fileId])) {
+            throw new \RuntimeException();
+        }
+
         unset($this->data[$internalBucketId][$fileId]);
     }
 
@@ -57,5 +61,14 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
         }
 
         return $this->data[$internalBucketId][$fileId]->fileSize();
+    }
+
+    public function getFileHash(string $internalBucketId, string $fileId): string
+    {
+        if (!isset($this->data[$internalBucketId][$fileId])) {
+            throw new \RuntimeException();
+        }
+
+        return hash('sha256', $this->data[$internalBucketId][$fileId]->getContent());
     }
 }

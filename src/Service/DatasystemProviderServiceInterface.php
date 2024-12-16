@@ -18,6 +18,11 @@ interface DatasystemProviderServiceInterface
     public function getFileSize(string $internalBucketId, string $fileId): int;
 
     /**
+     * Returns SHA256 hash of the file content.
+     */
+    public function getFileHash(string $internalBucketId, string $fileId): string;
+
+    /**
      * Returns true if the file exists, i.e. if getBinaryResponse() would return something.
      */
     public function hasFile(string $internalBucketId, string $fileId): bool;
