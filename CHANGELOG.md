@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v0.1.69
+
+* check-integrity: show a progress bar
+* Avoid reading/downloading files when calculating the content hash
+
 ## v0.1.68
 
 * Various connector interface changes:
