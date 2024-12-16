@@ -12,7 +12,6 @@ use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
-use Dbp\Relay\BlobBundle\TestUtils\TestDatasystemProviderService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\TestUtils\TestClient;
 use Dbp\Relay\CoreBundle\TestUtils\UserAuthTrait;
@@ -437,7 +436,9 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            $this->assertArrayHasKey($this->files[0]['uuid'], TestDatasystemProviderService::$data[$bucket->getInternalBucketId()], 'File data not in dummy store.');
+            $provider = $blobService->getDatasystemProvider($fileData);
+            $this->assertTrue($provider->hasFile($fileData->getInternalBucketId(), $this->files[0]['uuid']));
+
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(200, $response->getStatusCode());
             // TODO: further checks...

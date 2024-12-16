@@ -11,46 +11,44 @@ use Symfony\Component\HttpFoundation\Response;
 
 class TestDatasystemProviderService implements DatasystemProviderServiceInterface
 {
-    public static $data = [];
+    private array $data;
+
+    public function __construct()
+    {
+        $this->data = [];
+    }
 
     public function hasFile(string $internalBucketId, string $fileId): bool
     {
-        return isset(self::$data[$internalBucketId][$fileId]);
-    }
-
-    public static function isContentEqual(string $internalBucketId, string $fileId, File $fileToCompare): bool
-    {
-        $file = self::$data[$internalBucketId][$fileId] ?? null;
-
-        return $file !== null && $file->getContent() === $fileToCompare->getContent();
+        return isset($this->data[$internalBucketId][$fileId]);
     }
 
     public function saveFile(string $internalBucketId, string $fileId, File $file): void
     {
-        self::$data[$internalBucketId][$fileId] = $file;
+        $this->data[$internalBucketId][$fileId] = $file;
     }
 
     public function getBinaryResponse(string $internalBucketId, string $fileId): Response
     {
-        if (!isset(self::$data[$internalBucketId][$fileId])) {
+        if (!isset($this->data[$internalBucketId][$fileId])) {
             throw new \RuntimeException();
         }
 
         // build binary response
-        $response = new BinaryFileResponse(self::$data[$internalBucketId][$fileId]->getRealPath());
+        $response = new BinaryFileResponse($this->data[$internalBucketId][$fileId]->getRealPath());
 
         return $response;
     }
 
     public function removeFile(string $internalBucketId, string $fileId): void
     {
-        unset(self::$data[$internalBucketId][$fileId]);
+        unset($this->data[$internalBucketId][$fileId]);
     }
 
     public function getSumOfFilesizesOfBucket(string $internalBucketId): int
     {
         $sumOfFileSizes = 0;
-        $files = self::$data[$internalBucketId] ?? [];
+        $files = $this->data[$internalBucketId] ?? [];
         foreach ($files as $file) {
             $sumOfFileSizes += $file->getFileSize();
         }
@@ -60,13 +58,13 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
 
     public function getNumberOfFilesInBucket(string $internalBucketId): int
     {
-        $files = self::$data[$internalBucketId] ?? [];
+        $files = $this->data[$internalBucketId] ?? [];
 
         return count($files);
     }
 
     public function listFiles(string $internalBucketId): iterable
     {
-        return array_keys(self::$data[$internalBucketId] ?? []);
+        return array_keys($this->data[$internalBucketId] ?? []);
     }
 }
