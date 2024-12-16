@@ -65,10 +65,7 @@ class BlobServiceTest extends ApiTestCase
         $this->assertNull($fileData->getNotifyEmail());
         $this->assertNull($fileData->getContentUrl());
 
-        $this->assertTrue(TestDatasystemProviderService::hasFile(
-            $testBucketConfig['internal_bucket_id'],
-            $fileData->getIdentifier()
-        ));
+        $this->assertTrue($this->blobService->getDatasystemProvider($fileData)->hasFile($fileData->getInternalBucketId(), $fileData->getIdentifier()));
         $this->assertTrue(TestDatasystemProviderService::isContentEqual(
             $testBucketConfig['internal_bucket_id'],
             $fileData->getIdentifier(),
@@ -176,10 +173,7 @@ class BlobServiceTest extends ApiTestCase
         $this->assertNull($fileData->getNotifyEmail());
         $this->assertNull($fileData->getContentUrl());
 
-        $this->assertTrue(TestDatasystemProviderService::hasFile(
-            $testBucketConfig['internal_bucket_id'],
-            $fileData->getIdentifier()
-        ));
+        $this->assertTrue($this->blobService->getDatasystemProvider($fileData)->hasFile($fileData->getInternalBucketId(), $fileData->getIdentifier()));
         $this->assertTrue(TestDatasystemProviderService::isContentEqual(
             $testBucketConfig['internal_bucket_id'],
             $fileData->getIdentifier(),
@@ -215,20 +209,14 @@ class BlobServiceTest extends ApiTestCase
         $fileData = $this->addTestFile();
         $this->blobService->removeFile($fileData->getIdentifier(), $fileData);
 
-        $this->assertFalse(TestDatasystemProviderService::hasFile(
-            $testBucketConfig['internal_bucket_id'],
-            $fileData->getIdentifier()
-        ));
+        $this->assertFalse($this->blobService->getDatasystemProvider($fileData)->hasFile($fileData->getInternalBucketId(), $fileData->getIdentifier()));
         $this->assertNull($this->testEntityManager->getFileDataById($fileData->getIdentifier()));
 
         $fileData = $this->addTestFile();
         // ID only:
         $this->blobService->removeFile($fileData->getIdentifier());
 
-        $this->assertFalse(TestDatasystemProviderService::hasFile(
-            $testBucketConfig['internal_bucket_id'],
-            $fileData->getIdentifier()
-        ));
+        $this->assertFalse($this->blobService->getDatasystemProvider($fileData)->hasFile($fileData->getInternalBucketId(), $fileData->getIdentifier()));
         $this->assertNull($this->testEntityManager->getFileDataById($fileData->getIdentifier()));
     }
 

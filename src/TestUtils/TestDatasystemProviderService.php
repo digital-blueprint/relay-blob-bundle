@@ -13,7 +13,7 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
 {
     public static $data = [];
 
-    public static function hasFile(string $internalBucketId, string $fileId): bool
+    public function hasFile(string $internalBucketId, string $fileId): bool
     {
         return isset(self::$data[$internalBucketId][$fileId]);
     }
@@ -63,5 +63,10 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
         $files = self::$data[$internalBucketId] ?? [];
 
         return count($files);
+    }
+
+    public function listFiles(string $internalBucketId): iterable
+    {
+        return array_keys(self::$data[$internalBucketId] ?? []);
     }
 }

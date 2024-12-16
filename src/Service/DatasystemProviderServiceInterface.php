@@ -18,4 +18,17 @@ interface DatasystemProviderServiceInterface
     public function getSumOfFilesizesOfBucket(string $internalBucketId): int;
 
     public function getNumberOfFilesInBucket(string $internalBucketId): int;
+
+    /**
+     * Returns true if the file exists, i.e. if getBinaryResponse() would return something.
+     */
+    public function hasFile(string $internalBucketId, string $fileId): bool;
+
+    /**
+     * Returns an iterable over all available file IDs. i.e. getFileExists() should
+     * return true for all of them.
+     *
+     * @return iterable<string>
+     */
+    public function listFiles(string $internalBucketId): iterable;
 }
