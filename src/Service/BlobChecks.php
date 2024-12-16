@@ -297,16 +297,16 @@ class BlobChecks
 
         foreach ($buckets as $bucket) {
             $invalidDatas = [];
-            foreach ($this->blobService->getFileDataByBucketID($bucket->getInternalBucketId()) as $fileData) {
+            $fileDataList = $this->blobService->getFileDataByBucketID($bucket->getInternalBucketId());
+            foreach ($fileDataList as $fileData) {
                 try {
-                    $content = $this->blobService->getContent($fileData);
+                    $fileHash = $this->blobService->getFileHash($fileData);
                 } catch (\Exception) {
                     $invalidDatas[] = $fileData;
                     continue;
                 }
 
-                /** @var FileData $fileData */
-                if ($fileData->getFileHash() !== null && hash('sha256', $content) !== $fileData->getFileHash()) {
+                if ($fileData->getFileHash() !== null && $fileHash !== $fileData->getFileHash()) {
                     $invalidDatas[] = $fileData;
                 } elseif ($fileData->getMetadataHash() !== null
                     && ($fileData->getMetadata() === null || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
