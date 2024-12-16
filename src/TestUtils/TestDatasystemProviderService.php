@@ -45,26 +45,17 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
         unset($this->data[$internalBucketId][$fileId]);
     }
 
-    public function getSumOfFilesizesOfBucket(string $internalBucketId): int
-    {
-        $sumOfFileSizes = 0;
-        $files = $this->data[$internalBucketId] ?? [];
-        foreach ($files as $file) {
-            $sumOfFileSizes += $file->getFileSize();
-        }
-
-        return $sumOfFileSizes;
-    }
-
-    public function getNumberOfFilesInBucket(string $internalBucketId): int
-    {
-        $files = $this->data[$internalBucketId] ?? [];
-
-        return count($files);
-    }
-
     public function listFiles(string $internalBucketId): iterable
     {
         return array_keys($this->data[$internalBucketId] ?? []);
+    }
+
+    public function getFileSize(string $internalBucketId, string $fileId): int
+    {
+        if (!isset($this->data[$internalBucketId][$fileId])) {
+            throw new \RuntimeException();
+        }
+
+        return $this->data[$internalBucketId][$fileId]->fileSize();
     }
 }

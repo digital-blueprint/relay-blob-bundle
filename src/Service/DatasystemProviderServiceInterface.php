@@ -15,9 +15,7 @@ interface DatasystemProviderServiceInterface
 
     public function removeFile(string $internalBucketId, string $fileId): void;
 
-    public function getSumOfFilesizesOfBucket(string $internalBucketId): int;
-
-    public function getNumberOfFilesInBucket(string $internalBucketId): int;
+    public function getFileSize(string $internalBucketId, string $fileId): int;
 
     /**
      * Returns true if the file exists, i.e. if getBinaryResponse() would return something.
