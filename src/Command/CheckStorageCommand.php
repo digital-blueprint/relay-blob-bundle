@@ -28,7 +28,8 @@ class CheckStorageCommand extends Command
      */
     protected function configure()
     {
-        $this->setName('dbp:relay-blob:check-storage');
+        $this->setName('dbp:relay:blob:check-storage');
+        $this->setAliases(['dbp:relay-blob:check-storage']);
         $this
             ->setDescription('Checks the consistency of the two tables in database and the file storage backend');
     }

@@ -28,7 +28,8 @@ class CheckDataIntegrityCommand extends Command
      */
     protected function configure()
     {
-        $this->setName('dbp:relay-blob:check-integrity');
+        $this->setName('dbp:relay:blob:check-integrity');
+        $this->setAliases(['dbp:relay-blob:check-integrity']);
         $this
             ->setDescription('Checks the file and metadata hashes stored in the table against newly generated hashes of the stored files and metadata');
         $this->addOption('ids', null, null, 'List all the UUIDs of the found inconsistent data');
