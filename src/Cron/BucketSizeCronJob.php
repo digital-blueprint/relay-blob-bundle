@@ -39,6 +39,6 @@ class BucketSizeCronJob implements CronJobInterface
 
     public function run(CronOptions $options): void
     {
-        $this->blobChecks->checkFileSize();
+        $this->blobChecks->checkStorage();
     }
 }

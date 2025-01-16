@@ -115,7 +115,7 @@ class BlobChecks
      * @throws RuntimeError
      * @throws LoaderError
      */
-    public function checkFileSize(?OutputInterface $out = null, $sendEmail = true)
+    public function checkStorage(?OutputInterface $out = null, $sendEmail = true, $intBucketId = null)
     {
         $buckets = $this->configurationService->getBuckets();
 
@@ -129,6 +129,9 @@ class BlobChecks
         $countBucketSizes = [];
 
         foreach ($buckets as $bucket) {
+            if (!is_null($intBucketId) && is_string($intBucketId) && $intBucketId !== $bucket->getInternalBucketId()) {
+                continue;
+            }
             if (!$sendEmail && $out !== null) {
                 $out->writeln('Retrieving database information for bucket with bucket id: '.$bucket->getBucketId().' and internal bucket id: '.$bucket->getInternalBucketId());
                 $out->writeln('Calculating sum of fileSizes in the blob_files table ...');
@@ -185,6 +188,9 @@ class BlobChecks
         }
 
         foreach ($buckets as $bucket) {
+            if (!is_null($intBucketId) && is_string($intBucketId) && $intBucketId !== $bucket->getInternalBucketId()) {
+                continue;
+            }
             $config = $bucket->getBucketSizeConfig();
             if (!$sendEmail && $out !== null) {
                 $out->writeln('Retrieving filesystem information for bucket with bucket id: '.$bucket->getBucketId().' and internal bucket id: '.$bucket->getInternalBucketId());
