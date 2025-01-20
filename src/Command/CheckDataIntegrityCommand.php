@@ -45,9 +45,7 @@ class CheckDataIntegrityCommand extends Command
     {
         $id = $input->getArgument('int-bucket-id');
         $ids = $input->getOption('ids');
-        if (is_null($id)) {
-            $output->writeln('Checking the integrity of all files and metadata...');
-        }
+        $output->writeln('Checking the integrity of all files and metadata...');
         $this->blobChecks->checkIntegrity($output, false, $ids, $id);
 
         return 0;
