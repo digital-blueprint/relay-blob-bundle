@@ -299,12 +299,15 @@ class BlobChecks
     /**
      * @throws \Exception
      */
-    public function checkIntegrity(?OutputInterface $out = null, $sendEmail = true, $printIds = false)
+    public function checkIntegrity(?OutputInterface $out = null, $sendEmail = true, $printIds = false, $intBucketId = null)
     {
         $buckets = $this->configurationService->getBuckets();
         $someOut = $out ?? new NullOutput();
 
         foreach ($buckets as $bucket) {
+            if (!is_null($intBucketId) && is_string($intBucketId) && $intBucketId !== $bucket->getInternalBucketId()) {
+                continue;
+            }
             $invalidDatas = [];
             $fileDataList = $this->blobService->getFileDataByBucketID($bucket->getInternalBucketId());
             $progressBar = new ProgressBar($someOut, count($fileDataList));
