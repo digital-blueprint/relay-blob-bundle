@@ -144,19 +144,19 @@ class BucketLock
 
     #[ORM\Column(type: 'boolean')]
     #[Groups(['BlobLocks:output', 'BlobLocks:input'])]
-    private ?bool $postLock = false;
+    private bool $postLock = false;
 
     #[ORM\Column(type: 'boolean')]
     #[Groups(['BlobLocks:output', 'BlobLocks:input'])]
-    private ?bool $getLock = false;
+    private bool $getLock = false;
 
     #[ORM\Column(type: 'boolean')]
     #[Groups(['BlobLocks:output', 'BlobLocks:input'])]
-    private ?bool $patchLock = false;
+    private bool $patchLock = false;
 
     #[ORM\Column(type: 'boolean')]
     #[Groups(['BlobLocks:output', 'BlobLocks:input'])]
-    private ?bool $deleteLock = false;
+    private bool $deleteLock = false;
 
     #[ORM\Column(type: 'string', length: 36)]
     #[Groups(['BlobLocks:output'])]
