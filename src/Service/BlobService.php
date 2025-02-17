@@ -217,6 +217,7 @@ class BlobService implements LoggerAwareInterface
         $metadataHash = $request->request->get('metadataHash');
 
         /* get uploaded file */
+        /** @var ?UploadedFile $uploadedFile */
         $uploadedFile = $request->files->get('file');
 
         /* check types of params */
@@ -228,7 +229,6 @@ class BlobService implements LoggerAwareInterface
         assert(is_string($deleteIn ?? ''));
         assert(is_string($type ?? ''));
         assert(is_string($metadata ?? ''));
-        assert($uploadedFile === null || $uploadedFile instanceof File);
 
         /* url decode according to RFC 3986 */
         $bucketID = $bucketID ? rawurldecode($bucketID) : null;
@@ -263,7 +263,7 @@ class BlobService implements LoggerAwareInterface
                     $errorPrefix.'-empty-files-not-allowed'
                 );
             }
-            if ($fileHash !== null && $fileHash !== hash('sha256', $uploadedFile->getContent())) {
+            if ($fileHash !== null && $fileHash !== \hash_file('sha256', $uploadedFile->getPathname())) {
                 throw ApiError::withDetails(
                     Response::HTTP_FORBIDDEN,
                     'File hash change forbidden',
@@ -459,6 +459,14 @@ class BlobService implements LoggerAwareInterface
         }
 
         return $content;
+    }
+
+    /**
+     * Returns SHA256 hash of the file content.
+     */
+    public function getFileHash(FileData $fileData): string
+    {
+        return $this->getDatasystemProvider($fileData)->getFileHash($fileData->getInternalBucketId(), $fileData->getIdentifier());
     }
 
     /**
@@ -659,6 +667,8 @@ class BlobService implements LoggerAwareInterface
 
     /**
      * Get all the fileDatas of a given bucketID.
+     *
+     * @return FileData[]
      */
     public function getFileDataByBucketID(string $bucketID): array
     {
@@ -887,7 +897,7 @@ class BlobService implements LoggerAwareInterface
     public function checkFileDataBeforeRetrieval(FileData $fileData, string $errorPrefix): void
     {
         // check if file integrity should be checked and if so check it
-        if ($this->doFileIntegrityChecks() && $fileData->getFileHash() !== null && hash('sha256', $this->getContent($fileData)) !== $fileData->getFileHash()) {
+        if ($this->doFileIntegrityChecks() && $fileData->getFileHash() !== null && $this->getFileHash($fileData) !== $fileData->getFileHash()) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 file hash doesnt match! File integrity cannot be guaranteed', $errorPrefix.'-file-hash-mismatch');
         }
         if ($this->doFileIntegrityChecks() && $fileData->getMetadataHash() !== null
@@ -926,7 +936,7 @@ class BlobService implements LoggerAwareInterface
         $this->validateMetadata($fileData, $errorPrefix);
 
         $fileData->setFileHash($this->configurationService->doFileIntegrityChecks() && $fileData->getFile() !== null ?
-            hash('sha256', $fileData->getFile()->getContent()) : null);
+            \hash_file('sha256', $fileData->getFile()->getPathname()) : null);
         $fileData->setMetadataHash($this->configurationService->doFileIntegrityChecks() && $fileData->getMetadata() !== null ?
             hash('sha256', $fileData->getMetadata()) : null);
     }

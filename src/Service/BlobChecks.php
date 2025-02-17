@@ -9,6 +9,8 @@ use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\NonUniqueResultException;
+use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Mailer;
@@ -113,7 +115,7 @@ class BlobChecks
      * @throws RuntimeError
      * @throws LoaderError
      */
-    public function checkFileSize(?OutputInterface $out = null, $sendEmail = true)
+    public function checkStorage(?OutputInterface $out = null, $sendEmail = true, $intBucketId = null)
     {
         $buckets = $this->configurationService->getBuckets();
 
@@ -127,6 +129,9 @@ class BlobChecks
         $countBucketSizes = [];
 
         foreach ($buckets as $bucket) {
+            if (!is_null($intBucketId) && is_string($intBucketId) && $intBucketId !== $bucket->getInternalBucketId()) {
+                continue;
+            }
             if (!$sendEmail && $out !== null) {
                 $out->writeln('Retrieving database information for bucket with bucket id: '.$bucket->getBucketId().' and internal bucket id: '.$bucket->getInternalBucketId());
                 $out->writeln('Calculating sum of fileSizes in the blob_files table ...');
@@ -183,19 +188,26 @@ class BlobChecks
         }
 
         foreach ($buckets as $bucket) {
+            if (!is_null($intBucketId) && is_string($intBucketId) && $intBucketId !== $bucket->getInternalBucketId()) {
+                continue;
+            }
             $config = $bucket->getBucketSizeConfig();
             if (!$sendEmail && $out !== null) {
                 $out->writeln('Retrieving filesystem information for bucket with bucket id: '.$bucket->getBucketId().' and internal bucket id: '.$bucket->getInternalBucketId());
                 $out->writeln('Calculating sum of fileSizes in the bucket directory ...');
             }
             $service = $this->datasystemService->getServiceByBucket($bucket);
-            $filebackendSize = $service->getSumOfFilesizesOfBucket($bucket->getInternalBucketId());
+
+            $filebackendSize = 0;
+            $filebackendNumOfFiles = 0;
+            foreach ($service->listFiles($bucket->getInternalBucketId()) as $fileId) {
+                $filebackendSize += $service->getFileSize($bucket->getInternalBucketId(), $fileId);
+                ++$filebackendNumOfFiles;
+            }
 
             if (!$sendEmail && $out !== null) {
                 $out->writeln('Counting number of files in the bucket directory ...');
             }
-
-            $filebackendNumOfFiles = $service->getNumberOfFilesInBucket($bucket->getInternalBucketId());
 
             $bucketSize = $sumBucketSizes[$bucket->getInternalBucketId()];
             $savedBucketSize = $dbBucketSizes[$bucket->getInternalBucketId()];
@@ -287,32 +299,42 @@ class BlobChecks
     /**
      * @throws \Exception
      */
-    public function checkIntegrity(?OutputInterface $out = null, $sendEmail = true, $printIds = false)
+    public function checkIntegrity(?OutputInterface $out = null, $sendEmail = true, $printIds = false, $intBucketId = null)
     {
         $buckets = $this->configurationService->getBuckets();
+        $someOut = $out ?? new NullOutput();
 
         foreach ($buckets as $bucket) {
+            if (!is_null($intBucketId) && is_string($intBucketId) && $intBucketId !== $bucket->getInternalBucketId()) {
+                continue;
+            }
             $invalidDatas = [];
-            foreach ($this->blobService->getFileDataByBucketID($bucket->getInternalBucketId()) as $fileData) {
+            $fileDataList = $this->blobService->getFileDataByBucketID($bucket->getInternalBucketId());
+            $progressBar = new ProgressBar($someOut, count($fileDataList));
+            $progressBar->start();
+            foreach ($fileDataList as $fileData) {
                 try {
-                    $content = $this->blobService->getContent($fileData);
+                    $fileHash = $this->blobService->getFileHash($fileData);
                 } catch (\Exception) {
                     $invalidDatas[] = $fileData;
+                    $progressBar->advance();
                     continue;
                 }
 
-                /** @var FileData $fileData */
-                if ($fileData->getFileHash() !== null && hash('sha256', $content) !== $fileData->getFileHash()) {
+                if ($fileData->getFileHash() !== null && $fileHash !== $fileData->getFileHash()) {
                     $invalidDatas[] = $fileData;
                 } elseif ($fileData->getMetadataHash() !== null
                     && ($fileData->getMetadata() === null || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
                     $invalidDatas[] = $fileData;
                 }
+                $progressBar->advance();
                 // dont overfill the email
                 if ($sendEmail && count($invalidDatas) > 19) {
                     break;
                 }
             }
+            $progressBar->finish();
+            $someOut->writeln('');
 
             if ($sendEmail) {
                 $this->sendIntegrityCheckMail($bucket, $invalidDatas);

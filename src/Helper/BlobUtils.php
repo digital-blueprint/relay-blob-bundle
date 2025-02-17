@@ -6,8 +6,6 @@ namespace Dbp\Relay\BlobBundle\Helper;
 
 use Kekos\MultipartFormDataParser\Parser;
 use Nyholm\Psr7\Factory\Psr17Factory;
-use Psr\Http\Message\StreamFactoryInterface;
-use Psr\Http\Message\UploadedFileFactoryInterface;
 use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
 use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,10 +14,7 @@ class BlobUtils
 {
     public static function convertPatchRequest(Request $request): Request
     {
-        /** @var UploadedFileFactoryInterface $uploaded_file_factory */
         $uploaded_file_factory = new Psr17Factory();
-
-        /** @var StreamFactoryInterface $stream_factory */
         $stream_factory = $uploaded_file_factory;
 
         $bridgeFactory = new Psr17Factory();

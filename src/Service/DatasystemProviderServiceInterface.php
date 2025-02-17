@@ -15,7 +15,23 @@ interface DatasystemProviderServiceInterface
 
     public function removeFile(string $internalBucketId, string $fileId): void;
 
-    public function getSumOfFilesizesOfBucket(string $internalBucketId): int;
+    public function getFileSize(string $internalBucketId, string $fileId): int;
 
-    public function getNumberOfFilesInBucket(string $internalBucketId): int;
+    /**
+     * Returns SHA256 hash of the file content.
+     */
+    public function getFileHash(string $internalBucketId, string $fileId): string;
+
+    /**
+     * Returns true if the file exists, i.e. if getBinaryResponse() would return something.
+     */
+    public function hasFile(string $internalBucketId, string $fileId): bool;
+
+    /**
+     * Returns an iterable over all available file IDs. i.e. getFileExists() should
+     * return true for all of them.
+     *
+     * @return iterable<string>
+     */
+    public function listFiles(string $internalBucketId): iterable;
 }
