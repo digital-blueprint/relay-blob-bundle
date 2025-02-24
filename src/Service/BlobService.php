@@ -385,6 +385,25 @@ class BlobService implements LoggerAwareInterface
         }
     }
 
+    public function updateBucketSize(BucketSize $bucket, int $bucketSizeDelta): void
+    {
+        try {
+            $query = $this->em
+                ->getRepository(BucketSize::class)
+                ->createQueryBuilder('f')
+                ->update()
+                ->set('f.currentBucketSize', 'f.currentBucketSize + :bucketSizeDelta')
+                ->where('f.identifier = :bucketID')
+                ->setParameter('bucketID', $bucket->getIdentifier())
+                ->setParameter('bucketSizeDelta', $bucketSizeDelta)
+                ->getQuery()
+                ->getResult();
+            $this->em->flush();
+        } catch (\Exception $e) {
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Bucket data could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
+        }
+    }
+
     /**
      * @throws ApiError
      */
@@ -646,14 +665,12 @@ class BlobService implements LoggerAwareInterface
                 $errorPrefix.'-bucket-quota-reached'
             );
         }
-        $bucketSize->setCurrentBucketSize($newBucketSizeByte);
         $this->saveFileToDatasystemService($fileData, $errorPrefix);
 
         $this->em->getConnection()->beginTransaction();
         try {
-            $this->saveBucketSize($bucketSize);
+            $this->updateBucketSize($bucketSize, $bucketSizeDeltaByte);
             $this->saveFileData($fileData);
-
             $this->em->getConnection()->commit();
         } catch (\Exception $e) {
             $this->logger->error(sprintf(
@@ -680,13 +697,11 @@ class BlobService implements LoggerAwareInterface
     public function removeFileDataAndFile(FileData $fileData, int $bucketSizeDeltaByte): void
     {
         $bucketSize = $this->getBucketSizeByInternalIdFromDatabase($fileData->getInternalBucketId());
-        $newBucketSizeByte = max($bucketSize->getCurrentBucketSize() + $bucketSizeDeltaByte, 0);
-        $bucketSize->setCurrentBucketSize($newBucketSizeByte);
 
         // try to update bucket size
         $this->em->getConnection()->beginTransaction();
         try {
-            $this->saveBucketSize($bucketSize);
+            $this->updateBucketSize($bucketSize, $bucketSizeDeltaByte);
             $this->removeFileData($fileData);
             $this->removeFileFromDatasystemService($fileData);
 
