@@ -14,8 +14,6 @@ services:
   Dbp\Relay\BlobBundle\Service\BlobUpdates:
     autowire: true
     autoconfigure: true
-    arguments:
-      $em: '@doctrine.orm.dbp_relay_blob_bundle_entity_manager'
 
   Dbp\Relay\BlobBundle\Configuration\ConfigurationService:
     autowire: true
