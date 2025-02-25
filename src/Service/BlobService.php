@@ -21,6 +21,7 @@ use JsonSchema\Validator;
 use Proxies\__CG__\Dbp\Relay\BlobBundle\Entity\Bucket;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -410,6 +411,50 @@ class BlobService implements LoggerAwareInterface
                 ->getQuery()
                 ->getResult();
             $this->em->flush();
+        } catch (\Exception $e) {
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Bucket data could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
+        }
+    }
+
+    public function recalculateAndUpdateBucketSize(string $intBucketId, OutputInterface $out = null): void
+    {
+        try {
+            if (!is_null($out)) {
+                $out->writeln('Calculating total size of bucket '.$intBucketId.' from blob_files table ...');
+            }
+            $query = $this->em
+                ->getRepository(FileData::class)
+                ->createQueryBuilder('f')
+                ->select('sum(f.fileSize)')
+                ->where('f.internalBucketId = :bucketID')
+                ->setParameter('bucketID', $intBucketId)
+                ->getQuery()
+                ->getOneOrNullResult();
+
+            if (is_null($query) || count($query) != 1) {
+
+            }
+
+            if (!is_null($out)) {
+                $out->writeln('Calculated total size of '.$query[1].', updating blob_bucket_sizes table ...');
+            }
+
+            $query = $this->em
+                ->getRepository(BucketSize::class)
+                ->createQueryBuilder('f')
+                ->update()
+                ->set('f.currentBucketSize', ':newBucketSize')
+                ->where('f.identifier = :bucketID')
+                ->setParameter('bucketID', $intBucketId)
+                ->setParameter('newBucketSize', $query[1])
+                ->getQuery()
+                ->getResult();
+
+            $this->em->flush();
+
+            if (!is_null($out)) {
+                $out->writeln('Successfully updated blob_bucket_sizes table!');
+            }
         } catch (\Exception $e) {
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Bucket data could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
         }
