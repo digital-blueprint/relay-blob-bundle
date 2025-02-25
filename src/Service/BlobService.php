@@ -416,7 +416,7 @@ class BlobService implements LoggerAwareInterface
         }
     }
 
-    public function recalculateAndUpdateBucketSize(string $intBucketId, OutputInterface $out = null): void
+    public function recalculateAndUpdateBucketSize(string $intBucketId, ?OutputInterface $out = null): void
     {
         try {
             if (!is_null($out)) {
@@ -431,7 +431,7 @@ class BlobService implements LoggerAwareInterface
                 ->getQuery()
                 ->getOneOrNullResult();
 
-            if (is_null($query) || count($query) != 1) {
+            if (is_null($query) || count($query) !== 1) {
                 throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Total bucket size couldnt be calcualted!');
             }
 
