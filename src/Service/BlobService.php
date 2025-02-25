@@ -421,7 +421,7 @@ class BlobService implements LoggerAwareInterface
                 ->getOneOrNullResult();
 
             if (is_null($query) || count($query) != 1) {
-
+                throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Total bucket size couldnt be calcualted!');
             }
 
             if (!is_null($out)) {
