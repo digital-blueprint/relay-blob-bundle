@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
-use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\FileData;
-use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -26,9 +22,7 @@ class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAw
     use LoggerAwareTrait;
 
     public function __construct(
-        private readonly BlobService $blobService,
-        private readonly RequestStack $requestStack,
-        private readonly ConfigurationService $config
+        private readonly BlobService $blobService
     ) {
         parent::__construct();
     }
@@ -61,8 +55,6 @@ class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAw
             );
         }
 
-        dump($backupJob);
-
         return $backupJob;
     }
 
@@ -72,7 +64,7 @@ class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAw
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
         $backupJobs = $this->blobService->getMetadataBackupJobsByBucketId($filters['bucketIdentifier']);
-        if ($backupJobs === null) {
+        if (empty($backupJobs)) {
             throw ApiError::withDetails(
                 Response::HTTP_NOT_FOUND,
                 'No metadata backup jobs cannot be found for the given bucket id!',

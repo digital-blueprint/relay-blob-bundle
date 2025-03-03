@@ -4,19 +4,12 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
-use DateTimeImmutable;
-use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
-use Dbp\Relay\BlobBundle\Entity\BucketLock;
-use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
-use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProcessor;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
-use Symfony\Component\VarDumper\Cloner\Data;
 
 /**
  * @internal
@@ -24,9 +17,7 @@ use Symfony\Component\VarDumper\Cloner\Data;
 class MetadataBackupJobProcessor extends AbstractDataProcessor
 {
     public function __construct(
-        private readonly BlobService $blobService,
-        private readonly RequestStack $requestStack,
-        private readonly ConfigurationService $config)
+        private readonly BlobService $blobService)
     {
         parent::__construct();
     }
@@ -60,7 +51,7 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
         $job->setIdentifier(Uuid::v7()->toRfc4122());
         $job->setBucketId($filters['bucketIdentifier']);
         $job->setStatus(MetadataBackupJob::JOB_STATUS_RUNNING);
-        $job->setStarted((new DateTimeImmutable('now'))->format('c'));
+        $job->setStarted((new \DateTimeImmutable('now'))->format('c'));
         $job->setFinished(null);
         $job->setErrorId(null);
         $job->setErrorMessage(null);
@@ -80,25 +71,18 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
         return $job;
     }
 
-    /**
-     * NOTE: signature check is already done in the FileDataProvider, which is internally called by ApiPlatform to get the
-     * FileData entity with the given identifier.
-     *
-     * @throws \Exception
-     */
-    protected function updateItem(mixed $identifier, mixed $job, mixed $previousJob, array $filters): MetadataBackupJob
+    protected function updateItem(mixed $identifier, mixed $data, mixed $previousData, array $filters): MetadataBackupJob
     {
-        assert($job instanceof MetadataBackupJob);
-        assert($previousJob instanceof MetadataBackupJob);
-        $backupJob = $job;
-        $previousBackupJob = $previousJob;
+        assert($data instanceof MetadataBackupJob);
+        assert($previousData instanceof MetadataBackupJob);
+        $job = $data;
+        $previousJob = $previousData;
 
         // return $this->blobService->updateFile($backupJob, $previousBackupJob);
         return $job;
     }
 
     /**
-     *
      * @throws \Exception
      */
     protected function removeItem(mixed $identifier, mixed $job, array $filters): void

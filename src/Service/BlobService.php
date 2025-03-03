@@ -19,7 +19,6 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Helpers\Tools;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonSchema\Validator;
-use Proxies\__CG__\Dbp\Relay\BlobBundle\Entity\Bucket;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -620,7 +619,6 @@ class BlobService implements LoggerAwareInterface
 
     /**
      * @param mixed $job job to add to metadata_backup_jobs table
-     * @return void
      */
     public function addMetadataBackupJob(mixed $job): void
     {
@@ -766,9 +764,8 @@ class BlobService implements LoggerAwareInterface
 
     /**
      * @param string $id identifier of the job
-     * @return array
      */
-    public function getMetadataBackupJobById(string $id): object|null
+    public function getMetadataBackupJobById(string $id): ?object
     {
         return $this->em
             ->getRepository(MetadataBackupJob::class)
@@ -777,7 +774,6 @@ class BlobService implements LoggerAwareInterface
 
     /**
      * @param string $bucketID bucket id associated
-     * @return array
      */
     public function getMetadataBackupJobsByBucketId(string $bucketID): array
     {
@@ -787,21 +783,11 @@ class BlobService implements LoggerAwareInterface
     }
 
     /**
-     * @param string $id identifier of blob_files item
-     * @return array
-     */
-    public function getMetadataById(string $id): array
-    {
-        return $this->em
-            ->getRepository(FileData::class)
-            ->findOneBy(['identifier' => $id]);
-    }
-
-    /**
-     * Starts and performs a metadata backup
+     * Starts and performs a metadata backup.
      *
      * @param MetadataBackupJob $job job that is associated with the metadata backup
-     * @return array
+     *
+     * @throws \Exception
      */
     public function startMetadataBackup(MetadataBackupJob $job): void
     {
@@ -809,7 +795,7 @@ class BlobService implements LoggerAwareInterface
         $maxReceivedItems = 10000;
         $receivedItems = $maxReceivedItems;
         $currentPage = 0;
-        $service = $this->datasystemService->getServiceByBucket($this->getBucketConfig());
+        $service = $this->datasystemService->getServiceByBucket($this->configurationService->getBucketById($bucketId));
         $opened = $service->openMetadataBackup();
 
         if (!$opened) {
@@ -820,13 +806,13 @@ class BlobService implements LoggerAwareInterface
         while ($receivedItems === $maxReceivedItems) {
             // empty prefix together with startsWith=true represents all prefixes
             $items = $this->getFileDataCollection($bucketId, '', $currentPage, $maxReceivedItems, true, true);
-            $currentPage++;
+            ++$currentPage;
             $receivedItems = 0;
 
             foreach ($items as $item) {
                 $json = json_encode($item);
                 $service->appendToMetadataBackup($json);
-                $receivedItems++;
+                ++$receivedItems;
             }
         }
         // TODO check if backup was successfully closed

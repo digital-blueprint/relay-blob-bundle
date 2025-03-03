@@ -76,7 +76,7 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
 
     public function openMetadataBackup(): bool
     {
-        $ret = fopen('dummyBackup.json');
+        $ret = fopen('dummyBackup.json', 'w');
 
         if ($ret !== false) {
             $this->backupFile = $ret;
