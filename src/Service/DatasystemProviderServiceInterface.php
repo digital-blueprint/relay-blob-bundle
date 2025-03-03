@@ -34,4 +34,25 @@ interface DatasystemProviderServiceInterface
      * @return iterable<string>
      */
     public function listFiles(string $internalBucketId): iterable;
+
+    /**
+     * Opens metadata backup to be able to write to it
+     *
+     * @return bool true if successful, else false
+     */
+    public function openMetadataBackup(): bool;
+
+    /**
+     * Appends given string to backup
+     *
+     * @return bool true if successful, else false
+     */
+    public function appendToMetadataBackup(string $item): bool;
+
+    /**
+     * Closes and saves metadata backup
+     *
+     * @return bool true if successful, else false
+     */
+    public function closeMetadataBackup(): bool;
 }

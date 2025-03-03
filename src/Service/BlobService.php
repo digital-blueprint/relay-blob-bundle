@@ -9,6 +9,7 @@ use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\BucketLock;
 use Dbp\Relay\BlobBundle\Entity\BucketSize;
 use Dbp\Relay\BlobBundle\Entity\FileData;
+use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Event\AddFileDataByPostSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\ChangeFileDataByPatchSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\DeleteFileDataByDeleteSuccessEvent;
@@ -617,6 +618,28 @@ class BlobService implements LoggerAwareInterface
         }
     }
 
+    /**
+     * @param mixed $job job to add to metadata_backup_jobs table
+     * @return void
+     */
+    public function addMetadataBackupJob(mixed $job): void
+    {
+        // try to persist job, or throw error
+        try {
+            $this->em->persist($job);
+            $this->em->flush();
+        } catch (\Exception $e) {
+            $errorId = 'blob:metadata-backup-job-could-not-be-saved';
+            $errorMessage = 'MetadataBackupJob could not be saved!';
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                $errorMessage,
+                $errorId,
+                ['message' => $e->getMessage()]
+            );
+        }
+    }
+
     public function getBucketLockByInternalBucketId(string $internalBucketId): ?BucketLock
     {
         return $this->em->getRepository(BucketLock::class)->findOneBy(['internalBucketId' => $internalBucketId]);
@@ -741,6 +764,75 @@ class BlobService implements LoggerAwareInterface
             ->findBy(['internalBucketId' => $bucketID]);
     }
 
+    /**
+     * @param string $id identifier of the job
+     * @return array
+     */
+    public function getMetadataBackupJobById(string $id): object|null
+    {
+        return $this->em
+            ->getRepository(MetadataBackupJob::class)
+            ->findOneBy(['identifier' => $id]);
+    }
+
+    /**
+     * @param string $bucketID bucket id associated
+     * @return array
+     */
+    public function getMetadataBackupJobsByBucketId(string $bucketID): array
+    {
+        return $this->em
+            ->getRepository(MetadataBackupJob::class)
+            ->findBy(['bucketId' => $bucketID]);
+    }
+
+    /**
+     * @param string $id identifier of blob_files item
+     * @return array
+     */
+    public function getMetadataById(string $id): array
+    {
+        return $this->em
+            ->getRepository(FileData::class)
+            ->findOneBy(['identifier' => $id]);
+    }
+
+    /**
+     * Starts and performs a metadata backup
+     *
+     * @param MetadataBackupJob $job job that is associated with the metadata backup
+     * @return array
+     */
+    public function startMetadataBackup(MetadataBackupJob $job): void
+    {
+        $bucketId = $job->getBucketId();
+        $maxReceivedItems = 10000;
+        $receivedItems = $maxReceivedItems;
+        $currentPage = 0;
+        $service = $this->datasystemService->getServiceByBucket($this->getBucketConfig());
+        $opened = $service->openMetadataBackup();
+
+        if (!$opened) {
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Metadata backup couldnt be opened!', 'blob:metadata-backup-not-opened');
+        }
+
+        // iterate over all files in steps of $maxReceivedItems and append the retrieved jsons using $service
+        while ($receivedItems === $maxReceivedItems) {
+            // empty prefix together with startsWith=true represents all prefixes
+            $items = $this->getFileDataCollection($bucketId, '', $currentPage, $maxReceivedItems, true, true);
+            $currentPage++;
+            $receivedItems = 0;
+
+            foreach ($items as $item) {
+                $json = json_encode($item);
+                $service->appendToMetadataBackup($json);
+                $receivedItems++;
+            }
+        }
+        // TODO check if backup was successfully closed
+        $closed = $service->closeMetadataBackup();
+    }
+
     public function getFileDataCollection(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage, bool $startsWith, bool $includeDeleteAt)
     {
         $query = $this->em
@@ -784,6 +876,15 @@ class BlobService implements LoggerAwareInterface
     private function removeFileData(FileData $fileData): void
     {
         $this->em->remove($fileData);
+        $this->em->flush();
+    }
+
+    /**
+     * Remove a given MetadataBackupJob from the entity manager.
+     */
+    public function removeMetadataBackupJob(MetadataBackupJob $job): void
+    {
+        $this->em->remove($job);
         $this->em->flush();
     }
 

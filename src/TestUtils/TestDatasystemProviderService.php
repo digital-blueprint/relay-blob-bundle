@@ -13,6 +13,8 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
 {
     private array $data;
 
+    private mixed $backupFile;
+
     public function __construct()
     {
         $this->data = [];
@@ -70,5 +72,30 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
         }
 
         return hash('sha256', $this->data[$internalBucketId][$fileId]->getContent());
+    }
+
+    public function openMetadataBackup(): bool
+    {
+        $ret = fopen('dummyBackup.json');
+
+        if ($ret !== false) {
+            $this->backupFile = $ret;
+        }
+
+        return $ret !== false;
+    }
+
+    public function appendToMetadataBackup(string $item): bool
+    {
+        $ret = fwrite($this->backupFile, $item);
+
+        return $ret !== false;
+    }
+
+    public function closeMetadataBackup(): bool
+    {
+        $ret = fclose($this->backupFile);
+
+        return $ret !== false;
     }
 }
