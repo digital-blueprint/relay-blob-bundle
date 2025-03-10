@@ -63,10 +63,14 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
         try {
             $this->blobService->startMetadataBackup($job);
         } catch (ApiError $e) {
+            $job->setStatus(MetadataBackupJob::JOB_STATUS_ERROR);
             throw ApiError::withDetails($e->getStatusCode(), $e->getMessage(), $e->getErrorId());
         } catch (\Exception $e) {
+            $job->setStatus(MetadataBackupJob::JOB_STATUS_ERROR);
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Something went wrong!');
         }
+
+        $job->setStatus(MetadataBackupJob::JOB_STATUS_FINISHED);
 
         return $job;
     }
