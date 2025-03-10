@@ -28,7 +28,10 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Serializer\Serializer;
 
 date_default_timezone_set('UTC');
 
@@ -792,9 +795,10 @@ class BlobService implements LoggerAwareInterface
     public function startMetadataBackup(MetadataBackupJob $job): void
     {
         $bucketId = $job->getBucketId();
+        $intBucketId = $this->getInternalBucketIdByBucketID($bucketId);
         $maxReceivedItems = 10000;
         $receivedItems = $maxReceivedItems;
-        $currentPage = 0;
+        $currentPage = 1;
         $service = $this->datasystemService->getServiceByBucket($this->configurationService->getBucketById($bucketId));
         $opened = $service->openMetadataBackup();
 
@@ -802,21 +806,30 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Metadata backup couldnt be opened!', 'blob:metadata-backup-not-opened');
         }
 
+        $encoders = [new JsonEncoder()];
+        $normalizers = [new ObjectNormalizer()];
+        $serializer = new Serializer($normalizers, $encoders);
+
         // iterate over all files in steps of $maxReceivedItems and append the retrieved jsons using $service
         while ($receivedItems === $maxReceivedItems) {
             // empty prefix together with startsWith=true represents all prefixes
-            $items = $this->getFileDataCollection($bucketId, '', $currentPage, $maxReceivedItems, true, true);
-            ++$currentPage;
+            $items = $this->getFileDataCollection($intBucketId, '', $currentPage, $maxReceivedItems, true, true);
             $receivedItems = 0;
 
+            /**
+             * @var $item FileData
+             */
             foreach ($items as $item) {
-                $json = json_encode($item);
-                $service->appendToMetadataBackup($json);
+                $json = $serializer->serialize($item, 'json');
+                $service->appendToMetadataBackup($json."\n");
                 ++$receivedItems;
             }
+            ++$currentPage;
         }
         // TODO check if backup was successfully closed
         $closed = $service->closeMetadataBackup();
+
+
     }
 
     public function getFileDataCollection(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage, bool $startsWith, bool $includeDeleteAt)
