@@ -11,6 +11,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use Dbp\Relay\BlobBundle\ApiPlatform\CancelBackupJobAction;
 use Dbp\Relay\BlobBundle\ApiPlatform\MetadataBackupJobProcessor;
 use Dbp\Relay\BlobBundle\ApiPlatform\MetadataBackupJobProvider;
 use Doctrine\ORM\Mapping as ORM;
@@ -58,15 +59,13 @@ use Symfony\Component\Serializer\Annotation\Groups;
             provider: MetadataBackupJobProvider::class,
             processor: MetadataBackupJobProcessor::class
         ),
-        new Patch(
-            uriTemplate: '/metadata-backup-jobs/{identifier}',
+        new Post(
+            uriTemplate: '/metadata-backup-jobs/{identifier}/cancel',
+            controller: CancelBackupJobAction::class,
             openapiContext: [
-                'tags' => ['Blob'],
-                'summary' => 'Cancel metadata-backup-job with given identifier',
+                'tags' => ['Blob']
             ],
             security: 'is_granted("IS_AUTHENTICATED_FULLY")',
-            provider: MetadataBackupJobProvider::class,
-            processor: MetadataBackupJobProcessor::class
         ),
         new Post(
             uriTemplate: '/metadata-backup-jobs',

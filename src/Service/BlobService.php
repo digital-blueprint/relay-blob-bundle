@@ -569,6 +569,56 @@ class BlobService implements LoggerAwareInterface
     }
 
     /**
+     * Cancel a metadata backup job.
+     *
+     * @throws \Exception
+     */
+    public function cancelMetadataBackupJob(string $identifier): MetadataBackupJob
+    {
+        /** @var MetadataBackupJob $job */
+        $job = $this->em->getRepository(MetadataBackupJob::class)
+            ->createQueryBuilder('f')
+            ->where('f.identifier = :id')
+            ->setParameter('id', $identifier)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if ($job === null) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Identifier not found!', 'blob:no-job-with-given-identifier');
+        }
+
+        $job->setStatus(MetadataBackupJob::JOB_STATUS_CANCELLED);
+        $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
+        $this->em->persist($job);
+        $this->em->flush();
+
+        return $job;
+    }
+
+    /**
+     * Cancel a metadata backup job.
+     *
+     * @throws \Exception
+     */
+    public function checkMetadataBackupJobRunning(string $identifier): bool
+    {
+        $this->em->getRepository(MetadataBackupJob::class)
+            ->createQueryBuilder('f')
+            ->where('f.identifier = :id')
+            ->setParameter('id', $identifier)
+            ->getQuery()
+            ->getResult();
+
+        $this->em->flush();
+
+        /** @var MetadataBackupJob $job */
+        $job = $this->em->getRepository(MetadataBackupJob::class)
+            ->findOneBy(['identifier' => $identifier]);
+
+        return $job->getStatus() === MetadataBackupJob::JOB_STATUS_RUNNING;
+    }
+
+    /**
      * Get fileData for file with given identifier.
      */
     public function getFileData(string $identifier): FileData

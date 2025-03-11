@@ -75,17 +75,6 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
         return $job;
     }
 
-    protected function updateItem(mixed $identifier, mixed $data, mixed $previousData, array $filters): MetadataBackupJob
-    {
-        assert($data instanceof MetadataBackupJob);
-        assert($previousData instanceof MetadataBackupJob);
-        $job = $data;
-        $previousJob = $previousData;
-
-        // return $this->blobService->updateFile($backupJob, $previousBackupJob);
-        return $job;
-    }
-
     /**
      * @throws \Exception
      */
