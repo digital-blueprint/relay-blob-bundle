@@ -9,7 +9,6 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use Dbp\Relay\BlobBundle\ApiPlatform\CancelBackupJobAction;
 use Dbp\Relay\BlobBundle\ApiPlatform\MetadataBackupJobProcessor;
@@ -63,7 +62,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
             uriTemplate: '/metadata-backup-jobs/{identifier}/cancel',
             controller: CancelBackupJobAction::class,
             openapiContext: [
-                'tags' => ['Blob']
+                'tags' => ['Blob'],
             ],
             security: 'is_granted("IS_AUTHENTICATED_FULLY")',
         ),

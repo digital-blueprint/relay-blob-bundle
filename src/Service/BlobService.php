@@ -30,8 +30,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
-use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Uid\Uuid;
 
 date_default_timezone_set('UTC');
 
@@ -346,10 +346,9 @@ class BlobService implements LoggerAwareInterface
      *
      * @throws \Exception
      */
-    public function getBucketConfigByInternalBucketId(String $id): BucketConfig
+    public function getBucketConfigByInternalBucketId(string $id): BucketConfig
     {
-        if ($id === null
-            || ($bucket = $this->configurationService->getBucketByInternalID($id)) === null) {
+        if (($bucket = $this->configurationService->getBucketByInternalID($id)) === null) {
             throw new \Exception('failed to get bucket config for identifier '.$id);
         }
 
@@ -590,7 +589,7 @@ class BlobService implements LoggerAwareInterface
      */
     public function cancelMetadataBackupJob(string $identifier): MetadataBackupJob
     {
-        /** @var MetadataBackupJob $job */
+        /** @var MetadataBackupJob|null $job */
         $job = $this->em->getRepository(MetadataBackupJob::class)
             ->createQueryBuilder('f')
             ->where('f.identifier = :id')
@@ -885,7 +884,7 @@ class BlobService implements LoggerAwareInterface
             $receivedItems = 0;
 
             /**
-             * @var $item FileData
+             * @var FileData $item
              */
             foreach ($items as $item) {
                 $json = json_encode($item);
@@ -895,8 +894,9 @@ class BlobService implements LoggerAwareInterface
             ++$currentPage;
             $status = $this->getMetadataBackupJobById($job->getIdentifier())->getStatus();
             if ($status === MetadataBackupJob::JOB_STATUS_CANCELLED) {
-                if ($this->logger !== null)
-                    $this->logger->warning("MetadataBackupJob ".$job->getIdentifier()." cancelled.");
+                if ($this->logger !== null) {
+                    $this->logger->warning('MetadataBackupJob '.$job->getIdentifier().' cancelled.');
+                }
                 break;
             }
         }

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
-use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
-use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\CustomControllerTrait;
@@ -21,7 +19,7 @@ class CancelBackupJobAction extends AbstractController
 {
     use CustomControllerTrait;
 
-    public function __construct(private readonly BlobService $blobService, private readonly ConfigurationService $config)
+    public function __construct(private readonly BlobService $blobService)
     {
     }
 
@@ -38,6 +36,7 @@ class CancelBackupJobAction extends AbstractController
         $encoders = [new JsonEncoder()];
         $normalizers = [new ObjectNormalizer()];
         $serializer = new Serializer($normalizers, $encoders);
+
         return new JsonResponse($serializer->serialize($this->blobService->cancelMetadataBackupJob($identifier), 'json'), json: true);
     }
 }
