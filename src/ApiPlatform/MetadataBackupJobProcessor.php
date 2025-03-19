@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
+use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Service\DatasystemProviderService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProcessor;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,7 +19,7 @@ use Symfony\Component\Uid\Uuid;
 class MetadataBackupJobProcessor extends AbstractDataProcessor
 {
     public function __construct(
-        private readonly BlobService $blobService)
+        private readonly BlobService $blobService, private readonly DatasystemProviderService $datasystemProviderService)
     {
         parent::__construct();
     }
@@ -69,9 +71,12 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
             $job->setStatus(MetadataBackupJob::JOB_STATUS_ERROR);
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Something went wrong!');
         }
-
+        $service = $this->datasystemProviderService->getServiceByBucket($this->blobService->getBucketConfigByInternalBucketId($this->blobService->getInternalBucketIdByBucketID($filters['bucketIdentifier'])));
         $job->setStatus(MetadataBackupJob::JOB_STATUS_FINISHED);
         $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
+        $job->setHash($service->getMetadataBackupFileHash());
+        $job->setFileRef($service->getMetadataBackupFileRef());
+        dump(strlen($service->getMetadataBackupFileHash()));
         $this->blobService->saveMetadataBackupJob($job);
 
         return $job;

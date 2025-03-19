@@ -694,7 +694,7 @@ class BlobService implements LoggerAwareInterface
             $this->em->flush();
         } catch (\Exception $e) {
             $errorId = 'blob:metadata-backup-job-could-not-be-saved';
-            $errorMessage = 'MetadataBackupJob could not be saved!';
+            $errorMessage = 'MetadataBackupJob could not be saved! '.$e->getMessage();
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
                 $errorMessage,
