@@ -98,4 +98,20 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
 
         return $ret !== false;
     }
+
+    public function getMetadataBackupFileHash(): ?string
+    {
+        $ret = hash_file('sha256', 'dummyBackup.json');
+
+        if ($ret === false) {
+            return null;
+        }
+
+        return $ret;
+    }
+
+    public function getMetadataBackupFileRef(): ?string
+    {
+        return 'dummyBackup.json';
+    }
 }
