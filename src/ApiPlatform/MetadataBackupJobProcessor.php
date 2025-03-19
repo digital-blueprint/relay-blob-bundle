@@ -58,7 +58,7 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
         $job->setHash(null);
         $job->setFileRef(null);
 
-        $this->blobService->addMetadataBackupJob($job);
+        $this->blobService->saveMetadataBackupJob($job);
 
         try {
             $this->blobService->startMetadataBackup($job);
@@ -71,6 +71,8 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
         }
 
         $job->setStatus(MetadataBackupJob::JOB_STATUS_FINISHED);
+        $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
+        $this->blobService->saveMetadataBackupJob($job);
 
         return $job;
     }

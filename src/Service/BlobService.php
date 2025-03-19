@@ -342,6 +342,21 @@ class BlobService implements LoggerAwareInterface
     }
 
     /**
+     * Returns the bucket config for the given internal bucket id.
+     *
+     * @throws \Exception
+     */
+    public function getBucketConfigByInternalBucketId(String $id): BucketConfig
+    {
+        if ($id === null
+            || ($bucket = $this->configurationService->getBucketByInternalID($id)) === null) {
+            throw new \Exception('failed to get bucket config for identifier '.$id);
+        }
+
+        return $bucket;
+    }
+
+    /**
      * Used to persist given fileData in entity manager, and automatically adapts last access timestamp.
      *
      * @param FileData $fileData fileData to be persisted
@@ -589,8 +604,7 @@ class BlobService implements LoggerAwareInterface
 
         $job->setStatus(MetadataBackupJob::JOB_STATUS_CANCELLED);
         $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
-        $this->em->persist($job);
-        $this->em->flush();
+        $this->saveMetadataBackupJob($job);
 
         return $job;
     }
@@ -673,7 +687,7 @@ class BlobService implements LoggerAwareInterface
     /**
      * @param mixed $job job to add to metadata_backup_jobs table
      */
-    public function addMetadataBackupJob(mixed $job): void
+    public function saveMetadataBackupJob(mixed $job): void
     {
         // try to persist job, or throw error
         try {
@@ -852,6 +866,8 @@ class BlobService implements LoggerAwareInterface
         $service = $this->datasystemService->getServiceByBucket($this->configurationService->getBucketById($bucketId));
         $opened = $service->openMetadataBackup();
 
+        $config = $this->getBucketConfigByInternalBucketId($intBucketId);
+
         if (!$opened) {
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Metadata backup couldnt be opened!', 'blob:metadata-backup-not-opened');
         }
@@ -859,6 +875,8 @@ class BlobService implements LoggerAwareInterface
         $encoders = [new JsonEncoder()];
         $normalizers = [new ObjectNormalizer()];
         $serializer = new Serializer($normalizers, $encoders);
+
+        $service->appendToMetadataBackup(json_encode($config)."\n");
 
         // iterate over all files in steps of $maxReceivedItems and append the retrieved jsons using $service
         while ($receivedItems === $maxReceivedItems) {
@@ -870,16 +888,20 @@ class BlobService implements LoggerAwareInterface
              * @var $item FileData
              */
             foreach ($items as $item) {
-                $json = $serializer->serialize($item, 'json');
+                $json = json_encode($item);
                 $service->appendToMetadataBackup($json."\n");
                 ++$receivedItems;
             }
             ++$currentPage;
+            $status = $this->getMetadataBackupJobById($job->getIdentifier())->getStatus();
+            if ($status === MetadataBackupJob::JOB_STATUS_CANCELLED) {
+                if ($this->logger !== null)
+                    $this->logger->warning("MetadataBackupJob ".$job->getIdentifier()." cancelled.");
+                break;
+            }
         }
         // TODO check if backup was successfully closed
         $closed = $service->closeMetadataBackup();
-
-
     }
 
     public function getFileDataCollection(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage, bool $startsWith, bool $includeDeleteAt)

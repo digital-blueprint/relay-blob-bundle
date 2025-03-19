@@ -6,7 +6,7 @@ namespace Dbp\Relay\BlobBundle\Configuration;
 
 use Ramsey\Uuid\Validator\GenericValidator;
 
-class BucketConfig
+class BucketConfig implements \JsonSerializable
 {
     private string $internalBucketId = '';
 
@@ -246,5 +246,26 @@ class BucketConfig
         }
 
         return $bucket;
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        $values = [];
+        $values['internalBucketId'] = $this->internalBucketId;
+        $values['service'] = $this->service;
+        $values['bucketId'] = $this->bucketId;
+        $values['reportExpiryWhenIn'] = $this->reportExpiryWhenIn;
+        $values['key'] = $this->key;
+        $values['quota'] = $this->quota;
+        $values['linkExpireTime'] = $this->linkExpireTime;
+        $values['warnQuotaOverConfig'] = $this->warnQuotaOverConfig;
+        $values['reportingConfig'] = $this->reportingConfig;
+        $values['integrityCheckConfig'] = $this->integrityCheckConfig;
+        $values['notifyWhenQuotaOver'] = $this->notifyWhenQuotaOver;
+        $values['additionalTypes'] = $this->additionalTypes;
+        $values['outputValidation'] = $this->outputValidation;
+        $values['bucketSizeConfig'] = $this->bucketSizeConfig;
+        $json = json_encode($values);
+        return $json;
     }
 }
