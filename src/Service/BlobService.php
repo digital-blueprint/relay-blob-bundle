@@ -589,6 +589,7 @@ class BlobService implements LoggerAwareInterface
      */
     public function cancelMetadataBackupJob(string $identifier): MetadataBackupJob
     {
+        $this->em->beginTransaction();
         /** @var MetadataBackupJob|null $job */
         $job = $this->em->getRepository(MetadataBackupJob::class)
             ->createQueryBuilder('f')
@@ -604,6 +605,7 @@ class BlobService implements LoggerAwareInterface
         $job->setStatus(MetadataBackupJob::JOB_STATUS_CANCELLED);
         $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
         $this->saveMetadataBackupJob($job);
+        $this->em->commit();
 
         return $job;
     }
@@ -833,9 +835,11 @@ class BlobService implements LoggerAwareInterface
      */
     public function getMetadataBackupJobById(string $id): ?object
     {
-        return $this->em
+        $ret = $this->em
             ->getRepository(MetadataBackupJob::class)
             ->findOneBy(['identifier' => $id]);
+        $this->em->refresh($ret);
+        return $ret;
     }
 
     /**
@@ -879,6 +883,14 @@ class BlobService implements LoggerAwareInterface
 
         // iterate over all files in steps of $maxReceivedItems and append the retrieved jsons using $service
         while ($receivedItems === $maxReceivedItems) {
+            $status = $this->getMetadataBackupJobById($job->getIdentifier())->getStatus();
+            dump("retrieved status: ".$status);
+            if ($status === MetadataBackupJob::JOB_STATUS_CANCELLED) {
+                if ($this->logger !== null) {
+                    $this->logger->warning('MetadataBackupJob '.$job->getIdentifier().' cancelled.');
+                }
+                break;
+            }
             // empty prefix together with startsWith=true represents all prefixes
             $items = $this->getFileDataCollection($intBucketId, '', $currentPage, $maxReceivedItems, true, true);
             $receivedItems = 0;
@@ -892,13 +904,6 @@ class BlobService implements LoggerAwareInterface
                 ++$receivedItems;
             }
             ++$currentPage;
-            $status = $this->getMetadataBackupJobById($job->getIdentifier())->getStatus();
-            if ($status === MetadataBackupJob::JOB_STATUS_CANCELLED) {
-                if ($this->logger !== null) {
-                    $this->logger->warning('MetadataBackupJob '.$job->getIdentifier().' cancelled.');
-                }
-                break;
-            }
         }
         // TODO check if backup was successfully closed
         $closed = $service->closeMetadataBackup();

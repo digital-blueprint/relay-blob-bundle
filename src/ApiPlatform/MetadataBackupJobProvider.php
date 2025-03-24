@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
+use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
@@ -35,7 +36,7 @@ class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAw
     /**
      * @throws \JsonException
      */
-    protected function getItemById(string $id, array $filters = [], array $options = []): ?FileData
+    protected function getItemById(string $id, array $filters = [], array $options = []): ?MetadataBackupJob
     {
         return $this->getMetadataBackupJobById($id, $filters);
     }

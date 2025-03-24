@@ -60,7 +60,6 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
         $job->setFileRef(null);
 
         $this->blobService->saveMetadataBackupJob($job);
-
         try {
             $this->blobService->startMetadataBackup($job);
         } catch (ApiError $e) {
@@ -69,6 +68,10 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
         } catch (\Exception $e) {
             $job->setStatus(MetadataBackupJob::JOB_STATUS_ERROR);
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Something went wrong!');
+        }
+
+        if ($this->blobService->getMetadataBackupJobById($job->getIdentifier())->getStatus() === MetadataBackupJob::JOB_STATUS_CANCELLED) {
+            return $this->blobService->getMetadataBackupJobById($job->getIdentifier());
         }
         $service = $this->datasystemProviderService->getServiceByBucket($this->blobService->getBucketConfigByInternalBucketId($this->blobService->getInternalBucketIdByBucketID($filters['bucketIdentifier'])));
         $job->setStatus(MetadataBackupJob::JOB_STATUS_FINISHED);
