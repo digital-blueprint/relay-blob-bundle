@@ -124,6 +124,11 @@ class ConfigurationService
         return $this->config['bucket_size_check_interval'];
     }
 
+    public function getFiledataSchema(): string
+    {
+        return $this->config['filedata_schema'];
+    }
+
     public function checkConfig(): void
     {
         // Make sure the schema files exist and are valid JSON

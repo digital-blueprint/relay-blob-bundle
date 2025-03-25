@@ -884,7 +884,7 @@ class BlobService implements LoggerAwareInterface
         // iterate over all files in steps of $maxReceivedItems and append the retrieved jsons using $service
         while ($receivedItems === $maxReceivedItems) {
             $status = $this->getMetadataBackupJobById($job->getIdentifier())->getStatus();
-            dump("retrieved status: ".$status);
+
             if ($status === MetadataBackupJob::JOB_STATUS_CANCELLED) {
                 if ($this->logger !== null) {
                     $this->logger->warning('MetadataBackupJob '.$job->getIdentifier().' cancelled.');
@@ -900,6 +900,10 @@ class BlobService implements LoggerAwareInterface
              */
             foreach ($items as $item) {
                 $json = json_encode($item);
+                if ($json === false) {
+
+                }
+                $this->validateJsonFileData($json, 'blob:metadata-backup');
                 $service->appendToMetadataBackup($json."\n");
                 ++$receivedItems;
             }
@@ -1124,6 +1128,21 @@ class BlobService implements LoggerAwareInterface
                 $messages[$error['property']] = $error['message'];
             }
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type', $errorPrefix.'-metadata-does-not-match-type', $messages);
+        }
+    }
+
+    public function validateJsonFileData(string $fileDataJson, string $errorPrefix): void
+    {
+        $filedataDecoded = json_decode($fileDataJson, false, flags: JSON_THROW_ON_ERROR);
+        $schemaPath = $this->configurationService->getFiledataSchema();
+        $validator = new Validator();
+        $validator->validate($filedataDecoded, (object) ['$ref' => 'file://'.realpath($schemaPath)]);
+        if (!$validator->isValid()) {
+            $messages = [];
+            foreach ($validator->getErrors() as $error) {
+                $messages[$error['property']] = $error['message'];
+            }
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type', $errorPrefix.'-filedata-validation-failed', $messages);
         }
     }
 

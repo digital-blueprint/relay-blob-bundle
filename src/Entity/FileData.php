@@ -854,8 +854,6 @@ class FileData implements \JsonSerializable
         $values['metadataHash'] = $this->metadataHash;
         $values['notifyEmail'] = $this->notifyEmail;
 
-        $json = json_encode($values);
-
-        return $json;
+        return $values;
     }
 }
