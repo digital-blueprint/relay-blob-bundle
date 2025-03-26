@@ -839,6 +839,7 @@ class BlobService implements LoggerAwareInterface
             ->getRepository(MetadataBackupJob::class)
             ->findOneBy(['identifier' => $id]);
         $this->em->refresh($ret);
+
         return $ret;
     }
 
@@ -901,7 +902,7 @@ class BlobService implements LoggerAwareInterface
             foreach ($items as $item) {
                 $json = json_encode($item);
                 if ($json === false) {
-
+                    throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Could not encode filedata as json!', 'blob:metadata-backup-cannot-encode-filedata-as-json');
                 }
                 $this->validateJsonFileData($json, 'blob:metadata-backup');
                 $service->appendToMetadataBackup($json."\n");
