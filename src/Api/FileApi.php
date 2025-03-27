@@ -16,6 +16,8 @@ class FileApi
     public const INCLUDE_DELETE_AT_OPTION = BlobService::INCLUDE_DELETE_AT_OPTION;
     public const DISABLE_OUTPUT_VALIDATION_OPTION = BlobService::DISABLE_OUTPUT_VALIDATION_OPTION;
     public const UPDATE_LAST_ACCESS_TIMESTAMP_OPTION = BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION;
+    public const INCLUDE_FILE_CONTENTS_OPTION = BlobService::INCLUDE_FILE_CONTENTS_OPTION;
+    public const BASE_URL_OPTION = BlobService::BASE_URL_OPTION;
 
     public function __construct(private readonly BlobService $blobService)
     {

@@ -56,13 +56,7 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
         $isGetRequest = $request->getMethod() === Request::METHOD_GET;
 
         $errorPrefix = 'blob:get-file-data-by-id';
-        SignatureUtils::checkSignature(
-            $errorPrefix,
-            $this->config,
-            $request,
-            $filters,
-            ['GET', 'PATCH', 'DELETE']
-        );
+        SignatureUtils::checkSignature($errorPrefix, $this->config, $request, $filters, ['GET', 'PATCH', 'DELETE']);
 
         // if output validation is disabled, a user can get the data even if the system usually would throw and invalid data error
         $disableOutputValidation = !$isGetRequest || ($filters['disableOutputValidation'] ?? null) === '1';
@@ -75,11 +69,9 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
             BlobService::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
             BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => $isGetRequest, // PATCH: saves for itself, DELETE: will be deleted anyway
             BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION => $bucketId,
+            BlobService::INCLUDE_FILE_CONTENTS_OPTION => $isGetRequest && $includeData,
+            BlobService::BASE_URL_OPTION => $request->getSchemeAndHttpHost(),
         ]);
-
-        $fileData->setContentUrl($isGetRequest && $includeData ?
-            $this->blobService->getContentUrl($fileData) :
-            $this->blobService->getDownloadUrl($request->getSchemeAndHttpHost(), $fileData));
 
         // don't throw on DELETE and PATCH requests
         if ($isGetRequest) {
@@ -108,22 +100,16 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
         $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');
         $prefix = rawurldecode($filters['prefix'] ?? '');
         $includeData = ($filters['includeData'] ?? null) === '1';
-        $prefixStartsWith = rawurldecode($filters['startsWith'] ?? '');
-        $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '');
-        $request = $this->requestStack->getCurrentRequest();
+        $prefixStartsWith = rawurldecode($filters['startsWith'] ?? '') === '1';
+        $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '') === '1';
+        $baseUrl = $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost();
 
-        $validFileDataCollection = [];
-        foreach ($this->blobService->getFiles($bucketID, [
-            BlobService::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt === '1',
+        return $this->blobService->getFiles($bucketID, [
+            BlobService::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
             BlobService::PREFIX_OPTION => $prefix,
-            BlobService::PREFIX_STARTS_WITH_OPTION => $prefixStartsWith === '1',
-        ], $currentPageNumber, $maxNumItemsPerPage) as $fileData) {
-            $fileData->setContentUrl($includeData ?
-                $this->blobService->getContentUrl($fileData) :
-                $this->blobService->getDownloadUrl($request->getSchemeAndHttpHost(), $fileData));
-            $validFileDataCollection[] = $fileData;
-        }
-
-        return $validFileDataCollection;
+            BlobService::PREFIX_STARTS_WITH_OPTION => $prefixStartsWith,
+            BlobService::INCLUDE_FILE_CONTENTS_OPTION => $includeData,
+            BlobService::BASE_URL_OPTION => $baseUrl,
+        ], $currentPageNumber, $maxNumItemsPerPage);
     }
 }

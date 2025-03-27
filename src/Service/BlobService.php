@@ -43,6 +43,8 @@ class BlobService implements LoggerAwareInterface
     public const PREFIX_STARTS_WITH_OPTION = 'prefix_starts_with';
     public const PREFIX_OPTION = 'prefix_equals';
     public const INCLUDE_DELETE_AT_OPTION = 'include_delete_at';
+    public const INCLUDE_FILE_CONTENTS_OPTION = 'include_file_contents';
+    public const BASE_URL_OPTION = 'base_url';
 
     public function __construct(
         private readonly EntityManagerInterface $em,
@@ -155,29 +157,42 @@ class BlobService implements LoggerAwareInterface
             $this->saveFileData($fileData);
         }
 
+        $fileData->setContentUrl($options[self::INCLUDE_FILE_CONTENTS_OPTION] ?? false ?
+            $this->getContentUrl($fileData) :
+            $this->getDownloadUrl($options[self::BASE_URL_OPTION] ?? '', $fileData));
+
         return $fileData;
     }
 
+    /**
+     * @throws \Exception
+     */
     public function getFiles(string $bucketIdentifier, array $options = [], int $currentPageNumber = 1, int $maxNumItemsPerPage = 30): array
     {
-        $errorPrefix = 'blob:get-file-data-collection';
-
         // TODO: make the upper limit configurable
-        // hard limit page size
         if ($maxNumItemsPerPage > 1000) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Requested too many items per page', $errorPrefix.'-too-many-items-per-page');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
+                'Requested too many items per page',
+                'blob:get-file-data-collection-too-many-items-per-page'
+            );
         }
 
         $internalBucketId = $this->getInternalBucketIdByBucketID($bucketIdentifier);
         $prefix = $options[self::PREFIX_OPTION] ?? '';
         $prefixStartsWith = $options[self::PREFIX_STARTS_WITH_OPTION] ?? false;
         $includeDeleteAt = $options[self::INCLUDE_DELETE_AT_OPTION] ?? false;
+        $includeFileContents = $options[self::INCLUDE_FILE_CONTENTS_OPTION] ?? false;
+        $baseUrl = $options[self::BASE_URL_OPTION] ?? '';
 
-        $fileDataCollection = $this->getFileDataCollection($internalBucketId, $prefix, $currentPageNumber, $maxNumItemsPerPage, $prefixStartsWith, $includeDeleteAt);
+        $fileDataCollection = $this->getFileDataCollection($internalBucketId,
+            $prefix, $currentPageNumber, $maxNumItemsPerPage, $prefixStartsWith, $includeDeleteAt);
 
         foreach ($fileDataCollection as $fileData) {
             assert($fileData instanceof FileData);
             $fileData->setBucketId($bucketIdentifier);
+            $fileData->setContentUrl($includeFileContents ?
+                $this->getContentUrl($fileData) :
+                $this->getDownloadUrl($baseUrl, $fileData));
         }
 
         return $fileDataCollection;
