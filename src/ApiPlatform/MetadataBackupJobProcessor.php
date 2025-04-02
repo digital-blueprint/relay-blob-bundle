@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
+use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\Service\DatasystemProviderService;
@@ -18,7 +19,7 @@ use Symfony\Component\Uid\Uuid;
 class MetadataBackupJobProcessor extends AbstractDataProcessor
 {
     public function __construct(
-        private readonly BlobService $blobService, private readonly DatasystemProviderService $datasystemProviderService)
+        private readonly BlobService $blobService, private readonly DatasystemProviderService $datasystemProviderService, private readonly AuthorizationService $authService)
     {
         parent::__construct();
     }
@@ -48,6 +49,8 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
                 'blob:bucket-not-found'
             );
         }
+
+        $this->authService->checkCanAccessMetadataBackup($filters['bucketIdentifier']);
 
         $job->setIdentifier(Uuid::v7()->toRfc4122());
         $job->setBucketId($filters['bucketIdentifier']);
