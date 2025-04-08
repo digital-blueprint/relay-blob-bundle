@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.1.70
+
+* set contentUrl of file data also when getting a file/files via the FileApi
+* Add command that updates blob_bucket_sizes table of given id
+* Fix command naming schema
+
 ## v0.1.69
 
 * check-integrity: show a progress bar
