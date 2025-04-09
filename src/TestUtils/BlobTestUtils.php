@@ -54,6 +54,7 @@ class BlobTestUtils
             'integrity_check_interval' => '0 0 1 * *',
             'bucket_size_check_interval' => '0 2 * * 1',
             'quota_warning_interval' => '0 6 * * *',
+            'filedata_schema' => '%kernel.project_dir%/vendor/dbp/relay-blob-bundle/src/Resources/filedata-v1.schema.json',
             'buckets' => [
                 [
                     'service' => 'Dbp\Relay\BlobBundle\TestUtils\TestDatasystemProviderService',
@@ -99,6 +100,14 @@ class BlobTestUtils
                         'subject' => 'Blob file deletion reporting',
                         'html_template' => 'emails/reporting.html.twig',
                     ],
+                ],
+            ],
+            'authorization' => [
+                'roles' => [
+                    'ROLE_METADATABACKUPS' => 'user.isAuthenticated()',
+                ],
+                'resource_permissions' => [
+                    'ROLE_PROFILE_METADATABACKUPS' => 'user.get("SCOPE_BLOB_METADATA_BACKUP")',
                 ],
             ],
         ];

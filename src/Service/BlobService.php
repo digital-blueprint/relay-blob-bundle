@@ -28,9 +28,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
-use Symfony\Component\Serializer\Encoder\JsonEncoder;
-use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
-use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Uid\Uuid;
 
 date_default_timezone_set('UTC');
@@ -870,14 +867,11 @@ class BlobService implements LoggerAwareInterface
         $opened = $service->openMetadataBackup($intBucketId);
 
         $config = $this->getBucketConfigByInternalBucketId($intBucketId);
+        $config->setKey('<redacted>');
 
         if (!$opened) {
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Metadata backup couldnt be opened!', 'blob:metadata-backup-not-opened');
         }
-
-        $encoders = [new JsonEncoder()];
-        $normalizers = [new ObjectNormalizer()];
-        $serializer = new Serializer($normalizers, $encoders);
 
         $service->appendToMetadataBackup(json_encode($config)."\n");
 
