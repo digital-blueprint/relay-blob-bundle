@@ -41,7 +41,7 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
                 'blob:bucket-not-found'
             );
         }
-        $internalId = $this->blobService->getInternalBucketIdByBucketID($filters['bucketIdentifier']);
+        $internalId = $filters['bucketIdentifier'];
         if ($internalId === null) {
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
@@ -50,10 +50,10 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
             );
         }
 
-        $this->authService->checkCanAccessMetadataBackup($filters['bucketIdentifier']);
+        $this->authService->checkCanAccessMetadataBackup($internalId);
 
         $job->setIdentifier(Uuid::v7()->toRfc4122());
-        $job->setBucketId($filters['bucketIdentifier']);
+        $job->setBucketId($internalId);
         $job->setStatus(MetadataBackupJob::JOB_STATUS_RUNNING);
         $job->setStarted((new \DateTimeImmutable('now'))->format('c'));
         $job->setFinished(null);
@@ -76,7 +76,7 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
         if ($this->blobService->getMetadataBackupJobById($job->getIdentifier())->getStatus() === MetadataBackupJob::JOB_STATUS_CANCELLED) {
             return $this->blobService->getMetadataBackupJobById($job->getIdentifier());
         }
-        $service = $this->datasystemProviderService->getServiceByBucket($this->blobService->getBucketConfigByInternalBucketId($this->blobService->getInternalBucketIdByBucketID($filters['bucketIdentifier'])));
+        $service = $this->datasystemProviderService->getServiceByBucket($this->blobService->getBucketConfigByInternalBucketId($internalId));
         $job->setStatus(MetadataBackupJob::JOB_STATUS_FINISHED);
         $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
         $job->setHash($service->getMetadataBackupFileHash());

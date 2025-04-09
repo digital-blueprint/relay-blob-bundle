@@ -40,7 +40,7 @@ interface DatasystemProviderServiceInterface
      *
      * @return bool true if successful, else false
      */
-    public function openMetadataBackup(): bool;
+    public function openMetadataBackup(string $internalBucketId): bool;
 
     /**
      * Appends given string to backup.
@@ -54,7 +54,7 @@ interface DatasystemProviderServiceInterface
      *
      * @return bool true if successful, else false
      */
-    public function closeMetadataBackup(): bool;
+    public function closeMetadataBackup(string $internalBucketId): bool;
 
     /**
      * Calculates and gets the filehash of the metadata backup file.
