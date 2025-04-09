@@ -862,13 +862,12 @@ class BlobService implements LoggerAwareInterface
      */
     public function startMetadataBackup(MetadataBackupJob $job): void
     {
-        $bucketId = $job->getBucketId();
-        $intBucketId = $this->getInternalBucketIdByBucketID($bucketId);
+        $intBucketId = $job->getBucketId();
         $maxReceivedItems = 10000;
         $receivedItems = $maxReceivedItems;
         $currentPage = 1;
-        $service = $this->datasystemService->getServiceByBucket($this->configurationService->getBucketById($bucketId));
-        $opened = $service->openMetadataBackup();
+        $service = $this->datasystemService->getServiceByBucket($this->configurationService->getBucketByInternalID($intBucketId));
+        $opened = $service->openMetadataBackup($intBucketId);
 
         $config = $this->getBucketConfigByInternalBucketId($intBucketId);
 
@@ -911,7 +910,7 @@ class BlobService implements LoggerAwareInterface
             ++$currentPage;
         }
         // TODO check if backup was successfully closed
-        $closed = $service->closeMetadataBackup();
+        $closed = $service->closeMetadataBackup($intBucketId);
     }
 
     public function getFileDataCollection(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage, bool $startsWith, bool $includeDeleteAt)

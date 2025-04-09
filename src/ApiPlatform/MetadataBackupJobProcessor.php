@@ -79,8 +79,8 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
         $service = $this->datasystemProviderService->getServiceByBucket($this->blobService->getBucketConfigByInternalBucketId($internalId));
         $job->setStatus(MetadataBackupJob::JOB_STATUS_FINISHED);
         $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
-        $job->setHash($service->getMetadataBackupFileHash());
-        $job->setFileRef($service->getMetadataBackupFileRef());
+        $job->setHash($service->getMetadataBackupFileHash($internalId));
+        $job->setFileRef($service->getMetadataBackupFileRef($internalId));
         $this->blobService->saveMetadataBackupJob($job);
 
         return $job;

@@ -61,12 +61,12 @@ interface DatasystemProviderServiceInterface
      *
      * @return string sha256 filehash if successful, else null
      */
-    public function getMetadataBackupFileHash(): ?string;
+    public function getMetadataBackupFileHash(string $intBucketId): ?string;
 
     /**
      * Gets the place where the metadata backup file is stored.
      *
      * @return string file ref if successful, else null
      */
-    public function getMetadataBackupFileRef(): ?string;
+    public function getMetadataBackupFileRef(string $intBucketId): ?string;
 }

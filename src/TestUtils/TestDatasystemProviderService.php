@@ -74,7 +74,7 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
         return hash('sha256', $this->data[$internalBucketId][$fileId]->getContent());
     }
 
-    public function openMetadataBackup(): bool
+    public function openMetadataBackup(string $internalBucketId): bool
     {
         $ret = fopen('dummyBackup.json', 'w');
 
@@ -92,14 +92,14 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
         return $ret !== false;
     }
 
-    public function closeMetadataBackup(): bool
+    public function closeMetadataBackup(string $internalBucketId): bool
     {
         $ret = fclose($this->backupFile);
 
         return $ret !== false;
     }
 
-    public function getMetadataBackupFileHash(): ?string
+    public function getMetadataBackupFileHash(string $intBucketId): ?string
     {
         $ret = hash_file('sha256', 'dummyBackup.json');
 
@@ -110,7 +110,7 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
         return $ret;
     }
 
-    public function getMetadataBackupFileRef(): ?string
+    public function getMetadataBackupFileRef(string $intBucketId): ?string
     {
         return 'dummyBackup.json';
     }
