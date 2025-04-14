@@ -2459,15 +2459,15 @@ class CurlGetTest extends ApiTestCase
             throw $e;
         }
     }
+
+    private function getMetabackupJobUrl(string $url, string $bucketIdentifier): string
+    {
+        return "$url?bucketIdentifier=$bucketIdentifier";
+    }
     */
 
     private function generateSha256ChecksumFromUrl($url): string
     {
         return hash('sha256', $url);
-    }
-
-    private function getMetabackupJobUrl(string $url, string $bucketIdentifier): string
-    {
-        return "$url?bucketIdentifier=$bucketIdentifier";
     }
 }
