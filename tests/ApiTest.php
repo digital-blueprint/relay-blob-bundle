@@ -4,29 +4,23 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Tests;
 
-use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
-use Dbp\Relay\CoreBundle\TestUtils\TestAuthorizationService;
-use Dbp\Relay\CoreBundle\TestUtils\TestClient;
+use Dbp\Relay\CoreBundle\TestUtils\AbstractApiTest;
 use Dbp\Relay\CoreBundle\TestUtils\UserAuthTrait;
 use Symfony\Component\HttpFoundation\Response;
 
-class ApiTest extends ApiTestCase
+class ApiTest extends AbstractApiTest
 {
     use UserAuthTrait;
 
-    private TestClient $testClient;
-
     protected function setUp(): void
     {
-        $this->testClient = new TestClient(ApiTestCase::createClient());
-        $this->testClient->setUpUser(TestAuthorizationService::TEST_USER_IDENTIFIER);
+        parent::setUp();
+
         BlobApiTest::setUp($this->testClient->getContainer());
-        // the following allows multiple requests in one test:
-        $this->testClient->getClient()->disableReboot();
     }
 
     public function testGetFileDataByIdNotFound(): void
