@@ -842,8 +842,7 @@ class BlobService implements LoggerAwareInterface
     }
 
     /**
-     * @throws ApiError|\DateMalformedIntervalStringException
-     * @throws \DateMalformedStringException
+     * @throws ApiError
      */
     private function ensureFileDataIsValid(FileData $fileData, string $errorPrefix): void
     {
