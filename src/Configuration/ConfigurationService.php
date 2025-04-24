@@ -104,7 +104,20 @@ class ConfigurationService
         return $this->config['cleanup_interval'];
     }
 
+    public function runFileIntegrityHealthchecks(): bool
+    {
+        return false; // disabled for now, since it doesn't scale for large numbers of files
+    }
+
     public function doFileIntegrityChecks(): bool
+    {
+        return $this->config['file_integrity_checks'];
+    }
+
+    /**
+     * TO DISCUSS: maybe always store checksums, independently of the current config setting?
+     */
+    public function storeFileAndMetadataChecksums(): bool
     {
         return $this->config['file_integrity_checks'];
     }

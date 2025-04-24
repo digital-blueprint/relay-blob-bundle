@@ -11,17 +11,10 @@ use Dbp\Relay\CoreBundle\Cron\CronOptions;
 
 class CleanupCronJob implements CronJobInterface
 {
-    /**
-     * @var BlobService
-     */
-    private $blobService;
-
-    private $configService;
-
-    public function __construct(BlobService $blobService, ConfigurationService $configService)
+    public function __construct(
+        private readonly BlobService $blobService,
+        private readonly ConfigurationService $configService)
     {
-        $this->blobService = $blobService;
-        $this->configService = $configService;
     }
 
     public function getName(): string

@@ -8,23 +8,14 @@ use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Service\BlobChecks;
 use Dbp\Relay\CoreBundle\Cron\CronJobInterface;
 use Dbp\Relay\CoreBundle\Cron\CronOptions;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
-class IntegrityCronJob implements CronJobInterface
+readonly class FileAndMetadataIntegrityCheckCronJob implements CronJobInterface
 {
-    /**
-     * @var BlobChecks
-     */
-    private $blobChecks;
-
-    /**
-     * @var ConfigurationService
-     */
-    private $configService;
-
-    public function __construct(BlobChecks $blobChecks, ConfigurationService $configService)
+    public function __construct(
+        private BlobChecks $blobChecks,
+        private ConfigurationService $configService)
     {
-        $this->blobChecks = $blobChecks;
-        $this->configService = $configService;
     }
 
     public function getName(): string
@@ -37,11 +28,14 @@ class IntegrityCronJob implements CronJobInterface
         return $this->configService->getIntegrityCheckInterval();
     }
 
+    /**
+     * @throws \Exception
+     * @throws TransportExceptionInterface
+     */
     public function run(CronOptions $options): void
     {
-        if ($this->configService->doFileIntegrityChecks()) {
-            assert($this->blobChecks !== null);
-            // $this->blobChecks->checkIntegrity();
+        if ($this->configService->runFileIntegrityHealthchecks()) {
+            $this->blobChecks->checkFileAndMetadataIntegrity();
         }
     }
 }

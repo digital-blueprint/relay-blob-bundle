@@ -7,10 +7,12 @@ namespace Dbp\Relay\BlobBundle\Service;
 use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\FileData;
+use Dbp\Relay\BlobBundle\Helper\BlobUtils;
+use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\NonUniqueResultException;
-use Symfony\Component\Console\Helper\ProgressBar;
-use Symfony\Component\Console\Output\NullOutput;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Mailer;
@@ -22,10 +24,12 @@ use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
 use Twig\Loader\FilesystemLoader;
 
-class BlobChecks
+class BlobChecks implements LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     public function __construct(
-        private readonly EntityManagerInterface $em,
+        private readonly EntityManagerInterface $entityManager,
         private readonly ConfigurationService $configurationService,
         private readonly DatasystemProviderService $datasystemService,
         private readonly BlobService $blobService)
@@ -34,6 +38,8 @@ class BlobChecks
 
     /**
      * Sends reporting and bucket quota warning email if needed.
+     *
+     * @throws \Exception
      */
     public function checkQuotas(): void
     {
@@ -115,7 +121,7 @@ class BlobChecks
      * @throws RuntimeError
      * @throws LoaderError
      */
-    public function checkStorage(?OutputInterface $out = null, $sendEmail = true, $intBucketId = null)
+    public function checkStorage(?OutputInterface $out = null, $sendEmail = true, $internalBucketId = null): void
     {
         $buckets = $this->configurationService->getBuckets();
 
@@ -129,14 +135,14 @@ class BlobChecks
         $countBucketSizes = [];
 
         foreach ($buckets as $bucket) {
-            if (!is_null($intBucketId) && is_string($intBucketId) && $intBucketId !== $bucket->getInternalBucketId()) {
+            if ($internalBucketId !== null && $internalBucketId !== $bucket->getInternalBucketId()) {
                 continue;
             }
             if (!$sendEmail && $out !== null) {
                 $out->writeln('Retrieving database information for bucket with bucket id: '.$bucket->getBucketId().' and internal bucket id: '.$bucket->getInternalBucketId());
                 $out->writeln('Calculating sum of fileSizes in the blob_files table ...');
             }
-            $query = $this->em
+            $query = $this->entityManager
                 ->getRepository(FileData::class)
                 ->createQueryBuilder('f')
                 ->where('f.internalBucketId = :bucketID')
@@ -167,7 +173,7 @@ class BlobChecks
                     $out->writeln('Counting number of entries in the blob_files table ...');
                 }
 
-                $query = $this->em
+                $query = $this->entityManager
                     ->getRepository(FileData::class)
                     ->createQueryBuilder('f')
                     ->where('f.internalBucketId = :bucketID')
@@ -188,7 +194,7 @@ class BlobChecks
         }
 
         foreach ($buckets as $bucket) {
-            if (!is_null($intBucketId) && is_string($intBucketId) && $intBucketId !== $bucket->getInternalBucketId()) {
+            if ($internalBucketId !== null && $internalBucketId !== $bucket->getInternalBucketId()) {
                 continue;
             }
             $config = $bucket->getBucketSizeConfig();
@@ -249,97 +255,68 @@ class BlobChecks
     }
 
     /**
-     * Checks whether some files will expire soon, and sends a email to the bucket owner
-     * or owner of the file (if configured as notifyEmail).
-     *
-     * @return void
-     *
      * @throws \Exception
+     * @throws TransportExceptionInterface
      */
-    public function sendIntegrityCheckMail(BucketConfig $bucket, array $invalidDatas)
+    public function checkFileAndMetadataIntegrity(?OutputInterface $out = null, bool $sendEmail = true, bool $printIds = false, ?string $intBucketId = null): void
     {
-        $integrityConfig = $bucket->getIntegrityCheckConfig();
-
-        $id = $bucket->getInternalBucketId();
-        $name = $bucket->getBucketId();
-
-        if (!empty($invalidDatas)) {
-            // create for each email to be notified an array with expiring filedatas
-            $files = [];
-            foreach ($invalidDatas as $fileData) {
-                $file = [];
-                /* @var ?FileData $fileData */
-                $file['id'] = $fileData->getIdentifier();
-                $file['fileName'] = $fileData->getFileName();
-                $file['prefix'] = $fileData->getPrefix();
-                $file['dateCreated'] = $fileData->getDateCreated()->format('c');
-                $file['lastAccess'] = $fileData->getLastAccess()->format('c');
-                if ($fileData->getDeleteAt() !== null) {
-                    $file['deleteAt'] = $fileData->getDeleteAt()->format('c');
-                } else {
-                    $file['deleteAt'] = 'null';
-                }
-                if (empty($notifyEmails[$fileData->getNotifyEmail()])) {
-                    $notifyEmails[$fileData->getNotifyEmail()] = [];
-                }
-                $files[] = $file;
-            }
-
-            $context = [
-                'internalBucketId' => $id,
-                'bucketId' => $name,
-                'files' => $files,
-            ];
-
-            $config = $integrityConfig;
-            $this->sendEmail($config, $context);
-        }
-    }
-
-    /**
-     * @throws \Exception
-     */
-    public function checkIntegrity(?OutputInterface $out = null, $sendEmail = true, $printIds = false, $intBucketId = null)
-    {
-        $buckets = $this->configurationService->getBuckets();
-        $someOut = $out ?? new NullOutput();
-
+        $maxNumItemsPerPage = 100;
+        $buckets = $intBucketId !== null ?
+            [$this->configurationService->getBucketByInternalID($intBucketId)] :
+            $this->configurationService->getBuckets();
         foreach ($buckets as $bucket) {
-            if (!is_null($intBucketId) && is_string($intBucketId) && $intBucketId !== $bucket->getInternalBucketId()) {
-                continue;
+            $startDate = BlobUtils::now();
+            if ($out !== null) {
+                $out->writeln('----------------------------------------------------------------------------------------------------------');
+                $out->writeln(self::getDateTimeString().': Checking file and metadata integrity for bucket \''.$bucket->getBucketId().'\' ('.$bucket->getInternalBucketId().')');
             }
-            $invalidDatas = [];
-            $fileDataList = $this->blobService->getFileDataByBucketID($bucket->getInternalBucketId());
-            $progressBar = new ProgressBar($someOut, count($fileDataList));
-            $progressBar->start();
-            foreach ($fileDataList as $fileData) {
-                try {
-                    $fileHash = $this->blobService->getFileHash($fileData);
-                } catch (\Exception) {
-                    $invalidDatas[] = $fileData;
-                    $progressBar->advance();
-                    continue;
-                }
+            $fileDataIdentifiersNotFoundInFileStorage = [];
+            $fileDataIdentifiersWithFileIntegrityViolation = [];
+            $fileDataIdentifiersWithMetadataIntegrityViolation = [];
+            $filter = FilterTreeBuilder::create()
+                ->equals('internalBucketId', $bucket->getInternalBucketId())
+                ->createFilter();
+            $numFilesChecked = 0;
+            $lastIdentifier = null;
+            do {
+                $fileDataCollection =
+                    $this->blobService->getFileDataCollectionCursorBased($lastIdentifier, $maxNumItemsPerPage, $filter);
+                $numFilesChecked += count($fileDataCollection);
+                foreach ($fileDataCollection as $fileData) {
+                    try {
+                        $fileHashFromStorage = $this->blobService->getFileHashFromStorage($fileData);
+                    } catch (\Exception) {
+                        $fileDataIdentifiersNotFoundInFileStorage[] = $fileData->getIdentifier();
+                        continue;
+                    }
 
-                if ($fileData->getFileHash() !== null && $fileHash !== $fileData->getFileHash()) {
-                    $invalidDatas[] = $fileData;
-                } elseif ($fileData->getMetadataHash() !== null
-                    && ($fileData->getMetadata() === null || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
-                    $invalidDatas[] = $fileData;
+                    if ($fileData->getFileHash() !== null && $fileHashFromStorage !== $fileData->getFileHash()) {
+                        $fileDataIdentifiersWithFileIntegrityViolation[] = $fileData->getIdentifier();
+                    }
+                    if ($fileData->getMetadataHash() !== null
+                        && ($fileData->getMetadata() === null || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
+                        $fileDataIdentifiersWithMetadataIntegrityViolation[] = $fileData->getIdentifier();
+                    }
                 }
-                $progressBar->advance();
-                // dont overfill the email
-                if ($sendEmail && count($invalidDatas) > 19) {
-                    break;
-                }
-            }
-            $progressBar->finish();
-            $someOut->writeln('');
-
+            } while (count($fileDataCollection) === $maxNumItemsPerPage);
+            $endDate = BlobUtils::now();
             if ($sendEmail) {
-                $this->sendIntegrityCheckMail($bucket, $invalidDatas);
-            } elseif ($out !== null) {
-                $this->printIntegrityCheck($bucket, $invalidDatas, $out, $printIds);
+                try {
+                    $this->sendIntegrityCheckResultMail($bucket, $numFilesChecked, $fileDataIdentifiersNotFoundInFileStorage,
+                        $fileDataIdentifiersWithFileIntegrityViolation, $fileDataIdentifiersWithMetadataIntegrityViolation,
+                        $startDate, $endDate);
+                } catch (\Exception $exception) {
+                    $this->logger->error('Failed to send integrity check mail:'.$exception->getMessage());
+                    $this->logger->error('Number of files checked: '.$numFilesChecked);
+                    $this->logger->error('Number of files not found in storage backend: '.count($fileDataIdentifiersNotFoundInFileStorage));
+                    $this->logger->error('Number of files with file integrity violation: '.count($fileDataIdentifiersWithFileIntegrityViolation));
+                    $this->logger->error('Number of files with metadata integrity violation: '.count($fileDataIdentifiersWithMetadataIntegrityViolation));
+                }
+            }
+            if ($out !== null) {
+                $this->printIntegrityCheckResult($bucket, $numFilesChecked, $fileDataIdentifiersNotFoundInFileStorage,
+                    $fileDataIdentifiersWithFileIntegrityViolation, $fileDataIdentifiersWithMetadataIntegrityViolation,
+                    $out, $printIds, $startDate, $endDate);
             }
         }
     }
@@ -348,26 +325,90 @@ class BlobChecks
      * Checks whether some files will expire soon, and sends a email to the bucket owner
      * or owner of the file (if configured as notifyEmail).
      *
-     * @return void
+     * @param string[] $fileDataIdentifiersNotFoundInFileStorage
+     * @param string[] $fileDataIdentifiersWithFileIntegrityViolation
+     * @param string[] $fileDataIdentifiersWithMetadataIntegrityViolation
      *
      * @throws \Exception
      */
-    private function printIntegrityCheck(BucketConfig $bucket, array $invalidDatas, OutputInterface $out, bool $printIds = false)
+    private function printIntegrityCheckResult(BucketConfig $bucket, int $numFilesChecked, array $fileDataIdentifiersNotFoundInFileStorage,
+        array $fileDataIdentifiersWithFileIntegrityViolation, array $fileDataIdentifiersWithMetadataIntegrityViolation,
+        OutputInterface $out, bool $printIds, \DateTimeImmutable $startDate, \DateTimeImmutable $endDate): void
     {
-        if (!empty($invalidDatas)) {
-            $out->writeln('Found invalid data for bucket with bucket id: '.$bucket->getBucketId().' and internal bucket id: '.$bucket->getInternalBucketId());
+        if (!empty($fileDataIdentifiersNotFoundInFileStorage)
+            || !empty($fileDataIdentifiersWithFileIntegrityViolation)
+            || !empty($fileDataIdentifiersWithMetadataIntegrityViolation)) {
+            $out->writeln(self::getDateTimeString().': WARNING: Found integrity violations in bucket \''.$bucket->getBucketId().'\' ('.$bucket->getInternalBucketId().')');
             if ($printIds === true) {
-                $out->writeln('The following blob file ids contain either invalid filedata or metadata:');
-                // print all identifiers that failed the integrity check
-                foreach ($invalidDatas as $fileData) {
-                    /* @var ?FileData $fileData */
-                    $out->writeln($fileData->getIdentifier());
+                if (!empty($fileDataIdentifiersNotFoundInFileStorage)) {
+                    $out->writeln('The following blob files were not found in the storage backend: ');
+                    foreach ($fileDataIdentifiersNotFoundInFileStorage as $identifier) {
+                        $out->writeln($identifier);
+                    }
+                }
+                if (!empty($fileDataIdentifiersWithFileIntegrityViolation)) {
+                    $out->writeln('The following blob files have a file integrity violation: ');
+                    foreach ($fileDataIdentifiersWithFileIntegrityViolation as $identifier) {
+                        $out->writeln($identifier);
+                    }
+                }
+                if (!empty($fileDataIdentifiersWithMetadataIntegrityViolation)) {
+                    $out->writeln('The following blob files have a metadata integrity violation: ');
+                    foreach ($fileDataIdentifiersWithMetadataIntegrityViolation as $identifier) {
+                        $out->writeln($identifier);
+                    }
                 }
             }
-            $out->writeln('In total, '.count($invalidDatas).' files are invalid!');
-            $out->writeln(' ');
+            $out->writeln('Number of files not found in storage backend: '.count($fileDataIdentifiersNotFoundInFileStorage));
+            $out->writeln('Number of files with file integrity violation: '.count($fileDataIdentifiersWithFileIntegrityViolation));
+            $out->writeln('Number of files with metadata integrity violation: '.count($fileDataIdentifiersWithMetadataIntegrityViolation));
         } else {
-            $out->writeln('No invalid data was found for bucket with bucket id: '.$bucket->getBucketId().' and internal bucket id'.$bucket->getInternalBucketId());
+            $out->writeln(self::getDateTimeString().': No file nor metadata integrity violation detected for bucket \''.$bucket->getBucketId().'\' ('.$bucket->getInternalBucketId().')');
         }
+        $out->writeln('Number of files checked: '.$numFilesChecked);
+        $out->writeln('Start time: '.self::getDateTimeString($startDate));
+        $out->writeln('End time: '.self::getDateTimeString($endDate));
+        $out->writeln('Duration: '.$startDate->diff($endDate)->format('%d days, %h hours, %i minutes, %s seconds'));
+    }
+
+    /**
+     * Checks whether some files will expire soon, and sends a email to the bucket owner
+     * or owner of the file (if configured as notifyEmail).
+     *
+     * @param string[] $fileDataIdentifiersNotFoundInFileStorage
+     * @param string[] $fileDataIdentifiersWithFileIntegrityViolation
+     * @param string[] $fileDataIdentifiersWithMetadataIntegrityViolation
+     *
+     * @throws \Exception
+     * @throws TransportExceptionInterface
+     */
+    private function sendIntegrityCheckResultMail(BucketConfig $bucket, int $numFilesChecked, array $fileDataIdentifiersNotFoundInFileStorage,
+        array $fileDataIdentifiersWithFileIntegrityViolation, array $fileDataIdentifiersWithMetadataIntegrityViolation,
+        \DateTimeImmutable $startDate, \DateTimeImmutable $endDate): void
+    {
+        if (!empty($fileDataIdentifiersNotFoundInFileStorage)
+            || !empty($fileDataIdentifiersWithFileIntegrityViolation)
+            || !empty($fileDataIdentifiersWithMetadataIntegrityViolation)) {
+            $context = [
+                'internalBucketId' => $bucket->getInternalBucketId(),
+                'bucketId' => $bucket->getBucketId(),
+                'identifiersNotFound' => $fileDataIdentifiersNotFoundInFileStorage,
+                'identifiersWithFileIntegrityViolation' => $fileDataIdentifiersWithFileIntegrityViolation,
+                'identifiersWithMetadataIntegrityViolation' => $fileDataIdentifiersWithMetadataIntegrityViolation,
+                'numFilesChecked' => $numFilesChecked,
+                'startDateTime' => self::getDateTimeString($startDate),
+                'endDateTime' => self::getDateTimeString($endDate),
+                'duration' => $startDate->diff($endDate)->format('%d days, %h hours, %i minutes, %s seconds'),
+            ];
+            $integrityConfig = $bucket->getIntegrityCheckConfig();
+            $integrityConfig['subject'] = 'Blob Integrity Check Report ('.$bucket->getBucketId().')';
+
+            $this->sendEmail($integrityConfig, $context);
+        }
+    }
+
+    public static function getDateTimeString(?\DateTimeImmutable $dateTime = null): string
+    {
+        return ($dateTime ?? new \DateTimeImmutable())->format('Y-m-d H:i:s');
     }
 }

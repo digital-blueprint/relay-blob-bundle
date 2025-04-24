@@ -12,9 +12,12 @@ use Dbp\Relay\BlobBundle\Event\AddFileDataByPostSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\ChangeFileDataByPatchSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\DeleteFileDataByDeleteSuccessEvent;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
+use Dbp\Relay\BlobBundle\Helper\BlobUuidBinaryType;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
+use Dbp\Relay\CoreBundle\Doctrine\QueryHelper;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Helpers\Tools;
+use Dbp\Relay\CoreBundle\Rest\Query\Filter\Filter;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonSchema\Validator;
 use Psr\Log\LoggerAwareInterface;
@@ -47,7 +50,7 @@ class BlobService implements LoggerAwareInterface
     public const BASE_URL_OPTION = 'base_url';
 
     public function __construct(
-        private readonly EntityManagerInterface $em,
+        private readonly EntityManagerInterface $entityManager,
         private readonly ConfigurationService $configurationService,
         private DatasystemProviderService $datasystemService,
         private readonly EventDispatcherInterface $eventDispatcher
@@ -56,7 +59,7 @@ class BlobService implements LoggerAwareInterface
 
     public function checkConnection(): void
     {
-        $this->em->getConnection()->getNativeConnection();
+        $this->entityManager->getConnection()->getNativeConnection();
     }
 
     /**
@@ -322,11 +325,6 @@ class BlobService implements LoggerAwareInterface
         return $this->configurationService->getInternalBucketIdByBucketID($bucketID);
     }
 
-    public function doFileIntegrityChecks(): bool
-    {
-        return $this->configurationService->doFileIntegrityChecks();
-    }
-
     /**
      * Returns the bucket config for the given file.
      *
@@ -353,8 +351,8 @@ class BlobService implements LoggerAwareInterface
     {
         // try to persist fileData, or throw error
         try {
-            $this->em->persist($fileData);
-            $this->em->flush();
+            $this->entityManager->persist($fileData);
+            $this->entityManager->flush();
         } catch (\Exception $e) {
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
@@ -370,14 +368,14 @@ class BlobService implements LoggerAwareInterface
      */
     public function getBucketSizeByInternalIdFromDatabase(string $internalBucketId): BucketSize
     {
-        $bucket = $this->em->getRepository(BucketSize::class)->find($internalBucketId);
+        $bucket = $this->entityManager->getRepository(BucketSize::class)->find($internalBucketId);
 
         if (!$bucket) {
             $newBucket = new BucketSize();
             $newBucket->setIdentifier($internalBucketId);
             $newBucket->setCurrentBucketSize(0);
-            $this->em->persist($newBucket);
-            $this->em->flush();
+            $this->entityManager->persist($newBucket);
+            $this->entityManager->flush();
             $bucket = $newBucket;
         }
 
@@ -394,8 +392,8 @@ class BlobService implements LoggerAwareInterface
     public function saveBucketSize(BucketSize $bucket): void
     {
         try {
-            $this->em->persist($bucket);
-            $this->em->flush();
+            $this->entityManager->persist($bucket);
+            $this->entityManager->flush();
         } catch (\Exception $e) {
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Bucket data could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
         }
@@ -404,7 +402,7 @@ class BlobService implements LoggerAwareInterface
     public function updateBucketSize(BucketSize $bucket, int $bucketSizeDelta): void
     {
         try {
-            $query = $this->em
+            $query = $this->entityManager
                 ->getRepository(BucketSize::class)
                 ->createQueryBuilder('f')
                 ->update()
@@ -414,7 +412,7 @@ class BlobService implements LoggerAwareInterface
                 ->setParameter('bucketSizeDelta', $bucketSizeDelta)
                 ->getQuery()
                 ->getResult();
-            $this->em->flush();
+            $this->entityManager->flush();
         } catch (\Exception $e) {
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Bucket data could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
         }
@@ -426,7 +424,7 @@ class BlobService implements LoggerAwareInterface
             if (!is_null($out)) {
                 $out->writeln('Calculating total size of bucket '.$intBucketId.' from blob_files table ...');
             }
-            $query = $this->em
+            $query = $this->entityManager
                 ->getRepository(FileData::class)
                 ->createQueryBuilder('f')
                 ->select('sum(f.fileSize)')
@@ -443,7 +441,7 @@ class BlobService implements LoggerAwareInterface
                 $out->writeln('Calculated total size of '.$query[1].', updating blob_bucket_sizes table ...');
             }
 
-            $query = $this->em
+            $query = $this->entityManager
                 ->getRepository(BucketSize::class)
                 ->createQueryBuilder('f')
                 ->update()
@@ -454,7 +452,7 @@ class BlobService implements LoggerAwareInterface
                 ->getQuery()
                 ->getResult();
 
-            $this->em->flush();
+            $this->entityManager->flush();
 
             if (!is_null($out)) {
                 $out->writeln('Successfully updated blob_bucket_sizes table!');
@@ -532,7 +530,7 @@ class BlobService implements LoggerAwareInterface
     /**
      * Returns SHA256 hash of the file content.
      */
-    public function getFileHash(FileData $fileData): string
+    public function getFileHashFromStorage(FileData $fileData): string
     {
         return $this->getDatasystemProvider($fileData)->getFileHash($fileData->getInternalBucketId(), $fileData->getIdentifier());
     }
@@ -583,7 +581,7 @@ class BlobService implements LoggerAwareInterface
         }
 
         /** @var ?FileData $fileData */
-        $fileData = $this->em
+        $fileData = $this->entityManager
             ->getRepository(FileData::class)
             ->find($identifier);
 
@@ -603,20 +601,20 @@ class BlobService implements LoggerAwareInterface
     }
 
     /**
-     * Get all the fileDatas of a given bucketID.
+     * Get all the file data collection of a given bucketID.
      *
      * @return FileData[]
      */
-    public function getFileDataByBucketID(string $bucketID): array
+    public function getFileDataByBucketID(string $internalBucketID): array
     {
-        return $this->em
+        return $this->entityManager
             ->getRepository(FileData::class)
-            ->findBy(['internalBucketId' => $bucketID]);
+            ->findBy(['internalBucketId' => $internalBucketID]);
     }
 
-    public function getFileDataCollection(string $bucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage, bool $startsWith, bool $includeDeleteAt)
+    public function getFileDataCollection(string $internalBucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage, bool $startsWith, bool $includeDeleteAt)
     {
-        $query = $this->em
+        $query = $this->entityManager
             ->getRepository(FileData::class)
             ->createQueryBuilder('f');
         $query = $query
@@ -639,11 +637,41 @@ class BlobService implements LoggerAwareInterface
 
         $query = $query
             ->orderBy('f.dateCreated', 'ASC')
-            ->setParameter('bucketID', $bucketID)
+            ->setParameter('bucketID', $internalBucketID)
             ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber - 1))
             ->setMaxResults($maxNumItemsPerPage);
 
         return $query->getQuery()->getResult();
+    }
+
+    /**
+     * @return FileData[]
+     *
+     * @throws \Exception
+     */
+    public function getFileDataCollectionCursorBased(?string $lastIdentifier, int $maxNumItemsPerPage = 1024, ?Filter $filter = null): array
+    {
+        if ($lastIdentifier === null) {
+            $lastIdentifier = '00000000-0000-0000-0000-000000000000';
+        }
+
+        $FILE_DATA_ENTITY_ALIAS = 'f';
+        $queryBuilder = $this->entityManager->createQueryBuilder();
+        $queryBuilder
+            ->select($FILE_DATA_ENTITY_ALIAS)
+            ->from(FileData::class, $FILE_DATA_ENTITY_ALIAS)
+            ->where($queryBuilder->expr()->gt("$FILE_DATA_ENTITY_ALIAS.identifier", ':lastIdentifier'))
+            ->setParameter('lastIdentifier', $lastIdentifier, BlobUuidBinaryType::NAME)
+            ->orderBy("$FILE_DATA_ENTITY_ALIAS.identifier", 'ASC');
+
+        if ($filter !== null) {
+            QueryHelper::addFilter($queryBuilder, $filter, $FILE_DATA_ENTITY_ALIAS);
+        }
+
+        return $queryBuilder
+            ->getQuery()
+            ->setMaxResults($maxNumItemsPerPage)
+            ->getResult();
     }
 
     public function getDatasystemProvider(FileData $fileData): DatasystemProviderServiceInterface
@@ -656,8 +684,8 @@ class BlobService implements LoggerAwareInterface
      */
     private function removeFileData(FileData $fileData): void
     {
-        $this->em->remove($fileData);
-        $this->em->flush();
+        $this->entityManager->remove($fileData);
+        $this->entityManager->flush();
     }
 
     private function removeFileFromDatasystemService(FileData $fileData): void
@@ -691,7 +719,7 @@ class BlobService implements LoggerAwareInterface
         $maxNumItemsPerPage = 10000;
 
         do {
-            $fileDataCollectionToDelete = $this->em
+            $fileDataCollectionToDelete = $this->entityManager
                 ->getRepository(FileData::class)
                 ->createQueryBuilder('f')
                 ->where('f.deleteAt IS NOT NULL')
@@ -727,18 +755,18 @@ class BlobService implements LoggerAwareInterface
         }
         $this->saveFileToDatasystemService($fileData, $errorPrefix);
 
-        $this->em->getConnection()->beginTransaction();
+        $this->entityManager->getConnection()->beginTransaction();
         try {
             $this->updateBucketSize($bucketSize, $bucketSizeDeltaByte);
             $this->saveFileData($fileData);
-            $this->em->getConnection()->commit();
+            $this->entityManager->getConnection()->commit();
         } catch (\Exception $e) {
             $this->logger->error(sprintf(
                 'failed to save file data for \'%s\': %s',
                 $fileData->getIdentifier(),
                 $e->getMessage()
             ));
-            $this->em->getConnection()->rollBack();
+            $this->entityManager->getConnection()->rollBack();
             try {
                 $this->removeFileFromDatasystemService($fileData);
             } catch (\Exception) {
@@ -759,13 +787,13 @@ class BlobService implements LoggerAwareInterface
         $bucketSize = $this->getBucketSizeByInternalIdFromDatabase($fileData->getInternalBucketId());
 
         // try to update bucket size
-        $this->em->getConnection()->beginTransaction();
+        $this->entityManager->getConnection()->beginTransaction();
         try {
             $this->updateBucketSize($bucketSize, $bucketSizeDeltaByte);
             $this->removeFileData($fileData);
             $this->removeFileFromDatasystemService($fileData);
 
-            $this->em->getConnection()->commit();
+            $this->entityManager->getConnection()->commit();
         } catch (\Exception $exception) {
             $this->logger->error(
                 sprintf(
@@ -774,7 +802,7 @@ class BlobService implements LoggerAwareInterface
                     $exception->getMessage()
                 )
             );
-            $this->em->getConnection()->rollBack();
+            $this->entityManager->getConnection()->rollBack();
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
                 'Error while removing the file data',
@@ -826,16 +854,23 @@ class BlobService implements LoggerAwareInterface
     /**
      * Checks if given filedata is valid
      * intended for use before data retrieval using GET.
+     *
+     * @throws ApiError
      */
     public function checkFileDataBeforeRetrieval(FileData $fileData, string $errorPrefix): void
     {
-        // check if file integrity should be checked and if so check it
-        if ($this->doFileIntegrityChecks() && $fileData->getFileHash() !== null && $this->getFileHash($fileData) !== $fileData->getFileHash()) {
-            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 file hash doesnt match! File integrity cannot be guaranteed', $errorPrefix.'-file-hash-mismatch');
-        }
-        if ($this->doFileIntegrityChecks() && $fileData->getMetadataHash() !== null
-            && ($fileData->getMetadata() === null || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
-            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'sha256 metadata hash doesnt match! Metadata integrity cannot be guaranteed', $errorPrefix.'-metadata-hash-mismatch');
+        // check if file integrity should be checked and if so, check it
+        if ($this->configurationService->doFileIntegrityChecks()) {
+            if ($fileData->getFileHash() !== null && $this->getFileHashFromStorage($fileData) !== $fileData->getFileHash()) {
+                throw ApiError::withDetails(Response::HTTP_CONFLICT,
+                    'sha256 file hash doesnt match! File integrity cannot be guaranteed', $errorPrefix.'-file-hash-mismatch');
+            }
+            if ($fileData->getMetadataHash() !== null
+                && ($fileData->getMetadata() === null
+                    || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
+                throw ApiError::withDetails(Response::HTTP_CONFLICT,
+                    'sha256 metadata hash doesnt match! Metadata integrity cannot be guaranteed', $errorPrefix.'-metadata-hash-mismatch');
+            }
         }
 
         $this->validateMetadata($fileData, $errorPrefix);
@@ -867,9 +902,9 @@ class BlobService implements LoggerAwareInterface
 
         $this->validateMetadata($fileData, $errorPrefix);
 
-        $fileData->setFileHash($this->configurationService->doFileIntegrityChecks() && $fileData->getFile() !== null ?
+        $fileData->setFileHash($this->configurationService->storeFileAndMetadataChecksums() && $fileData->getFile() !== null ?
             \hash_file('sha256', $fileData->getFile()->getPathname()) : null);
-        $fileData->setMetadataHash($this->configurationService->doFileIntegrityChecks() && $fileData->getMetadata() !== null ?
+        $fileData->setMetadataHash($this->configurationService->storeFileAndMetadataChecksums() && $fileData->getMetadata() !== null ?
             hash('sha256', $fileData->getMetadata()) : null);
     }
 

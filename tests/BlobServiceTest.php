@@ -9,6 +9,7 @@ use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
 use Dbp\Relay\BlobBundle\TestUtils\TestEntityManager;
+use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
 use Symfony\Component\HttpFoundation\File\File;
 
 class BlobServiceTest extends ApiTestCase
@@ -175,7 +176,7 @@ class BlobServiceTest extends ApiTestCase
         $provider = $this->blobService->getDatasystemProvider($fileData);
         $this->assertTrue($provider->hasFile($fileData->getInternalBucketId(), $fileData->getIdentifier()));
 
-        $this->assertSame($this->blobService->getFileHash($fileData), hash('sha256', $newFile->getContent()));
+        $this->assertSame($this->blobService->getFileHashFromStorage($fileData), hash('sha256', $newFile->getContent()));
         $this->assertSame($this->blobService->getContent($fileData), $newFile->getContent());
 
         $fileData = $this->testEntityManager->getFileDataById($fileData->getIdentifier());
@@ -220,9 +221,50 @@ class BlobServiceTest extends ApiTestCase
     /**
      * @throws \Exception
      */
-    protected function addTestFile(): FileData
+    public function testGetFileDataCollectionCursorBased(): void
     {
-        $testBucketConfig = self::getTestBucketConfig();
+        $fileDataIdentifiers = [];
+        foreach (range(0, 31) as $i) {
+            $fileDataIdentifiers[$this->addTestFile($i < 16 ? 0 : 1)->getIdentifier()] = true;
+        }
+
+        $maxNumItemsPerPage = 10;
+        $fileDataIdentifiersWorkingCopy = $fileDataIdentifiers;
+        $lastIdentifier = null;
+        do {
+            foreach ($fileDataCollection = $this->blobService->getFileDataCollectionCursorBased(
+                $lastIdentifier, $maxNumItemsPerPage) as $fileData) {
+                $this->assertArrayHasKey($fileData->getIdentifier(), $fileDataIdentifiersWorkingCopy);
+                unset($fileDataIdentifiersWorkingCopy[$fileData->getIdentifier()]);
+                $lastIdentifier = $fileData->getIdentifier();
+            }
+        } while (count($fileDataCollection) === $maxNumItemsPerPage);
+
+        $this->assertEmpty($fileDataIdentifiersWorkingCopy);
+
+        $fileDataIdentifiersWorkingCopy = $fileDataIdentifiers;
+        $lastIdentifier = null;
+        $filter = FilterTreeBuilder::create()
+            ->equals('internalBucketId', self::getTestBucketConfig(1)['internal_bucket_id'])
+            ->createFilter();
+        do {
+            foreach ($fileDataCollection = $this->blobService->getFileDataCollectionCursorBased(
+                $lastIdentifier, $maxNumItemsPerPage, $filter) as $fileData) {
+                $this->assertArrayHasKey($fileData->getIdentifier(), $fileDataIdentifiersWorkingCopy);
+                unset($fileDataIdentifiersWorkingCopy[$fileData->getIdentifier()]);
+                $lastIdentifier = $fileData->getIdentifier();
+            }
+        } while (count($fileDataCollection) === $maxNumItemsPerPage);
+
+        $this->assertCount(16, $fileDataIdentifiersWorkingCopy);
+    }
+
+    /**
+     * @throws \Exception
+     */
+    protected function addTestFile(int $testBucketIndex = 0): FileData
+    {
+        $testBucketConfig = self::getTestBucketConfig($testBucketIndex);
 
         $file = new File(__DIR__.'/'.self::TEST_FILE_NAME, true);
         $fileData = new FileData();

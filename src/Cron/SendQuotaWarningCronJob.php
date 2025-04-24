@@ -9,22 +9,12 @@ use Dbp\Relay\BlobBundle\Service\BlobChecks;
 use Dbp\Relay\CoreBundle\Cron\CronJobInterface;
 use Dbp\Relay\CoreBundle\Cron\CronOptions;
 
-class SendQuotaWarningCronJob implements CronJobInterface
+readonly class SendQuotaWarningCronJob implements CronJobInterface
 {
-    /**
-     * @var BlobChecks
-     */
-    private $blobChecks;
-
-    /**
-     * @var ConfigurationService
-     */
-    private $configService;
-
-    public function __construct(BlobChecks $blobChecks, ConfigurationService $configService)
+    public function __construct(
+        private BlobChecks $blobChecks,
+        private ConfigurationService $configService)
     {
-        $this->blobChecks = $blobChecks;
-        $this->configService = $configService;
     }
 
     public function getName(): string
@@ -37,6 +27,9 @@ class SendQuotaWarningCronJob implements CronJobInterface
         return $this->configService->getQuotaWarningInterval(); // At 14:00 on Monday.
     }
 
+    /**
+     * @throws \Exception
+     */
     public function run(CronOptions $options): void
     {
         $this->blobChecks->checkQuotas();

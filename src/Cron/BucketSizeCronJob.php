@@ -8,23 +8,17 @@ use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Service\BlobChecks;
 use Dbp\Relay\CoreBundle\Cron\CronJobInterface;
 use Dbp\Relay\CoreBundle\Cron\CronOptions;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
+use Twig\Error\LoaderError;
+use Twig\Error\RuntimeError;
+use Twig\Error\SyntaxError;
 
-class BucketSizeCronJob implements CronJobInterface
+readonly class BucketSizeCronJob implements CronJobInterface
 {
-    /**
-     * @var BlobChecks
-     */
-    private $blobChecks;
-
-    /**
-     * @var ConfigurationService
-     */
-    private $configService;
-
-    public function __construct(BlobChecks $blobChecks, ConfigurationService $configService)
+    public function __construct(
+        private BlobChecks $blobChecks,
+        private ConfigurationService $configService)
     {
-        $this->blobChecks = $blobChecks;
-        $this->configService = $configService;
     }
 
     public function getName(): string
@@ -37,6 +31,12 @@ class BucketSizeCronJob implements CronJobInterface
         return $this->configService->getBucketSizeCheckInterval();
     }
 
+    /**
+     * @throws SyntaxError
+     * @throws TransportExceptionInterface
+     * @throws RuntimeError
+     * @throws LoaderError
+     */
     public function run(CronOptions $options): void
     {
         $this->blobChecks->checkStorage();

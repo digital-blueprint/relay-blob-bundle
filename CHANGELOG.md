@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- rework the file and metadata integrity check and reports
+
 ## v0.1.71
 
 - add support for api-platform 4.1

@@ -3,13 +3,13 @@ services:
     autowire: true
     autoconfigure: true
     arguments:
-      $em: '@doctrine.orm.dbp_relay_blob_bundle_entity_manager'
+      $entityManager: '@doctrine.orm.dbp_relay_blob_bundle_entity_manager'
 
   Dbp\Relay\BlobBundle\Service\BlobChecks:
     autowire: true
     autoconfigure: true
     arguments:
-      $em: '@doctrine.orm.dbp_relay_blob_bundle_entity_manager'
+      $entityManager: '@doctrine.orm.dbp_relay_blob_bundle_entity_manager'
 
   Dbp\Relay\BlobBundle\Service\BlobUpdates:
     autowire: true
@@ -32,23 +32,8 @@ services:
     autowire: true
     autoconfigure: true
 
-  Dbp\Relay\BlobBundle\Cron\CleanupCronJob:
-    autowire: true
-    autoconfigure: true
-
-  Dbp\Relay\BlobBundle\Cron\SendReportCronJob:
-    autowire: true
-    autoconfigure: true
-
-  Dbp\Relay\BlobBundle\Cron\IntegrityCronJob:
-    autowire: true
-    autoconfigure: true
-
-  Dbp\Relay\BlobBundle\Cron\BucketSizeCronJob:
-    autowire: true
-    autoconfigure: true
-
-  Dbp\Relay\BlobBundle\Cron\SendQuotaWarningCronJob:
+  Dbp\Relay\BlobBundle\Cron\:
+    resource: '../../Cron'
     autowire: true
     autoconfigure: true
 
