@@ -25,8 +25,8 @@ class CheckBucketSizesCommand extends Command
             ->setDescription('Calculates the difference between actual bucket sizes (sum of file sizes) and the stored bucket size.')
             ->addOption('int-bucket-id', mode: InputOption::VALUE_OPTIONAL, description: 'The internal bucket ID of the bucket to be tested')
             ->addOption('file', mode: InputOption::VALUE_REQUIRED, description: 'Name of the output file', default: 'bucket_sizes_report')
-            ->addOption('stdout', mode: InputOption::VALUE_OPTIONAL, description: 'print output to stdout')
-            ->addOption('email', mode: InputOption::VALUE_OPTIONAL, description: 'print output to stdout');
+            ->addOption('stdout', mode: InputOption::VALUE_NONE, description: 'print output to stdout')
+            ->addOption('email', mode: InputOption::VALUE_NONE, description: 'print output to stdout');
     }
 
     /**
@@ -45,7 +45,7 @@ class CheckBucketSizesCommand extends Command
 
         $output->writeln('Checking bucket sizes...');
         $this->blobChecks->checkBucketSizes($intBucketId,
-            $stdout ? $output : null, $file, $email !== null);
+            $stdout ? $output : null, $file, $email);
 
         return 0;
     }

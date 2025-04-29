@@ -27,8 +27,9 @@ class CheckFileAndMetadataIntegrityCommand extends Command
             ->setDescription('Checks the file and metadata hashes stored in the table against newly generated hashes of the stored files and metadata')
             ->addOption('int-bucket-id', mode: InputOption::VALUE_OPTIONAL, description: 'The internal bucket ID of the bucket to be tested')
             ->addOption('file', mode: InputOption::VALUE_REQUIRED, description: 'Name of the output file', default: 'file_integrity_report')
-            ->addOption('stdout', mode: InputOption::VALUE_OPTIONAL, description: 'print output to stdout')
-            ->addOption('email', mode: InputOption::VALUE_OPTIONAL, description: 'print output to stdout');
+            ->addOption('stdout', mode: InputOption::VALUE_NONE, description: 'print output to stdout')
+            ->addOption('email', mode: InputOption::VALUE_NONE, description: 'print output to stdout')
+            ->addOption('debug', mode: InputOption::VALUE_NONE, description: 'print debug output to stdout');
     }
 
     /**
@@ -41,6 +42,7 @@ class CheckFileAndMetadataIntegrityCommand extends Command
         $email = $input->getOption('email');
         $file = $input->getOption('file');
         $stdout = $input->getOption('stdout');
+        $debug = $input->getOption('debug');
 
         if ($file !== null) {
             $file = $file.'_'.BlobChecks::getDateTimeString(isForFilename: true).'.txt';
@@ -48,7 +50,7 @@ class CheckFileAndMetadataIntegrityCommand extends Command
 
         $output->writeln('Checking the integrity of all files and metadata...');
         $this->blobChecks->checkFileAndMetadataIntegrity($intBucketId,
-            $stdout ? $output : null, $file, $email !== null);
+            $stdout ? $output : null, $file, $email, $debug);
 
         return 0;
     }

@@ -343,10 +343,10 @@ class BlobChecks implements LoggerAwareInterface
      * @throws TransportExceptionInterface
      */
     public function checkFileAndMetadataIntegrity(?string $internalBucketId = null,
-        ?OutputInterface $out = null, ?string $outFileName = null, bool $sendEmail = false): void
+        ?OutputInterface $out = null, ?string $outFileName = null, bool $sendEmail = false, bool $debug = false): void
     {
         $doFileIntegrityChecks = $this->configurationService->doFileIntegrityChecks();
-        $maxNumItemsPerPage = 100;
+        $maxNumItems = 100;
         $buckets = $internalBucketId !== null ?
             [$this->configurationService->getBucketByInternalID($internalBucketId)] :
             $this->configurationService->getBuckets();
@@ -382,14 +382,23 @@ class BlobChecks implements LoggerAwareInterface
             do {
                 $microtimeStart = microtime(true);
                 $fileDataCollection =
-                    $this->blobService->getFileDataCollectionCursorBased($lastIdentifier, $maxNumItemsPerPage, $filter);
+                    $this->blobService->getFileDataCollectionCursorBased($lastIdentifier, $maxNumItems, $filter);
+                if ($numFilesReturned = count($fileDataCollection)) {
+                    $lastIdentifier = $fileDataCollection[$numFilesReturned - 1]->getIdentifier();
+                }
                 $getFileDataSumMicrotime += (float) microtime(true) - $microtimeStart;
                 $numFilesChecked += count($fileDataCollection);
+                if ($debug) {
+                    self::output(sprintf("Retriveved %d files\n", $numFilesChecked), $out, $outFileName);
+                }
 
                 foreach ($fileDataCollection as $fileData) {
                     try {
                         $microtimeStart = microtime(true);
                         if ($doFileIntegrityChecks && $fileData->getFileHash() !== null) {
+                            if ($debug) {
+                                self::output(sprintf("Checking file hash of %s\n", $fileData->getIdentifier()), $out, $outFileName);
+                            }
                             if ($this->blobService->getFileHashFromStorage($fileData) !== $fileData->getFileHash()) {
                                 if (count($fileDataIdentifiersWithFileIntegrityViolation) < $maxNumStoredIdentifiers) {
                                     $fileDataIdentifiersWithFileIntegrityViolation[] = $fileData->getIdentifier();
@@ -399,6 +408,9 @@ class BlobChecks implements LoggerAwareInterface
                             }
                             $compareFileHashSumMicrotime += (float) microtime(true) - $microtimeStart;
                         } else {
+                            if ($debug) {
+                                self::output(sprintf("Checking file size of %s\n", $fileData->getIdentifier()), $out, $outFileName);
+                            }
                             if ($this->blobService->getFileSizeFromStorage($fileData) !== $fileData->getFileSize()) {
                                 if (count($fileDataIdentifiersWithFileSizeViolation) < $maxNumStoredIdentifiers) {
                                     $fileDataIdentifiersWithFileSizeViolation[] = $fileData->getIdentifier();
@@ -408,12 +420,19 @@ class BlobChecks implements LoggerAwareInterface
                             }
                             $compareFileSizeSumMicrotime += (float) microtime(true) - $microtimeStart;
                         }
-                    } catch (\Exception) {
+                    } catch (\Exception $exception) {
+                        if ($debug) {
+                            self::output(sprintf("Execption thrown (%s). Checking if file was removed meanwhile.\n",
+                                $exception->getMessage()), $out, $outFileName);
+                        }
                         $wasFileRemovedDuringCheck = false;
                         try {
                             $this->blobService->getFileData($fileData->getIdentifier());
                         } catch (ApiError $apiError) {
                             if ($apiError->getStatusCode() === Response::HTTP_NOT_FOUND) {
+                                if ($debug) {
+                                    self::output("File was removed meanwhile.\n", $out, $outFileName);
+                                }
                                 $wasFileRemovedDuringCheck = true;
                             }
                         }
@@ -426,18 +445,20 @@ class BlobChecks implements LoggerAwareInterface
                         }
                     }
 
-                    $microtimeStart = microtime(true);
-                    if ($fileData->getMetadataHash() !== null
-                        && ($fileData->getMetadata() === null || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
-                        if (count($fileDataIdentifiersWithMetadataIntegrityViolation) < $maxNumStoredIdentifiers) {
-                            $fileDataIdentifiersWithMetadataIntegrityViolation[] = $fileData->getIdentifier();
+                    if ($doFileIntegrityChecks && $fileData->getMetadataHash() !== null) {
+                        $microtimeStart = microtime(true);
+                        if ($fileData->getMetadata() === null
+                            || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash()) {
+                            if (count($fileDataIdentifiersWithMetadataIntegrityViolation) < $maxNumStoredIdentifiers) {
+                                $fileDataIdentifiersWithMetadataIntegrityViolation[] = $fileData->getIdentifier();
+                            }
+                            ++$numFilesWithMetadataIntegrityViolation;
+                            self::output(sprintf("%s MI\n", $fileData->getIdentifier()), $out, $outFileName);
                         }
-                        ++$numFilesWithMetadataIntegrityViolation;
-                        self::output(sprintf("%s MI\n", $fileData->getIdentifier()), $out, $outFileName);
+                        $compareMetadataSumMicrotime += (float) microtime(true) - $microtimeStart;
                     }
-                    $compareMetadataSumMicrotime += (float) microtime(true) - $microtimeStart;
                 }
-            } while (count($fileDataCollection) === $maxNumItemsPerPage);
+            } while (count($fileDataCollection) === $maxNumItems);
             $totalMicrotime = (float) microtime(true) - $startMicroTime;
             $endDate = BlobUtils::now();
 

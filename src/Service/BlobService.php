@@ -640,7 +640,7 @@ class BlobService implements LoggerAwareInterface
      *
      * @throws \Exception
      */
-    public function getFileDataCollectionCursorBased(?string $lastIdentifier, int $maxNumItemsPerPage = 1024, ?Filter $filter = null): array
+    public function getFileDataCollectionCursorBased(?string $lastIdentifier, int $maxNumItems = 1024, ?Filter $filter = null): array
     {
         if ($lastIdentifier === null) {
             $lastIdentifier = '00000000-0000-0000-0000-000000000000';
@@ -661,7 +661,7 @@ class BlobService implements LoggerAwareInterface
 
         return $queryBuilder
             ->getQuery()
-            ->setMaxResults($maxNumItemsPerPage)
+            ->setMaxResults($maxNumItems)
             ->getResult();
     }
 

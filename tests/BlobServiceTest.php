@@ -232,8 +232,12 @@ class BlobServiceTest extends ApiTestCase
         $fileDataIdentifiersWorkingCopy = $fileDataIdentifiers;
         $lastIdentifier = null;
         do {
-            foreach ($fileDataCollection = $this->blobService->getFileDataCollectionCursorBased(
-                $lastIdentifier, $maxNumItemsPerPage) as $fileData) {
+            $fileDataCollection = $this->blobService->getFileDataCollectionCursorBased(
+                $lastIdentifier, $maxNumItemsPerPage);
+            if ($numFilesReturned = count($fileDataCollection)) {
+                $lastIdentifier = $fileDataCollection[$numFilesReturned - 1]->getIdentifier();
+            }
+            foreach ($fileDataCollection as $fileData) {
                 $this->assertArrayHasKey($fileData->getIdentifier(), $fileDataIdentifiersWorkingCopy);
                 unset($fileDataIdentifiersWorkingCopy[$fileData->getIdentifier()]);
                 $lastIdentifier = $fileData->getIdentifier();
@@ -248,8 +252,12 @@ class BlobServiceTest extends ApiTestCase
             ->equals('internalBucketId', self::getTestBucketConfig(1)['internal_bucket_id'])
             ->createFilter();
         do {
-            foreach ($fileDataCollection = $this->blobService->getFileDataCollectionCursorBased(
-                $lastIdentifier, $maxNumItemsPerPage, $filter) as $fileData) {
+            $fileDataCollection = $this->blobService->getFileDataCollectionCursorBased(
+                $lastIdentifier, $maxNumItemsPerPage, $filter);
+            if ($numFilesReturned = count($fileDataCollection)) {
+                $lastIdentifier = $fileDataCollection[$numFilesReturned - 1]->getIdentifier();
+            }
+            foreach ($fileDataCollection as $fileData) {
                 $this->assertArrayHasKey($fileData->getIdentifier(), $fileDataIdentifiersWorkingCopy);
                 unset($fileDataIdentifiersWorkingCopy[$fileData->getIdentifier()]);
                 $lastIdentifier = $fileData->getIdentifier();
