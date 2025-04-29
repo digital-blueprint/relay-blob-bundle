@@ -329,7 +329,6 @@ class BlobChecks implements LoggerAwareInterface
                 self::output(sprintf("Difference (Mb): %f (calculated - stored)\n", (float) $difference / 1048576), $out, $outFileName);
             } catch (\Exception $exception) {
                 self::output(sprintf("Bucket size comparison failed: %s\n", $exception->getMessage()), $out, $outFileName);
-                dump($exception);
             } finally {
                 // Unlock the tables (if necessary, depending on your DBMS)
                 $this->entityManager->getConnection()->executeQuery('UNLOCK TABLES');
