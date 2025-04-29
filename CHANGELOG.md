@@ -3,6 +3,9 @@
 ## Unreleased
 
 - rework the file and metadata integrity check and reports
+- add check bucket size command
+- add find orphan storage files command
+- allowing writing output of integrity commands to file
 
 ## v0.1.71
 
