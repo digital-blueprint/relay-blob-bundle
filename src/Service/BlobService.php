@@ -402,7 +402,7 @@ class BlobService implements LoggerAwareInterface
     public function updateBucketSize(BucketSize $bucket, int $bucketSizeDelta): void
     {
         try {
-            $query = $this->entityManager
+            $this->entityManager
                 ->getRepository(BucketSize::class)
                 ->createQueryBuilder('f')
                 ->update()
@@ -411,10 +411,11 @@ class BlobService implements LoggerAwareInterface
                 ->setParameter('bucketID', $bucket->getIdentifier())
                 ->setParameter('bucketSizeDelta', $bucketSizeDelta)
                 ->getQuery()
-                ->getResult();
+                ->execute();
             $this->entityManager->flush();
         } catch (\Exception $e) {
-            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Bucket data could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR,
+                'Bucket data could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
         }
     }
 
@@ -535,6 +536,11 @@ class BlobService implements LoggerAwareInterface
         return $this->getDatasystemProvider($fileData)->getFileHash($fileData->getInternalBucketId(), $fileData->getIdentifier());
     }
 
+    public function getFileSizeFromStorage(FileData $fileData): int
+    {
+        return $this->getDatasystemProvider($fileData)->getFileSize($fileData->getInternalBucketId(), $fileData->getIdentifier());
+    }
+
     /**
      * Get file content as base64 contentUrl.
      *
@@ -567,9 +573,6 @@ class BlobService implements LoggerAwareInterface
         return $response;
     }
 
-    /**
-     * Get fileData for file with given identifier.
-     */
     public function getFileData(string $identifier): FileData
     {
         if (!Uuid::isValid($identifier)) {
@@ -598,18 +601,6 @@ class BlobService implements LoggerAwareInterface
         );
 
         return $fileData;
-    }
-
-    /**
-     * Get all the file data collection of a given bucketID.
-     *
-     * @return FileData[]
-     */
-    public function getFileDataByBucketID(string $internalBucketID): array
-    {
-        return $this->entityManager
-            ->getRepository(FileData::class)
-            ->findBy(['internalBucketId' => $internalBucketID]);
     }
 
     public function getFileDataCollection(string $internalBucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage, bool $startsWith, bool $includeDeleteAt)

@@ -8,12 +8,14 @@ use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
+use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\NonUniqueResultException;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport;
@@ -254,121 +256,234 @@ class BlobChecks implements LoggerAwareInterface
         $out->writeln(' ');
     }
 
+    public function findOrphanFilesInStorage(?string $internalBucketId = null,
+        ?OutputInterface $out = null, ?string $outFileName = null, bool $email = false): void
+    {
+        $buckets = $internalBucketId !== null ?
+            [$this->configurationService->getBucketByInternalID($internalBucketId)] :
+            $this->configurationService->getBuckets();
+
+        foreach ($buckets as $bucket) {
+            if ($internalBucketId !== null && $internalBucketId !== $bucket->getInternalBucketId()) {
+                continue;
+            }
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+            self::output(sprintf(self::getDateTimeString()." Orphan files in storage of '%s' (%s)\n",
+                $bucket->getBucketId(), $bucket->getInternalBucketId()), $out, $outFileName);
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+
+            $numFilesChecked = 0;
+            $numOrphanFiles = 0;
+            $startDate = BlobUtils::now();
+
+            foreach ($this->datasystemService->getServiceByBucket($bucket)->listFiles($bucket->getInternalBucketId()) as $fileId) {
+                try {
+                    $this->blobService->getFileData($fileId);
+                } catch (ApiError $apiError) {
+                    if ($apiError->getStatusCode() === Response::HTTP_NOT_FOUND) {
+                        ++$numOrphanFiles;
+                        self::output(sprintf("%s\n", $fileId), $out, $outFileName);
+                    }
+                }
+                ++$numFilesChecked;
+            }
+            $endDate = BlobUtils::now();
+
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+            self::output(sprintf(self::getDateTimeString()." DONE\n"), $out, $outFileName);
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+            self::output(sprintf("Start date: %s\n", self::getDateTimeString($startDate)), $out, $outFileName);
+            self::output(sprintf("End date: %s\n", self::getDateTimeString($endDate)), $out, $outFileName);
+            self::output(sprintf("Duration: %s\n",
+                $startDate->diff($endDate)->format('%d days, %h hours, %i minutes, %s seconds')), $out, $outFileName);
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+            self::output(sprintf("Number of files checked: %d\n", $numFilesChecked), $out, $outFileName);
+            self::output(sprintf("Number of orphan files: %d\n", $numOrphanFiles), $out, $outFileName);
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+            self::output("\n", $out, $outFileName);
+        }
+    }
+
+    public function checkBucketSizes(?string $internalBucketId = null, ?OutputInterface $out = null,
+        ?string $outFileName = null, bool $email = false): void
+    {
+        $buckets = $internalBucketId !== null ?
+            [$this->configurationService->getBucketByInternalID($internalBucketId)] :
+            $this->configurationService->getBuckets();
+
+        foreach ($buckets as $bucket) {
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+            self::output(sprintf(self::getDateTimeString()." Bucket size check of '%s' (%s)\n",
+                $bucket->getBucketId(), $bucket->getInternalBucketId()), $out, $outFileName);
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+
+            try {
+                $this->entityManager->getConnection()->executeQuery('LOCK TABLES blob_files WRITE, blob_bucket_sizes WRITE');
+
+                $getDifferenceStatement = $this->entityManager->getConnection()->prepare('SELECT '.
+                    '(SELECT COALESCE(SUM(file_size), 0) FROM blob_files WHERE internal_bucket_id = :internalBucketId) - '.
+                    '(SELECT current_bucket_size FROM blob_bucket_sizes WHERE identifier = :internalBucketId) AS difference');
+                $getDifferenceStatement->bindValue(':internalBucketId', $bucket->getInternalBucketId());
+                $difference = $getDifferenceStatement->executeQuery()->fetchOne();
+
+                self::output(sprintf("Difference (Mb): %f (calculated - stored)\n", (float) $difference / 1048576), $out, $outFileName);
+            } catch (\Exception $exception) {
+                self::output(sprintf("Bucket size comparison failed: %s\n", $exception->getMessage()), $out, $outFileName);
+                dump($exception);
+            } finally {
+                // Unlock the tables (if necessary, depending on your DBMS)
+                $this->entityManager->getConnection()->executeQuery('UNLOCK TABLES');
+            }
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+            self::output("\n", $out, $outFileName);
+        }
+    }
+
     /**
      * @throws \Exception
      * @throws TransportExceptionInterface
      */
-    public function checkFileAndMetadataIntegrity(?OutputInterface $out = null, bool $sendEmail = true, bool $printIds = false, ?string $intBucketId = null): void
+    public function checkFileAndMetadataIntegrity(?string $internalBucketId = null,
+        ?OutputInterface $out = null, ?string $outFileName = null, bool $sendEmail = false): void
     {
+        $doFileIntegrityChecks = $this->configurationService->doFileIntegrityChecks();
         $maxNumItemsPerPage = 100;
-        $buckets = $intBucketId !== null ?
-            [$this->configurationService->getBucketByInternalID($intBucketId)] :
+        $buckets = $internalBucketId !== null ?
+            [$this->configurationService->getBucketByInternalID($internalBucketId)] :
             $this->configurationService->getBuckets();
+        $maxNumStoredIdentifiers = 100; // per criteria
+
         foreach ($buckets as $bucket) {
-            $startDate = BlobUtils::now();
-            if ($out !== null) {
-                $out->writeln('----------------------------------------------------------------------------------------------------------');
-                $out->writeln(self::getDateTimeString().': Checking file and metadata integrity for bucket \''.$bucket->getBucketId().'\' ('.$bucket->getInternalBucketId().')');
-            }
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+            self::output(sprintf(self::getDateTimeString()." Bucket integrity of '%s' (%s)\n",
+                $bucket->getBucketId(), $bucket->getInternalBucketId()), $out, $outFileName);
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+
+            $numFilesNotFound = 0;
+            $numFilesWithFileIntegrityViolation = 0;
+            $numFilesWithFileSizeViolation = 0;
+            $numFilesWithMetadataIntegrityViolation = 0;
             $fileDataIdentifiersNotFoundInFileStorage = [];
             $fileDataIdentifiersWithFileIntegrityViolation = [];
+            $fileDataIdentifiersWithFileSizeViolation = [];
             $fileDataIdentifiersWithMetadataIntegrityViolation = [];
+            $numFilesChecked = 0;
+            $lastIdentifier = null;
+            $getFileDataSumMicrotime = 0;
+            $compareFileHashSumMicrotime = 0;
+            $compareFileSizeSumMicrotime = 0;
+            $compareMetadataSumMicrotime = 0;
+
             $filter = FilterTreeBuilder::create()
                 ->equals('internalBucketId', $bucket->getInternalBucketId())
                 ->createFilter();
-            $numFilesChecked = 0;
-            $lastIdentifier = null;
+
+            $startDate = BlobUtils::now();
+            $startMicroTime = microtime(true);
             do {
+                $microtimeStart = microtime(true);
                 $fileDataCollection =
                     $this->blobService->getFileDataCollectionCursorBased($lastIdentifier, $maxNumItemsPerPage, $filter);
+                $getFileDataSumMicrotime += (float) microtime(true) - $microtimeStart;
                 $numFilesChecked += count($fileDataCollection);
+
                 foreach ($fileDataCollection as $fileData) {
                     try {
-                        $fileHashFromStorage = $this->blobService->getFileHashFromStorage($fileData);
+                        $microtimeStart = microtime(true);
+                        if ($doFileIntegrityChecks && $fileData->getFileHash() !== null) {
+                            if ($this->blobService->getFileHashFromStorage($fileData) !== $fileData->getFileHash()) {
+                                if (count($fileDataIdentifiersWithFileIntegrityViolation) < $maxNumStoredIdentifiers) {
+                                    $fileDataIdentifiersWithFileIntegrityViolation[] = $fileData->getIdentifier();
+                                }
+                                ++$numFilesWithFileIntegrityViolation;
+                                self::output(sprintf("%s FI\n", $fileData->getIdentifier()), $out, $outFileName);
+                            }
+                            $compareFileHashSumMicrotime += (float) microtime(true) - $microtimeStart;
+                        } else {
+                            if ($this->blobService->getFileSizeFromStorage($fileData) !== $fileData->getFileSize()) {
+                                if (count($fileDataIdentifiersWithFileSizeViolation) < $maxNumStoredIdentifiers) {
+                                    $fileDataIdentifiersWithFileSizeViolation[] = $fileData->getIdentifier();
+                                }
+                                ++$numFilesWithFileSizeViolation;
+                                self::output(sprintf("%s FS\n", $fileData->getIdentifier()), $out, $outFileName);
+                            }
+                            $compareFileSizeSumMicrotime += (float) microtime(true) - $microtimeStart;
+                        }
                     } catch (\Exception) {
-                        $fileDataIdentifiersNotFoundInFileStorage[] = $fileData->getIdentifier();
-                        continue;
+                        $wasFileRemovedDuringCheck = false;
+                        try {
+                            $this->blobService->getFileData($fileData->getIdentifier());
+                        } catch (ApiError $apiError) {
+                            if ($apiError->getStatusCode() === Response::HTTP_NOT_FOUND) {
+                                $wasFileRemovedDuringCheck = true;
+                            }
+                        }
+                        if (false === $wasFileRemovedDuringCheck) {
+                            if (count($fileDataIdentifiersNotFoundInFileStorage) < $maxNumStoredIdentifiers) {
+                                $fileDataIdentifiersNotFoundInFileStorage[] = $fileData->getIdentifier();
+                            }
+                            ++$numFilesNotFound;
+                            self::output(sprintf("%s NF\n", $fileData->getIdentifier()), $out, $outFileName);
+                        }
                     }
 
-                    if ($fileData->getFileHash() !== null && $fileHashFromStorage !== $fileData->getFileHash()) {
-                        $fileDataIdentifiersWithFileIntegrityViolation[] = $fileData->getIdentifier();
-                    }
+                    $microtimeStart = microtime(true);
                     if ($fileData->getMetadataHash() !== null
                         && ($fileData->getMetadata() === null || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
-                        $fileDataIdentifiersWithMetadataIntegrityViolation[] = $fileData->getIdentifier();
+                        if (count($fileDataIdentifiersWithMetadataIntegrityViolation) < $maxNumStoredIdentifiers) {
+                            $fileDataIdentifiersWithMetadataIntegrityViolation[] = $fileData->getIdentifier();
+                        }
+                        ++$numFilesWithMetadataIntegrityViolation;
+                        self::output(sprintf("%s MI\n", $fileData->getIdentifier()), $out, $outFileName);
                     }
+                    $compareMetadataSumMicrotime += (float) microtime(true) - $microtimeStart;
                 }
             } while (count($fileDataCollection) === $maxNumItemsPerPage);
+            $totalMicrotime = (float) microtime(true) - $startMicroTime;
             $endDate = BlobUtils::now();
+
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+            self::output(sprintf(self::getDateTimeString()." DONE\n"), $out, $outFileName);
+            self::output(sprintf("Start date: %s\n", self::getDateTimeString($startDate)));
+            self::output(sprintf("End date: %s\n", self::getDateTimeString($endDate)));
+            self::output(sprintf("Duration: %s\n", $startDate->diff($endDate)->format('%d days, %h hours, %i minutes, %s seconds')));
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+            self::output(sprintf("Sum of microtime for getting file data: %s\n", $getFileDataSumMicrotime), $out, $outFileName);
+            self::output(sprintf("Sum of microtime for compare file hash: %s\n", $compareFileHashSumMicrotime), $out, $outFileName);
+            self::output(sprintf("Sum of microtime for compare file size: %s\n", $compareFileSizeSumMicrotime), $out, $outFileName);
+            self::output(sprintf("Sum of microtime for compare metadata: %s\n", $compareMetadataSumMicrotime), $out, $outFileName);
+            self::output(sprintf("Total microtime: %s\n", $totalMicrotime), $out, $outFileName);
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+            self::output(sprintf("Number of files checked: %d\n", $numFilesChecked), $out, $outFileName);
+            self::output(sprintf("Number of files not found %d\n", $numFilesNotFound), $out, $outFileName);
+            self::output(sprintf("Number of files with file integrity violation: %d\n", $numFilesWithFileIntegrityViolation), $out, $outFileName);
+            self::output(sprintf("Number of files with metadata integrity violation: %d\n", $numFilesWithMetadataIntegrityViolation), $out, $outFileName);
+            self::output("------------------------------------------------------------------\n", $out, $outFileName);
+            self::output("\n", $out, $outFileName);
+
             if ($sendEmail) {
                 try {
-                    $this->sendIntegrityCheckResultMail($bucket, $numFilesChecked, $fileDataIdentifiersNotFoundInFileStorage,
-                        $fileDataIdentifiersWithFileIntegrityViolation, $fileDataIdentifiersWithMetadataIntegrityViolation,
+                    $this->sendIntegrityCheckResultMail($bucket,
+                        $numFilesChecked,
+                        $numFilesNotFound,
+                        $numFilesWithFileIntegrityViolation,
+                        $numFilesWithFileSizeViolation,
+                        $numFilesWithMetadataIntegrityViolation,
+                        $fileDataIdentifiersNotFoundInFileStorage,
+                        $fileDataIdentifiersWithFileIntegrityViolation,
+                        $fileDataIdentifiersWithFileSizeViolation,
+                        $fileDataIdentifiersWithMetadataIntegrityViolation,
                         $startDate, $endDate);
                 } catch (\Exception $exception) {
                     $this->logger->error('Failed to send integrity check mail:'.$exception->getMessage());
                     $this->logger->error('Number of files checked: '.$numFilesChecked);
                     $this->logger->error('Number of files not found in storage backend: '.count($fileDataIdentifiersNotFoundInFileStorage));
                     $this->logger->error('Number of files with file integrity violation: '.count($fileDataIdentifiersWithFileIntegrityViolation));
+                    $this->logger->error('Number of files with file size violation: '.count($fileDataIdentifiersWithFileSizeViolation));
                     $this->logger->error('Number of files with metadata integrity violation: '.count($fileDataIdentifiersWithMetadataIntegrityViolation));
                 }
             }
-            if ($out !== null) {
-                $this->printIntegrityCheckResult($bucket, $numFilesChecked, $fileDataIdentifiersNotFoundInFileStorage,
-                    $fileDataIdentifiersWithFileIntegrityViolation, $fileDataIdentifiersWithMetadataIntegrityViolation,
-                    $out, $printIds, $startDate, $endDate);
-            }
         }
-    }
-
-    /**
-     * Checks whether some files will expire soon, and sends a email to the bucket owner
-     * or owner of the file (if configured as notifyEmail).
-     *
-     * @param string[] $fileDataIdentifiersNotFoundInFileStorage
-     * @param string[] $fileDataIdentifiersWithFileIntegrityViolation
-     * @param string[] $fileDataIdentifiersWithMetadataIntegrityViolation
-     *
-     * @throws \Exception
-     */
-    private function printIntegrityCheckResult(BucketConfig $bucket, int $numFilesChecked, array $fileDataIdentifiersNotFoundInFileStorage,
-        array $fileDataIdentifiersWithFileIntegrityViolation, array $fileDataIdentifiersWithMetadataIntegrityViolation,
-        OutputInterface $out, bool $printIds, \DateTimeImmutable $startDate, \DateTimeImmutable $endDate): void
-    {
-        if (!empty($fileDataIdentifiersNotFoundInFileStorage)
-            || !empty($fileDataIdentifiersWithFileIntegrityViolation)
-            || !empty($fileDataIdentifiersWithMetadataIntegrityViolation)) {
-            $out->writeln(self::getDateTimeString().': WARNING: Found integrity violations in bucket \''.$bucket->getBucketId().'\' ('.$bucket->getInternalBucketId().')');
-            if ($printIds === true) {
-                if (!empty($fileDataIdentifiersNotFoundInFileStorage)) {
-                    $out->writeln('The following blob files were not found in the storage backend: ');
-                    foreach ($fileDataIdentifiersNotFoundInFileStorage as $identifier) {
-                        $out->writeln($identifier);
-                    }
-                }
-                if (!empty($fileDataIdentifiersWithFileIntegrityViolation)) {
-                    $out->writeln('The following blob files have a file integrity violation: ');
-                    foreach ($fileDataIdentifiersWithFileIntegrityViolation as $identifier) {
-                        $out->writeln($identifier);
-                    }
-                }
-                if (!empty($fileDataIdentifiersWithMetadataIntegrityViolation)) {
-                    $out->writeln('The following blob files have a metadata integrity violation: ');
-                    foreach ($fileDataIdentifiersWithMetadataIntegrityViolation as $identifier) {
-                        $out->writeln($identifier);
-                    }
-                }
-            }
-            $out->writeln('Number of files not found in storage backend: '.count($fileDataIdentifiersNotFoundInFileStorage));
-            $out->writeln('Number of files with file integrity violation: '.count($fileDataIdentifiersWithFileIntegrityViolation));
-            $out->writeln('Number of files with metadata integrity violation: '.count($fileDataIdentifiersWithMetadataIntegrityViolation));
-        } else {
-            $out->writeln(self::getDateTimeString().': No file nor metadata integrity violation detected for bucket \''.$bucket->getBucketId().'\' ('.$bucket->getInternalBucketId().')');
-        }
-        $out->writeln('Number of files checked: '.$numFilesChecked);
-        $out->writeln('Start time: '.self::getDateTimeString($startDate));
-        $out->writeln('End time: '.self::getDateTimeString($endDate));
-        $out->writeln('Duration: '.$startDate->diff($endDate)->format('%d days, %h hours, %i minutes, %s seconds'));
     }
 
     /**
@@ -382,18 +497,29 @@ class BlobChecks implements LoggerAwareInterface
      * @throws \Exception
      * @throws TransportExceptionInterface
      */
-    private function sendIntegrityCheckResultMail(BucketConfig $bucket, int $numFilesChecked, array $fileDataIdentifiersNotFoundInFileStorage,
-        array $fileDataIdentifiersWithFileIntegrityViolation, array $fileDataIdentifiersWithMetadataIntegrityViolation,
+    private function sendIntegrityCheckResultMail(BucketConfig $bucket, int $numFilesChecked,
+        int $numFilesNotFound,
+        int $numFilesWithFileIntegrityViolation,
+        int $numFilesWithFileSizeViolation,
+        int $numFilesWithMetadataIntegrityViolation,
+        array $fileDataIdentifiersNotFoundInFileStorage, array $fileDataIdentifiersWithFileIntegrityViolation,
+        array $fileDataIdentifiersWithFileSizeViolation, array $fileDataIdentifiersWithMetadataIntegrityViolation,
         \DateTimeImmutable $startDate, \DateTimeImmutable $endDate): void
     {
         if (!empty($fileDataIdentifiersNotFoundInFileStorage)
             || !empty($fileDataIdentifiersWithFileIntegrityViolation)
+            || !empty($fileDataIdentifiersWithFileSizeViolation)
             || !empty($fileDataIdentifiersWithMetadataIntegrityViolation)) {
             $context = [
                 'internalBucketId' => $bucket->getInternalBucketId(),
                 'bucketId' => $bucket->getBucketId(),
+                'numFilesNotFound' => $numFilesNotFound,
+                'numFilesWithFileIntegrityViolation' => $numFilesWithFileIntegrityViolation,
+                'numFilesWithFileSizeViolation' => $numFilesWithFileSizeViolation,
+                'numFilesWithMetadataIntegrityViolation' => $numFilesWithMetadataIntegrityViolation,
                 'identifiersNotFound' => $fileDataIdentifiersNotFoundInFileStorage,
                 'identifiersWithFileIntegrityViolation' => $fileDataIdentifiersWithFileIntegrityViolation,
+                'identifiersWithFileSizeViolation' => $fileDataIdentifiersWithFileSizeViolation,
                 'identifiersWithMetadataIntegrityViolation' => $fileDataIdentifiersWithMetadataIntegrityViolation,
                 'numFilesChecked' => $numFilesChecked,
                 'startDateTime' => self::getDateTimeString($startDate),
@@ -407,8 +533,16 @@ class BlobChecks implements LoggerAwareInterface
         }
     }
 
-    public static function getDateTimeString(?\DateTimeImmutable $dateTime = null): string
+    public static function getDateTimeString(?\DateTimeImmutable $dateTime = null, bool $isForFilename = false): string
     {
-        return ($dateTime ?? new \DateTimeImmutable())->format('Y-m-d H:i:s');
+        return ($dateTime ?? new \DateTimeImmutable())->format($isForFilename ? 'Y-m-d_H-i-s' : 'Y-m-d H:i:s');
+    }
+
+    private static function output(string $message, ?OutputInterface $out = null, ?string $outFileName = null): void
+    {
+        $out?->write($message);
+        if ($outFileName !== null) {
+            file_put_contents($outFileName, $message, FILE_APPEND);
+        }
     }
 }

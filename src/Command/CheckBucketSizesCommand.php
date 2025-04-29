@@ -9,9 +9,8 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
-class CheckFileAndMetadataIntegrityCommand extends Command
+class CheckBucketSizesCommand extends Command
 {
     public function __construct(
         private readonly BlobChecks $blobChecks)
@@ -21,19 +20,17 @@ class CheckFileAndMetadataIntegrityCommand extends Command
 
     protected function configure(): void
     {
-        $this->setName('dbp:relay:blob:check-integrity');
-        $this->setAliases(['dbp:relay-blob:check-integrity']);
+        $this->setName('dbp:relay:blob:check-bucket-sizes');
         $this
-            ->setDescription('Checks the file and metadata hashes stored in the table against newly generated hashes of the stored files and metadata')
+            ->setDescription('Calculates the difference between actual bucket sizes (sum of file sizes) and the stored bucket size.')
             ->addOption('int-bucket-id', mode: InputOption::VALUE_OPTIONAL, description: 'The internal bucket ID of the bucket to be tested')
-            ->addOption('file', mode: InputOption::VALUE_REQUIRED, description: 'Name of the output file', default: 'file_integrity_report')
+            ->addOption('file', mode: InputOption::VALUE_REQUIRED, description: 'Name of the output file', default: 'bucket_sizes_report')
             ->addOption('stdout', mode: InputOption::VALUE_OPTIONAL, description: 'print output to stdout')
             ->addOption('email', mode: InputOption::VALUE_OPTIONAL, description: 'print output to stdout');
     }
 
     /**
      * @throws \Exception
-     * @throws TransportExceptionInterface
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -46,8 +43,8 @@ class CheckFileAndMetadataIntegrityCommand extends Command
             $file = $file.'_'.BlobChecks::getDateTimeString(isForFilename: true).'.txt';
         }
 
-        $output->writeln('Checking the integrity of all files and metadata...');
-        $this->blobChecks->checkFileAndMetadataIntegrity($intBucketId,
+        $output->writeln('Checking bucket sizes...');
+        $this->blobChecks->checkBucketSizes($intBucketId,
             $stdout ? $output : null, $file, $email !== null);
 
         return 0;

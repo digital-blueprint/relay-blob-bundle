@@ -6,11 +6,12 @@
 <p><strong>Start date</strong>: {{ startDateTime }}</p>
 <p><strong>End date</strong>: {{ endDateTime }}</p>
 <p><strong>Duration</strong>: {{ duration }}</p>
-<p><strong>Number of files that were not found in the file storage backend</strong>: {{ identifiersNotFound|length }}</p>
-<p><strong>Number of files with file content integrity violation</strong>: {{ identifiersWithFileIntegrityViolation|length }}</p>
-<p><strong>Number of files with metadata integrity violation</strong>: {{ identifiersWithMetadataIntegrityViolation|length }}</p>
+<p><strong>Number of files that were not found in the file storage backend</strong>: {{ numFilesNotFound }}</p>
+<p><strong>Number of files with file content integrity violation</strong>: {{ numFilesWithFileIntegrityViolation }}</p>
+<p><strong>Number of files with file size integrity violation</strong>: {{ numFilesWithFileSizeViolation }}</p>
+<p><strong>Number of files with metadata integrity violation</strong>: {{ numFilesWithMetadataIntegrityViolation }}</p>
 {% if identifiersNotFound is not empty %}
-<p><strong>Files that were not found in the file storage backend</strong>:</p>
+<p><strong>First 100 files that were not found in the file storage backend</strong>:</p>
 <p>
     {% for identifier in identifiersNotFound %}
         {{ identifier }}</br>
@@ -18,15 +19,23 @@
 </p>
 {% endif %}
 {% if identifiersWithFileIntegrityViolation is not empty %}
-<p><strong>Files with file content integrity violation</strong>:</p>
+<p><strong>First 100 files with file content integrity violation</strong>:</p>
 <p>
     {% for identifier in identifiersWithFileIntegrityViolation %}
         {{ identifier }}</br>
     {% endfor %}
 </p>
 {% endif %}
+{% if identifiersWithFileSizeViolation is not empty %}
+        <p><strong>First 100 files with file size violation</strong>:</p>
+        <p>
+                {% for identifier in identifiersWithFileSizeViolation %}
+                        {{ identifier }}</br>
+                {% endfor %}
+        </p>
+{% endif %}
 {% if identifiersWithMetadataIntegrityViolation is not empty %}
-<p><strong>Files with metadata integrity violation</strong>:</p>
+<p><strong>First 100 files with metadata integrity violation</strong>:</p>
 <p>
     {% for identifier in identifiersWithMetadataIntegrityViolation %}
         {{ identifier }}</br>
