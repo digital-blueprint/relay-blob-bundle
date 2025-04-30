@@ -18,6 +18,7 @@ use Dbp\Relay\CoreBundle\Doctrine\QueryHelper;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Helpers\Tools;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\Filter;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonSchema\Validator;
 use Psr\Log\LoggerAwareInterface;
@@ -865,6 +866,12 @@ class BlobService implements LoggerAwareInterface
         }
 
         $this->validateMetadata($fileData, $errorPrefix);
+    }
+
+    public function clearEntityManager(): void
+    {
+        assert($this->entityManager instanceof EntityManager);
+        $this->entityManager->clear();
     }
 
     /**

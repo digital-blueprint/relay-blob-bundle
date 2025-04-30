@@ -10,7 +10,7 @@ use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
-use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\NonUniqueResultException;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -31,7 +31,7 @@ class BlobChecks implements LoggerAwareInterface
     use LoggerAwareTrait;
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly EntityManager $entityManager,
         private readonly ConfigurationService $configurationService,
         private readonly DatasystemProviderService $datasystemService,
         private readonly BlobService $blobService)
@@ -275,17 +275,18 @@ class BlobChecks implements LoggerAwareInterface
             $numFilesChecked = 0;
             $numOrphanFiles = 0;
             $startDate = BlobUtils::now();
+            $batchSize = 100;
+            $itemCounter = 0;
 
             foreach ($this->datasystemService->getServiceByBucket($bucket)->listFiles($bucket->getInternalBucketId()) as $fileId) {
-                try {
-                    $this->blobService->getFileData($fileId);
-                } catch (ApiError $apiError) {
-                    if ($apiError->getStatusCode() === Response::HTTP_NOT_FOUND) {
-                        ++$numOrphanFiles;
-                        self::output(sprintf("%s\n", $fileId), $out, $outFileName);
-                    }
+                if (null === $this->entityManager->getRepository(FileData::class)->find($fileId)) {
+                    ++$numOrphanFiles;
+                    self::output(sprintf("%s\n", $fileId), $out, $outFileName);
                 }
                 ++$numFilesChecked;
+                if (++$itemCounter % $batchSize === 0) {
+                    $this->entityManager->clear(); // avoid memory leak
+                }
             }
             $endDate = BlobUtils::now();
 
@@ -346,7 +347,7 @@ class BlobChecks implements LoggerAwareInterface
         ?OutputInterface $out = null, ?string $outFileName = null, bool $sendEmail = false, bool $debug = false): void
     {
         $doFileIntegrityChecks = $this->configurationService->doFileIntegrityChecks();
-        $maxNumItems = 100;
+        $maxNumItemsPerPage = 100;
         $buckets = $internalBucketId !== null ?
             [$this->configurationService->getBucketByInternalID($internalBucketId)] :
             $this->configurationService->getBuckets();
@@ -382,7 +383,7 @@ class BlobChecks implements LoggerAwareInterface
             do {
                 $microtimeStart = microtime(true);
                 $fileDataCollection =
-                    $this->blobService->getFileDataCollectionCursorBased($lastIdentifier, $maxNumItems, $filter);
+                    $this->blobService->getFileDataCollectionCursorBased($lastIdentifier, $maxNumItemsPerPage, $filter);
                 if ($numFilesReturned = count($fileDataCollection)) {
                     $lastIdentifier = $fileDataCollection[$numFilesReturned - 1]->getIdentifier();
                 }
@@ -458,7 +459,8 @@ class BlobChecks implements LoggerAwareInterface
                         $compareMetadataSumMicrotime += (float) microtime(true) - $microtimeStart;
                     }
                 }
-            } while (count($fileDataCollection) === $maxNumItems);
+                $this->blobService->clearEntityManager(); // prevent memory leak
+            } while (count($fileDataCollection) === $maxNumItemsPerPage);
             $totalMicrotime = (float) microtime(true) - $startMicroTime;
             $endDate = BlobUtils::now();
 

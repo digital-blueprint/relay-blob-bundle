@@ -5,7 +5,8 @@
 - rework the file and metadata integrity check and reports
 - add check bucket size command
 - add find orphan storage files command
-- allowing writing output of integrity commands to file
+- allow writing output of integrity commands to file
+- clear entity manager from time to time during health checks to avoid memory leaks
 
 ## v0.1.71
 
