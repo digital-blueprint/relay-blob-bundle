@@ -29,7 +29,8 @@ class CheckFileAndMetadataIntegrityCommand extends Command
             ->addOption('file', mode: InputOption::VALUE_REQUIRED, description: 'Name of the output file', default: 'file_integrity_report')
             ->addOption('stdout', mode: InputOption::VALUE_NONE, description: 'print output to stdout')
             ->addOption('email', mode: InputOption::VALUE_NONE, description: 'print output to stdout')
-            ->addOption('debug', mode: InputOption::VALUE_NONE, description: 'print debug output to stdout');
+            ->addOption('debug', mode: InputOption::VALUE_NONE, description: 'print debug output to stdout')
+            ->addOption('limit', mode: InputOption::VALUE_OPTIONAL, description: 'only check the given number of files');
     }
 
     /**
@@ -43,14 +44,23 @@ class CheckFileAndMetadataIntegrityCommand extends Command
         $file = $input->getOption('file');
         $stdout = $input->getOption('stdout');
         $debug = $input->getOption('debug');
+        $limit = $input->getOption('limit');
 
         if ($file !== null) {
             $file = $file.'_'.BlobChecks::getDateTimeString(isForFilename: true).'.txt';
         }
 
         $output->writeln('Checking the integrity of all files and metadata...');
+
+        $options = [];
+        if ($debug) {
+            $options['debug'] = true;
+        }
+        if ($limit) {
+            $options['limit'] = intval($limit);
+        }
         $this->blobChecks->checkFileAndMetadataIntegrity($intBucketId,
-            $stdout ? $output : null, $file, $email, $debug);
+            $stdout ? $output : null, $file, $email, $options);
 
         return 0;
     }

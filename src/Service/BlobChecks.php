@@ -344,8 +344,10 @@ class BlobChecks implements LoggerAwareInterface
      * @throws TransportExceptionInterface
      */
     public function checkFileAndMetadataIntegrity(?string $internalBucketId = null,
-        ?OutputInterface $out = null, ?string $outFileName = null, bool $sendEmail = false, bool $debug = false): void
+        ?OutputInterface $out = null, ?string $outFileName = null, bool $sendEmail = false, array $options = []): void
     {
+        $debug = $options['debug'] ?? false;
+        $maxNumFiles = $options['limit'] ?? null;
         $doFileIntegrityChecks = $this->configurationService->doFileIntegrityChecks();
         $maxNumItemsPerPage = 100;
         $buckets = $internalBucketId !== null ?
@@ -357,6 +359,9 @@ class BlobChecks implements LoggerAwareInterface
             self::output("------------------------------------------------------------------\n", $out, $outFileName);
             self::output(sprintf(self::getDateTimeString()." Bucket integrity of '%s' (%s)\n",
                 $bucket->getBucketId(), $bucket->getInternalBucketId()), $out, $outFileName);
+            if ($maxNumFiles !== null) {
+                self::output(sprintf("Maximum number of files to check: %d\n", $maxNumFiles), $out, $outFileName);
+            }
             self::output("------------------------------------------------------------------\n", $out, $outFileName);
 
             $numFilesNotFound = 0;
@@ -373,94 +378,106 @@ class BlobChecks implements LoggerAwareInterface
             $compareFileHashSumMicrotime = 0;
             $compareFileSizeSumMicrotime = 0;
             $compareMetadataSumMicrotime = 0;
-
-            $filter = FilterTreeBuilder::create()
-                ->equals('internalBucketId', $bucket->getInternalBucketId())
-                ->createFilter();
-
             $startDate = BlobUtils::now();
             $startMicroTime = microtime(true);
-            do {
-                $microtimeStart = microtime(true);
-                $fileDataCollection =
-                    $this->blobService->getFileDataCollectionCursorBased($lastIdentifier, $maxNumItemsPerPage, $filter);
-                if ($numFilesReturned = count($fileDataCollection)) {
-                    $lastIdentifier = $fileDataCollection[$numFilesReturned - 1]->getIdentifier();
-                }
-                $getFileDataSumMicrotime += (float) microtime(true) - $microtimeStart;
-                $numFilesChecked += count($fileDataCollection);
-                if ($debug) {
-                    self::output(sprintf("Retriveved %d files\n", $numFilesChecked), $out, $outFileName);
-                }
+            $finished = false;
 
-                foreach ($fileDataCollection as $fileData) {
-                    try {
-                        $microtimeStart = microtime(true);
-                        if ($doFileIntegrityChecks && $fileData->getFileHash() !== null) {
-                            if ($debug) {
-                                self::output(sprintf("Checking file hash of %s\n", $fileData->getIdentifier()), $out, $outFileName);
-                            }
-                            if ($this->blobService->getFileHashFromStorage($fileData) !== $fileData->getFileHash()) {
-                                if (count($fileDataIdentifiersWithFileIntegrityViolation) < $maxNumStoredIdentifiers) {
-                                    $fileDataIdentifiersWithFileIntegrityViolation[] = $fileData->getIdentifier();
-                                }
-                                ++$numFilesWithFileIntegrityViolation;
-                                self::output(sprintf("%s FI\n", $fileData->getIdentifier()), $out, $outFileName);
-                            }
-                            $compareFileHashSumMicrotime += (float) microtime(true) - $microtimeStart;
-                        } else {
-                            if ($debug) {
-                                self::output(sprintf("Checking file size of %s\n", $fileData->getIdentifier()), $out, $outFileName);
-                            }
-                            if ($this->blobService->getFileSizeFromStorage($fileData) !== $fileData->getFileSize()) {
-                                if (count($fileDataIdentifiersWithFileSizeViolation) < $maxNumStoredIdentifiers) {
-                                    $fileDataIdentifiersWithFileSizeViolation[] = $fileData->getIdentifier();
-                                }
-                                ++$numFilesWithFileSizeViolation;
-                                self::output(sprintf("%s FS\n", $fileData->getIdentifier()), $out, $outFileName);
-                            }
-                            $compareFileSizeSumMicrotime += (float) microtime(true) - $microtimeStart;
-                        }
-                    } catch (\Exception $exception) {
-                        if ($debug) {
-                            self::output(sprintf("Execption thrown (%s). Checking if file was removed meanwhile.\n",
-                                $exception->getMessage()), $out, $outFileName);
-                        }
-                        $wasFileRemovedDuringCheck = false;
+            try {
+                $filter = FilterTreeBuilder::create()
+                    ->equals('internalBucketId', $bucket->getInternalBucketId())
+                    ->createFilter();
+
+                do {
+                    $microtimeStart = microtime(true);
+                    $fileDataCollection =
+                        $this->blobService->getFileDataCollectionCursorBased($lastIdentifier, $maxNumItemsPerPage, $filter);
+                    $numFilesReturned = count($fileDataCollection);
+                    if ($numFilesReturned > 0) {
+                        $lastIdentifier = $fileDataCollection[$numFilesReturned - 1]->getIdentifier();
+                    }
+                    $getFileDataSumMicrotime += (float) microtime(true) - $microtimeStart;
+                    if ($debug) {
+                        self::output(sprintf("Retrieved %d files\n", $numFilesReturned), $out, $outFileName);
+                    }
+
+                    foreach ($fileDataCollection as $fileData) {
                         try {
-                            $this->blobService->getFileData($fileData->getIdentifier());
-                        } catch (ApiError $apiError) {
-                            if ($apiError->getStatusCode() === Response::HTTP_NOT_FOUND) {
+                            $microtimeStart = microtime(true);
+                            if ($doFileIntegrityChecks && $fileData->getFileHash() !== null) {
                                 if ($debug) {
-                                    self::output("File was removed meanwhile.\n", $out, $outFileName);
+                                    self::output(sprintf("Checking file hash of %s\n", $fileData->getIdentifier()), $out, $outFileName);
                                 }
-                                $wasFileRemovedDuringCheck = true;
+                                if ($this->blobService->getFileHashFromStorage($fileData) !== $fileData->getFileHash()) {
+                                    if (count($fileDataIdentifiersWithFileIntegrityViolation) < $maxNumStoredIdentifiers) {
+                                        $fileDataIdentifiersWithFileIntegrityViolation[] = $fileData->getIdentifier();
+                                    }
+                                    ++$numFilesWithFileIntegrityViolation;
+                                    self::output(sprintf("%s FI\n", $fileData->getIdentifier()), $out, $outFileName);
+                                }
+                                $compareFileHashSumMicrotime += (float) microtime(true) - $microtimeStart;
+                            } else {
+                                if ($debug) {
+                                    self::output(sprintf("Checking file size of %s\n", $fileData->getIdentifier()), $out, $outFileName);
+                                }
+                                if ($this->blobService->getFileSizeFromStorage($fileData) !== $fileData->getFileSize()) {
+                                    if (count($fileDataIdentifiersWithFileSizeViolation) < $maxNumStoredIdentifiers) {
+                                        $fileDataIdentifiersWithFileSizeViolation[] = $fileData->getIdentifier();
+                                    }
+                                    ++$numFilesWithFileSizeViolation;
+                                    self::output(sprintf("%s FS\n", $fileData->getIdentifier()), $out, $outFileName);
+                                }
+                                $compareFileSizeSumMicrotime += (float) microtime(true) - $microtimeStart;
+                            }
+                        } catch (\Exception $exception) {
+                            if ($debug) {
+                                self::output(sprintf("Execption thrown (%s). Checking if file was removed meanwhile.\n",
+                                    $exception->getMessage()), $out, $outFileName);
+                            }
+                            $wasFileRemovedDuringCheck = false;
+                            try {
+                                $this->blobService->getFileData($fileData->getIdentifier());
+                            } catch (ApiError $apiError) {
+                                if ($apiError->getStatusCode() === Response::HTTP_NOT_FOUND) {
+                                    if ($debug) {
+                                        self::output("File was removed meanwhile.\n", $out, $outFileName);
+                                    }
+                                    $wasFileRemovedDuringCheck = true;
+                                }
+                            }
+                            if (false === $wasFileRemovedDuringCheck) {
+                                if (count($fileDataIdentifiersNotFoundInFileStorage) < $maxNumStoredIdentifiers) {
+                                    $fileDataIdentifiersNotFoundInFileStorage[] = $fileData->getIdentifier();
+                                }
+                                ++$numFilesNotFound;
+                                self::output(sprintf("%s NF\n", $fileData->getIdentifier()), $out, $outFileName);
                             }
                         }
-                        if (false === $wasFileRemovedDuringCheck) {
-                            if (count($fileDataIdentifiersNotFoundInFileStorage) < $maxNumStoredIdentifiers) {
-                                $fileDataIdentifiersNotFoundInFileStorage[] = $fileData->getIdentifier();
-                            }
-                            ++$numFilesNotFound;
-                            self::output(sprintf("%s NF\n", $fileData->getIdentifier()), $out, $outFileName);
-                        }
-                    }
 
-                    if ($doFileIntegrityChecks && $fileData->getMetadataHash() !== null) {
-                        $microtimeStart = microtime(true);
-                        if ($fileData->getMetadata() === null
-                            || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash()) {
-                            if (count($fileDataIdentifiersWithMetadataIntegrityViolation) < $maxNumStoredIdentifiers) {
-                                $fileDataIdentifiersWithMetadataIntegrityViolation[] = $fileData->getIdentifier();
+                        if ($doFileIntegrityChecks && $fileData->getMetadataHash() !== null) {
+                            $microtimeStart = microtime(true);
+                            if ($fileData->getMetadata() === null
+                                || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash()) {
+                                if (count($fileDataIdentifiersWithMetadataIntegrityViolation) < $maxNumStoredIdentifiers) {
+                                    $fileDataIdentifiersWithMetadataIntegrityViolation[] = $fileData->getIdentifier();
+                                }
+                                ++$numFilesWithMetadataIntegrityViolation;
+                                self::output(sprintf("%s MI\n", $fileData->getIdentifier()), $out, $outFileName);
                             }
-                            ++$numFilesWithMetadataIntegrityViolation;
-                            self::output(sprintf("%s MI\n", $fileData->getIdentifier()), $out, $outFileName);
+                            $compareMetadataSumMicrotime += (float) microtime(true) - $microtimeStart;
                         }
-                        $compareMetadataSumMicrotime += (float) microtime(true) - $microtimeStart;
+                        ++$numFilesChecked;
+                        if ($maxNumFiles !== null && $numFilesChecked >= $maxNumFiles) {
+                            $finished = true;
+                            break;
+                        }
                     }
-                }
-                $this->blobService->clearEntityManager(); // prevent memory leak
-            } while (count($fileDataCollection) === $maxNumItemsPerPage);
+                    $this->blobService->clearEntityManager(); // prevent memory leak
+                } while ($numFilesReturned === $maxNumItemsPerPage && $finished === false);
+            } catch (\Exception $exception) {
+                self::output(sprintf(self::getDateTimeString().
+                    " An error occurred: %s\n%s\nAborting integrity check.\n",
+                    $exception->getMessage(), $exception->getTraceAsString()), $out, $outFileName);
+            }
             $totalMicrotime = (float) microtime(true) - $startMicroTime;
             $endDate = BlobUtils::now();
 
@@ -504,6 +521,10 @@ class BlobChecks implements LoggerAwareInterface
                     $this->logger->error('Number of files with file size violation: '.count($fileDataIdentifiersWithFileSizeViolation));
                     $this->logger->error('Number of files with metadata integrity violation: '.count($fileDataIdentifiersWithMetadataIntegrityViolation));
                 }
+            }
+
+            if ($finished) {
+                break;
             }
         }
     }
