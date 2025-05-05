@@ -212,8 +212,8 @@ class BlobService implements LoggerAwareInterface
     public function setUpFileDataFromRequest(FileData $fileData, Request $request, string $errorPrefix): FileData
     {
         // check content-length header to prevent misleading error messages if the upload is too big for the server to accept
-        if ($request->headers->get('Content-Length') && intval($request->headers->get('Content-Length')) !== 0
-            && intval($request->headers->get('Content-Length')) > BlobUtils::convertFileSizeStringToBytes(ini_get('post_max_size'))) {
+        if (($contentLength = $request->headers->get('Content-Length') ?? null) !== null
+            && intval($contentLength) > BlobUtils::convertFileSizeStringToBytes(ini_get('post_max_size'))) {
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
                 'Given file is too large',
