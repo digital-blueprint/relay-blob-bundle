@@ -87,9 +87,64 @@ class FileApi implements BlobFileApiInterface
         return $fileData;
     }
 
+    private static function toDatetimeString(\DateTimeImmutable $dateTime): string
+    {
+        return $dateTime->format(\DateTimeInterface::ATOM);
+    }
+
     private static function createBlobFileFromFileData(FileData $fileData): BlobFile
     {
-        return new BlobFile(json_decode(json_encode($fileData), true));
+        $blobFile = new BlobFile();
+        if ($fileData->getIdentifier()) {
+            $blobFile->setIdentifier($fileData->getIdentifier());
+        }
+        if ($fileData->getPrefix()) {
+            $blobFile->setPrefix($fileData->getPrefix());
+        }
+        if ($fileData->getFile()) {
+            $blobFile->setFile($fileData->getFile());
+        }
+        if ($fileData->getType()) {
+            $blobFile->setType($fileData->getType());
+        }
+        if ($fileData->getFileSize()) {
+            $blobFile->setFileSize($fileData->getFileSize());
+        }
+        if ($fileData->getFileName()) {
+            $blobFile->setFileName($fileData->getFileName());
+        }
+        if ($fileData->getFileHash()) {
+            $blobFile->setFileHash($fileData->getFileHash());
+        }
+        if ($fileData->getMetadata()) {
+            $blobFile->setMetadata($fileData->getMetadata());
+        }
+        if ($fileData->getMetadataHash()) {
+            $blobFile->setMetadataHash($fileData->getMetadataHash());
+        }
+        if ($fileData->getContentUrl()) {
+            $blobFile->setContentUrl($fileData->getContentUrl());
+        }
+        if ($fileData->getMimeType()) {
+            $blobFile->setMimeType($fileData->getMimeType());
+        }
+        if ($fileData->getDeleteAt()) {
+            $blobFile->setDeleteAt(self::toDatetimeString($fileData->getDeleteAt()));
+        }
+        if ($fileData->getNotifyEmail()) {
+            $blobFile->setNotifyEmail($fileData->getNotifyEmail());
+        }
+        if ($fileData->getDateCreated()) {
+            $blobFile->setDateCreated(self::toDatetimeString($fileData->getDateCreated()));
+        }
+        if ($fileData->getDateModified()) {
+            $blobFile->setDateModified(self::toDatetimeString($fileData->getDateModified()));
+        }
+        if ($fileData->getDateAccessed()) {
+            $blobFile->setDateAccessed(self::toDatetimeString($fileData->getDateAccessed()));
+        }
+
+        return $blobFile;
     }
 
     public function __construct(
@@ -116,7 +171,6 @@ class FileApi implements BlobFileApiInterface
         }
 
         try {
-            // base-URL option? is contentUrl returned on POST?
             return self::createBlobFileFromFileData($this->blobService->addFile($fileData, $options));
         } catch (\Exception $exception) {
             throw $this->createBlobApiError($exception, 'Adding file failed');

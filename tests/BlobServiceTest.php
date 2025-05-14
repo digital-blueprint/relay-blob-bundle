@@ -60,7 +60,7 @@ class BlobServiceTest extends ApiTestCase
         $this->assertNull($fileData->getMetadataHash());
         $this->assertNotNull($fileData->getDateCreated());
         $this->assertNotNull($fileData->getDateModified());
-        $this->assertNotNull($fileData->getLastAccess());
+        $this->assertNotNull($fileData->getDateAccessed());
         $this->assertNull($fileData->getDeleteAt());
         $this->assertNull($fileData->getNotifyEmail());
         $this->assertNotNull($fileData->getContentUrl());
@@ -85,7 +85,7 @@ class BlobServiceTest extends ApiTestCase
         $this->assertNull($fileData->getMetadataHash());
         $this->assertNotNull($fileData->getDateCreated());
         $this->assertNotNull($fileData->getDateModified());
-        $this->assertNotNull($fileData->getLastAccess());
+        $this->assertNotNull($fileData->getDateAccessed());
         $this->assertNull($fileData->getDeleteAt());
         $this->assertNull($fileData->getNotifyEmail());
         $this->assertNotNull($fileData->getContentUrl());
@@ -124,7 +124,7 @@ class BlobServiceTest extends ApiTestCase
         $this->assertNull($fileData->getMetadataHash());
         $this->assertNotNull($fileData->getDateCreated());
         $this->assertNotNull($fileData->getDateModified());
-        $this->assertNotNull($fileData->getLastAccess());
+        $this->assertNotNull($fileData->getDateAccessed());
         $this->assertNull($fileData->getDeleteAt());
         $this->assertNull($fileData->getNotifyEmail());
 
@@ -169,7 +169,7 @@ class BlobServiceTest extends ApiTestCase
         $this->assertNull($fileData->getMetadataHash());
         $this->assertNotNull($fileData->getDateCreated());
         $this->assertNotNull($fileData->getDateModified());
-        $this->assertNotNull($fileData->getLastAccess());
+        $this->assertNotNull($fileData->getDateAccessed());
         $this->assertNull($fileData->getDeleteAt());
         $this->assertNull($fileData->getNotifyEmail());
         $this->assertNotNull($fileData->getContentUrl());
@@ -193,7 +193,7 @@ class BlobServiceTest extends ApiTestCase
         $this->assertNull($fileData->getMetadataHash());
         $this->assertNotNull($fileData->getDateCreated());
         $this->assertNotNull($fileData->getDateModified());
-        $this->assertNotNull($fileData->getLastAccess());
+        $this->assertNotNull($fileData->getDateAccessed());
         $this->assertNull($fileData->getDeleteAt());
         $this->assertNull($fileData->getNotifyEmail());
         $this->assertNotNull($fileData->getContentUrl());

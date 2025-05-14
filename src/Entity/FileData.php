@@ -666,12 +666,12 @@ class FileData
         $this->dateCreated = $dateCreated;
     }
 
-    public function getLastAccess(): ?\DateTimeImmutable
+    public function getDateAccessed(): ?\DateTimeImmutable
     {
         return $this->dateAccessed;
     }
 
-    public function setLastAccess(?\DateTimeImmutable $dateAccessed): void
+    public function setDateAccessed(?\DateTimeImmutable $dateAccessed): void
     {
         $this->dateAccessed = $dateAccessed;
     }

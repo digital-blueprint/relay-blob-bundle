@@ -286,12 +286,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/digital-blueprint/relay-blob-library.git",
-                "reference": "9f05f521e6b2c37d6da1c7dac0d8047ea65b7074"
+                "reference": "f155171e31a2c2ff3cb8ce753bd468706992f767"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/digital-blueprint/relay-blob-library/zipball/9f05f521e6b2c37d6da1c7dac0d8047ea65b7074",
-                "reference": "9f05f521e6b2c37d6da1c7dac0d8047ea65b7074",
+                "url": "https://api.github.com/repos/digital-blueprint/relay-blob-library/zipball/f155171e31a2c2ff3cb8ce753bd468706992f767",
+                "reference": "f155171e31a2c2ff3cb8ce753bd468706992f767",
                 "shasum": ""
             },
             "require": {
@@ -328,7 +328,7 @@
                 "issues": "https://github.com/digital-blueprint/relay-blob-library/issues",
                 "source": "https://github.com/digital-blueprint/relay-blob-library/tree/main"
             },
-            "time": "2025-05-14T11:56:27+00:00"
+            "time": "2025-05-14T13:19:31+00:00"
         },
         {
             "name": "dbp/relay-core-bundle",

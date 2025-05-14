@@ -73,7 +73,7 @@ class BlobService implements LoggerAwareInterface
 
         $now = BlobUtils::now();
         $fileData->setDateCreated($now);
-        $fileData->setLastAccess($now);
+        $fileData->setDateAccessed($now);
         $fileData->setDateModified($now);
 
         $errorPrefix = 'blob:create-file-data';
@@ -97,7 +97,7 @@ class BlobService implements LoggerAwareInterface
     public function updateFile(FileData $fileData, FileData $previousFileData): FileData
     {
         $now = BlobUtils::now();
-        $fileData->setLastAccess($now);
+        $fileData->setDateAccessed($now);
         $fileData->setDateModified($now);
 
         $errorPrefix = 'blob:patch-file-data';
@@ -152,7 +152,7 @@ class BlobService implements LoggerAwareInterface
         }
 
         if ($options[self::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION] ?? true) {
-            $fileData->setLastAccess(BlobUtils::now());
+            $fileData->setDateAccessed(BlobUtils::now());
             $this->saveFileData($fileData);
         }
 
