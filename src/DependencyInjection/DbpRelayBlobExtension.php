@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\DependencyInjection;
 
+use Dbp\Relay\BlobBundle\ApiPlatform\FileDataProvider;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\BlobUuidBinaryType;
 use Dbp\Relay\CoreBundle\Extension\ExtensionTrait;
@@ -33,6 +34,9 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
         $typeDefinition = $container->getParameter('doctrine.dbal.connection_factory.types');
         $typeDefinition['relay_blob_uuid_binary'] = ['class' => BlobUuidBinaryType::class];
         $container->setParameter('doctrine.dbal.connection_factory.types', $typeDefinition);
+
+        $definition = $container->getDefinition(FileDataProvider::class);
+        $definition->addMethodCall('setConfig', [$mergedConfig]);
     }
 
     public function prepend(ContainerBuilder $container): void

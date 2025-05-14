@@ -46,6 +46,10 @@ services:
     autowire: true
     autoconfigure: true
 
+  dbp.relay.blob.file_api:
+    alias: Dbp\Relay\BlobBundle\Api\FileApi
+    public: true
+
   Dbp\Relay\BlobBundle\TestUtils\TestDatasystemProviderService:
     autowire: true
     autoconfigure: true

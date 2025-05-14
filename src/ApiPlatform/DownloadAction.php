@@ -7,6 +7,7 @@ namespace Dbp\Relay\BlobBundle\ApiPlatform;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Dbp\Relay\CoreBundle\Rest\CustomControllerTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -38,8 +39,8 @@ class DownloadAction extends AbstractController
         $includeDeleteAt = $request->get('includeDeleteAt', '') === '1';
 
         return $this->blobService->getBinaryResponse($identifier, [
-            BlobService::DISABLE_OUTPUT_VALIDATION_OPTION => $disableOutputValidation,
-            BlobService::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
+            BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => $disableOutputValidation,
+            BlobApi::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
             BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => true,
         ]);
     }

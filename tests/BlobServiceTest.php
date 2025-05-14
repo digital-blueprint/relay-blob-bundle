@@ -63,7 +63,7 @@ class BlobServiceTest extends ApiTestCase
         $this->assertNotNull($fileData->getLastAccess());
         $this->assertNull($fileData->getDeleteAt());
         $this->assertNull($fileData->getNotifyEmail());
-        $this->assertNull($fileData->getContentUrl());
+        $this->assertNotNull($fileData->getContentUrl());
 
         $provider = $this->blobService->getDatasystemProvider($fileData);
         $this->assertTrue($provider->hasFile($fileData->getInternalBucketId(), $fileData->getIdentifier()));
@@ -88,7 +88,7 @@ class BlobServiceTest extends ApiTestCase
         $this->assertNotNull($fileData->getLastAccess());
         $this->assertNull($fileData->getDeleteAt());
         $this->assertNull($fileData->getNotifyEmail());
-        $this->assertNull($fileData->getContentUrl());
+        $this->assertNotNull($fileData->getContentUrl());
 
         $this->testConfig = BlobTestUtils::getTestConfig();
         $this->testConfig['file_integrity_checks'] = true;
@@ -108,7 +108,7 @@ class BlobServiceTest extends ApiTestCase
         $testBucketConfig = self::getTestBucketConfig();
         $originalFileData = $this->addTestFile();
 
-        $fileData = $this->blobService->getFile($originalFileData->getIdentifier());
+        $fileData = $this->blobService->getFileData($originalFileData->getIdentifier());
         $file = new File(__DIR__.'/'.self::TEST_FILE_NAME, true);
 
         $this->assertNotEmpty($fileData->getIdentifier());
@@ -133,11 +133,11 @@ class BlobServiceTest extends ApiTestCase
         $this->setUpBlobService();
 
         $originalFileData = $this->addTestFile();
-        $fileData = $this->blobService->getFile($originalFileData->getIdentifier());
+        $fileData = $this->blobService->getFileData($originalFileData->getIdentifier());
 
         $this->assertEquals(hash('sha256', $file->getContent()), $fileData->getFileHash());
 
-        $fileData = $this->blobService->getFile($originalFileData->getIdentifier(), [BlobService::BASE_URL_OPTION => 'http://www.example.com']);
+        $fileData = $this->blobService->getFileData($originalFileData->getIdentifier(), [BlobService::BASE_URL_OPTION => 'http://www.example.com']);
         $this->assertStringStartsWith('http://www.example.com/blob/files/'.$fileData->getIdentifier().'/download?', $fileData->getContentUrl());
     }
 
@@ -172,7 +172,7 @@ class BlobServiceTest extends ApiTestCase
         $this->assertNotNull($fileData->getLastAccess());
         $this->assertNull($fileData->getDeleteAt());
         $this->assertNull($fileData->getNotifyEmail());
-        $this->assertNull($fileData->getContentUrl());
+        $this->assertNotNull($fileData->getContentUrl());
         $provider = $this->blobService->getDatasystemProvider($fileData);
         $this->assertTrue($provider->hasFile($fileData->getInternalBucketId(), $fileData->getIdentifier()));
 
@@ -196,7 +196,7 @@ class BlobServiceTest extends ApiTestCase
         $this->assertNotNull($fileData->getLastAccess());
         $this->assertNull($fileData->getDeleteAt());
         $this->assertNull($fileData->getNotifyEmail());
-        $this->assertNull($fileData->getContentUrl());
+        $this->assertNotNull($fileData->getContentUrl());
     }
 
     /**

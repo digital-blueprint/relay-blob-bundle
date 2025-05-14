@@ -39,6 +39,7 @@ class FileDataProcessor extends AbstractDataProcessor
     {
         assert($data instanceof FileData);
         assert($previousData instanceof FileData);
+
         $fileData = $data;
         $previousFileData = $previousData;
 

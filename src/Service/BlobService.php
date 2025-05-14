@@ -14,10 +14,12 @@ use Dbp\Relay\BlobBundle\Event\DeleteFileDataByDeleteSuccessEvent;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Helper\BlobUuidBinaryType;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
+use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Dbp\Relay\CoreBundle\Doctrine\QueryHelper;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Helpers\Tools;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\Filter;
+use Dbp\Relay\CoreBundle\Rest\Query\Pagination\Pagination;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonSchema\Validator;
@@ -41,13 +43,8 @@ class BlobService implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
 
-    public const DISABLE_OUTPUT_VALIDATION_OPTION = 'disable_output_validation';
     public const UPDATE_LAST_ACCESS_TIMESTAMP_OPTION = 'update_last_access_timestamp';
     public const ASSERT_BUCKET_ID_EQUALS_OPTION = 'assert_bucket_id_equals';
-    public const PREFIX_STARTS_WITH_OPTION = 'prefix_starts_with';
-    public const PREFIX_OPTION = 'prefix_equals';
-    public const INCLUDE_DELETE_AT_OPTION = 'include_delete_at';
-    public const INCLUDE_FILE_CONTENTS_OPTION = 'include_file_contents';
     public const BASE_URL_OPTION = 'base_url';
 
     public function __construct(
@@ -66,7 +63,7 @@ class BlobService implements LoggerAwareInterface
     /**
      * @throws \Exception
      */
-    public function addFile(FileData $fileData): FileData
+    public function addFile(FileData $fileData, array $options = []): FileData
     {
         if ($fileData->getFile() === null) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'file is missing', 'blob:create-file-data-file-missing');
@@ -79,17 +76,13 @@ class BlobService implements LoggerAwareInterface
         $fileData->setLastAccess($now);
         $fileData->setDateModified($now);
 
-        if ($fileData->getRetentionDuration() !== null) {
-            $fileData->setDeleteAt($fileData->getDateCreated()->add(
-                new \DateInterval($fileData->getRetentionDuration())
-            ));
-        }
-
         $errorPrefix = 'blob:create-file-data';
         $this->ensureFileDataIsValid($fileData, $errorPrefix);
 
         // write all relevant data to tables
         $this->saveFileDataAndFile($fileData, $fileData->getFileSize(), $errorPrefix);
+
+        $fileData->setContentUrl($this->getDownloadUrl($options[self::BASE_URL_OPTION] ?? '', $fileData));
 
         /* dispatch POST success event */
         $successEvent = new AddFileDataByPostSuccessEvent($fileData);
@@ -127,7 +120,7 @@ class BlobService implements LoggerAwareInterface
      */
     public function removeFile(string $identifier, ?FileData $fileData = null): void
     {
-        $fileData ??= $this->getFileData($identifier);
+        $fileData ??= $this->getFileDataInternal($identifier);
         $this->removeFileDataAndFile($fileData, -$fileData->getFileSize());
 
         $deleteSuccessEvent = new DeleteFileDataByDeleteSuccessEvent($fileData);
@@ -137,9 +130,9 @@ class BlobService implements LoggerAwareInterface
     /**
      * @throws \Exception
      */
-    public function getFile(string $identifier, array $options = []): FileData
+    public function getFileData(string $identifier, array $options = []): FileData
     {
-        $fileData = $this->getFileData($identifier);
+        $fileData = $this->getFileDataInternal($identifier);
         $bucketConfig = $this->getBucketConfig($fileData);
 
         if (($bucketIdToMatch = $options[self::ASSERT_BUCKET_ID_EQUALS_OPTION] ?? null) !== null) {
@@ -148,11 +141,13 @@ class BlobService implements LoggerAwareInterface
             }
         }
 
-        if ($fileData->getDeleteAt() !== null && ($fileData->getDeleteAt() < BlobUtils::now() || !($options[self::INCLUDE_DELETE_AT_OPTION] ?? false))) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
+        if ($fileData->getDeleteAt() !== null
+            && (($options[BlobApi::INCLUDE_DELETE_AT_OPTION] ?? false) === false || $fileData->getDeleteAt() < BlobUtils::now())) {
+            throw ApiError::withDetails(Response::HTTP_NOT_FOUND,
+                'FileData was not found!', 'blob:file-data-not-found');
         }
 
-        if (!($options[self::DISABLE_OUTPUT_VALIDATION_OPTION] ?? false) && $bucketConfig->getOutputValidation()) {
+        if (!($options[BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION] ?? false) && $bucketConfig->getOutputValidation()) {
             $this->checkFileDataBeforeRetrieval($fileData, 'blob:get-file-data');
         }
 
@@ -161,7 +156,7 @@ class BlobService implements LoggerAwareInterface
             $this->saveFileData($fileData);
         }
 
-        $fileData->setContentUrl($options[self::INCLUDE_FILE_CONTENTS_OPTION] ?? false ?
+        $fileData->setContentUrl($options[BlobApi::INCLUDE_FILE_CONTENTS_OPTION] ?? false ?
             $this->getContentUrl($fileData) :
             $this->getDownloadUrl($options[self::BASE_URL_OPTION] ?? '', $fileData));
 
@@ -171,7 +166,8 @@ class BlobService implements LoggerAwareInterface
     /**
      * @throws \Exception
      */
-    public function getFiles(string $bucketIdentifier, array $options = [], int $currentPageNumber = 1, int $maxNumItemsPerPage = 30): array
+    public function getFiles(string $bucketIdentifier, ?Filter $filter = null, array $options = [],
+        int $currentPageNumber = 1, int $maxNumItemsPerPage = 30): array
     {
         // TODO: make the upper limit configurable
         if ($maxNumItemsPerPage > 1000) {
@@ -181,15 +177,13 @@ class BlobService implements LoggerAwareInterface
             );
         }
 
-        $internalBucketId = $this->getInternalBucketIdByBucketID($bucketIdentifier);
-        $prefix = $options[self::PREFIX_OPTION] ?? '';
-        $prefixStartsWith = $options[self::PREFIX_STARTS_WITH_OPTION] ?? false;
-        $includeDeleteAt = $options[self::INCLUDE_DELETE_AT_OPTION] ?? false;
-        $includeFileContents = $options[self::INCLUDE_FILE_CONTENTS_OPTION] ?? false;
-        $baseUrl = $options[self::BASE_URL_OPTION] ?? '';
+        $fileDataCollection = $this->getFileDataCollection(
+            $this->getInternalBucketIdByBucketID($bucketIdentifier), $filter,
+            Pagination::getFirstItemIndex($currentPageNumber, $maxNumItemsPerPage), $maxNumItemsPerPage,
+            $options[BlobApi::INCLUDE_DELETE_AT_OPTION] ?? false);
 
-        $fileDataCollection = $this->getFileDataCollection($internalBucketId,
-            $prefix, $currentPageNumber, $maxNumItemsPerPage, $prefixStartsWith, $includeDeleteAt);
+        $includeFileContents = $options[BlobApi::INCLUDE_FILE_CONTENTS_OPTION] ?? false;
+        $baseUrl = $options[self::BASE_URL_OPTION] ?? '';
 
         foreach ($fileDataCollection as $fileData) {
             assert($fileData instanceof FileData);
@@ -221,41 +215,24 @@ class BlobService implements LoggerAwareInterface
             );
         }
 
-        /* get url params */
-        $bucketID = $request->query->get('bucketIdentifier');
+        /* get the url query params */
+        $bucketIdentifier = $request->query->get('bucketIdentifier');
         $prefix = $request->query->get('prefix');
         $notifyEmail = $request->query->get('notifyEmail');
         $deleteIn = $request->query->get('deleteIn');
         $type = $request->query->get('type');
 
-        /* get params from body */
+        /* get the params from body */
         $metadata = $request->request->get('metadata');
         $fileName = $request->request->get('fileName');
         $fileHash = $request->request->get('fileHash');
         $metadataHash = $request->request->get('metadataHash');
 
-        /* get uploaded file */
+        /* get the file */
         /** @var ?UploadedFile $uploadedFile */
         $uploadedFile = $request->files->get('file');
 
-        /* check types of params */
-        assert(is_string($bucketID ?? ''));
-        assert(is_string($prefix ?? ''));
-        assert(is_string($fileName ?? ''));
-        assert(is_string($fileHash ?? ''));
-        assert(is_string($notifyEmail ?? ''));
-        assert(is_string($deleteIn ?? ''));
-        assert(is_string($type ?? ''));
-        assert(is_string($metadata ?? ''));
-
-        /* url decode according to RFC 3986 */
-        $bucketID = $bucketID ? rawurldecode($bucketID) : null;
-        $prefix = $prefix ? rawurldecode($prefix) : null;
-        $notifyEmail = $notifyEmail ? rawurldecode($notifyEmail) : null;
-        $deleteIn = $deleteIn ? rawurldecode($deleteIn) : null;
-        $type = $type ? rawurldecode($type) : null;
-
-        $fileData->setBucketId($bucketID);
+        $fileData->setBucketId($bucketIdentifier);
 
         if ($uploadedFile !== null) {
             if ($uploadedFile instanceof UploadedFile && $uploadedFile->getError() !== UPLOAD_ERR_OK) {
@@ -564,7 +541,7 @@ class BlobService implements LoggerAwareInterface
      */
     public function getBinaryResponse(string $fileIdentifier, array $options = []): Response
     {
-        $fileData = $this->getFile($fileIdentifier, $options);
+        $fileData = $this->getFileData($fileIdentifier, $options);
         $response = $this->getBinaryResponseInternal($fileData);
 
         $response->headers->set('Content-Type', $fileData->getMimeType());
@@ -574,7 +551,7 @@ class BlobService implements LoggerAwareInterface
         return $response;
     }
 
-    public function getFileData(string $identifier): FileData
+    private function getFileDataInternal(string $identifier): FileData
     {
         if (!Uuid::isValid($identifier)) {
             throw ApiError::withDetails(
@@ -604,36 +581,40 @@ class BlobService implements LoggerAwareInterface
         return $fileData;
     }
 
-    public function getFileDataCollection(string $internalBucketID, string $prefix, int $currentPageNumber, int $maxNumItemsPerPage, bool $startsWith, bool $includeDeleteAt)
+    /**
+     * @throws \Exception
+     */
+    public function getFileDataCollection(string $internalBucketID, ?Filter $filter = null, int $firstItemIndex = 0, int $maxNumItemsPerPage = 30, bool $includeDeleteAt = false)
     {
-        $query = $this->entityManager
-            ->getRepository(FileData::class)
-            ->createQueryBuilder('f');
-        $query = $query
-            ->where($query->expr()->eq('f.internalBucketId', ':bucketID'));
+        $FILE_DATA_ENTITY_ALIAS = 'f';
 
-        if ($startsWith) {
-            $query = $query->andWhere($query->expr()->like('f.prefix', ':prefix'))
-                ->setParameter('prefix', $prefix.'%');
-        } else {
-            $query = $query->andWhere($query->expr()->eq('f.prefix', ':prefix'))
-                ->setParameter('prefix', $prefix);
+        $queryBuilder = $this->entityManager
+            ->getRepository(FileData::class)
+            ->createQueryBuilder($FILE_DATA_ENTITY_ALIAS);
+        $queryBuilder = $queryBuilder
+            ->where($queryBuilder->expr()->eq("$FILE_DATA_ENTITY_ALIAS.internalBucketId", ':bucketID'));
+
+        if ($filter !== null) {
+            QueryHelper::addFilter($queryBuilder, $filter, $FILE_DATA_ENTITY_ALIAS);
         }
 
         if ($includeDeleteAt) {
-            $query = $query->andWhere($query->expr()->orX($query->expr()->gt('f.deleteAt', ':now'), $query->expr()->isNull('f.deleteAt')))
+            $queryBuilder = $queryBuilder->andWhere(
+                $queryBuilder->expr()->orX(
+                    $queryBuilder->expr()->gt("$FILE_DATA_ENTITY_ALIAS.deleteAt", ':now'),
+                    $queryBuilder->expr()->isNull("$FILE_DATA_ENTITY_ALIAS.deleteAt")))
                 ->setParameter('now', BlobUtils::now());
         } else {
-            $query = $query->andWhere($query->expr()->isNull('f.deleteAt'));
+            $queryBuilder = $queryBuilder->andWhere($queryBuilder->expr()->isNull('f.deleteAt'));
         }
 
-        $query = $query
+        $queryBuilder = $queryBuilder
             ->orderBy('f.dateCreated', 'ASC')
             ->setParameter('bucketID', $internalBucketID)
-            ->setFirstResult($maxNumItemsPerPage * ($currentPageNumber - 1))
+            ->setFirstResult($firstItemIndex)
             ->setMaxResults($maxNumItemsPerPage);
 
-        return $query->getQuery()->getResult();
+        return $queryBuilder->getQuery()->getResult();
     }
 
     /**

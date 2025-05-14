@@ -567,7 +567,6 @@ class FileData
     private string $mimeType = '';
 
     #[ORM\Column(type: 'string', length: 50)]
-    #[Groups(['BlobFiles:input'])]
     private ?string $internalBucketId = null;
 
     private ?string $bucketId = null;
@@ -583,9 +582,6 @@ class FileData
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['BlobFiles:output'])]
     private ?\DateTimeImmutable $dateModified = null;
-
-    #[Groups(['BlobFiles:input'])]
-    private ?string $retentionDuration = null;
 
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:update:exists'])]
@@ -688,16 +684,6 @@ class FileData
     public function setDateModified(?\DateTimeImmutable $dateModified): void
     {
         $this->dateModified = $dateModified;
-    }
-
-    public function getRetentionDuration(): ?string
-    {
-        return $this->retentionDuration;
-    }
-
-    public function setRetentionDuration(?string $retentionDuration): void
-    {
-        $this->retentionDuration = $retentionDuration;
     }
 
     public function getDeleteAt(): ?\DateTimeImmutable

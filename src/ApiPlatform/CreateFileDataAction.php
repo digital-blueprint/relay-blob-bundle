@@ -34,7 +34,6 @@ final class CreateFileDataAction extends AbstractController
             $this->requireAuthentication();
         }
 
-        /* check minimal needed parameters for presence and correctness */
         $errorPrefix = 'blob:create-file-data';
         SignatureUtils::checkSignature($errorPrefix, $this->config, $request, $request->query->all(), ['POST']);
 
@@ -45,10 +44,9 @@ final class CreateFileDataAction extends AbstractController
         }
 
         $fileData = $this->blobService->setUpFileDataFromRequest(new FileData(), $request, $errorPrefix);
-        $fileData = $this->blobService->addFile($fileData);
 
-        $fileData->setContentUrl($this->blobService->getDownloadUrl($request->getSchemeAndHttpHost(), $fileData));
-
-        return $fileData;
+        return $this->blobService->addFile($fileData, [
+            BlobService::BASE_URL_OPTION => $request->getSchemeAndHttpHost(),
+        ]);
     }
 }

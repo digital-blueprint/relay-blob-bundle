@@ -7,7 +7,7 @@
         "php": ">=8.2",
         "ext-json": "*",
         "api-platform/core": "^3.4 || ^4.1",
-        "dbp/relay-blob-library": "^0.2.0",
+        "dbp/relay-blob-library": "dev-main as 0.2.14",
         "dbp/relay-core-bundle": "^0.1.210",
         "doctrine/dbal": "^3.8 || ^4.0",
         "doctrine/doctrine-bundle": "^2.13",

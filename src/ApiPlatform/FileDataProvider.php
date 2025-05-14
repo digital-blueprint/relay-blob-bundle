@@ -8,13 +8,14 @@ use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
-use Dbp\Relay\CoreBundle\Exception\ApiError;
+use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
+use Dbp\Relay\CoreBundle\Rest\Options;
+use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @internal
@@ -58,28 +59,20 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
         $errorPrefix = 'blob:get-file-data-by-id';
         SignatureUtils::checkSignature($errorPrefix, $this->config, $request, $filters, ['GET', 'PATCH', 'DELETE']);
 
-        // if output validation is disabled, a user can get the data even if the system usually would throw and invalid data error
+        // if output validation is disabled, a user can get the data even if the system usually throws an invalid data error
         $disableOutputValidation = !$isGetRequest || ($filters['disableOutputValidation'] ?? null) === '1';
         $includeDeleteAt = ($filters['includeDeleteAt'] ?? null) === '1';
         $includeData = ($filters['includeData'] ?? null) === '1';
-        $bucketId = rawurldecode($filters['bucketIdentifier'] ?? '');
+        $bucketIdentifier = $filters['bucketIdentifier'];
 
-        $fileData = $this->blobService->getFile($id, [
-            BlobService::DISABLE_OUTPUT_VALIDATION_OPTION => $disableOutputValidation,
-            BlobService::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
+        $fileData = $this->blobService->getFileData($id, [
+            BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => $disableOutputValidation,
+            BlobApi::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
+            BlobApi::INCLUDE_FILE_CONTENTS_OPTION => $isGetRequest && $includeData,
             BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => $isGetRequest, // PATCH: saves for itself, DELETE: will be deleted anyway
-            BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION => $bucketId,
-            BlobService::INCLUDE_FILE_CONTENTS_OPTION => $isGetRequest && $includeData,
+            BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION => $bucketIdentifier,
             BlobService::BASE_URL_OPTION => $request->getSchemeAndHttpHost(),
         ]);
-
-        // don't throw on DELETE and PATCH requests
-        if ($isGetRequest) {
-            $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '');
-            if (!$includeDeleteAt && $fileData->getDeleteAt() !== null) {
-                throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'FileData was not found!', 'blob:file-data-not-found');
-            }
-        }
 
         return $fileData;
     }
@@ -97,18 +90,26 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
             ['GET']
         );
 
-        $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');
-        $prefix = rawurldecode($filters['prefix'] ?? '');
+        $filterTreeBuilder = FilterTreeBuilder::create(Options::getFilter($options)?->getRootNode());
+
+        // backwards compatibility (prefix and startsWith query parameters)
+        if (($prefixFilter = $filters['prefix'] ?? '') !== '') {
+            if (($filters['startsWith'] ?? null) === '1') {
+                $filterTreeBuilder->iStartsWith('prefix', $prefixFilter);
+            } else {
+                $filterTreeBuilder->equals('prefix', $prefixFilter);
+            }
+        }
+        $filter = $filterTreeBuilder->createFilter();
+
+        $bucketIdentifier = $filters['bucketIdentifier'];
         $includeData = ($filters['includeData'] ?? null) === '1';
-        $prefixStartsWith = rawurldecode($filters['startsWith'] ?? '') === '1';
-        $includeDeleteAt = rawurldecode($filters['includeDeleteAt'] ?? '') === '1';
+        $includeDeleteAt = ($filters['includeDeleteAt'] ?? null) === '1';
         $baseUrl = $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost();
 
-        return $this->blobService->getFiles($bucketID, [
-            BlobService::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
-            BlobService::PREFIX_OPTION => $prefix,
-            BlobService::PREFIX_STARTS_WITH_OPTION => $prefixStartsWith,
-            BlobService::INCLUDE_FILE_CONTENTS_OPTION => $includeData,
+        return $this->blobService->getFiles($bucketIdentifier, $filter, [
+            BlobApi::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
+            BlobApi::INCLUDE_FILE_CONTENTS_OPTION => $includeData,
             BlobService::BASE_URL_OPTION => $baseUrl,
         ], $currentPageNumber, $maxNumItemsPerPage);
     }

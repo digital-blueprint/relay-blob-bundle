@@ -8,10 +8,12 @@ use Dbp\Relay\BlobBundle\Api\FileApi;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\Service\DatasystemProviderService;
+use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 class BlobTestUtils
 {
@@ -38,9 +40,18 @@ class BlobTestUtils
     }
 
     public static function createTestFileApi(EntityManagerInterface $entityManager, ?array $testConfig = null,
-        ?EventSubscriberInterface $eventSubscriber = null): FileApi
+        ?EventSubscriberInterface $eventSubscriber = null, ?RequestStack $requestStack = null): FileApi
     {
-        return new FileApi(self::createTestBlobService($entityManager, $testConfig, $eventSubscriber));
+        $requestStack ??= new RequestStack();
+
+        return new FileApi(self::createTestBlobService($entityManager, $testConfig, $eventSubscriber), $requestStack);
+    }
+
+    public static function createBlobApi(string $bucketIdentifier, EntityManagerInterface $entityManager,
+        ?array $testConfig = null, ?EventSubscriberInterface $eventSubscriber = null, ?RequestStack $requestStack = null): BlobApi
+    {
+        return BlobApi::createFromBlobFileApi($bucketIdentifier,
+            self::createTestFileApi($entityManager, $testConfig, $eventSubscriber, $requestStack));
     }
 
     public static function getTestConfig(): array

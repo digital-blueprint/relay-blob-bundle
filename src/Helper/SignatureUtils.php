@@ -39,7 +39,7 @@ class SignatureUtils
     {
         try {
             $payload = SignatureTools::verify($secret, $signature);
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature invalid', 'blob:signature-invalid');
         }
 
@@ -75,94 +75,74 @@ class SignatureUtils
     public static function checkSignature(string $errorPrefix, ConfigurationService $config, Request $request,
         array $filters = [], array $allowedMethods = []): void
     {
-        $sig = $filters['sig'] ?? '';
-        $bucketID = $filters['bucketIdentifier'] ?? '';
-        $creationTime = $filters['creationTime'] ?? '';
-        $urlMethod = $filters['method'] ?? '';
-        $expiryDuration = $filters['expireIn'] ?? '';
+        $sig = $filters['sig'] ?? null;
+        $bucketID = $filters['bucketIdentifier'] ?? null;
+        $creationTime = $filters['creationTime'] ?? null;
+        $urlMethod = $filters['method'] ?? null;
+        $expiryDuration = $filters['expireIn'] ?? null;
 
-        // check type of params
-        assert(is_string($sig));
-        assert(is_string($bucketID));
-        assert(is_string($creationTime));
-        assert(is_string($urlMethod));
-        assert(is_string($expiryDuration));
-
-        // decode params according to RFC3986
-        $sig = rawurldecode($sig);
-        $bucketID = rawurldecode($bucketID);
-        $creationTime = rawurldecode($creationTime);
-        $urlMethod = rawurldecode($urlMethod);
-        $expiryDuration = rawurldecode($expiryDuration);
-
-        // check if signature is present
         if (!$sig) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'signature missing', $errorPrefix.'-missing-sig');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
+                'signature missing', $errorPrefix.'-missing-sig');
         }
-        // check if bucketID is present
         if (!$bucketID) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID is missing', $errorPrefix.'-missing-bucket-id');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
+                'bucketID is missing', $errorPrefix.'-missing-bucket-id');
         }
-        // check if creationTime is present
         if (!$creationTime) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'creationTime is missing', $errorPrefix.'-missing-creation-time');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
+                'creationTime is missing', $errorPrefix.'-missing-creation-time');
         }
-        // check if method in url is present
         if (!$urlMethod) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'method is missing', $errorPrefix.'-missing-method');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
+                'method is missing', $errorPrefix.'-missing-method');
         }
-        // check if bucket with given bucketID is configured
+
         $bucket = $config->getBucketById($bucketID);
-        if (!$bucket) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketID is not configured', $errorPrefix.'-bucket-id-not-configured');
+        if ($bucket === null) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
+                'bucketID is not configured', $errorPrefix.'-bucket-id-not-configured');
         }
+
+        $now = BlobUtils::now();
 
         if ($expiryDuration) {
-            if (BlobUtils::now()->add(new \DateInterval($expiryDuration)) > BlobUtils::now()->add(new \DateInterval($bucket->getLinkExpireTime()))) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'expireIn is too big!', $errorPrefix.'-expireIn-too-big');
+            if ($now->add(new \DateInterval($expiryDuration)) >
+                $now->add(new \DateInterval($bucket->getLinkExpireTime()))) {
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
+                    'expireIn is too big!', $errorPrefix.'-expireIn-too-big');
             }
             $linkExpiryTime = $expiryDuration;
         } else {
-            // get link expiry date and current date
             $linkExpiryTime = $bucket->getLinkExpireTime();
         }
-
-        // sub linkexpirytime from now to check if creationTime is too old
-        $now = BlobUtils::now();
-        $expiryTime = $now->sub(new \DateInterval($linkExpiryTime));
-
-        // add linkExpiryTime to now, and allow requests to be only linkExpiryTime in the future
-        $now = BlobUtils::now();
-        $futureBlock = $now->add(new \DateInterval($linkExpiryTime));
 
         $creationDateTime = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $creationTime);
         if ($creationDateTime === false) {
             // RFC3339_EXTENDED is broken in PHP
             $creationDateTime = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $creationTime);
+            if ($creationDateTime === false) {
+                throw ApiError::withDetails(Response::HTTP_FORBIDDEN,
+                    'Parameter creationTime is in a bad format!', 'blob:check-signature-creation-time-bad-format');
+            }
         }
 
-        // check if creationTime is in the correct format
-        if ($creationDateTime === false) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Parameter creationTime is in a bad format!', 'blob:check-signature-creation-time-bad-format');
-        }
+        $expiryTime = $now->sub(new \DateInterval($linkExpiryTime));
+        $futureBlock = $now->add(new \DateInterval($linkExpiryTime));
 
         // check if request is expired or in the future
         if ($creationDateTime < $expiryTime || $creationDateTime > $futureBlock) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Parameter creationTime too old', $errorPrefix.'-creation-time-too-old');
-        }
-
-        // check if bucket service is configured
-        if (!$bucket->getService()) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucketService is not configured', $errorPrefix.'-no-bucket-service');
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN,
+                'Parameter creationTime too old', $errorPrefix.'-creation-time-too-old');
         }
 
         // check if method specified in url and actual method used match
         $method = $request->getMethod();
         if ($urlMethod !== $method || !in_array($method, $allowedMethods, true)) {
-            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED, 'method is not suitable', $errorPrefix.'-method-not-suitable');
+            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED,
+                'method is not suitable', $errorPrefix.'-method-not-suitable');
         }
 
-        // verify signature and checksum
         SignatureUtils::verifyChecksumAndSignature($bucket->getKey(), $sig, $request->getRequestUri());
     }
 
@@ -176,7 +156,8 @@ class SignatureUtils
         return SignatureTools::generateSha256Checksum($url[0]);
     }
 
-    public static function getSignedUrl(string $url, string $secret, string $bucketIdentifier, string $method, array $additionalQueryParameters = [], ?string $creationTime = null): string
+    public static function getSignedUrl(string $url, string $secret, string $bucketIdentifier, string $method,
+        array $additionalQueryParameters = [], ?string $creationTime = null): string
     {
         $creationTime ??= rawurlencode(date('c'));
         $url = "$url?bucketIdentifier=$bucketIdentifier&creationTime=$creationTime&method=$method";

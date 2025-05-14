@@ -8,14 +8,12 @@ use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
-use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\NonUniqueResultException;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport;
@@ -434,15 +432,11 @@ class BlobChecks implements LoggerAwareInterface
                                     $exception->getMessage()), $out, $outFileName);
                             }
                             $wasFileRemovedDuringCheck = false;
-                            try {
-                                $this->blobService->getFileData($fileData->getIdentifier());
-                            } catch (ApiError $apiError) {
-                                if ($apiError->getStatusCode() === Response::HTTP_NOT_FOUND) {
-                                    if ($debug) {
-                                        self::output("File was removed meanwhile.\n", $out, $outFileName);
-                                    }
-                                    $wasFileRemovedDuringCheck = true;
+                            if (null === $this->entityManager->getRepository(FileData::class)->find($fileData->getIdentifier())) {
+                                if ($debug) {
+                                    self::output("File was removed meanwhile.\n", $out, $outFileName);
                                 }
+                                $wasFileRemovedDuringCheck = true;
                             }
                             if (false === $wasFileRemovedDuringCheck) {
                                 if (count($fileDataIdentifiersNotFoundInFileStorage) < $maxNumStoredIdentifiers) {
