@@ -249,6 +249,8 @@ class FileApi implements BlobFileApiInterface
     }
 
     /**
+     * @return BlobFile[]
+     *
      * @throws BlobApiError
      */
     public function getFiles(int $currentPage = 1, int $maxNumItemsPerPage = 30, array $options = []): array
@@ -269,7 +271,12 @@ class FileApi implements BlobFileApiInterface
                 $filter = $options['filter'] ?? null;
             }
 
-            return $this->blobService->getFiles($this->bucketIdentifier, $filter, $options, $currentPage, $maxNumItemsPerPage);
+            $blobFiles = [];
+            foreach ($this->blobService->getFiles($this->bucketIdentifier, $filter, $options, $currentPage, $maxNumItemsPerPage) as $fileData) {
+                $blobFiles[] = self::createBlobFileFromFileData($fileData);
+            }
+
+            return $blobFiles;
         } catch (\Exception $exception) {
             throw $this->createBlobApiError($exception, 'Getting files failed');
         }
