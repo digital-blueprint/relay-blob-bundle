@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.72
+
 - remove redundant "manual" rawurldecodes
 - have FileApi implement new Dbp\Relay\BlobLibrary\Api\BlobFileApiInterface from `dbp/relay-blob-library` v0.3.0 and adapt accordingly; make FileApi publicly accessible
 via alias `dbp.relay.blob.file_api`
