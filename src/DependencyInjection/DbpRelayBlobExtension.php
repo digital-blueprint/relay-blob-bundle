@@ -7,6 +7,7 @@ namespace Dbp\Relay\BlobBundle\DependencyInjection;
 use Dbp\Relay\BlobBundle\ApiPlatform\FileDataProvider;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\BlobUuidBinaryType;
+use Dbp\Relay\CoreBundle\Doctrine\DoctrineConfiguration;
 use Dbp\Relay\CoreBundle\Extension\ExtensionTrait;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -17,6 +18,8 @@ use Symfony\Component\HttpKernel\DependencyInjection\ConfigurableExtension;
 class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExtensionInterface
 {
     use ExtensionTrait;
+
+    public const ENTITY_MANAGER_ID = 'dbp_relay_blob_bundle';
 
     public function loadInternal(array $mergedConfig, ContainerBuilder $container): void
     {
@@ -44,43 +47,13 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
         $configs = $container->getExtensionConfig($this->getAlias());
         $config = $this->processConfiguration(new Configuration(), $configs);
 
-        foreach (['doctrine', 'doctrine_migrations'] as $extKey) {
-            if (!$container->hasExtension($extKey)) {
-                throw new \Exception("'".$this->getAlias()."' requires the '$extKey' bundle to be loaded!");
-            }
-        }
-
-        $container->prependExtensionConfig('doctrine', [
-            'dbal' => [
-                'connections' => [
-                    'dbp_relay_blob_bundle' => [
-                        'url' => $config['database_url'] ?? 'sqlite:///var/dbp_relay_blob_test.db',
-                    ],
-                ],
-            ],
-            'orm' => [
-                'entity_managers' => [
-                    'dbp_relay_blob_bundle' => [
-                        'naming_strategy' => 'doctrine.orm.naming_strategy.underscore_number_aware',
-                        'connection' => 'dbp_relay_blob_bundle',
-                        'mappings' => [
-                            'dbp_relay_blob' => [
-                                'type' => 'attribute',
-                                'dir' => __DIR__.'/../Entity',
-                                'prefix' => 'Dbp\Relay\BlobBundle\Entity',
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-        ]);
-
-        $this->registerEntityManager($container, 'dbp_relay_blob_bundle');
-
-        $container->prependExtensionConfig('doctrine_migrations', [
-            'migrations_paths' => [
-                'Dbp\Relay\BlobBundle\Migrations' => __DIR__.'/../Migrations',
-            ],
-        ]);
+        DoctrineConfiguration::prependEntityManagerConfig($container, self::ENTITY_MANAGER_ID,
+            $config[Configuration::DATABASE_URL] ?? '',
+            __DIR__.'/../Entity',
+            'Dbp\Relay\BlobBundle\Entity',
+            self::ENTITY_MANAGER_ID);
+        DoctrineConfiguration::prependMigrationsConfig($container,
+            __DIR__.'/../Migrations',
+            'Dbp\Relay\BlobBundle\Migrations');
     }
 }

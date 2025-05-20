@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b5589ee8dac980abf16c5be69d767f09",
+    "content-hash": "a52ccf15eaa81fe3a4db8b636336f442",
     "packages": [
         {
             "name": "api-platform/core",
@@ -283,16 +283,16 @@
         },
         {
             "name": "dbp/relay-blob-library",
-            "version": "dev-main",
+            "version": "v0.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/digital-blueprint/relay-blob-library.git",
-                "reference": "f155171e31a2c2ff3cb8ce753bd468706992f767"
+                "reference": "419f95c5ed67014610ec9bdfed559dc0a3e9da6e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/digital-blueprint/relay-blob-library/zipball/f155171e31a2c2ff3cb8ce753bd468706992f767",
-                "reference": "f155171e31a2c2ff3cb8ce753bd468706992f767",
+                "url": "https://api.github.com/repos/digital-blueprint/relay-blob-library/zipball/419f95c5ed67014610ec9bdfed559dc0a3e9da6e",
+                "reference": "419f95c5ed67014610ec9bdfed559dc0a3e9da6e",
                 "shasum": ""
             },
             "require": {
@@ -313,7 +313,6 @@
                 "phpstan/phpstan-symfony": "^2.0",
                 "phpunit/phpunit": "^10.3"
             },
-            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -324,25 +323,25 @@
             "license": [
                 "AGPL-3.0-or-later"
             ],
-            "description": "PHP helper library for interaction with the relay-blob-bundle.",
+            "description": "PHP helper library for interaction with the dbp/relay-blob-bundle.",
             "support": {
                 "issues": "https://github.com/digital-blueprint/relay-blob-library/issues",
-                "source": "https://github.com/digital-blueprint/relay-blob-library/tree/main"
+                "source": "https://github.com/digital-blueprint/relay-blob-library/tree/v0.3.0"
             },
-            "time": "2025-05-14T13:19:31+00:00"
+            "time": "2025-05-20T09:53:23+00:00"
         },
         {
             "name": "dbp/relay-core-bundle",
-            "version": "v0.1.211",
+            "version": "v0.1.212",
             "source": {
                 "type": "git",
                 "url": "https://github.com/digital-blueprint/relay-core-bundle.git",
-                "reference": "ecccb2e882b31a77a338e21baa9dbe182c2f8472"
+                "reference": "4e1ee1e68b30a3338e1c72def11d808b0c005823"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/digital-blueprint/relay-core-bundle/zipball/ecccb2e882b31a77a338e21baa9dbe182c2f8472",
-                "reference": "ecccb2e882b31a77a338e21baa9dbe182c2f8472",
+                "url": "https://api.github.com/repos/digital-blueprint/relay-core-bundle/zipball/4e1ee1e68b30a3338e1c72def11d808b0c005823",
+                "reference": "4e1ee1e68b30a3338e1c72def11d808b0c005823",
                 "shasum": ""
             },
             "require": {
@@ -411,12 +410,13 @@
                 "phpstan/phpstan": "^2.0.0",
                 "phpstan/phpstan-phpunit": "^2.0.0",
                 "phpstan/phpstan-symfony": "^2.0.0",
-                "phpunit/phpunit": "^10.1",
+                "phpunit/phpunit": "^11.1",
                 "symfony/browser-kit": "^6.4",
                 "symfony/doctrine-messenger": "^6.4",
                 "symfony/http-client": "^6.4",
                 "symfony/monolog-bridge": "^6.4",
-                "symfony/phpunit-bridge": "^7.0.6"
+                "symfony/phpunit-bridge": "^7.0.6",
+                "symfony/runtime": "^6.4"
             },
             "type": "symfony-bundle",
             "autoload": {
@@ -431,9 +431,9 @@
             "description": "The core bundle of the Relay API gateway",
             "support": {
                 "issues": "https://github.com/digital-blueprint/relay-core-bundle/issues",
-                "source": "https://github.com/digital-blueprint/relay-core-bundle/tree/v0.1.211"
+                "source": "https://github.com/digital-blueprint/relay-core-bundle/tree/v0.1.212"
             },
-            "time": "2025-04-24T12:36:25+00:00"
+            "time": "2025-05-19T09:02:19+00:00"
         },
         {
             "name": "doctrine/collections",
@@ -12568,18 +12568,9 @@
             "time": "2024-09-08T18:53:08+00:00"
         }
     ],
-    "aliases": [
-        {
-            "package": "dbp/relay-blob-library",
-            "version": "dev-main",
-            "alias": "0.2.14",
-            "alias_normalized": "0.2.14.0"
-        }
-    ],
+    "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "dbp/relay-blob-library": 20
-    },
+    "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {

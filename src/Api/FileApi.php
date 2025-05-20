@@ -260,11 +260,13 @@ class FileApi implements BlobFileApiInterface
             if (($prefixFilter = $options[BlobApi::PREFIX_OPTION] ?? null) !== null) {
                 $filterTreeBuilder = FilterTreeBuilder::create();
                 if ($options[BlobApi::PREFIX_STARTS_WITH_OPTION] ?? false) {
-                    FilterTreeBuilder::create()->iStartsWith('prefix', $prefixFilter);
+                    $filterTreeBuilder->iStartsWith('prefix', $prefixFilter);
                 } else {
-                    FilterTreeBuilder::create()->equals('prefix', $prefixFilter);
+                    $filterTreeBuilder->equals('prefix', $prefixFilter);
                 }
                 $filter = $filterTreeBuilder->createFilter();
+            } else {
+                $filter = $options['filter'] ?? null;
             }
 
             return $this->blobService->getFiles($this->bucketIdentifier, $filter, $options, $currentPage, $maxNumItemsPerPage);

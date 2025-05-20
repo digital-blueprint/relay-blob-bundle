@@ -75,17 +75,17 @@ class SignatureUtils
     public static function checkSignature(string $errorPrefix, ConfigurationService $config, Request $request,
         array $filters = [], array $allowedMethods = []): void
     {
-        $sig = $filters['sig'] ?? null;
-        $bucketID = $filters['bucketIdentifier'] ?? null;
+        $signature = $filters['sig'] ?? null;
+        $bucketIdentifier = $filters['bucketIdentifier'] ?? null;
         $creationTime = $filters['creationTime'] ?? null;
         $urlMethod = $filters['method'] ?? null;
         $expiryDuration = $filters['expireIn'] ?? null;
 
-        if (!$sig) {
+        if (!$signature) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
                 'signature missing', $errorPrefix.'-missing-sig');
         }
-        if (!$bucketID) {
+        if (!$bucketIdentifier) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
                 'bucketID is missing', $errorPrefix.'-missing-bucket-id');
         }
@@ -98,7 +98,7 @@ class SignatureUtils
                 'method is missing', $errorPrefix.'-missing-method');
         }
 
-        $bucket = $config->getBucketById($bucketID);
+        $bucket = $config->getBucketById($bucketIdentifier);
         if ($bucket === null) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
                 'bucketID is not configured', $errorPrefix.'-bucket-id-not-configured');
@@ -136,14 +136,14 @@ class SignatureUtils
                 'Parameter creationTime too old', $errorPrefix.'-creation-time-too-old');
         }
 
-        // check if method specified in url and actual method used match
+        // check if the method specified in url and actual method used match
         $method = $request->getMethod();
         if ($urlMethod !== $method || !in_array($method, $allowedMethods, true)) {
             throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED,
                 'method is not suitable', $errorPrefix.'-method-not-suitable');
         }
 
-        SignatureUtils::verifyChecksumAndSignature($bucket->getKey(), $sig, $request->getRequestUri());
+        SignatureUtils::verifyChecksumAndSignature($bucket->getKey(), $signature, $request->getRequestUri());
     }
 
     /**

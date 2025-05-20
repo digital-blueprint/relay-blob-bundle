@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- remove redundant "manual" rawurldecodes
+- have FileApi implement new Dbp\Relay\BlobLibrary\Api\BlobFileApiInterface from `dbp/relay-blob-library` v0.3.0 and adapt accordingly; make FileApi publicly accessible
+via alias `dbp.relay.blob.file_api`
+- add support for query filters for the get file collection endpoint
 - rework the file and metadata integrity check and reports
 - add check bucket size command
 - add find orphan storage files command

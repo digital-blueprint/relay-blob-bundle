@@ -10,6 +10,8 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 class Configuration implements ConfigurationInterface
 {
+    public const DATABASE_URL = 'database_url';
+
     public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder('dbp_relay_blob');
@@ -19,7 +21,7 @@ class Configuration implements ConfigurationInterface
         $treeBuilder
             ->getRootNode()
                 ->children()
-                    ->scalarNode('database_url')
+                    ->scalarNode(self::DATABASE_URL)
                         ->isRequired()
                         // ->cannotBeEmpty()
                         ->defaultValue('%env(resolve:BLOB_DATABASE_NAME)%')

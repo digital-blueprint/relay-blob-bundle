@@ -39,19 +39,13 @@ class BlobTestUtils
         return new BlobService($entityManager, $configurationService, $datasystemProviderService, $eventDispatcher);
     }
 
-    public static function createTestFileApi(EntityManagerInterface $entityManager, ?array $testConfig = null,
-        ?EventSubscriberInterface $eventSubscriber = null, ?RequestStack $requestStack = null): FileApi
-    {
-        $requestStack ??= new RequestStack();
-
-        return new FileApi(self::createTestBlobService($entityManager, $testConfig, $eventSubscriber), $requestStack);
-    }
-
-    public static function createBlobApi(string $bucketIdentifier, EntityManagerInterface $entityManager,
+    public static function createLocalModeBlobApi(string $bucketIdentifier, EntityManagerInterface $entityManager,
         ?array $testConfig = null, ?EventSubscriberInterface $eventSubscriber = null, ?RequestStack $requestStack = null): BlobApi
     {
-        return BlobApi::createFromBlobFileApi($bucketIdentifier,
-            self::createTestFileApi($entityManager, $testConfig, $eventSubscriber, $requestStack));
+        $requestStack ??= new RequestStack();
+        $fileApi = new FileApi(self::createTestBlobService($entityManager, $testConfig, $eventSubscriber), $requestStack);
+
+        return BlobApi::createFromBlobFileApi($bucketIdentifier, $fileApi);
     }
 
     public static function getTestConfig(): array
