@@ -20,15 +20,34 @@ use Symfony\Component\HttpFoundation\Response;
 
 readonly class FileApi implements BlobFileApiInterface
 {
-    private static function generateTempFilePath(): string|false
+    private static function generateTempFilePath(): string
     {
-        return tempnam(sys_get_temp_dir(), 'dbp_relay_blob_bundle_tempfile_');
+        $tempFilePath = tempnam(sys_get_temp_dir(), 'dbp_relay_blob_bundle_tempfile_');
+        if ($tempFilePath === false) {
+            throw new \RuntimeException('Could not create temporary file path');
+        }
+
+        return $tempFilePath;
+    }
+
+    /**
+     * @return resource
+     */
+    private static function openTempFilePath(string $tempFilePath): mixed
+    {
+        $tempFileResource = fopen($tempFilePath, 'w');
+        if ($tempFileResource === false) {
+            throw new \RuntimeException('Could not open temporary file for writing');
+        }
+
+        return $tempFileResource;
     }
 
     /**
      * @throws BlobApiError
      */
-    private static function createOrUpdateFileDataFromBlobFile(BlobFile $blobFile, ?FileData $fileData = null): FileData
+    private static function createOrUpdateFileDataFromBlobFile(BlobFile $blobFile,
+        ?string &$tempFilePath, ?FileData $fileData = null): FileData
     {
         $fileData ??= new FileData();
         if ($blobFile->getIdentifier()) {
@@ -54,31 +73,35 @@ readonly class FileApi implements BlobFileApiInterface
                 $symfonyFile = $file;
             } else {
                 if ($file instanceof \SplFileInfo) {
-                    $tempFilePath = $file->getPathname();
+                    $filePath = $file->getPathname();
                 } elseif (is_string($file)) {
                     $tempFilePath = self::generateTempFilePath();
-                    file_put_contents($tempFilePath, $file);
+                    $filePath = $tempFilePath;
+                    if (file_put_contents($tempFilePath, $file) === false) {
+                        throw new \RuntimeException('Could not write file to temporary file path');
+                    }
                 } elseif ($file instanceof StreamInterface) {
                     $tempFilePath = self::generateTempFilePath();
-                    $tempFile = fopen($tempFilePath, 'w');
+                    $tempFileResource = self::openTempFilePath($tempFilePath);
+                    $filePath = $tempFilePath;
                     while (false === $file->eof()) {
                         $chunk = $file->read(1024);
-                        fwrite($tempFile, $chunk);
+                        fwrite($tempFileResource, $chunk);
                     }
-                    fclose($tempFile);
+                    fclose($tempFileResource);
                 } elseif (is_resource($file)) {
                     $tempFilePath = self::generateTempFilePath();
-                    $tempFile = fopen($tempFilePath, 'w');
+                    $tempFileResource = self::openTempFilePath($tempFilePath);
+                    $filePath = $tempFilePath;
                     while (!feof($file)) {
                         $chunk = fread($file, 1024);
-                        fwrite($tempFile, $chunk);
+                        fwrite($tempFileResource, $chunk);
                     }
-                    fclose($tempFile);
-                    fclose($file);
+                    fclose($tempFileResource);
                 } else {
                     throw new BlobApiError('unsupported file object', BlobApiError::REQUIRED_PARAMETER_MISSING);
                 }
-                $symfonyFile = new File($tempFilePath);
+                $symfonyFile = new File($filePath);
             }
             $fileData->setFile($symfonyFile);
         }
@@ -157,17 +180,24 @@ readonly class FileApi implements BlobFileApiInterface
      */
     public function addFile(string $bucketIdentifier, BlobFile $blobFile, array $options = []): BlobFile
     {
-        $fileData = self::createOrUpdateFileDataFromBlobFile($blobFile);
-        $fileData->setBucketId($bucketIdentifier);
-
-        if ($blobBaseUrl = $this->tryGetBlobBaseUrlFromCurrentRequest()) {
-            $options[BlobService::BASE_URL_OPTION] = $blobBaseUrl;
-        }
-
         try {
-            return self::createBlobFileFromFileData($this->blobService->addFile($fileData, $options));
-        } catch (\Exception $exception) {
-            throw $this->createBlobApiError($exception, 'Adding file failed');
+            $tempFilePath = null;
+            $fileData = self::createOrUpdateFileDataFromBlobFile($blobFile, $tempFilePath);
+            $fileData->setBucketId($bucketIdentifier);
+
+            if ($blobBaseUrl = $this->tryGetBlobBaseUrlFromCurrentRequest()) {
+                $options[BlobService::BASE_URL_OPTION] = $blobBaseUrl;
+            }
+
+            try {
+                return self::createBlobFileFromFileData($this->blobService->addFile($fileData, $options));
+            } catch (\Exception $exception) {
+                throw $this->createBlobApiError($exception, 'Adding file failed');
+            }
+        } finally {
+            if ($tempFilePath !== null) {
+                @unlink($tempFilePath);
+            }
         }
     }
 
@@ -177,6 +207,7 @@ readonly class FileApi implements BlobFileApiInterface
     public function updateFile(string $bucketIdentifier, BlobFile $blobFile, array $options = []): BlobFile
     {
         try {
+            $tempFilePath = null;
             $options[BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION] = false;
             $options[BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION] = true;
             $options[BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION] = $bucketIdentifier;
@@ -184,13 +215,17 @@ readonly class FileApi implements BlobFileApiInterface
             $fileData = $this->getFileData($bucketIdentifier, $blobFile->getIdentifier(), $options);
             $previousFileData = clone $fileData;
 
-            $fileData = self::createOrUpdateFileDataFromBlobFile($blobFile, $fileData);
+            $fileData = self::createOrUpdateFileDataFromBlobFile($blobFile, $tempFilePath, $fileData);
 
             return self::createBlobFileFromFileData(
                 $this->blobService->updateFile($fileData, $previousFileData)
             );
         } catch (\Exception $exception) {
             throw $this->createBlobApiError($exception, 'Updating file failed');
+        } finally {
+            if ($tempFilePath !== null) {
+                @unlink($tempFilePath);
+            }
         }
     }
 

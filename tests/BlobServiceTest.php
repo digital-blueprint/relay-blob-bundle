@@ -30,6 +30,13 @@ class BlobServiceTest extends ApiTestCase
         $this->setUpBlobService();
     }
 
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        BlobTestUtils::tearDown();
+    }
+
     protected function setUpBlobService(): void
     {
         $this->testEntityManager = new TestEntityManager(self::bootKernel()->getContainer());

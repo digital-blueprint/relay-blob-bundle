@@ -12,6 +12,7 @@ use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
+use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\TestUtils\TestClient;
@@ -61,6 +62,13 @@ class CurlGetTest extends ApiTestCase
                 'retention' => 'P1M',
             ],
         ];
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        BlobTestUtils::tearDown();
     }
 
     protected function setUpTestClient(): Client

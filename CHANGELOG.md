@@ -4,6 +4,7 @@
 
 - rework SignatureUtils
 - adapt to blob library updates
+- do cleanup of temporary unit test files
 
 ## v0.1.75
 

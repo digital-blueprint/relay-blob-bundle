@@ -23,6 +23,13 @@ class ApiTest extends AbstractApiTest
         BlobApiTest::setUp($this->testClient->getContainer());
     }
 
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        BlobApiTest::tearDown();
+    }
+
     public function testGetFileDataByIdNotFound(): void
     {
         $bucketConfig = self::getTestBucketConfig();

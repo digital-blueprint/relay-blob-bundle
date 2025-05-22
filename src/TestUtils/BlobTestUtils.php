@@ -48,6 +48,11 @@ class BlobTestUtils
         return BlobApi::createFromBlobFileApi($bucketIdentifier, $fileApi);
     }
 
+    public static function tearDown(): void
+    {
+        TestDatasystemProviderService::cleanup();
+    }
+
     public static function getTestConfig(): array
     {
         return [

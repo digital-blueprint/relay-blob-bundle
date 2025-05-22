@@ -15,7 +15,8 @@ class BlobApiTest
         return TestEntityManager::setUpEntityManager($container, DbpRelayBlobExtension::ENTITY_MANAGER_ID);
     }
 
-    public static function tearDown(ContainerInterface $container): void
+    public static function tearDown(): void
     {
+        TestDatasystemProviderService::cleanup();
     }
 }

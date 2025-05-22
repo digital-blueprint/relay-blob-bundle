@@ -37,6 +37,13 @@ class FileApiTest extends ApiTestCase
             BlobTestUtils::createTestBlobService($this->testEntityManager->getEntityManager()), $this->requestStack);
     }
 
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        BlobTestUtils::tearDown();
+    }
+
     /**
      * @throws BlobApiError
      */
