@@ -13,59 +13,6 @@ use Symfony\Component\HttpFoundation\Response;
 class SignatureUtils
 {
     /**
-     * Create a signature (JWS token).
-     *
-     * @param string $secret  to create the (symmetric) JWK from
-     * @param array  $payload to create the token from
-     *
-     * @throws \JsonException
-     */
-    public static function createSignature(string $secret, array $payload): string
-    {
-        return SignatureTools::create($secret, $payload);
-    }
-
-    /**
-     * Verify a signature (JWS token).
-     *
-     * @param string $secret    to create the (symmetric) JWK from
-     * @param string $signature to verify
-     *
-     * @return array extracted payload from token
-     *
-     * @throws ApiError
-     */
-    public static function verifySignature(string $secret, string $signature): array
-    {
-        try {
-            $payload = SignatureTools::verify($secret, $signature);
-        } catch (\Exception) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature invalid', 'blob:signature-invalid');
-        }
-
-        return $payload;
-    }
-
-    /**
-     * Verify a JWS token and the checksum inside the signature.
-     *
-     * @param string $secret     to create the (symmetric) JWK from
-     * @param string $sig        to verify
-     * @param string $requestUri incoming request URI
-     *
-     * @throws ApiError
-     */
-    private static function verifyChecksumAndSignature(string $secret, string $sig, string $requestUri): void
-    {
-        $data = self::verifySignature($secret, $sig);
-
-        // check checksum of only url since no body is expected
-        if (!array_key_exists('ucs', $data) || $data['ucs'] !== self::generateSha256FromRequest($requestUri)) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Checksum ucs invalid', 'blob:checksum-invalid');
-        }
-    }
-
-    /**
      * Checks if the parameters bucketID, creationTime, method and sig are present and valid,
      * either using filter or the request itself.
      * Also checks if the creationTime is too old, the bucket with given ID is configured, and if the specified method is allowed.
@@ -130,7 +77,7 @@ class SignatureUtils
         $expiryTime = $now->sub(new \DateInterval($linkExpiryTime));
         $futureBlock = $now->add(new \DateInterval($linkExpiryTime));
 
-        // check if request is expired or in the future
+        // check if the request is expired or in the future
         if ($creationDateTime < $expiryTime || $creationDateTime > $futureBlock) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN,
                 'Parameter creationTime too old', $errorPrefix.'-creation-time-too-old');
@@ -143,17 +90,9 @@ class SignatureUtils
                 'method is not suitable', $errorPrefix.'-method-not-suitable');
         }
 
-        SignatureUtils::verifyChecksumAndSignature($bucket->getKey(), $signature, $request->getRequestUri());
-    }
-
-    /**
-     * Generates a sha256 hash from the request url except with the trailing &sig part cut out.
-     */
-    public static function generateSha256FromRequest(string $requestUri): string
-    {
-        $url = explode('&sig=', $requestUri);
-
-        return SignatureTools::generateSha256Checksum($url[0]);
+        if (false === SignatureUtils::isSignatureValid($bucket->getKey(), $signature, $request->getRequestUri())) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature invalid', 'blob:signature-invalid');
+        }
     }
 
     public static function getSignedUrl(string $url, string $secret, string $bucketIdentifier, string $method,
@@ -171,11 +110,38 @@ class SignatureUtils
         ];
 
         try {
-            $signature = self::createSignature($secret, $payload);
+            $signature = SignatureTools::createSignature($secret, $payload);
         } catch (\JsonException) {
             throw new \RuntimeException('JSON encoding payload failed');
         }
 
         return $url.'&sig='.$signature;
+    }
+
+    private static function generateSha256FromRequestUri(string $requestUri): string
+    {
+        $url = explode('&sig=', $requestUri);
+
+        return SignatureTools::generateSha256Checksum($url[0]);
+    }
+
+    /**
+     * Verify a JWS token and the checksum inside the signature.
+     *
+     * @param string $bucketKey  to create the (symmetric) JWK from
+     * @param string $signature  to verify
+     * @param string $requestUri incoming request URI
+     */
+    private static function isSignatureValid(string $bucketKey, string $signature, string $requestUri): bool
+    {
+        try {
+            $payload = SignatureTools::verifySignature($bucketKey, $signature);
+            if (array_key_exists('ucs', $payload) && $payload['ucs'] === self::generateSha256FromRequestUri($requestUri)) {
+                return true;
+            }
+        } catch (\Exception) {
+        }
+
+        return false;
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Tests;
 
-use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
+use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use PHPUnit\Framework\TestCase;
 
 class SignedPayloadTest extends TestCase
@@ -21,9 +21,9 @@ class SignedPayloadTest extends TestCase
                 'prefix' => 'MyApp/MyShare',
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
-            $data = SignatureUtils::verifySignature($secret, $token);
+            $data = SignatureTools::verifySignature($secret, $token);
             $this->assertIsArray($data);
             $this->assertEquals($payload['bucketID'], $data['bucketID']);
             $this->assertEquals($payload['creationTime'], $data['creationTime']);
@@ -48,9 +48,9 @@ class SignedPayloadTest extends TestCase
                 'metadata' => [],
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
-            $data = SignatureUtils::verifySignature($secret, $token);
+            $data = SignatureTools::verifySignature($secret, $token);
             $this->assertEquals($payload['bucketID'], $data['bucketID']);
             $this->assertEquals($payload['creationTime'], $data['creationTime']);
             $this->assertEquals($payload['prefix'], $data['prefix']);
@@ -74,9 +74,9 @@ class SignedPayloadTest extends TestCase
                 'prefix' => 'MyApp/MyShare',
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
-            $data = SignatureUtils::verifySignature($secret, $token);
+            $data = SignatureTools::verifySignature($secret, $token);
             $this->assertIsArray($data);
             $this->assertEquals($payload['bucketID'], $data['bucketID']);
             $this->assertEquals($payload['creationTime'], $data['creationTime']);

@@ -13,8 +13,8 @@ use Dbp\Relay\BlobBundle\Event\ChangeFileDataByPatchSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\DeleteFileDataByDeleteSuccessEvent;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Helper\BlobUuidBinaryType;
-use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobLibrary\Api\BlobApi;
+use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Doctrine\QueryHelper;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Helpers\Tools;
@@ -58,6 +58,11 @@ class BlobService implements LoggerAwareInterface
     public function checkConnection(): void
     {
         $this->entityManager->getConnection()->getNativeConnection();
+    }
+
+    public function getConfigurationService(): ConfigurationService
+    {
+        return $this->configurationService;
     }
 
     /**
@@ -118,9 +123,17 @@ class BlobService implements LoggerAwareInterface
     /**
      * @throws \Exception
      */
-    public function removeFile(string $identifier, ?FileData $fileData = null): void
+    public function removeFile(string $identifier, ?FileData $fileData = null, array $options = []): void
     {
         $fileData ??= $this->getFileDataInternal($identifier);
+        $bucketConfig = $this->getBucketConfig($fileData);
+
+        if (($bucketIdToMatch = $options[self::ASSERT_BUCKET_ID_EQUALS_OPTION] ?? null) !== null) {
+            if ($bucketConfig->getBucketId() !== $bucketIdToMatch) {
+                throw new ApiError(Response::HTTP_FORBIDDEN);
+            }
+        }
+
         $this->removeFileDataAndFile($fileData, -$fileData->getFileSize());
 
         $deleteSuccessEvent = new DeleteFileDataByDeleteSuccessEvent($fileData);
@@ -463,7 +476,7 @@ class BlobService implements LoggerAwareInterface
     }
 
     /**
-     * Get HTTP link to binary content.
+     * Creates an HTTP link to binary file content.
      *
      * @param FileData $fileData fileData for which a link should be provided
      *
@@ -473,12 +486,8 @@ class BlobService implements LoggerAwareInterface
     {
         $bucketConfig = $this->getBucketConfig($fileData);
 
-        return $baseurl.SignatureUtils::getSignedUrl(
-            '/blob/files/'.$fileData->getIdentifier().'/download',
-            $bucketConfig->getKey(),
-            $bucketConfig->getBucketId(),
-            Request::METHOD_GET
-        );
+        return SignatureTools::createSignedUrl($bucketConfig->getBucketId(), $bucketConfig->getKey(),
+            Request::METHOD_GET, $baseurl, $fileData->getIdentifier(), 'download');
     }
 
     /**

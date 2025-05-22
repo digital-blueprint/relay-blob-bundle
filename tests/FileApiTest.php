@@ -21,6 +21,7 @@ use Symfony\Component\Uid\Uuid;
 
 class FileApiTest extends ApiTestCase
 {
+    private const BUCKET_IDENTIFIER = 'test-bucket';
     private ?FileApi $fileApi = null;
     private ?RequestStack $requestStack = null;
     private TestEntityManager $testEntityManager;
@@ -34,7 +35,6 @@ class FileApiTest extends ApiTestCase
         $this->requestStack->push(Request::create('https://example.com/blob/files'));
         $this->fileApi = new FileApi(
             BlobTestUtils::createTestBlobService($this->testEntityManager->getEntityManager()), $this->requestStack);
-        $this->fileApi->setBucketIdentifier('test-bucket');
     }
 
     /**
@@ -75,7 +75,7 @@ class FileApiTest extends ApiTestCase
         $blobFile->setFileName('test.txt');
         $blobFile->setFile('data');
 
-        $blobFile = $this->fileApi->addFile($blobFile);
+        $blobFile = $this->fileApi->addFile(self::BUCKET_IDENTIFIER, $blobFile);
         $this->assertTrue(Uuid::isValid($blobFile->getIdentifier()));
         $this->assertFileIsFound($blobFile->getIdentifier());
         $this->assertFileContentsEquals($blobFile->getIdentifier(), 'data');
@@ -92,7 +92,7 @@ class FileApiTest extends ApiTestCase
         $blobFile->setFileName('test.txt');
         $blobFile->setFile(fopen(__DIR__.'/test.txt', 'r'));
 
-        $blobFile = $this->fileApi->addFile($blobFile);
+        $blobFile = $this->fileApi->addFile(self::BUCKET_IDENTIFIER, $blobFile);
         $this->assertTrue(Uuid::isValid($blobFile->getIdentifier()));
         $this->assertFileIsFound($blobFile->getIdentifier());
         $this->assertFileContentsEquals($blobFile->getIdentifier(), file_get_contents(__DIR__.'/test.txt'));
@@ -108,7 +108,7 @@ class FileApiTest extends ApiTestCase
         $blobFile->setFileName('test.txt');
         $blobFile->setFile(new \SplFileInfo(__DIR__.'/test.txt'));
 
-        $blobFile = $this->fileApi->addFile($blobFile);
+        $blobFile = $this->fileApi->addFile(self::BUCKET_IDENTIFIER, $blobFile);
         $this->assertTrue(Uuid::isValid($blobFile->getIdentifier()));
         $this->assertFileIsFound($blobFile->getIdentifier());
         $this->assertFileContentsEquals($blobFile->getIdentifier(), file_get_contents(__DIR__.'/test.txt'));
@@ -124,7 +124,7 @@ class FileApiTest extends ApiTestCase
         $blobFile->setFileName('test.txt');
         $blobFile->setFile(Utils::streamFor(fopen(__DIR__.'/test.txt', 'r')));
 
-        $blobFile = $this->fileApi->addFile($blobFile);
+        $blobFile = $this->fileApi->addFile(self::BUCKET_IDENTIFIER, $blobFile);
         $this->assertTrue(Uuid::isValid($blobFile->getIdentifier()));
         $this->assertFileIsFound($blobFile->getIdentifier());
         $this->assertFileContentsEquals($blobFile->getIdentifier(), file_get_contents(__DIR__.'/test.txt'));
@@ -138,7 +138,7 @@ class FileApiTest extends ApiTestCase
 
         try {
             // the file is missing
-            $this->fileApi->addFile($blobFile);
+            $this->fileApi->addFile(self::BUCKET_IDENTIFIER, $blobFile);
         } catch (BlobApiError $blobApiError) {
             $this->assertEquals(BlobApiError::CLIENT_ERROR, $blobApiError->getErrorId());
             $this->assertEquals(Response::HTTP_BAD_REQUEST, $blobApiError->getStatusCode());
@@ -155,8 +155,8 @@ class FileApiTest extends ApiTestCase
         $blobFile->setFileName('new_test.txt');
         $blobFile->setFile('new content');
 
-        $blobFile = $this->fileApi->updateFile($blobFile);
-        $blobFile = $this->fileApi->getFile($blobFile->getIdentifier());
+        $blobFile = $this->fileApi->updateFile(self::BUCKET_IDENTIFIER, $blobFile);
+        $blobFile = $this->fileApi->getFile(self::BUCKET_IDENTIFIER, $blobFile->getIdentifier());
         $this->assertEquals('new_test.txt', $blobFile->getFileName());
         $this->assertFileContentsEquals($blobFile->getIdentifier(), 'new content');
         $this->assertEquals('new_prefix', $blobFile->getPrefix());
@@ -170,9 +170,9 @@ class FileApiTest extends ApiTestCase
     {
         $blobFile = $this->addTestFile();
         $this->assertFileIsFound($blobFile->getIdentifier());
-        $this->fileApi->removeFile($blobFile->getIdentifier());
+        $this->fileApi->removeFile(self::BUCKET_IDENTIFIER, $blobFile->getIdentifier());
         try {
-            $this->fileApi->getFile($blobFile->getIdentifier());
+            $this->fileApi->getFile(self::BUCKET_IDENTIFIER, $blobFile->getIdentifier());
         } catch (BlobApiError $blobApiError) {
             $this->assertEquals(BlobApiError::FILE_NOT_FOUND, $blobApiError->getErrorId());
             $this->assertEquals(Response::HTTP_NOT_FOUND, $blobApiError->getStatusCode());
@@ -185,7 +185,7 @@ class FileApiTest extends ApiTestCase
     public function testGetFile(): void
     {
         $blobFile = $this->addTestFile();
-        $blobFileFromGet = $this->fileApi->getFile($blobFile->getIdentifier());
+        $blobFileFromGet = $this->fileApi->getFile(self::BUCKET_IDENTIFIER, $blobFile->getIdentifier());
         $this->assertEquals($blobFile->getIdentifier(), $blobFileFromGet->getIdentifier());
         $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile->getIdentifier(), $blobFile->getContentUrl());
     }
@@ -199,7 +199,7 @@ class FileApiTest extends ApiTestCase
         $blobFile2 = $this->addTestFile();
         $blobFile3 = $this->addTestFile();
 
-        $blobFiles = $this->fileApi->getFiles();
+        $blobFiles = $this->fileApi->getFiles(self::BUCKET_IDENTIFIER);
         $this->assertCount(3, $blobFiles);
         $this->assertInstanceOf(BlobFile::class, $blobFiles[0]);
         $this->assertEquals($blobFile1->getIdentifier(), $blobFiles[0]->getIdentifier());
@@ -221,9 +221,9 @@ class FileApiTest extends ApiTestCase
         $blobFile2 = $this->addTestFile();
         $blobFile3 = $this->addTestFile();
 
-        $blobFilePage1 = $this->fileApi->getFiles(1, 2);
+        $blobFilePage1 = $this->fileApi->getFiles(self::BUCKET_IDENTIFIER, 1, 2);
         $this->assertCount(2, $blobFilePage1);
-        $blobFilePage2 = $this->fileApi->getFiles(2, 2);
+        $blobFilePage2 = $this->fileApi->getFiles(self::BUCKET_IDENTIFIER, 2, 2);
         $this->assertCount(1, $blobFilePage2);
         $blobFiles = array_merge($blobFilePage1, $blobFilePage2);
 
@@ -244,18 +244,18 @@ class FileApiTest extends ApiTestCase
         $blobFile2 = $this->addTestFile('another_prefix');
         $blobFile3 = $this->addTestFile('prefix');
 
-        $blobFiles = $this->fileApi->getFiles(options: [BlobApi::PREFIX_OPTION => 'prefix']);
+        $blobFiles = $this->fileApi->getFiles(self::BUCKET_IDENTIFIER, options: [BlobApi::PREFIX_OPTION => 'prefix']);
         $this->assertCount(2, $blobFiles);
         $this->assertEquals($blobFile1->getIdentifier(), $blobFiles[0]->getIdentifier());
         $this->assertEquals($blobFile3->getIdentifier(), $blobFiles[1]->getIdentifier());
 
-        $blobFiles = $this->fileApi->getFiles(options: [
+        $blobFiles = $this->fileApi->getFiles(self::BUCKET_IDENTIFIER, options: [
             BlobApi::PREFIX_OPTION => 'another',
             BlobApi::PREFIX_STARTS_WITH_OPTION => false,
         ]);
         $this->assertCount(0, $blobFiles);
 
-        $blobFiles = $this->fileApi->getFiles(options: [
+        $blobFiles = $this->fileApi->getFiles(self::BUCKET_IDENTIFIER, options: [
             BlobApi::PREFIX_OPTION => 'another',
             BlobApi::PREFIX_STARTS_WITH_OPTION => true,
         ]);
@@ -277,7 +277,7 @@ class FileApiTest extends ApiTestCase
             ->iEndsWith('prefix', 'prefix')
             ->createFilter();
 
-        $blobFiles = $this->fileApi->getFiles(options: ['filter' => $filter]);
+        $blobFiles = $this->fileApi->getFiles(self::BUCKET_IDENTIFIER, options: ['filter' => $filter]);
         $this->assertCount(3, $blobFiles);
         $this->assertEquals($blobFile1->getIdentifier(), $blobFiles[0]->getIdentifier());
         $this->assertEquals($blobFile2->getIdentifier(), $blobFiles[1]->getIdentifier());
@@ -287,7 +287,7 @@ class FileApiTest extends ApiTestCase
             ->equals('fileName', 'test2.txt')
             ->createFilter();
 
-        $blobFiles = $this->fileApi->getFiles(options: ['filter' => $filter]);
+        $blobFiles = $this->fileApi->getFiles(self::BUCKET_IDENTIFIER, options: ['filter' => $filter]);
         $this->assertCount(1, $blobFiles);
         $this->assertEquals($blobFile1->getIdentifier(), $blobFiles[0]->getIdentifier());
     }
@@ -299,7 +299,7 @@ class FileApiTest extends ApiTestCase
     {
         $fileContent = 'hello, world!';
         $blobFile = $this->addTestFile(fileContent: $fileContent);
-        $response = $this->fileApi->getFileResponse($blobFile->getIdentifier());
+        $response = $this->fileApi->getFileResponse(self::BUCKET_IDENTIFIER, $blobFile->getIdentifier());
         $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
         ob_start();
         $response->sendContent();
@@ -313,19 +313,23 @@ class FileApiTest extends ApiTestCase
         $blobFile2 = $this->addTestFile('another_prefix');
         $blobFile3 = $this->addTestFile('prefix');
 
-        $this->fileApi->removeFiles(options: [BlobApi::PREFIX_OPTION => 'prefix']);
-        $blobFiles = $this->fileApi->getFiles();
+        $this->fileApi->removeFiles(self::BUCKET_IDENTIFIER, options: [BlobApi::PREFIX_OPTION => 'prefix']);
+        $blobFiles = $this->fileApi->getFiles(self::BUCKET_IDENTIFIER);
         $this->assertCount(1, $blobFiles);
         $this->assertEquals($blobFile2->getIdentifier(), $blobFiles[0]->getIdentifier());
 
-        $this->fileApi->removeFiles(options: [
+        $this->fileApi->removeFiles(self::BUCKET_IDENTIFIER, options: [
             BlobApi::PREFIX_OPTION => 'another',
             BlobApi::PREFIX_STARTS_WITH_OPTION => true,
         ]);
-        $blobFiles = $this->fileApi->getFiles();
+        $blobFiles = $this->fileApi->getFiles(self::BUCKET_IDENTIFIER);
         $this->assertCount(0, $blobFiles);
     }
 
+    /**
+     * @throws FilterException
+     * @throws BlobApiError
+     */
     public function testDeleteFilesWithFilter(): void
     {
         $blobFile1 = $this->addTestFile('prefix');
@@ -337,8 +341,8 @@ class FileApiTest extends ApiTestCase
             ->iContains('prefix', 'foo')
             ->createFilter();
 
-        $this->fileApi->removeFiles(options: ['filter' => $filter]);
-        $blobFiles = $this->fileApi->getFiles();
+        $this->fileApi->removeFiles(self::BUCKET_IDENTIFIER, options: ['filter' => $filter]);
+        $blobFiles = $this->fileApi->getFiles(self::BUCKET_IDENTIFIER);
         $this->assertCount(1, $blobFiles);
         $this->assertEquals($blobFile1->getIdentifier(), $blobFiles[0]->getIdentifier());
     }
@@ -353,7 +357,7 @@ class FileApiTest extends ApiTestCase
         $blobFile->setFileName($fileName);
         $blobFile->setFile($fileContent);
 
-        return $this->fileApi->addFile($blobFile);
+        return $this->fileApi->addFile(self::BUCKET_IDENTIFIER, $blobFile);
     }
 
     /**
@@ -361,7 +365,7 @@ class FileApiTest extends ApiTestCase
      */
     private function assertFileIsFound(string $identifier): void
     {
-        $this->assertEquals($identifier, $this->fileApi->getFile($identifier)->getIdentifier());
+        $this->assertEquals($identifier, $this->fileApi->getFile(self::BUCKET_IDENTIFIER, $identifier)->getIdentifier());
     }
 
     /**
@@ -369,7 +373,7 @@ class FileApiTest extends ApiTestCase
      */
     private function assertFileContentsEquals(string $identifier, string $expectedContent): void
     {
-        $response = $this->fileApi->getFileResponse($identifier);
+        $response = $this->fileApi->getFileResponse(self::BUCKET_IDENTIFIER, $identifier);
         ob_start();
         $response->sendContent();
         $content = ob_get_clean();

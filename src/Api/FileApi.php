@@ -10,6 +10,7 @@ use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Dbp\Relay\BlobLibrary\Api\BlobApiError;
 use Dbp\Relay\BlobLibrary\Api\BlobFile;
 use Dbp\Relay\BlobLibrary\Api\BlobFileApiInterface;
+use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
 use Psr\Http\Message\StreamInterface;
@@ -17,10 +18,8 @@ use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
-class FileApi implements BlobFileApiInterface
+readonly class FileApi implements BlobFileApiInterface
 {
-    private ?string $bucketIdentifier = null;
-
     private static function generateTempFilePath(): string|false
     {
         return tempnam(sys_get_temp_dir(), 'dbp_relay_blob_bundle_tempfile_');
@@ -148,23 +147,18 @@ class FileApi implements BlobFileApiInterface
     }
 
     public function __construct(
-        private readonly BlobService $blobService,
-        private readonly RequestStack $requestStack)
+        private BlobService $blobService,
+        private RequestStack $requestStack)
     {
-    }
-
-    public function setBucketIdentifier(string $bucketIdentifier): void
-    {
-        $this->bucketIdentifier = $bucketIdentifier;
     }
 
     /**
      * @throws BlobApiError
      */
-    public function addFile(BlobFile $blobFile, array $options = []): BlobFile
+    public function addFile(string $bucketIdentifier, BlobFile $blobFile, array $options = []): BlobFile
     {
         $fileData = self::createOrUpdateFileDataFromBlobFile($blobFile);
-        $fileData->setBucketId($this->bucketIdentifier);
+        $fileData->setBucketId($bucketIdentifier);
 
         if ($blobBaseUrl = $this->tryGetBlobBaseUrlFromCurrentRequest()) {
             $options[BlobService::BASE_URL_OPTION] = $blobBaseUrl;
@@ -180,13 +174,14 @@ class FileApi implements BlobFileApiInterface
     /**
      * @throws BlobApiError
      */
-    public function updateFile(BlobFile $blobFile, array $options = []): BlobFile
+    public function updateFile(string $bucketIdentifier, BlobFile $blobFile, array $options = []): BlobFile
     {
         try {
             $options[BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION] = false;
             $options[BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION] = true;
+            $options[BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION] = $bucketIdentifier;
 
-            $fileData = $this->getFileData($blobFile->getIdentifier(), $options);
+            $fileData = $this->getFileData($bucketIdentifier, $blobFile->getIdentifier(), $options);
             $previousFileData = clone $fileData;
 
             $fileData = self::createOrUpdateFileDataFromBlobFile($blobFile, $fileData);
@@ -202,10 +197,11 @@ class FileApi implements BlobFileApiInterface
     /**
      * @throws BlobApiError
      */
-    public function removeFile(string $identifier, array $options = []): void
+    public function removeFile(string $bucketIdentifier, string $identifier, array $options = []): void
     {
         try {
-            $this->blobService->removeFile($identifier);
+            $options[BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION] = $bucketIdentifier;
+            $this->blobService->removeFile($identifier, options: $options);
         } catch (\Exception $exception) {
             throw $this->createBlobApiError($exception, 'Removing file failed');
         }
@@ -214,7 +210,7 @@ class FileApi implements BlobFileApiInterface
     /**
      * @throws BlobApiError
      */
-    public function removeFiles(array $options = []): void
+    public function removeFiles(string $bucketIdentifier, array $options = []): void
     {
         // TODO: batch remove?
         $currentPage = 1;
@@ -223,7 +219,7 @@ class FileApi implements BlobFileApiInterface
 
         try {
             do {
-                $filePage = $this->getFiles($currentPage, $maxNumItemsPerPage, $options);
+                $filePage = $this->getFiles($bucketIdentifier, $currentPage, $maxNumItemsPerPage, $options);
                 array_push($fileDataCollection, ...$filePage);
                 ++$currentPage;
             } while (count($filePage) === $maxNumItemsPerPage);
@@ -243,9 +239,9 @@ class FileApi implements BlobFileApiInterface
     /**
      * @throws BlobApiError
      */
-    public function getFile(string $identifier, array $options = []): BlobFile
+    public function getFile(string $bucketIdentifier, string $identifier, array $options = []): BlobFile
     {
-        return self::createBlobFileFromFileData($this->getFileData($identifier, $options));
+        return self::createBlobFileFromFileData($this->getFileData($bucketIdentifier, $identifier, $options));
     }
 
     /**
@@ -253,10 +249,9 @@ class FileApi implements BlobFileApiInterface
      *
      * @throws BlobApiError
      */
-    public function getFiles(int $currentPage = 1, int $maxNumItemsPerPage = 30, array $options = []): array
+    public function getFiles(string $bucketIdentifier, int $currentPage = 1, int $maxNumItemsPerPage = 30, array $options = []): array
     {
         try {
-            $filter = null;
             // ----------------------------
             // backwards compatibility:
             if (($prefixFilter = $options[BlobApi::PREFIX_OPTION] ?? null) !== null) {
@@ -272,7 +267,7 @@ class FileApi implements BlobFileApiInterface
             }
 
             $blobFiles = [];
-            foreach ($this->blobService->getFiles($this->bucketIdentifier, $filter, $options, $currentPage, $maxNumItemsPerPage) as $fileData) {
+            foreach ($this->blobService->getFiles($bucketIdentifier, $filter, $options, $currentPage, $maxNumItemsPerPage) as $fileData) {
                 $blobFiles[] = self::createBlobFileFromFileData($fileData);
             }
 
@@ -285,12 +280,13 @@ class FileApi implements BlobFileApiInterface
     /**
      * @throws BlobApiError
      */
-    public function getFileResponse(string $identifier, array $options = []): Response
+    public function getFileResponse(string $bucketIdentifier, string $identifier, array $options = []): Response
     {
         try {
             return $this->blobService->getBinaryResponse($identifier, [
                 BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => true,
                 BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => true,
+                BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION => $bucketIdentifier,
             ]);
         } catch (\Exception $exception) {
             throw $this->createBlobApiError($exception, 'Downloading file failed');
@@ -300,11 +296,27 @@ class FileApi implements BlobFileApiInterface
     /**
      * @throws BlobApiError
      */
-    private function getFileData(string $identifier, array $options = []): FileData
+    public function createSignedUrl(string $bucketIdentifier, string $method, array $parameters = [],
+        array $options = [], ?string $identifier = null, ?string $action = null): string
+    {
+        $bucketConfig = $this->blobService->getConfigurationService()->getBucketById($bucketIdentifier);
+        if ($bucketConfig === null) {
+            throw new BlobApiError('bucket not configured', BlobApiError::CONFIGURATION_INVALID);
+        }
+
+        return SignatureTools::createSignedUrl($bucketIdentifier, $bucketConfig->getKey(),
+            $method, $this->tryGetBlobBaseUrlFromCurrentRequest(), $identifier, $action, $parameters, $options);
+    }
+
+    /**
+     * @throws BlobApiError
+     */
+    private function getFileData(string $bucketIdentifier, string $identifier, array $options = []): FileData
     {
         if ($blobBaseUrl = $this->tryGetBlobBaseUrlFromCurrentRequest()) {
             $options[BlobService::BASE_URL_OPTION] = $blobBaseUrl;
         }
+        $options[BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION] = $bucketIdentifier;
 
         try {
             return $this->blobService->getFileData($identifier, $options);

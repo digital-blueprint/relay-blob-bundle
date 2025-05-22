@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- rework SignatureUtils
+- adapt to blob library updates
+
 ## v0.1.75
 
 - remove redundant "manual" rawurldecodes

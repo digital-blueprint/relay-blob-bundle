@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "205dbe1b792704d80d5fdd3ba570efd2",
+    "content-hash": "47bc9a1b8829c1b695df8bdf058f1900",
     "packages": [
         {
             "name": "api-platform/core",
@@ -283,16 +283,16 @@
         },
         {
             "name": "dbp/relay-blob-library",
-            "version": "v0.3.1",
+            "version": "dev-main",
             "source": {
                 "type": "git",
                 "url": "https://github.com/digital-blueprint/relay-blob-library.git",
-                "reference": "8917879daf8ac566f981edd8a968700bb8839c88"
+                "reference": "ccbf6deea9473ded276a8e26910c7d681015efad"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/digital-blueprint/relay-blob-library/zipball/8917879daf8ac566f981edd8a968700bb8839c88",
-                "reference": "8917879daf8ac566f981edd8a968700bb8839c88",
+                "url": "https://api.github.com/repos/digital-blueprint/relay-blob-library/zipball/ccbf6deea9473ded276a8e26910c7d681015efad",
+                "reference": "ccbf6deea9473ded276a8e26910c7d681015efad",
                 "shasum": ""
             },
             "require": {
@@ -313,6 +313,7 @@
                 "phpstan/phpstan-symfony": "^2.0",
                 "phpunit/phpunit": "^10.3"
             },
+            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -326,9 +327,9 @@
             "description": "PHP helper library for interaction with the dbp/relay-blob-bundle.",
             "support": {
                 "issues": "https://github.com/digital-blueprint/relay-blob-library/issues",
-                "source": "https://github.com/digital-blueprint/relay-blob-library/tree/v0.3.1"
+                "source": "https://github.com/digital-blueprint/relay-blob-library/tree/main"
             },
-            "time": "2025-05-21T10:11:56+00:00"
+            "time": "2025-05-22T09:35:00+00:00"
         },
         {
             "name": "dbp/relay-core-bundle",
@@ -12568,9 +12569,18 @@
             "time": "2024-09-08T18:53:08+00:00"
         }
     ],
-    "aliases": [],
+    "aliases": [
+        {
+            "package": "dbp/relay-blob-library",
+            "version": "dev-main",
+            "alias": "0.3.2",
+            "alias_normalized": "0.3.2.0"
+        }
+    ],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "dbp/relay-blob-library": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {

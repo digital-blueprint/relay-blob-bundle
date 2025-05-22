@@ -12,6 +12,7 @@ use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
+use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\TestUtils\TestClient;
 use Dbp\Relay\CoreBundle\TestUtils\UserAuthTrait;
@@ -147,7 +148,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $data);
+            $token = SignatureTools::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -191,7 +192,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -237,7 +238,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -279,7 +280,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $response = $client->request('GET', $url.'&sig='.$token, $options);
             $this->assertEquals(200, $response->getStatusCode());
@@ -319,7 +320,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $response = $client->request('DELETE', $url.'&sig='.$token, $options);
 
@@ -338,7 +339,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
             $options = [
                 'headers' => [
                     'Authorization' => 'Bearer 42',
@@ -396,7 +397,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -452,7 +453,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -481,7 +482,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
             $client = $this->setUpTestClient();
 
             $response = $client->request('GET', $url.'&sig='.$token, $options);
@@ -521,7 +522,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -563,7 +564,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $response = $client->request('GET', $url.'&sig='.$token, []);
 
@@ -578,7 +579,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -628,7 +629,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -682,7 +683,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -737,7 +738,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $data);
+            $token = SignatureTools::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -782,7 +783,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -838,7 +839,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $data);
+            $token = SignatureTools::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -881,7 +882,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -937,7 +938,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $data);
+            $token = SignatureTools::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -983,7 +984,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -1004,7 +1005,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $options2 = [
                 'headers' => [
@@ -1059,7 +1060,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $data);
+            $token = SignatureTools::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1102,7 +1103,7 @@ class CurlGetTest extends ApiTestCase
                         'ucs' => $this->generateSha256ChecksumFromUrl($url),
                     ];
 
-                    $token = SignatureUtils::createSignature($secret, $payload);
+                    $token = SignatureTools::createSignature($secret, $payload);
 
                     $options = [
                         'headers' => [
@@ -1157,7 +1158,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $data);
+                $token = SignatureTools::createSignature($secret, $data);
 
                 $requestPost = Request::create($url.'&sig='.$token, 'POST',
                     [
@@ -1195,7 +1196,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -1248,7 +1249,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $data);
+            $token = SignatureTools::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1315,7 +1316,7 @@ class CurlGetTest extends ApiTestCase
                         'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                     ];
 
-                    $token = SignatureUtils::createSignature($secret, $payload);
+                    $token = SignatureTools::createSignature($secret, $payload);
 
                     $options = [
                         'headers' => [
@@ -1367,7 +1368,7 @@ class CurlGetTest extends ApiTestCase
                         'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                     ];
 
-                    $token = SignatureUtils::createSignature($secret, $payload);
+                    $token = SignatureTools::createSignature($secret, $payload);
 
                     $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
@@ -1424,7 +1425,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -1544,7 +1545,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $data);
+            $token = SignatureTools::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1588,7 +1589,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -1614,7 +1615,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
                 $client = $this->setUpTestClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
@@ -1634,7 +1635,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
@@ -1699,7 +1700,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $data);
+            $token = SignatureTools::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1747,7 +1748,7 @@ class CurlGetTest extends ApiTestCase
                 $bucket = $configService->getBuckets()[1];
                 $secret = $bucket->getKey();
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -1777,7 +1778,7 @@ class CurlGetTest extends ApiTestCase
                 $bucket = $configService->getBuckets()[1];
                 $secret = $bucket->getKey();
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $client = $this->setUpTestClient();
 
@@ -1801,7 +1802,7 @@ class CurlGetTest extends ApiTestCase
                 $bucket = $configService->getBuckets()[1];
                 $secret = $bucket->getKey();
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
@@ -1866,7 +1867,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $data);
+            $token = SignatureTools::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -1912,7 +1913,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -1939,7 +1940,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $client = $this->setUpTestClient();
 
@@ -1960,7 +1961,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
@@ -2025,7 +2026,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $data);
+            $token = SignatureTools::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -2071,7 +2072,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $options = [
                     'headers' => [
@@ -2098,7 +2099,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $client = $this->setUpTestClient();
 
@@ -2119,7 +2120,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
@@ -2179,7 +2180,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($url),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $data);
+                $token = SignatureTools::createSignature($secret, $data);
 
                 $requestPost = Request::create($url.'&sig='.$token, 'POST',
                     [
@@ -2216,7 +2217,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
@@ -2268,7 +2269,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($url),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $data);
+            $token = SignatureTools::createSignature($secret, $data);
 
             $requestPost = Request::create($url.'&sig='.$token, 'POST',
                 [
@@ -2329,7 +2330,7 @@ class CurlGetTest extends ApiTestCase
                     'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
                 ];
 
-                $token = SignatureUtils::createSignature($secret, $payload);
+                $token = SignatureTools::createSignature($secret, $payload);
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
@@ -2362,7 +2363,7 @@ class CurlGetTest extends ApiTestCase
                 'ucs' => $this->generateSha256ChecksumFromUrl($baseUrl),
             ];
 
-            $token = SignatureUtils::createSignature($secret, $payload);
+            $token = SignatureTools::createSignature($secret, $payload);
 
             $options = [
                 'headers' => [
