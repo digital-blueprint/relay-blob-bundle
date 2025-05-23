@@ -208,6 +208,7 @@ readonly class FileApi implements BlobFileApiInterface
     {
         try {
             $tempFilePath = null;
+
             $options[BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION] = false;
             $options[BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION] = true;
             $options[BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION] = $bucketIdentifier;
@@ -301,6 +302,10 @@ readonly class FileApi implements BlobFileApiInterface
                 $filter = $options['filter'] ?? null;
             }
 
+            if ($blobBaseUrl = $this->tryGetBlobBaseUrlFromCurrentRequest()) {
+                $options[BlobService::BASE_URL_OPTION] = $blobBaseUrl;
+            }
+
             $blobFiles = [];
             foreach ($this->blobService->getFiles($bucketIdentifier, $filter, $options, $currentPage, $maxNumItemsPerPage) as $fileData) {
                 $blobFiles[] = self::createBlobFileFromFileData($fileData);
@@ -340,7 +345,7 @@ readonly class FileApi implements BlobFileApiInterface
         }
 
         return SignatureTools::createSignedUrl($bucketIdentifier, $bucketConfig->getKey(),
-            $method, $this->tryGetBlobBaseUrlFromCurrentRequest(), $identifier, $action, $parameters, $options);
+            $method, $this->tryGetBlobBaseUrlFromCurrentRequest() ?? '', $identifier, $action, $parameters, $options);
     }
 
     /**

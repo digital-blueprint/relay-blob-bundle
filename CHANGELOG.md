@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix download url (missing base url) for file collection (via FileApi)
+
 ## v0.1.76
 
 - rework SignatureUtils

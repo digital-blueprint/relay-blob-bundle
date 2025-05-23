@@ -210,13 +210,13 @@ class FileApiTest extends ApiTestCase
         $this->assertCount(3, $blobFiles);
         $this->assertInstanceOf(BlobFile::class, $blobFiles[0]);
         $this->assertEquals($blobFile1->getIdentifier(), $blobFiles[0]->getIdentifier());
-        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile1->getIdentifier(), $blobFile1->getContentUrl());
+        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile1->getIdentifier(), $blobFiles[0]->getContentUrl());
         $this->assertEquals($blobFile2->getIdentifier(), $blobFiles[1]->getIdentifier());
         $this->assertInstanceOf(BlobFile::class, $blobFiles[1]);
-        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile2->getIdentifier(), $blobFile2->getContentUrl());
+        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile2->getIdentifier(), $blobFiles[1]->getContentUrl());
         $this->assertEquals($blobFile3->getIdentifier(), $blobFiles[2]->getIdentifier());
         $this->assertInstanceOf(BlobFile::class, $blobFiles[2]);
-        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile3->getIdentifier(), $blobFile3->getContentUrl());
+        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile3->getIdentifier(), $blobFiles[2]->getContentUrl());
     }
 
     /**
