@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## v0.1.177
+## v0.1.77
 
 - Fix download url (missing base url) for file collection (via FileApi)
 
