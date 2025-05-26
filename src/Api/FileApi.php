@@ -89,15 +89,6 @@ readonly class FileApi implements BlobFileApiInterface
                         fwrite($tempFileResource, $chunk);
                     }
                     fclose($tempFileResource);
-                } elseif (is_resource($file)) {
-                    $tempFilePath = self::generateTempFilePath();
-                    $tempFileResource = self::openTempFilePath($tempFilePath);
-                    $filePath = $tempFilePath;
-                    while (!feof($file)) {
-                        $chunk = fread($file, 1024);
-                        fwrite($tempFileResource, $chunk);
-                    }
-                    fclose($tempFileResource);
                 } else {
                     throw new BlobApiError('unsupported file object', BlobApiError::REQUIRED_PARAMETER_MISSING);
                 }

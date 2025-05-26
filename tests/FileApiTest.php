@@ -92,22 +92,6 @@ class FileApiTest extends ApiTestCase
     /**
      * @throws BlobApiError
      */
-    public function testAddFileResourceSuccess(): void
-    {
-        $blobFile = new BlobFile();
-        $blobFile->setPrefix('prefix');
-        $blobFile->setFileName('test.txt');
-        $blobFile->setFile(fopen(__DIR__.'/test.txt', 'r'));
-
-        $blobFile = $this->fileApi->addFile(self::BUCKET_IDENTIFIER, $blobFile);
-        $this->assertTrue(Uuid::isValid($blobFile->getIdentifier()));
-        $this->assertFileIsFound($blobFile->getIdentifier());
-        $this->assertFileContentsEquals($blobFile->getIdentifier(), file_get_contents(__DIR__.'/test.txt'));
-    }
-
-    /**
-     * @throws BlobApiError
-     */
     public function testAddFileSplFileInfoSuccess(): void
     {
         $blobFile = new BlobFile();
