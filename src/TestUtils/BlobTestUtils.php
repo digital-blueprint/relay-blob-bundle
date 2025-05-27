@@ -10,6 +10,7 @@ use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\Service\DatasystemProviderService;
 use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -36,7 +37,10 @@ class BlobTestUtils
         $datasystemProviderService = new DatasystemProviderService();
         $datasystemProviderService->addService(new TestDatasystemProviderService());
 
-        return new BlobService($entityManager, $configurationService, $datasystemProviderService, $eventDispatcher);
+        $blobService = new BlobService($entityManager, $configurationService, $datasystemProviderService, $eventDispatcher);
+        $blobService->setLogger(new NullLogger());
+
+        return $blobService;
     }
 
     public static function createLocalModeBlobApi(string $bucketIdentifier, EntityManagerInterface $entityManager,

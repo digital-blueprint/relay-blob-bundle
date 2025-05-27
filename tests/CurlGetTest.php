@@ -445,7 +445,7 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            $provider = $blobService->getDatasystemProvider($fileData);
+            $provider = $blobService->getDatasystemProvider($fileData->getInternalBucketId());
             $this->assertTrue($provider->hasFile($fileData->getInternalBucketId(), $this->files[0]['uuid']));
 
             $response = $client->request('GET', $url, $options);

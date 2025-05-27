@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Update blob library and adapt FileApi to implement interface changes
+- Replace DatasystemProviderServiceInterface::getResponse by 
+DatasystemProviderServiceInterface::getFileStream, returning a Psr\Http\Message\StreamInterface
+which always for a more flexible usage of the file contents (return it as a streamed response, write it to a file in the backend, etc.)
+
 ## v0.1.77
 
 - Fix download url (missing base url) for file collection (via FileApi)

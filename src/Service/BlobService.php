@@ -23,6 +23,7 @@ use Dbp\Relay\CoreBundle\Rest\Query\Pagination\Pagination;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonSchema\Validator;
+use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -31,7 +32,6 @@ use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Uid\Uuid;
 
 date_default_timezone_set('UTC');
@@ -123,10 +123,9 @@ class BlobService implements LoggerAwareInterface
     /**
      * @throws \Exception
      */
-    public function removeFile(string $identifier, ?FileData $fileData = null, array $options = []): void
+    public function removeFile(FileData $fileData, array $options = []): void
     {
-        $fileData ??= $this->getFileDataInternal($identifier);
-        $bucketConfig = $this->getBucketConfig($fileData);
+        $bucketConfig = $this->getBucketConfig($fileData->getInternalBucketId());
 
         if (($bucketIdToMatch = $options[self::ASSERT_BUCKET_ID_EQUALS_OPTION] ?? null) !== null) {
             if ($bucketConfig->getBucketId() !== $bucketIdToMatch) {
@@ -146,7 +145,7 @@ class BlobService implements LoggerAwareInterface
     public function getFileData(string $identifier, array $options = []): FileData
     {
         $fileData = $this->getFileDataInternal($identifier);
-        $bucketConfig = $this->getBucketConfig($fileData);
+        $bucketConfig = $this->getBucketConfig($fileData->getInternalBucketId());
 
         if (($bucketIdToMatch = $options[self::ASSERT_BUCKET_ID_EQUALS_OPTION] ?? null) !== null) {
             if ($bucketConfig->getBucketId() !== $bucketIdToMatch) {
@@ -321,10 +320,10 @@ class BlobService implements LoggerAwareInterface
      *
      * @throws \Exception
      */
-    public function getBucketConfig(FileData $fileData): BucketConfig
+    public function getBucketConfig(?string $internalBucketId): BucketConfig
     {
-        if ($fileData->getInternalBucketId() === null
-            || ($bucket = $this->configurationService->getBucketByInternalID($fileData->getInternalBucketId())) === null) {
+        if ($internalBucketId === null
+            || ($bucket = $this->configurationService->getBucketByInternalID($internalBucketId)) === null) {
             throw new \Exception('failed to get bucket config for file data');
         }
 
@@ -460,7 +459,7 @@ class BlobService implements LoggerAwareInterface
     private function saveFileToDatasystemService(FileData $fileData, string $errorPrefix): void
     {
         try {
-            $this->getDatasystemProvider($fileData)->saveFile(
+            $this->getDatasystemProvider($fileData->getInternalBucketId())->saveFile(
                 $fileData->getInternalBucketId(),
                 $fileData->getIdentifier(),
                 $fileData->getFile()
@@ -484,7 +483,7 @@ class BlobService implements LoggerAwareInterface
      */
     public function getDownloadUrl(string $baseurl, FileData $fileData): string
     {
-        $bucketConfig = $this->getBucketConfig($fileData);
+        $bucketConfig = $this->getBucketConfig($fileData->getInternalBucketId());
 
         return SignatureTools::createSignedUrl($bucketConfig->getBucketId(), $bucketConfig->getKey(),
             Request::METHOD_GET, $baseurl, $fileData->getIdentifier(), 'download');
@@ -493,43 +492,33 @@ class BlobService implements LoggerAwareInterface
     /**
      * @throws ApiError
      */
-    public function getContent(FileData $fileData): string
+    public function getFileContents(FileData $fileData): string
     {
-        $response = $this->getBinaryResponseInternal($fileData);
-
-        if (ob_start() !== true) {
-            throw new \RuntimeException();
-        }
-        try {
-            $response->sendContent();
-            $content = ob_get_contents();
-            if ($content === false) {
-                throw new \RuntimeException(); // @phpstan-ignore-line
-            }
-        } finally {
-            if (ob_end_clean() === false) {
-                throw new \RuntimeException(); // @phpstan-ignore-line
-            }
-        }
-
-        return $content;
+        return $this->getFileStreamInternal($fileData)->getContents();
     }
 
     /**
      * Returns SHA256 hash of the file content.
+     *
+     * @throws \Exception
      */
     public function getFileHashFromStorage(FileData $fileData): string
     {
-        return $this->getDatasystemProvider($fileData)->getFileHash($fileData->getInternalBucketId(), $fileData->getIdentifier());
-    }
-
-    public function getFileSizeFromStorage(FileData $fileData): int
-    {
-        return $this->getDatasystemProvider($fileData)->getFileSize($fileData->getInternalBucketId(), $fileData->getIdentifier());
+        return $this->getDatasystemProvider($fileData->getInternalBucketId())
+            ->getFileHash($fileData->getInternalBucketId(), $fileData->getIdentifier());
     }
 
     /**
-     * Get file content as base64 contentUrl.
+     * @throws \Exception
+     */
+    public function getFileSizeFromStorage(FileData $fileData): int
+    {
+        return $this->getDatasystemProvider($fileData->getInternalBucketId())
+            ->getFileSize($fileData->getInternalBucketId(), $fileData->getIdentifier());
+    }
+
+    /**
+     * Get file content as a base64 encoded content url.
      *
      * @param FileData $fileData fileData for which the base64 encoded file should be provided
      *
@@ -537,27 +526,17 @@ class BlobService implements LoggerAwareInterface
      */
     public function getContentUrl(FileData $fileData): string
     {
-        $mimeType = $fileData->getMimeType();
-        $content = $this->getContent($fileData);
-
-        return 'data:'.$mimeType.';base64,'.base64_encode($content);
+        return 'data:'.$fileData->getMimeType().';base64,'.base64_encode($this->getFileContents($fileData));
     }
 
     /**
-     * Get file as binary response.
+     * Gets a streamed response for the file.
      *
      * @throws \Exception
      */
-    public function getBinaryResponse(string $fileIdentifier, array $options = []): Response
+    public function getFileStream(FileData $fileData): StreamInterface
     {
-        $fileData = $this->getFileData($fileIdentifier, $options);
-        $response = $this->getBinaryResponseInternal($fileData);
-
-        $response->headers->set('Content-Type', $fileData->getMimeType());
-        $dispositionHeader = $response->headers->makeDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $fileData->getFileName());
-        $response->headers->set('Content-Disposition', $dispositionHeader);
-
-        return $response;
+        return $this->getFileStreamInternal($fileData);
     }
 
     private function getFileDataInternal(string $identifier): FileData
@@ -656,9 +635,12 @@ class BlobService implements LoggerAwareInterface
             ->getResult();
     }
 
-    public function getDatasystemProvider(FileData $fileData): DatasystemProviderServiceInterface
+    /**
+     * @throws \Exception
+     */
+    public function getDatasystemProvider(string $internalBucketId): DatasystemProviderServiceInterface
     {
-        return $this->datasystemService->getServiceByBucket($this->getBucketConfig($fileData));
+        return $this->datasystemService->getService($this->getBucketConfig($internalBucketId)->getService());
     }
 
     /**
@@ -673,7 +655,8 @@ class BlobService implements LoggerAwareInterface
     private function removeFileFromDatasystemService(FileData $fileData): void
     {
         try {
-            $this->getDatasystemProvider($fileData)->removeFile($fileData->getInternalBucketId(), $fileData->getIdentifier());
+            $this->getDatasystemProvider($fileData->getInternalBucketId())
+                ->removeFile($fileData->getInternalBucketId(), $fileData->getIdentifier());
         } catch (\Exception $exception) {
             $this->logger->error(
                 sprintf(
@@ -712,8 +695,7 @@ class BlobService implements LoggerAwareInterface
                 ->getResult();
 
             foreach ($fileDataCollectionToDelete as $fileDataToDelete) {
-                assert($fileDataToDelete instanceof FileData);
-                $this->removeFile($fileDataToDelete->getIdentifier(), $fileDataToDelete);
+                $this->removeFile($fileDataToDelete);
             }
         } while (count($fileDataCollectionToDelete) === $maxNumItemsPerPage);
     }
@@ -725,7 +707,7 @@ class BlobService implements LoggerAwareInterface
     public function saveFileDataAndFile(FileData $fileData, int $bucketSizeDeltaByte, string $errorPrefix): void
     {
         /* Check quota */
-        $bucketQuotaByte = $this->getBucketConfig($fileData)->getQuota() * 1024 * 1024; // Convert mb to Byte
+        $bucketQuotaByte = $this->getBucketConfig($fileData->getInternalBucketId())->getQuota() * 1024 * 1024; // Convert mb to Byte
         $bucketSize = $this->getBucketSizeByInternalIdFromDatabase($fileData->getInternalBucketId());
         $newBucketSizeByte = max($bucketSize->getCurrentBucketSize() + $bucketSizeDeltaByte, 0);
         if ($newBucketSizeByte > $bucketQuotaByte) {
@@ -793,6 +775,9 @@ class BlobService implements LoggerAwareInterface
         }
     }
 
+    /**
+     * @throws \Exception
+     */
     public function validateMetadata(FileData $fileData, string $errorPrefix): void
     {
         $metadata = $fileData->getMetadata();
@@ -815,7 +800,7 @@ class BlobService implements LoggerAwareInterface
         }
 
         // check if additionaltype is defined
-        $bucket = $this->getBucketConfig($fileData);
+        $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
         $additionalTypes = $bucket->getAdditionalTypes();
         if (!array_key_exists($additionalType, $additionalTypes)) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
@@ -896,10 +881,11 @@ class BlobService implements LoggerAwareInterface
             hash('sha256', $fileData->getMetadata()) : null);
     }
 
-    private function getBinaryResponseInternal(FileData $fileData): Response
+    private function getFileStreamInternal(FileData $fileData): StreamInterface
     {
         try {
-            return $this->getDatasystemProvider($fileData)->getBinaryResponse($fileData->getInternalBucketId(), $fileData->getIdentifier());
+            return $this->getDatasystemProvider($fileData->getInternalBucketId())
+                ->getFileStream($fileData->getInternalBucketId(), $fileData->getIdentifier());
         } catch (\Exception $exception) {
             $this->logger->error(sprintf(
                 'failed to get file \'%s\' from datasystem service backend: %s',

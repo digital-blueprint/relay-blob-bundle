@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Service;
 
-use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
-
 /**
  * @internal
  */
@@ -29,10 +27,8 @@ class DatasystemProviderService
     /**
      * Gets the datasystem Service of the bucket object.
      */
-    public function getServiceByBucket(BucketConfig $bucket): DatasystemProviderServiceInterface
+    public function getService(string $serviceClass): DatasystemProviderServiceInterface
     {
-        $serviceClass = $bucket->getService();
-
         $datasystemService = $this->services[$serviceClass] ?? null;
         if ($datasystemService === null) {
             throw new \RuntimeException("$serviceClass not found");

@@ -202,7 +202,7 @@ class BlobChecks implements LoggerAwareInterface
                 $out->writeln('Retrieving filesystem information for bucket with bucket id: '.$bucket->getBucketId().' and internal bucket id: '.$bucket->getInternalBucketId());
                 $out->writeln('Calculating sum of fileSizes in the bucket directory ...');
             }
-            $service = $this->datasystemService->getServiceByBucket($bucket);
+            $service = $this->datasystemService->getService($bucket->getService());
 
             $filebackendSize = 0;
             $filebackendNumOfFiles = 0;
@@ -276,7 +276,8 @@ class BlobChecks implements LoggerAwareInterface
             $batchSize = 100;
             $itemCounter = 0;
 
-            foreach ($this->datasystemService->getServiceByBucket($bucket)->listFiles($bucket->getInternalBucketId()) as $fileId) {
+            foreach ($this->datasystemService->getService($bucket->getService())
+                         ->listFiles($bucket->getInternalBucketId()) as $fileId) {
                 if (null === $this->entityManager->getRepository(FileData::class)->find($fileId)) {
                     ++$numOrphanFiles;
                     self::output(sprintf("%s\n", $fileId), $out, $outFileName);

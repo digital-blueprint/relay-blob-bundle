@@ -10,6 +10,7 @@ use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Dbp\Relay\BlobLibrary\Api\BlobApiError;
 use Dbp\Relay\BlobLibrary\Api\BlobFile;
 use Dbp\Relay\BlobLibrary\Api\BlobFileApiInterface;
+use Dbp\Relay\BlobLibrary\Api\BlobFileStream;
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
@@ -176,7 +177,7 @@ readonly class FileApi implements BlobFileApiInterface
             $fileData = self::createOrUpdateFileDataFromBlobFile($blobFile, $tempFilePath);
             $fileData->setBucketId($bucketIdentifier);
 
-            if ($blobBaseUrl = $this->tryGetBlobBaseUrlFromCurrentRequest()) {
+            if (($blobBaseUrl = $this->tryGetBlobBaseUrlFromCurrentRequest()) !== null) {
                 $options[BlobService::BASE_URL_OPTION] = $blobBaseUrl;
             }
 
@@ -202,7 +203,6 @@ readonly class FileApi implements BlobFileApiInterface
 
             $options[BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION] = false;
             $options[BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION] = true;
-            $options[BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION] = $bucketIdentifier;
 
             $fileData = $this->getFileData($bucketIdentifier, $blobFile->getIdentifier(), $options);
             $previousFileData = clone $fileData;
@@ -226,12 +226,7 @@ readonly class FileApi implements BlobFileApiInterface
      */
     public function removeFile(string $bucketIdentifier, string $identifier, array $options = []): void
     {
-        try {
-            $options[BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION] = $bucketIdentifier;
-            $this->blobService->removeFile($identifier, options: $options);
-        } catch (\Exception $exception) {
-            throw $this->createBlobApiError($exception, 'Removing file failed');
-        }
+        $this->removeFileInternal($bucketIdentifier, $identifier, $options);
     }
 
     /**
@@ -253,7 +248,7 @@ readonly class FileApi implements BlobFileApiInterface
 
             foreach ($fileDataCollection as $fileData) {
                 try {
-                    $this->blobService->removeFile($fileData->getIdentifier());
+                    $this->removeFileInternal($bucketIdentifier, $fileData->getIdentifier(), $options);
                 } catch (\Exception $exception) {
                     throw $this->createBlobApiError($exception);
                 }
@@ -311,14 +306,20 @@ readonly class FileApi implements BlobFileApiInterface
     /**
      * @throws BlobApiError
      */
-    public function getFileResponse(string $bucketIdentifier, string $identifier, array $options = []): Response
+    public function getFileStream(string $bucketIdentifier, string $identifier, array $options = []): BlobFileStream
     {
         try {
-            return $this->blobService->getBinaryResponse($identifier, [
+            $fileData = $this->getFileData($bucketIdentifier, $identifier, [
                 BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => true,
                 BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => true,
-                BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION => $bucketIdentifier,
             ]);
+
+            return new BlobFileStream(
+                $this->blobService->getFileStream($fileData),
+                $fileData->getFileName(),
+                $fileData->getMimeType(),
+                $fileData->getFileSize()
+            );
         } catch (\Exception $exception) {
             throw $this->createBlobApiError($exception, 'Downloading file failed');
         }
@@ -342,9 +343,21 @@ readonly class FileApi implements BlobFileApiInterface
     /**
      * @throws BlobApiError
      */
+    private function removeFileInternal(string $bucketIdentifier, string $identifier, array $options = []): void
+    {
+        try {
+            $this->blobService->removeFile($this->getFileData($bucketIdentifier, $identifier), $options);
+        } catch (\Exception $exception) {
+            throw $this->createBlobApiError($exception, 'Removing file failed');
+        }
+    }
+
+    /**
+     * @throws BlobApiError
+     */
     private function getFileData(string $bucketIdentifier, string $identifier, array $options = []): FileData
     {
-        if ($blobBaseUrl = $this->tryGetBlobBaseUrlFromCurrentRequest()) {
+        if (($blobBaseUrl = $this->tryGetBlobBaseUrlFromCurrentRequest()) !== null) {
             $options[BlobService::BASE_URL_OPTION] = $blobBaseUrl;
         }
         $options[BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION] = $bucketIdentifier;

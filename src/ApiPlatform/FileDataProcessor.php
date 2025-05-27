@@ -40,14 +40,11 @@ class FileDataProcessor extends AbstractDataProcessor
         assert($data instanceof FileData);
         assert($previousData instanceof FileData);
 
-        $fileData = $data;
-        $previousFileData = $previousData;
-
-        $fileData = $this->blobService->setUpFileDataFromRequest($fileData,
+        $fileData = $this->blobService->setUpFileDataFromRequest($data,
             BlobUtils::convertPatchRequest($this->requestStack->getCurrentRequest()),
             'blob:patch-file-data');
 
-        return $this->blobService->updateFile($fileData, $previousFileData);
+        return $this->blobService->updateFile($fileData, $previousData);
     }
 
     /**
@@ -59,8 +56,6 @@ class FileDataProcessor extends AbstractDataProcessor
     protected function removeItem(mixed $identifier, mixed $data, array $filters): void
     {
         assert($data instanceof FileData);
-        $fileData = $data;
-
-        $this->blobService->removeFile($identifier, $fileData);
+        $this->blobService->removeFile($data);
     }
 }
