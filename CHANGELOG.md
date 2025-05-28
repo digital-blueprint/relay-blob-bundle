@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.78
+
 - Update blob library and adapt FileApi to implement interface changes
 - Replace DatasystemProviderServiceInterface::getResponse by 
 DatasystemProviderServiceInterface::getFileStream, returning a Psr\Http\Message\StreamInterface
