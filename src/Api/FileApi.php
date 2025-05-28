@@ -308,12 +308,12 @@ readonly class FileApi implements BlobFileApiInterface
      */
     public function getFileStream(string $bucketIdentifier, string $identifier, array $options = []): BlobFileStream
     {
-        try {
-            $fileData = $this->getFileData($bucketIdentifier, $identifier, [
-                BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => true,
-                BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => true,
-            ]);
+        $fileData = $this->getFileData($bucketIdentifier, $identifier, [
+            BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => true,
+            BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => true,
+        ]);
 
+        try {
             return new BlobFileStream(
                 $this->blobService->getFileStream($fileData),
                 $fileData->getFileName(),

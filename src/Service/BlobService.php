@@ -70,6 +70,10 @@ class BlobService implements LoggerAwareInterface
      */
     public function addFile(FileData $fileData, array $options = []): FileData
     {
+        if ($fileData->getFile() === null) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'file is missing', 'blob:create-file-data-file-missing');
+        }
+
         $fileData->setIdentifier(Uuid::v7()->toRfc4122());
 
         $now = BlobUtils::now();
@@ -104,7 +108,7 @@ class BlobService implements LoggerAwareInterface
         $errorPrefix = 'blob:patch-file-data';
         $this->ensureFileDataIsValid($fileData, $errorPrefix);
 
-        if ($fileData->getFile() instanceof File) {
+        if ($fileData->getFile() !== null) {
             $this->saveFileDataAndFile($fileData, $fileData->getFileSize() - $previousFileData->getFileSize(), $errorPrefix);
         } else {
             $this->saveFileData($fileData);
@@ -853,9 +857,6 @@ class BlobService implements LoggerAwareInterface
         if (Tools::isNullOrEmpty($fileData->getIdentifier())) {
             throw new \RuntimeException('identifier is missing');
         }
-        if ($fileData->getFile() === null) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'file is missing', 'blob:create-file-data-file-missing');
-        }
         if (Tools::isNullOrEmpty($fileData->getFileName())) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName is missing', $errorPrefix.'-file-name-missing');
         }
@@ -865,8 +866,10 @@ class BlobService implements LoggerAwareInterface
         if (Tools::isNullOrEmpty($fileData->getBucketId())) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucket ID is missing', $errorPrefix.'-bucket-id-missing');
         }
-        $fileData->setFileSize($fileData->getFile()->getSize());
-        $fileData->setMimeType($fileData->getFile()->getMimeType() ?? '');
+        if ($fileData->getFile() !== null) {
+            $fileData->setFileSize($fileData->getFile()->getSize());
+            $fileData->setMimeType($fileData->getFile()->getMimeType() ?? '');
+        }
         $fileData->setInternalBucketId($this->configurationService->getInternalBucketIdByBucketID($fileData->getBucketId()));
 
         $this->validateMetadata($fileData, $errorPrefix);
