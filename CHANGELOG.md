@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## v0.1.78
+## v0.1.79
 
 - Update blob library and adapt FileApi to implement interface changes
 - Replace DatasystemProviderServiceInterface::getResponse by 
