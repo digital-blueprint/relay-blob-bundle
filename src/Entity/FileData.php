@@ -602,7 +602,7 @@ class FileData
 
     #[ORM\Column(type: 'integer')]
     #[Groups(['BlobFiles:output'])]
-    private int $fileSize = 0;
+    private ?int $fileSize = null;
 
     #[ORM\Column(type: 'string', length: 64, nullable: true)]
     #[Groups(['BlobFiles:output'])]
@@ -746,12 +746,12 @@ class FileData
         $this->type = $type;
     }
 
-    public function getFileSize(): int
+    public function getFileSize(): ?int
     {
         return $this->fileSize;
     }
 
-    public function setFileSize(int $fileSize): void
+    public function setFileSize(?int $fileSize): void
     {
         $this->fileSize = $fileSize;
     }

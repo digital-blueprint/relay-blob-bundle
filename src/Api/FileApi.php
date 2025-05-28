@@ -23,9 +23,9 @@ readonly class FileApi implements BlobFileApiInterface
 {
     private static function generateTempFilePath(): string
     {
-        $tempFilePath = tempnam(sys_get_temp_dir(), 'dbp_relay_blob_bundle_tempfile_');
+        $tempFilePath = tempnam(sys_get_temp_dir(), 'dbp_relay_blob_bundle_api_file_api_');
         if ($tempFilePath === false) {
-            throw new \RuntimeException('Could not create temporary file path');
+            throw new \RuntimeException('Could not create a unique temporary file path,');
         }
 
         return $tempFilePath;
@@ -51,22 +51,19 @@ readonly class FileApi implements BlobFileApiInterface
         ?string &$tempFilePath, ?FileData $fileData = null): FileData
     {
         $fileData ??= new FileData();
-        if ($blobFile->getIdentifier()) {
-            $fileData->setIdentifier($blobFile->getIdentifier());
+        if (($identifier = $blobFile->getIdentifier()) !== null) {
+            $fileData->setIdentifier($identifier);
         }
-        if ($blobFile->getPrefix()) {
-            $fileData->setPrefix($blobFile->getPrefix());
+        if (($prefix = $blobFile->getPrefix()) !== null) {
+            $fileData->setPrefix($prefix);
         }
-        if ($blobFile->getFileName()) {
-            $fileData->setFileName($blobFile->getFileName());
+        if (($fileName = $blobFile->getFileName()) !== null) {
+            $fileData->setFileName($fileName);
         }
-        if ($mimeType = $blobFile->getMimeType()) {
-            $fileData->setMimeType($mimeType);
-        }
-        if ($type = $blobFile->getType()) {
+        if (($type = $blobFile->getType()) !== null) {
             $fileData->setType($type);
         }
-        if ($metadata = $blobFile->getMetadata()) {
+        if (($metadata = $blobFile->getMetadata()) !== null) {
             $fileData->setMetadata($metadata);
         }
         if ($file = $blobFile->getFile()) {
@@ -85,11 +82,14 @@ readonly class FileApi implements BlobFileApiInterface
                     $tempFilePath = self::generateTempFilePath();
                     $tempFileResource = self::openTempFilePath($tempFilePath);
                     $filePath = $tempFilePath;
-                    while (false === $file->eof()) {
-                        $chunk = $file->read(1024);
-                        fwrite($tempFileResource, $chunk);
+                    try {
+                        while (false === $file->eof()) {
+                            $chunk = $file->read(2048);
+                            fwrite($tempFileResource, $chunk);
+                        }
+                    } finally {
+                        fclose($tempFileResource);
                     }
-                    fclose($tempFileResource);
                 } else {
                     throw new BlobApiError('unsupported file object', BlobApiError::REQUIRED_PARAMETER_MISSING);
                 }
