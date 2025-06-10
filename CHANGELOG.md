@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.80
+
 - FileApi: Fix internal getFileData options (suspend validation); fix exceptions
 - Update the blob library and adapt
 
