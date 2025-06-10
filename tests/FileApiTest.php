@@ -554,7 +554,11 @@ class FileApiTest extends ApiTestCase
             BlobApi::INCLUDE_FILE_CONTENTS_OPTION => true,
         ];
         $signedUrl = $this->fileApi->createSignedUrl(self::TEST_BUCKET_IDENTIFIER, $method, options: $options);
-        $this->validateUrl($signedUrl, $method, extraQueryParameters: $options);
+        $this->validateUrl($signedUrl, $method, extraQueryParameters: [
+            BlobApi::PREFIX_OPTION => 'foo',
+            BlobApi::INCLUDE_DELETE_AT_OPTION => '1',
+            BlobApi::INCLUDE_FILE_CONTENTS_OPTION => '1',
+        ]);
 
         $identifier = '019746a0-dedf-767e-b8f6-c5aaa9dc9f7c';
         $options = [
@@ -562,7 +566,9 @@ class FileApiTest extends ApiTestCase
         ];
         $signedUrl = $this->fileApi->createSignedUrl(self::TEST_BUCKET_IDENTIFIER, $method,
             options: $options, identifier: $identifier);
-        $this->validateUrl($signedUrl, $method, $identifier, extraQueryParameters: $options);
+        $this->validateUrl($signedUrl, $method, $identifier, extraQueryParameters: [
+            BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => '1',
+        ]);
 
         $options = [
             BlobApi::INCLUDE_DELETE_AT_OPTION => true,
@@ -570,7 +576,11 @@ class FileApiTest extends ApiTestCase
         $action = 'download';
         $signedUrl = $this->fileApi->createSignedUrl(self::TEST_BUCKET_IDENTIFIER, $method,
             options: $options, identifier: $identifier, action: $action);
-        $this->validateUrl($signedUrl, $method, $identifier, $action, extraQueryParameters: $options);
+        $this->validateUrl($signedUrl, $method, $identifier, $action, extraQueryParameters: [
+            BlobApi::INCLUDE_DELETE_AT_OPTION => '1',
+        ]);
+
+        $this->assertTrue(true);
     }
 
     /**
@@ -643,7 +653,7 @@ class FileApiTest extends ApiTestCase
         $bucketKey = $this->blobService->getBucketConfig(
             $this->blobService->getInternalBucketIdByBucketID(self::TEST_BUCKET_IDENTIFIER))->getKey();
 
-        TestUtils::validateSignedUrl($this, self::TEST_BUCKET_IDENTIFIER, $bucketKey, self::BLOB_BASE_URL, $url,
+        TestUtils::validateSignedUrl(self::TEST_BUCKET_IDENTIFIER, $bucketKey, self::BLOB_BASE_URL, $url,
             $method, $identifier, $action, $extraQueryParameters);
     }
 
