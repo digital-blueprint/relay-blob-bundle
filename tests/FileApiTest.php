@@ -6,11 +6,13 @@ namespace Dbp\Relay\BlobBundle\Tests;
 
 use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use Dbp\Relay\BlobBundle\Api\FileApi;
+use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
 use Dbp\Relay\BlobBundle\TestUtils\TestEntityManager;
 use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Dbp\Relay\BlobLibrary\Api\BlobApiError;
 use Dbp\Relay\BlobLibrary\Api\BlobFile;
+use Dbp\Relay\BlobLibrary\Helpers\TestUtils;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterException;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
 use GuzzleHttp\Psr7\Utils;
@@ -25,10 +27,12 @@ class FileApiTest extends ApiTestCase
     private const TEST_PREFIX = 'prefix';
     private const TEST_FILENAME = 'test.txt';
     private const TEST_FILE_CONTENTS = 'this is a test file content';
+    private const BLOB_BASE_URL = 'https://blob.com';
 
     private ?FileApi $fileApi = null;
     private ?RequestStack $requestStack = null;
-    private TestEntityManager $testEntityManager;
+    private ?TestEntityManager $testEntityManager = null;
+    private ?BlobService $blobService = null;
 
     protected function setUp(): void
     {
@@ -36,9 +40,9 @@ class FileApiTest extends ApiTestCase
         $this->testEntityManager = BlobTestUtils::createTestEntityManager($kernel->getContainer());
 
         $this->requestStack = new RequestStack();
-        $this->requestStack->push(Request::create('https://example.com/blob/files'));
-        $this->fileApi = new FileApi(
-            BlobTestUtils::createTestBlobService($this->testEntityManager->getEntityManager()), $this->requestStack);
+        $this->requestStack->push(Request::create(self::BLOB_BASE_URL.'/blob/files'));
+        $this->blobService = BlobTestUtils::createTestBlobService($this->testEntityManager->getEntityManager());
+        $this->fileApi = new FileApi($this->blobService, $this->requestStack);
     }
 
     protected function tearDown(): void
@@ -51,7 +55,7 @@ class FileApiTest extends ApiTestCase
     /**
      * @throws BlobApiError
      */
-    public function testWithoutRequest(): void
+    public function testAddFileWithoutRequest(): void
     {
         // without a current request, the content url should be without http scheme and host
         $this->requestStack->pop();
@@ -90,7 +94,7 @@ class FileApiTest extends ApiTestCase
         $this->assertTrue(Uuid::isValid($blobFile->getIdentifier()));
         $this->assertFileIsFound($blobFile->getIdentifier());
         $this->assertFileContentsEquals($blobFile->getIdentifier(), 'data');
-        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile->getIdentifier(), $blobFile->getContentUrl());
+        $this->assertStringStartsWith(self::BLOB_BASE_URL.'/blob/files/'.$blobFile->getIdentifier(), $blobFile->getContentUrl());
     }
 
     /**
@@ -146,16 +150,76 @@ class FileApiTest extends ApiTestCase
     public function testUpdateFile(): void
     {
         $blobFile = $this->addTestFile();
-        $blobFile->setPrefix('new_prefix');
-        $blobFile->setFileName('new_test.txt');
-        $blobFile->setFile('new content');
 
-        $blobFile = $this->fileApi->updateFile(self::TEST_BUCKET_IDENTIFIER, $blobFile);
-        $blobFile = $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFile->getIdentifier());
-        $this->assertEquals('new_test.txt', $blobFile->getFileName());
-        $this->assertFileContentsEquals($blobFile->getIdentifier(), 'new content');
-        $this->assertEquals('new_prefix', $blobFile->getPrefix());
-        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile->getIdentifier(), $blobFile->getContentUrl());
+        $updatedBlobFile = new BlobFile();
+        $updatedBlobFile->setIdentifier($blobFile->getIdentifier());
+        $updatedBlobFile->setPrefix('new_prefix');
+        $updatedBlobFile->setFileName('new_test.txt');
+        $updatedBlobFile->setFile('new content');
+
+        $updatedBlobFile = $this->fileApi->updateFile(self::TEST_BUCKET_IDENTIFIER, $updatedBlobFile);
+        $this->assertEquals('new_test.txt', $updatedBlobFile->getFileName());
+        $this->assertFileContentsEquals($updatedBlobFile->getIdentifier(), 'new content');
+        $this->assertEquals('new_prefix', $updatedBlobFile->getPrefix());
+        $this->assertStringStartsWith(self::BLOB_BASE_URL.'/blob/files/'.$updatedBlobFile->getIdentifier(), $updatedBlobFile->getContentUrl());
+
+        $updatedBlobFile = $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $updatedBlobFile->getIdentifier());
+        $this->assertEquals('new_test.txt', $updatedBlobFile->getFileName());
+        $this->assertFileContentsEquals($updatedBlobFile->getIdentifier(), 'new content');
+        $this->assertEquals('new_prefix', $updatedBlobFile->getPrefix());
+        $this->assertStringStartsWith(self::BLOB_BASE_URL.'/blob/files/'.$updatedBlobFile->getIdentifier(), $updatedBlobFile->getContentUrl());
+    }
+
+    public function testUpdateFileNotFound(): void
+    {
+        $updatedBlobFile = new BlobFile();
+        $updatedBlobFile->setIdentifier('019746a0-dedf-767e-b8f6-c5aaa9dc9f7c');
+        $updatedBlobFile->setPrefix('new_prefix');
+
+        try {
+            $this->fileApi->updateFile(self::TEST_BUCKET_IDENTIFIER, $updatedBlobFile);
+            $this->fail('Expected BlobApiError');
+        } catch (BlobApiError $blobApiError) {
+            $this->assertEquals(BlobApiError::FILE_NOT_FOUND, $blobApiError->getErrorId());
+        }
+    }
+
+    /**
+     * @throws BlobApiError
+     */
+    public function testUpdateFileWithIncludeDeleteAtOption(): void
+    {
+        $blobFileIdentifier = $this->addTestFile(options: [BlobApi::DELETE_IN_OPTION => 'PT3S'])->getIdentifier();
+
+        $updatedBlobFile = new BlobFile();
+        $updatedBlobFile->setIdentifier($blobFileIdentifier);
+        $updatedBlobFile->setPrefix('new_prefix');
+
+        try {
+            $this->fileApi->updateFile(self::TEST_BUCKET_IDENTIFIER, $updatedBlobFile);
+            $this->fail('Expected BlobApiError');
+        } catch (BlobApiError $blobApiError) {
+            $this->assertEquals(BlobApiError::FILE_NOT_FOUND, $blobApiError->getErrorId());
+        }
+
+        $this->fileApi->updateFile(self::TEST_BUCKET_IDENTIFIER, $updatedBlobFile,
+            options: [BlobApi::INCLUDE_DELETE_AT_OPTION => true]);
+    }
+
+    /**
+     * @throws BlobApiError
+     */
+    public function testUpdateFileWithIncludeFileContentsOption(): void
+    {
+        $blobFileIdentifier = $this->addTestFile()->getIdentifier();
+
+        $updatedBlobFile = new BlobFile();
+        $updatedBlobFile->setIdentifier($blobFileIdentifier);
+        $updatedBlobFile->setPrefix('new_prefix');
+
+        $blobFile = $this->fileApi->updateFile(self::TEST_BUCKET_IDENTIFIER, $updatedBlobFile,
+            options: [BlobApi::INCLUDE_FILE_CONTENTS_OPTION => true]);
+        $this->assertEquals('data:text/plain;base64,'.base64_encode(self::TEST_FILE_CONTENTS), $blobFile->getContentUrl());
     }
 
     /**
@@ -163,14 +227,48 @@ class FileApiTest extends ApiTestCase
      */
     public function testRemoveFile(): void
     {
-        $blobFile = $this->addTestFile();
-        $this->assertFileIsFound($blobFile->getIdentifier());
-        $this->fileApi->removeFile(self::TEST_BUCKET_IDENTIFIER, $blobFile->getIdentifier());
+        $blobFileIdentifier = $this->addTestFile()->getIdentifier();
+        $this->assertFileIsFound($blobFileIdentifier);
+        $this->fileApi->removeFile(self::TEST_BUCKET_IDENTIFIER, $blobFileIdentifier);
         try {
-            $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFile->getIdentifier());
+            $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFileIdentifier);
         } catch (BlobApiError $blobApiError) {
             $this->assertEquals(BlobApiError::FILE_NOT_FOUND, $blobApiError->getErrorId());
             $this->assertEquals(Response::HTTP_NOT_FOUND, $blobApiError->getStatusCode());
+        }
+    }
+
+    public function testRemoveFileNotFound(): void
+    {
+        try {
+            $this->fileApi->removeFile(self::TEST_BUCKET_IDENTIFIER, '019746a0-dedf-767e-b8f6-c5aaa9dc9f7c');
+            $this->fail('Expected BlobApiError');
+        } catch (BlobApiError $blobApiError) {
+            $this->assertEquals(BlobApiError::FILE_NOT_FOUND, $blobApiError->getErrorId());
+        }
+    }
+
+    /**
+     * @throws BlobApiError
+     */
+    public function testRemoveFileWithIncludeDeleteAtOption(): void
+    {
+        $blobFileIdentifier = $this->addTestFile(options: [BlobApi::DELETE_IN_OPTION => 'PT3S'])->getIdentifier();
+
+        try {
+            $this->fileApi->removeFile(self::TEST_BUCKET_IDENTIFIER, $blobFileIdentifier);
+            $this->fail('Expected BlobApiError');
+        } catch (BlobApiError $blobApiError) {
+            $this->assertEquals(BlobApiError::FILE_NOT_FOUND, $blobApiError->getErrorId());
+        }
+
+        $this->fileApi->removeFile(self::TEST_BUCKET_IDENTIFIER, $blobFileIdentifier,
+            options: [BlobApi::INCLUDE_DELETE_AT_OPTION => true]);
+        try {
+            $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFileIdentifier);
+            $this->fail('Expected 404');
+        } catch (BlobApiError $blobApiError) {
+            $this->assertEquals(BlobApiError::FILE_NOT_FOUND, $blobApiError->getErrorId());
         }
     }
 
@@ -182,7 +280,72 @@ class FileApiTest extends ApiTestCase
         $blobFile = $this->addTestFile();
         $blobFileFromGet = $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFile->getIdentifier());
         $this->assertEquals($blobFile->getIdentifier(), $blobFileFromGet->getIdentifier());
-        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile->getIdentifier(), $blobFile->getContentUrl());
+        $this->assertStringStartsWith(self::BLOB_BASE_URL.'/blob/files/'.$blobFile->getIdentifier(), $blobFile->getContentUrl());
+    }
+
+    /**
+     * @throws BlobApiError
+     */
+    public function testGetFileNotFound(): void
+    {
+        try {
+            $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, '019746a0-dedf-767e-b8f6-c5aaa9dc9f7c');
+        } catch (BlobApiError $blobApiError) {
+            $this->assertEquals(BlobApiError::FILE_NOT_FOUND, $blobApiError->getErrorId());
+            $this->assertEquals(Response::HTTP_NOT_FOUND, $blobApiError->getStatusCode());
+        }
+    }
+
+    /**
+     * @throws BlobApiError
+     */
+    public function testGetFileWithIncludeDeleteAtOption(): void
+    {
+        $blobFileIdentifier = $this->addTestFile(options: [BlobApi::DELETE_IN_OPTION => 'PT3S'])->getIdentifier();
+
+        try {
+            $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFileIdentifier);
+            $this->fail('Expected BlobApiError');
+        } catch (BlobApiError $blobApiError) {
+            $this->assertEquals(BlobApiError::FILE_NOT_FOUND, $blobApiError->getErrorId());
+            $this->assertEquals(Response::HTTP_NOT_FOUND, $blobApiError->getStatusCode());
+        }
+
+        $this->assertEquals($blobFileIdentifier,
+            $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFileIdentifier,
+                options: [BlobApi::INCLUDE_DELETE_AT_OPTION => true])->getIdentifier());
+    }
+
+    /**
+     * @throws BlobApiError
+     */
+    public function testGetFileWithIncludeFileContentsOption(): void
+    {
+        $blobFileIdentifier = $this->addTestFile()->getIdentifier();
+        $this->assertEquals('data:text/plain;base64,'.base64_encode(self::TEST_FILE_CONTENTS),
+            $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFileIdentifier,
+                options: [BlobApi::INCLUDE_FILE_CONTENTS_OPTION => true])->getContentUrl());
+    }
+
+    /**
+     * @throws BlobApiError
+     */
+    public function testGetFileWithDisableOutputValidationOption(): void
+    {
+        $blobFile = $this->addTestFile();
+        // illegally modify file contents:
+        $this->saveFile(self::TEST_BUCKET_IDENTIFIER, $blobFile->getIdentifier());
+
+        try {
+            $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFile->getIdentifier());
+            $this->fail('Expected BlobApiError');
+        } catch (BlobApiError $blobApiError) {
+            $this->assertEquals(BlobApiError::CLIENT_ERROR, $blobApiError->getErrorId());
+            $this->assertEquals(Response::HTTP_CONFLICT, $blobApiError->getStatusCode());
+        }
+
+        $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFile->getIdentifier(),
+            options: [BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => true]);
     }
 
     /**
@@ -194,17 +357,65 @@ class FileApiTest extends ApiTestCase
         $blobFile2 = $this->addTestFile();
         $blobFile3 = $this->addTestFile();
 
-        $blobFiles = $this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER);
+        $blobFiles = iterator_to_array($this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER));
         $this->assertCount(3, $blobFiles);
         $this->assertInstanceOf(BlobFile::class, $blobFiles[0]);
         $this->assertEquals($blobFile1->getIdentifier(), $blobFiles[0]->getIdentifier());
-        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile1->getIdentifier(), $blobFiles[0]->getContentUrl());
+        $this->assertStringStartsWith(self::BLOB_BASE_URL.'/blob/files/'.$blobFile1->getIdentifier(), $blobFiles[0]->getContentUrl());
         $this->assertEquals($blobFile2->getIdentifier(), $blobFiles[1]->getIdentifier());
         $this->assertInstanceOf(BlobFile::class, $blobFiles[1]);
-        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile2->getIdentifier(), $blobFiles[1]->getContentUrl());
+        $this->assertStringStartsWith(self::BLOB_BASE_URL.'/blob/files/'.$blobFile2->getIdentifier(), $blobFiles[1]->getContentUrl());
         $this->assertEquals($blobFile3->getIdentifier(), $blobFiles[2]->getIdentifier());
         $this->assertInstanceOf(BlobFile::class, $blobFiles[2]);
-        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile3->getIdentifier(), $blobFiles[2]->getContentUrl());
+        $this->assertStringStartsWith(self::BLOB_BASE_URL.'/blob/files/'.$blobFile3->getIdentifier(), $blobFiles[2]->getContentUrl());
+    }
+
+    /**
+     * @throws BlobApiError
+     */
+    public function testGetFilesWithIncludeFileContentsOption(): void
+    {
+        $fileContent1 = 'foo';
+        $fileContent2 = 'bar';
+        $fileContent3 = 'baz';
+        $blobFile1 = $this->addTestFile(fileContent: $fileContent1);
+        $blobFile2 = $this->addTestFile(fileContent: $fileContent2);
+        $blobFile3 = $this->addTestFile(fileContent: $fileContent3);
+
+        $blobFiles = iterator_to_array($this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER,
+            options: [BlobApi::INCLUDE_FILE_CONTENTS_OPTION => true]));
+        $this->assertCount(3, $blobFiles);
+        $this->assertInstanceOf(BlobFile::class, $blobFiles[0]);
+        $this->assertEquals($blobFile1->getIdentifier(), $blobFiles[0]->getIdentifier());
+        $this->assertStringStartsWith('data:text/plain;base64,'.base64_encode($fileContent1), $blobFiles[0]->getContentUrl());
+        $this->assertEquals($blobFile2->getIdentifier(), $blobFiles[1]->getIdentifier());
+        $this->assertInstanceOf(BlobFile::class, $blobFiles[1]);
+        $this->assertStringStartsWith('data:text/plain;base64,'.base64_encode($fileContent2), $blobFiles[1]->getContentUrl());
+        $this->assertEquals($blobFile3->getIdentifier(), $blobFiles[2]->getIdentifier());
+        $this->assertInstanceOf(BlobFile::class, $blobFiles[2]);
+        $this->assertStringStartsWith('data:text/plain;base64,'.base64_encode($fileContent3), $blobFiles[2]->getContentUrl());
+    }
+
+    /**
+     * @throws BlobApiError
+     */
+    public function testGetFilesWithIncludeDeleteAtOption(): void
+    {
+        $blobFile1 = $this->addTestFile();
+        $blobFile2 = $this->addTestFile(options: [BlobApi::DELETE_IN_OPTION => 'PT3S']);
+        $blobFile3 = $this->addTestFile();
+
+        $blobFiles = iterator_to_array($this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER));
+        $this->assertCount(2, $blobFiles);
+        $this->assertContainsEquals($blobFile1, $blobFiles);
+        $this->assertContainsEquals($blobFile3, $blobFiles);
+
+        $blobFiles = iterator_to_array($this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER,
+            options: [BlobApi::INCLUDE_DELETE_AT_OPTION => true]));
+        $this->assertCount(3, $blobFiles);
+        $this->assertContainsEquals($blobFile1, $blobFiles);
+        $this->assertContainsEquals($blobFile2, $blobFiles);
+        $this->assertContainsEquals($blobFile3, $blobFiles);
     }
 
     /**
@@ -216,18 +427,17 @@ class FileApiTest extends ApiTestCase
         $blobFile2 = $this->addTestFile();
         $blobFile3 = $this->addTestFile();
 
-        $blobFilePage1 = $this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER, 1, 2);
+        $blobFilePage1 = iterator_to_array($this->fileApi->getFiles(
+            self::TEST_BUCKET_IDENTIFIER, 1, 2));
         $this->assertCount(2, $blobFilePage1);
-        $blobFilePage2 = $this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER, 2, 2);
+        $blobFilePage2 = iterator_to_array($this->fileApi->getFiles(
+            self::TEST_BUCKET_IDENTIFIER, 2, 2));
         $this->assertCount(1, $blobFilePage2);
         $blobFiles = array_merge($blobFilePage1, $blobFilePage2);
 
-        $this->assertEquals($blobFile1->getIdentifier(), $blobFiles[0]->getIdentifier());
-        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile1->getIdentifier(), $blobFile1->getContentUrl());
-        $this->assertEquals($blobFile2->getIdentifier(), $blobFiles[1]->getIdentifier());
-        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile2->getIdentifier(), $blobFile2->getContentUrl());
-        $this->assertEquals($blobFile3->getIdentifier(), $blobFiles[2]->getIdentifier());
-        $this->assertStringStartsWith('https://example.com/blob/files/'.$blobFile3->getIdentifier(), $blobFile3->getContentUrl());
+        $this->assertContainsEquals($blobFile1, $blobFiles);
+        $this->assertContainsEquals($blobFile2, $blobFiles);
+        $this->assertContainsEquals($blobFile3, $blobFiles);
     }
 
     /**
@@ -239,21 +449,22 @@ class FileApiTest extends ApiTestCase
         $blobFile2 = $this->addTestFile('another_prefix');
         $blobFile3 = $this->addTestFile('prefix');
 
-        $blobFiles = $this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER, options: [BlobApi::PREFIX_OPTION => 'prefix']);
+        $blobFiles = iterator_to_array($this->fileApi->getFiles(
+            self::TEST_BUCKET_IDENTIFIER, options: [BlobApi::PREFIX_OPTION => 'prefix']));
         $this->assertCount(2, $blobFiles);
         $this->assertEquals($blobFile1->getIdentifier(), $blobFiles[0]->getIdentifier());
         $this->assertEquals($blobFile3->getIdentifier(), $blobFiles[1]->getIdentifier());
 
-        $blobFiles = $this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER, options: [
+        $blobFiles = iterator_to_array($this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER, options: [
             BlobApi::PREFIX_OPTION => 'another',
             BlobApi::PREFIX_STARTS_WITH_OPTION => false,
-        ]);
+        ]));
         $this->assertCount(0, $blobFiles);
 
-        $blobFiles = $this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER, options: [
+        $blobFiles = iterator_to_array($this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER, options: [
             BlobApi::PREFIX_OPTION => 'another',
             BlobApi::PREFIX_STARTS_WITH_OPTION => true,
-        ]);
+        ]));
         $this->assertCount(1, $blobFiles);
         $this->assertEquals($blobFile2->getIdentifier(), $blobFiles[0]->getIdentifier());
     }
@@ -272,7 +483,8 @@ class FileApiTest extends ApiTestCase
             ->iEndsWith('prefix', 'prefix')
             ->createFilter();
 
-        $blobFiles = $this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER, options: ['filter' => $filter]);
+        $blobFiles = iterator_to_array(
+            $this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER, options: ['filter' => $filter]));
         $this->assertCount(3, $blobFiles);
         $this->assertEquals($blobFile1->getIdentifier(), $blobFiles[0]->getIdentifier());
         $this->assertEquals($blobFile2->getIdentifier(), $blobFiles[1]->getIdentifier());
@@ -282,7 +494,8 @@ class FileApiTest extends ApiTestCase
             ->equals('fileName', 'test2.txt')
             ->createFilter();
 
-        $blobFiles = $this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER, options: ['filter' => $filter]);
+        $blobFiles = iterator_to_array(
+            $this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER, options: ['filter' => $filter]));
         $this->assertCount(1, $blobFiles);
         $this->assertEquals($blobFile1->getIdentifier(), $blobFiles[0]->getIdentifier());
     }
@@ -304,6 +517,65 @@ class FileApiTest extends ApiTestCase
     /**
      * @throws BlobApiError
      */
+    public function testGetFileStreamWithIncludeDeleteAtOption(): void
+    {
+        $blobFileIdentifier = $this->addTestFile(options: [BlobApi::DELETE_IN_OPTION => 'PT3S'])->getIdentifier();
+
+        try {
+            $this->fileApi->getFileStream(self::TEST_BUCKET_IDENTIFIER, $blobFileIdentifier);
+            $this->fail('Expected BlobApiError');
+        } catch (BlobApiError $blobApiError) {
+            $this->assertEquals(BlobApiError::FILE_NOT_FOUND, $blobApiError->getErrorId());
+            $this->assertEquals(Response::HTTP_NOT_FOUND, $blobApiError->getStatusCode());
+        }
+
+        $this->fileApi->getFileStream(self::TEST_BUCKET_IDENTIFIER, $blobFileIdentifier,
+            options: [BlobApi::INCLUDE_DELETE_AT_OPTION => true]);
+    }
+
+    /**
+     * @throws BlobApiError
+     * @throws \Exception
+     */
+    public function testCreateSignedUrl(): void
+    {
+        $method = 'POST';
+        $parameters = [
+            'prefix' => 'foo',
+            'metadata' => '{}',
+        ];
+        $signedUrl = $this->fileApi->createSignedUrl(self::TEST_BUCKET_IDENTIFIER, $method, $parameters);
+        $this->validateUrl($signedUrl, $method, extraQueryParameters: $parameters);
+
+        $method = 'GET';
+        $options = [
+            BlobApi::PREFIX_OPTION => 'foo',
+            BlobApi::INCLUDE_DELETE_AT_OPTION => true,
+            BlobApi::INCLUDE_FILE_CONTENTS_OPTION => true,
+        ];
+        $signedUrl = $this->fileApi->createSignedUrl(self::TEST_BUCKET_IDENTIFIER, $method, options: $options);
+        $this->validateUrl($signedUrl, $method, extraQueryParameters: $options);
+
+        $identifier = '019746a0-dedf-767e-b8f6-c5aaa9dc9f7c';
+        $options = [
+            BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => true,
+        ];
+        $signedUrl = $this->fileApi->createSignedUrl(self::TEST_BUCKET_IDENTIFIER, $method,
+            options: $options, identifier: $identifier);
+        $this->validateUrl($signedUrl, $method, $identifier, extraQueryParameters: $options);
+
+        $options = [
+            BlobApi::INCLUDE_DELETE_AT_OPTION => true,
+        ];
+        $action = 'download';
+        $signedUrl = $this->fileApi->createSignedUrl(self::TEST_BUCKET_IDENTIFIER, $method,
+            options: $options, identifier: $identifier, action: $action);
+        $this->validateUrl($signedUrl, $method, $identifier, $action, extraQueryParameters: $options);
+    }
+
+    /**
+     * @throws BlobApiError
+     */
     public function testDeleteFilesByPrefixDeprecated(): void
     {
         $this->addTestFile('prefix');
@@ -311,7 +583,7 @@ class FileApiTest extends ApiTestCase
         $this->addTestFile('prefix');
 
         $this->fileApi->removeFiles(self::TEST_BUCKET_IDENTIFIER, options: [BlobApi::PREFIX_OPTION => 'prefix']);
-        $blobFiles = $this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER);
+        $blobFiles = iterator_to_array($this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER));
         $this->assertCount(1, $blobFiles);
         $this->assertEquals($blobFile2->getIdentifier(), $blobFiles[0]->getIdentifier());
 
@@ -319,7 +591,7 @@ class FileApiTest extends ApiTestCase
             BlobApi::PREFIX_OPTION => 'another',
             BlobApi::PREFIX_STARTS_WITH_OPTION => true,
         ]);
-        $blobFiles = $this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER);
+        $blobFiles = iterator_to_array($this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER));
         $this->assertCount(0, $blobFiles);
     }
 
@@ -339,7 +611,7 @@ class FileApiTest extends ApiTestCase
             ->createFilter();
 
         $this->fileApi->removeFiles(self::TEST_BUCKET_IDENTIFIER, options: ['filter' => $filter]);
-        $blobFiles = $this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER);
+        $blobFiles = iterator_to_array($this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER));
         $this->assertCount(1, $blobFiles);
         $this->assertEquals($blobFile1->getIdentifier(), $blobFiles[0]->getIdentifier());
     }
@@ -347,21 +619,38 @@ class FileApiTest extends ApiTestCase
     /**
      * @throws BlobApiError
      */
-    private function addTestFile(?string $prefix = self::TEST_PREFIX, ?string $fileName = self::TEST_FILENAME,
-        ?string $fileContent = self::TEST_FILE_CONTENTS): BlobFile
+    protected function addTestFile(?string $prefix = self::TEST_PREFIX, ?string $fileName = self::TEST_FILENAME,
+        ?string $fileContent = self::TEST_FILE_CONTENTS, array $options = []): BlobFile
     {
         $blobFile = new BlobFile();
         $blobFile->setPrefix($prefix);
         $blobFile->setFileName($fileName);
         $blobFile->setFile($fileContent);
 
-        return $this->fileApi->addFile(self::TEST_BUCKET_IDENTIFIER, $blobFile);
+        $blobFile = $this->fileApi->addFile(self::TEST_BUCKET_IDENTIFIER, $blobFile, $options);
+        // prevent the same FileData instance (with file attribute set) to be re-used by Doctrine on subsequent get/update:
+        $this->testEntityManager->getEntityManager()->clear();
+
+        return $blobFile;
+    }
+
+    /**
+     * @throws \Exception
+     */
+    protected function validateUrl(string $url, string $method, ?string $identifier = null,
+        ?string $action = null, array $extraQueryParameters = []): void
+    {
+        $bucketKey = $this->blobService->getBucketConfig(
+            $this->blobService->getInternalBucketIdByBucketID(self::TEST_BUCKET_IDENTIFIER))->getKey();
+
+        TestUtils::validateSignedUrl($this, self::TEST_BUCKET_IDENTIFIER, $bucketKey, self::BLOB_BASE_URL, $url,
+            $method, $identifier, $action, $extraQueryParameters);
     }
 
     /**
      * @throws BlobApiError
      */
-    private function assertFileIsFound(string $identifier): void
+    protected function assertFileIsFound(string $identifier): void
     {
         $this->assertEquals($identifier, $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $identifier)->getIdentifier());
     }
@@ -369,9 +658,17 @@ class FileApiTest extends ApiTestCase
     /**
      * @throws BlobApiError
      */
-    private function assertFileContentsEquals(string $identifier, string $expectedContent): void
+    protected function assertFileContentsEquals(string $identifier, string $expectedContent): void
     {
         $this->assertEquals($expectedContent,
             $this->fileApi->getFileStream(self::TEST_BUCKET_IDENTIFIER, $identifier)->getFileStream()->getContents());
+    }
+
+    protected function saveFile(string $bucketIdentifier, string $fileIdentifier, string $filePath = __DIR__.'/test.txt'): void
+    {
+        $internalBucketIdentifier = $this->blobService->getInternalBucketIdByBucketID($bucketIdentifier);
+
+        $this->blobService->getDatasystemProvider($internalBucketIdentifier)
+            ->saveFile($internalBucketIdentifier, $fileIdentifier, new \SplFileInfo($filePath));
     }
 }

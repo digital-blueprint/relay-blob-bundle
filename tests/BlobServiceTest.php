@@ -19,6 +19,7 @@ class BlobServiceTest extends ApiTestCase
     private const TEST_FILE_2_NAME = 'test_patch.txt';
 
     private const TEST_METADATA = '{"foo":"bar"}';
+    private const TEST_METADATA_2 = '{"bar":"baz"}';
 
     private ?TestEntityManager $testEntityManager = null;
     private ?BlobService $blobService = null;
@@ -52,8 +53,10 @@ class BlobServiceTest extends ApiTestCase
     public function testAddFile(): void
     {
         $testBucketConfig = self::getTestBucketConfig();
-        $fileData = $this->addTestFile();
-        $file = new File(__DIR__.'/'.self::TEST_FILE_NAME, true);
+        $filePath = __DIR__.'/'.self::TEST_FILE_NAME;
+        $metadata = self::TEST_METADATA;
+        $fileData = $this->addTestFile(filePath: $filePath, metadata: $metadata);
+        $file = new File($filePath, true);
 
         $this->assertNotEmpty($fileData->getIdentifier());
         $this->assertEquals(self::TEST_PREFIX, $fileData->getPrefix());
@@ -63,8 +66,8 @@ class BlobServiceTest extends ApiTestCase
         $this->assertEquals(self::TEST_METADATA, $fileData->getMetadata());
         $this->assertEquals('text/plain', $fileData->getMimeType());
         $this->assertEquals($file->getSize(), $fileData->getFileSize());
-        $this->assertNull($fileData->getFileHash());
-        $this->assertNull($fileData->getMetadataHash());
+        $this->assertEquals(hash_file('sha256', $filePath), $fileData->getFileHash());
+        $this->assertEquals(hash('sha256', $metadata), $fileData->getMetadataHash());
         $this->assertNotNull($fileData->getDateCreated());
         $this->assertNotNull($fileData->getDateModified());
         $this->assertNotNull($fileData->getDateAccessed());
@@ -88,8 +91,8 @@ class BlobServiceTest extends ApiTestCase
         $this->assertEquals(self::TEST_METADATA, $fileData->getMetadata());
         $this->assertEquals('text/plain', $fileData->getMimeType());
         $this->assertEquals(12, $fileData->getFileSize());
-        $this->assertNull($fileData->getFileHash());
-        $this->assertNull($fileData->getMetadataHash());
+        $this->assertEquals(hash_file('sha256', $filePath), $fileData->getFileHash());
+        $this->assertEquals(hash('sha256', $metadata), $fileData->getMetadataHash());
         $this->assertNotNull($fileData->getDateCreated());
         $this->assertNotNull($fileData->getDateModified());
         $this->assertNotNull($fileData->getDateAccessed());
@@ -113,10 +116,12 @@ class BlobServiceTest extends ApiTestCase
     public function testGetFile(): void
     {
         $testBucketConfig = self::getTestBucketConfig();
-        $originalFileData = $this->addTestFile();
+        $filePath = __DIR__.'/'.self::TEST_FILE_NAME;
+        $metadata = self::TEST_METADATA;
+        $originalFileData = $this->addTestFile(filePath: $filePath, metadata: $metadata);
 
         $fileData = $this->blobService->getFileData($originalFileData->getIdentifier());
-        $file = new File(__DIR__.'/'.self::TEST_FILE_NAME, true);
+        $file = new File($filePath, true);
 
         $this->assertNotEmpty($fileData->getIdentifier());
         $this->assertEquals(self::TEST_PREFIX, $fileData->getPrefix());
@@ -127,8 +132,8 @@ class BlobServiceTest extends ApiTestCase
         $this->assertEquals('text/plain', $fileData->getMimeType());
         $this->assertEquals($file->getSize(), $fileData->getFileSize());
         $this->assertStringStartsWith('/blob/files/'.$fileData->getIdentifier().'/download?', $fileData->getContentUrl());
-        $this->assertNull($fileData->getFileHash());
-        $this->assertNull($fileData->getMetadataHash());
+        $this->assertEquals(hash_file('sha256', $filePath), $fileData->getFileHash());
+        $this->assertEquals(hash('sha256', $metadata), $fileData->getMetadataHash());
         $this->assertNotNull($fileData->getDateCreated());
         $this->assertNotNull($fileData->getDateModified());
         $this->assertNotNull($fileData->getDateAccessed());
@@ -154,13 +159,17 @@ class BlobServiceTest extends ApiTestCase
     public function testUpdateFile(): void
     {
         $testBucketConfig = self::getTestBucketConfig();
-        $fileData = $this->addTestFile();
+
+        $fileData = $this->addTestFile(filePath: __DIR__.'/'.self::TEST_FILE_NAME, metadata: self::TEST_METADATA);
         $fileIdentifier = $fileData->getIdentifier();
         $previousFileData = clone $fileData;
 
-        $newFile = new File(__DIR__.'/'.self::TEST_FILE_2_NAME, true);
+        $filePath = __DIR__.'/'.self::TEST_FILE_2_NAME;
+        $metadata = self::TEST_METADATA_2;
+        $newFile = new File($filePath, true);
         $fileData->setFile($newFile);
         $fileData->setFilename($newFile->getFilename());
+        $fileData->setMetadata($metadata);
 
         $fileData = $this->blobService->updateFile($fileData, $previousFileData);
 
@@ -169,11 +178,11 @@ class BlobServiceTest extends ApiTestCase
         $this->assertEquals(self::TEST_FILE_2_NAME, $fileData->getFileName());
         $this->assertEquals($testBucketConfig['bucket_id'], $fileData->getBucketId());
         $this->assertEquals($testBucketConfig['internal_bucket_id'], $fileData->getInternalBucketId());
-        $this->assertEquals(self::TEST_METADATA, $fileData->getMetadata());
+        $this->assertEquals(self::TEST_METADATA_2, $fileData->getMetadata());
         $this->assertEquals('text/plain', $fileData->getMimeType());
         $this->assertEquals($newFile->getSize(), $fileData->getFileSize());
-        $this->assertNull($fileData->getFileHash());
-        $this->assertNull($fileData->getMetadataHash());
+        $this->assertEquals(hash_file('sha256', $filePath), $fileData->getFileHash());
+        $this->assertEquals(hash('sha256', $metadata), $fileData->getMetadataHash());
         $this->assertNotNull($fileData->getDateCreated());
         $this->assertNotNull($fileData->getDateModified());
         $this->assertNotNull($fileData->getDateAccessed());
@@ -193,11 +202,11 @@ class BlobServiceTest extends ApiTestCase
         $this->assertEquals(self::TEST_FILE_2_NAME, $fileData->getFileName());
         $this->assertEquals($testBucketConfig['bucket_id'], $fileData->getBucketId());
         $this->assertEquals($testBucketConfig['internal_bucket_id'], $fileData->getInternalBucketId());
-        $this->assertEquals(self::TEST_METADATA, $fileData->getMetadata());
+        $this->assertEquals(self::TEST_METADATA_2, $fileData->getMetadata());
         $this->assertEquals('text/plain', $fileData->getMimeType());
         $this->assertEquals($newFile->getSize(), $fileData->getFileSize());
-        $this->assertNull($fileData->getFileHash());
-        $this->assertNull($fileData->getMetadataHash());
+        $this->assertEquals(hash_file('sha256', $filePath), $fileData->getFileHash());
+        $this->assertEquals(hash('sha256', $metadata), $fileData->getMetadataHash());
         $this->assertNotNull($fileData->getDateCreated());
         $this->assertNotNull($fileData->getDateModified());
         $this->assertNotNull($fileData->getDateAccessed());
@@ -271,17 +280,18 @@ class BlobServiceTest extends ApiTestCase
     /**
      * @throws \Exception
      */
-    protected function addTestFile(int $testBucketIndex = 0): FileData
+    protected function addTestFile(int $testBucketIndex = 0, string $filePath = __DIR__.'/'.self::TEST_FILE_NAME,
+        string $metadata = self::TEST_METADATA): FileData
     {
         $testBucketConfig = self::getTestBucketConfig($testBucketIndex);
 
-        $file = new File(__DIR__.'/'.self::TEST_FILE_NAME, true);
+        $file = new File($filePath, true);
         $fileData = new FileData();
         $fileData->setFile($file);
         $fileData->setFilename($file->getFilename());
         $fileData->setPrefix(self::TEST_PREFIX);
         $fileData->setBucketId($testBucketConfig['bucket_id']);
-        $fileData->setMetadata(self::TEST_METADATA);
+        $fileData->setMetadata($metadata);
 
         return $this->blobService->addFile($fileData);
     }

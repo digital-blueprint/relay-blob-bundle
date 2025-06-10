@@ -159,7 +159,7 @@ class BlobService implements LoggerAwareInterface
                 'FileData was not found!', 'blob:file-data-not-found');
         }
 
-        if (!($options[BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION] ?? false) && $bucketConfig->getOutputValidation()) {
+        if (($options[BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION] ?? false) === false && $bucketConfig->getOutputValidation()) {
             $this->checkFileDataBeforeRetrieval($fileData, 'blob:get-file-data');
         }
 
@@ -571,7 +571,8 @@ class BlobService implements LoggerAwareInterface
     /**
      * @throws \Exception
      */
-    public function getFileDataCollection(string $internalBucketID, ?Filter $filter = null, int $firstItemIndex = 0, int $maxNumItemsPerPage = 30, bool $includeDeleteAt = false)
+    public function getFileDataCollection(string $internalBucketID, ?Filter $filter = null,
+        int $firstItemIndex = 0, int $maxNumItemsPerPage = 30, bool $includeDeleteAt = false)
     {
         $FILE_DATA_ENTITY_ALIAS = 'f';
 
@@ -813,7 +814,8 @@ class BlobService implements LoggerAwareInterface
             foreach ($validator->getErrors() as $error) {
                 $messages[$error['property']] = $error['message'];
             }
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type', $errorPrefix.'-metadata-does-not-match-type', $messages);
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type',
+                $errorPrefix.'-metadata-does-not-match-type', $messages);
         }
     }
 
@@ -822,6 +824,7 @@ class BlobService implements LoggerAwareInterface
      * intended for use before data retrieval using GET.
      *
      * @throws ApiError
+     * @throws \Exception
      */
     public function checkFileDataBeforeRetrieval(FileData $fileData, string $errorPrefix): void
     {
@@ -829,13 +832,15 @@ class BlobService implements LoggerAwareInterface
         if ($this->configurationService->doFileIntegrityChecks()) {
             if ($fileData->getFileHash() !== null && $this->getFileHashFromStorage($fileData) !== $fileData->getFileHash()) {
                 throw ApiError::withDetails(Response::HTTP_CONFLICT,
-                    'sha256 file hash doesnt match! File integrity cannot be guaranteed', $errorPrefix.'-file-hash-mismatch');
+                    'sha256 file hash doesnt match! File integrity cannot be guaranteed',
+                    $errorPrefix.'-file-hash-mismatch');
             }
             if ($fileData->getMetadataHash() !== null
                 && ($fileData->getMetadata() === null
                     || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
                 throw ApiError::withDetails(Response::HTTP_CONFLICT,
-                    'sha256 metadata hash doesnt match! Metadata integrity cannot be guaranteed', $errorPrefix.'-metadata-hash-mismatch');
+                    'sha256 metadata hash doesnt match! Metadata integrity cannot be guaranteed',
+                    $errorPrefix.'-metadata-hash-mismatch');
             }
         }
 

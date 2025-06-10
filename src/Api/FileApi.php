@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\Api;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
+use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Dbp\Relay\BlobLibrary\Api\BlobApiError;
@@ -14,6 +15,7 @@ use Dbp\Relay\BlobLibrary\Api\BlobFileStream;
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
+use Dbp\Relay\CoreBundle\Rest\Query\Pagination\Pagination;
 use Psr\Http\Message\StreamInterface;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -46,9 +48,10 @@ readonly class FileApi implements BlobFileApiInterface
 
     /**
      * @throws BlobApiError
+     * @throws \Exception
      */
     private static function createOrUpdateFileDataFromBlobFile(BlobFile $blobFile,
-        ?string &$tempFilePath, ?FileData $fileData = null): FileData
+        ?string &$tempFilePath, ?FileData $fileData = null, array $options = []): FileData
     {
         $fileData ??= new FileData();
         if (($identifier = $blobFile->getIdentifier()) !== null) {
@@ -66,7 +69,7 @@ readonly class FileApi implements BlobFileApiInterface
         if (($metadata = $blobFile->getMetadata()) !== null) {
             $fileData->setMetadata($metadata);
         }
-        if ($file = $blobFile->getFile()) {
+        if (($file = $blobFile->getFile()) !== null) {
             if ($file instanceof File) {
                 $symfonyFile = $file;
             } else {
@@ -97,6 +100,10 @@ readonly class FileApi implements BlobFileApiInterface
             }
             $fileData->setFile($symfonyFile);
         }
+        if (($deleteIn = $options[BlobApi::DELETE_IN_OPTION] ?? null) !== null) {
+            $fileData->setDeleteAt($deleteIn === 'null' ?
+                null : BlobUtils::now()->add(new \DateInterval($deleteIn)));
+        }
 
         return $fileData;
     }
@@ -114,9 +121,6 @@ readonly class FileApi implements BlobFileApiInterface
         }
         if ($fileData->getPrefix()) {
             $blobFile->setPrefix($fileData->getPrefix());
-        }
-        if ($fileData->getFile()) {
-            $blobFile->setFile($fileData->getFile());
         }
         if ($fileData->getType()) {
             $blobFile->setType($fileData->getType());
@@ -174,7 +178,7 @@ readonly class FileApi implements BlobFileApiInterface
     {
         try {
             $tempFilePath = null;
-            $fileData = self::createOrUpdateFileDataFromBlobFile($blobFile, $tempFilePath);
+            $fileData = self::createOrUpdateFileDataFromBlobFile($blobFile, $tempFilePath, options: $options);
             $fileData->setBucketId($bucketIdentifier);
 
             if (($blobBaseUrl = $this->tryGetBlobBaseUrlFromCurrentRequest()) !== null) {
@@ -201,13 +205,11 @@ readonly class FileApi implements BlobFileApiInterface
         try {
             $tempFilePath = null;
 
-            $options[BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION] = false;
-            $options[BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION] = true;
+            $fileData = $this->getFileData($bucketIdentifier, $blobFile->getIdentifier(),
+                self::createGetFileDataOptions($options, true));
 
-            $fileData = $this->getFileData($bucketIdentifier, $blobFile->getIdentifier(), $options);
             $previousFileData = clone $fileData;
-
-            $fileData = self::createOrUpdateFileDataFromBlobFile($blobFile, $tempFilePath, $fileData);
+            $fileData = self::createOrUpdateFileDataFromBlobFile($blobFile, $tempFilePath, $fileData, options: $options);
 
             return self::createBlobFileFromFileData(
                 $this->blobService->updateFile($fileData, $previousFileData)
@@ -234,27 +236,11 @@ readonly class FileApi implements BlobFileApiInterface
      */
     public function removeFiles(string $bucketIdentifier, array $options = []): void
     {
-        // TODO: batch remove?
-        $currentPage = 1;
-        $maxNumItemsPerPage = 100;
-        $fileDataCollection = [];
-
-        try {
-            do {
-                $filePage = $this->getFiles($bucketIdentifier, $currentPage, $maxNumItemsPerPage, $options);
-                array_push($fileDataCollection, ...$filePage);
-                ++$currentPage;
-            } while (count($filePage) === $maxNumItemsPerPage);
-
-            foreach ($fileDataCollection as $fileData) {
-                try {
-                    $this->removeFileInternal($bucketIdentifier, $fileData->getIdentifier(), $options);
-                } catch (\Exception $exception) {
-                    throw $this->createBlobApiError($exception);
-                }
-            }
-        } catch (\Exception $exception) {
-            throw $this->createBlobApiError($exception, 'Removing files failed');
+        foreach (Pagination::getAllResultsPageNumberBased(
+            function (int $currentPageNumber, int $maxNumItemsPerPage) use ($bucketIdentifier, $options) {
+                return $this->getFiles($bucketIdentifier, $currentPageNumber, $maxNumItemsPerPage, $options);
+            }, 100) as $fileData) {
+            $this->removeFileInternal($bucketIdentifier, $fileData->getIdentifier(), $options);
         }
     }
 
@@ -263,7 +249,13 @@ readonly class FileApi implements BlobFileApiInterface
      */
     public function getFile(string $bucketIdentifier, string $identifier, array $options = []): BlobFile
     {
-        return self::createBlobFileFromFileData($this->getFileData($bucketIdentifier, $identifier, $options));
+        try {
+            return self::createBlobFileFromFileData(
+                $this->getFileData($bucketIdentifier, $identifier,
+                    self::createGetFileDataOptions($options, false)));
+        } catch (\Exception $exception) {
+            throw $this->createBlobApiError($exception, 'Getting file failed');
+        }
     }
 
     /**
@@ -271,11 +263,9 @@ readonly class FileApi implements BlobFileApiInterface
      *
      * @throws BlobApiError
      */
-    public function getFiles(string $bucketIdentifier, int $currentPage = 1, int $maxNumItemsPerPage = 30, array $options = []): array
+    public function getFiles(string $bucketIdentifier, int $currentPage = 1, int $maxNumItemsPerPage = 30, array $options = []): iterable
     {
         try {
-            // ----------------------------
-            // backwards compatibility:
             if (($prefixFilter = $options[BlobApi::PREFIX_OPTION] ?? null) !== null) {
                 $filterTreeBuilder = FilterTreeBuilder::create();
                 if ($options[BlobApi::PREFIX_STARTS_WITH_OPTION] ?? false) {
@@ -292,12 +282,9 @@ readonly class FileApi implements BlobFileApiInterface
                 $options[BlobService::BASE_URL_OPTION] = $blobBaseUrl;
             }
 
-            $blobFiles = [];
             foreach ($this->blobService->getFiles($bucketIdentifier, $filter, $options, $currentPage, $maxNumItemsPerPage) as $fileData) {
-                $blobFiles[] = self::createBlobFileFromFileData($fileData);
+                yield self::createBlobFileFromFileData($fileData);
             }
-
-            return $blobFiles;
         } catch (\Exception $exception) {
             throw $this->createBlobApiError($exception, 'Getting files failed');
         }
@@ -308,12 +295,10 @@ readonly class FileApi implements BlobFileApiInterface
      */
     public function getFileStream(string $bucketIdentifier, string $identifier, array $options = []): BlobFileStream
     {
-        $fileData = $this->getFileData($bucketIdentifier, $identifier, [
-            BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => true,
-            BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => true,
-        ]);
-
         try {
+            $fileData = $this->getFileData($bucketIdentifier, $identifier,
+                self::createGetFileDataOptions($options, true));
+
             return new BlobFileStream(
                 $this->blobService->getFileStream($fileData),
                 $fileData->getFileName(),
@@ -321,7 +306,7 @@ readonly class FileApi implements BlobFileApiInterface
                 $fileData->getFileSize()
             );
         } catch (\Exception $exception) {
-            throw $this->createBlobApiError($exception, 'Downloading file failed');
+            throw $this->createBlobApiError($exception, 'Getting file stream failed');
         }
     }
 
@@ -346,14 +331,17 @@ readonly class FileApi implements BlobFileApiInterface
     private function removeFileInternal(string $bucketIdentifier, string $identifier, array $options = []): void
     {
         try {
-            $this->blobService->removeFile($this->getFileData($bucketIdentifier, $identifier), $options);
+            $fileData = $this->getFileData($bucketIdentifier, $identifier,
+                self::createGetFileDataOptions($options, true));
+
+            $this->blobService->removeFile($fileData, $options);
         } catch (\Exception $exception) {
             throw $this->createBlobApiError($exception, 'Removing file failed');
         }
     }
 
     /**
-     * @throws BlobApiError
+     * @throws \Exception
      */
     private function getFileData(string $bucketIdentifier, string $identifier, array $options = []): FileData
     {
@@ -362,21 +350,23 @@ readonly class FileApi implements BlobFileApiInterface
         }
         $options[BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION] = $bucketIdentifier;
 
-        try {
-            return $this->blobService->getFileData($identifier, $options);
-        } catch (\Exception $exception) {
-            throw $this->createBlobApiError($exception, 'Getting file failed');
-        }
+        return $this->blobService->getFileData($identifier, $options);
     }
 
-    private function createBlobApiError(\Exception $exception, ?string $message = null): BlobApiError
+    private function createBlobApiError(\Exception $exception, string $message): BlobApiError
     {
         $errorId = BlobApiError::INTERNAL_ERROR;
         $statusCode = null;
         $blobErrorId = null;
         $blobErrorDetails = [];
 
-        if ($exception instanceof ApiError) {
+        if ($exception instanceof BlobApiError) {
+            $message = $message.': '.$exception->getMessage();
+            $errorId = $exception->getErrorId();
+            $statusCode = $exception->getStatusCode();
+            $blobErrorId = $exception->getBlobErrorId();
+            $blobErrorDetails = $exception->getBlobErrorDetails();
+        } elseif ($exception instanceof ApiError) {
             $statusCode = $exception->getStatusCode();
             if ($exception->getStatusCode() === Response::HTTP_NOT_FOUND) {
                 $errorId = BlobApiError::FILE_NOT_FOUND;
@@ -389,12 +379,37 @@ readonly class FileApi implements BlobFileApiInterface
             $blobErrorDetails = $exception->getErrorDetails();
         }
 
-        return new BlobApiError($message ?? $exception->getMessage(),
-            $errorId, $statusCode, $blobErrorId, $blobErrorDetails, $exception);
+        return new BlobApiError(
+            $message, $errorId, $statusCode, $blobErrorId, $blobErrorDetails, $exception);
     }
 
     private function tryGetBlobBaseUrlFromCurrentRequest(): ?string
     {
         return $this->requestStack->getCurrentRequest()?->getSchemeAndHttpHost();
+    }
+
+    private static function createGetFileDataOptions(array &$options, bool $isInternalGet): array
+    {
+        $getFileDataOptions = [];
+
+        if (($includeDeleteAt = $options[BlobApi::INCLUDE_DELETE_AT_OPTION] ?? null) !== null) {
+            $getFileDataOptions[BlobApi::INCLUDE_DELETE_AT_OPTION] = $includeDeleteAt;
+            unset($options[BlobApi::INCLUDE_DELETE_AT_OPTION]);
+        }
+        if (($disableOutputValidation = $options[BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION] ?? null) !== null) {
+            $getFileDataOptions[BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION] = $disableOutputValidation;
+            unset($options[BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION]);
+        }
+        if (($includeFileContents = $options[BlobApi::INCLUDE_FILE_CONTENTS_OPTION] ?? null) !== null) {
+            $getFileDataOptions[BlobApi::INCLUDE_FILE_CONTENTS_OPTION] = $includeFileContents;
+            unset($options[BlobApi::INCLUDE_FILE_CONTENTS_OPTION]);
+        }
+
+        if ($isInternalGet) {
+            $getFileDataOptions[BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION] = false;
+            $getFileDataOptions[BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION] = true;
+        }
+
+        return $getFileDataOptions;
     }
 }
