@@ -310,9 +310,16 @@ class BlobService implements LoggerAwareInterface
     }
 
     /**
-     * Creates a new fileData element and saves all the data from the request in it, if the request is valid.
+     * Creates a new dummy fileData element and file of given size.
+     * Should be used for testing purposes only.
      *
-     * @param Request $request request which provides all the data
+     * @param string $filesize         number of bytes the file should have
+     * @param string $bucketIdentifier bucket identifier of bucket in which the file should be saved
+     * @param string $prefix           prefix saved in the db
+     * @param string $fileName         filename of the generated file
+     * @param string $deleteIn         duration after which the file should be deleted
+     * @param string $metadata         user-defined metadata of the file
+     * @param string $type             metadata type which will be validated against and saved in the db
      *
      * @throws \Exception
      */
@@ -346,8 +353,6 @@ class BlobService implements LoggerAwareInterface
 
         return $fileData;
     }
-
-
 
     public function getInternalBucketIdByBucketID(string $bucketID): ?string
     {
@@ -963,8 +968,12 @@ class BlobService implements LoggerAwareInterface
         $data = str_repeat('a', $chunkSize);
 
         $bytesWritten = 0;
+        $size = intval($filesize);
+        if ($size === 0) {
+            throw new \RuntimeException('Could not convert string "filesize" to int');
+        }
         while ($bytesWritten < $filesize) {
-            $bytesToWrite = min($chunkSize, $filesize - $bytesWritten);
+            $bytesToWrite = min($chunkSize, $size - $bytesWritten);
             $bytesWritten += fwrite($tempFileResource, substr($data, 0, $bytesToWrite));
         }
 
