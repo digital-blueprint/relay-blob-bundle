@@ -975,7 +975,9 @@ class BlobService implements LoggerAwareInterface
         while ($bytesWritten < $filesize) {
             $bytesToWrite = min($chunkSize, $size - $bytesWritten);
             $bytesWritten += fwrite($tempFileResource, substr($data, 0, $bytesToWrite));
+            fflush($tempFileResource);
         }
+        fclose($tempFileResource);
 
         return new File($tempFilePath);
     }
