@@ -309,6 +309,46 @@ class BlobService implements LoggerAwareInterface
         return $fileData;
     }
 
+    /**
+     * Creates a new fileData element and saves all the data from the request in it, if the request is valid.
+     *
+     * @param Request $request request which provides all the data
+     *
+     * @throws \Exception
+     */
+    public function generateAndSaveDummyFileDataAndFile(string $filesize, string $bucketIdentifier, string $prefix, string $fileName, string $deleteIn, string $metadata, string $type): FileData
+    {
+        $fileData = new FileData();
+        $fileData->setBucketId($bucketIdentifier);
+        $fileData->setFileName($fileName);
+        $fileData->setPrefix($prefix);
+        if (!empty($deleteIn)) {
+            if ($deleteIn === 'null') {
+                $fileData->setDeleteAt(null);
+            } else {
+                $fileData->setDeleteAt(BlobUtils::now()->add(new \DateInterval($deleteIn)));
+            }
+        }
+        if (!empty($type)) {
+            $fileData->setType($type);
+        }
+        if (!empty($metadata)) {
+            $fileData->setMetadata($metadata);
+        }
+
+        // generate dummy file
+        /** @var File $file */
+        $file = $this->generateDummyFileWithGivenFilesize($filesize);
+        $fileData->setFile($file);
+
+        // add file to blob db and the storage system
+        $this->addFile($fileData);
+
+        return $fileData;
+    }
+
+
+
     public function getInternalBucketIdByBucketID(string $bucketID): ?string
     {
         return $this->configurationService->getInternalBucketIdByBucketID($bucketID);
@@ -902,5 +942,32 @@ class BlobService implements LoggerAwareInterface
                 'blob:failed-to-get-file-from-datasystem-service'
             );
         }
+    }
+
+    private function generateDummyFileWithGivenFilesize(string $filesize): File
+    {
+        $tempFilePath = tempnam(sys_get_temp_dir(), 'dbp_relay_blob_bundle_blob_service_');
+        if ($tempFilePath === false) {
+            throw new \RuntimeException('Could not create a unique temporary file path');
+        }
+
+        $tempFileResource = fopen($tempFilePath, 'w');
+        if ($tempFileResource === false) {
+            throw new \RuntimeException('Could not open temporary file for writing');
+        }
+
+        // write data in chunks of X bytes
+        // this is to not hold everything in memory when generating large files.
+        $chunkSize = 1024;
+        // generate X letters
+        $data = str_repeat('a', $chunkSize);
+
+        $bytesWritten = 0;
+        while ($bytesWritten < $filesize) {
+            $bytesToWrite = min($chunkSize, $filesize - $bytesWritten);
+            $bytesWritten += fwrite($tempFileResource, substr($data, 0, $bytesToWrite));
+        }
+
+        return new File($tempFilePath);
     }
 }
