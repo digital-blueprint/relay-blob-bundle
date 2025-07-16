@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v0.1.82
+
+- Add `GenerateFileCommand` to enable generating dummy files of a given filesize with given blob information directly on the server 
+
 ## v0.1.81
 
 - FileApi: Fix internal getFileData options (suspend validation); fix exceptions
