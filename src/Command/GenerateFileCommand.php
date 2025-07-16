@@ -45,9 +45,11 @@ class GenerateFileCommand extends Command
         $retentionDuration = $input->getArgument('retentionDuration') ?? '';
         $metadata = $input->getArgument('metadata') ?? '';
 
-        $output->writeln('Generating blob file ...');
+        $output->writeln('Generating blob file in bucket "'.$bucketIdentifier.'" ...');
 
-        $this->blobService->generateAndSaveDummyFileDataAndFile($filesize, $bucketIdentifier, $prefix, $filename, $retentionDuration, $metadata, $type);
+        $fileData = $this->blobService->generateAndSaveDummyFileDataAndFile($filesize, $bucketIdentifier, $prefix, $filename, $retentionDuration, $metadata, $type);
+
+        $output->writeln('Successfully generated a blob file with identifier "'.$fileData->getIdentifier().'" !');
 
         return 0;
     }

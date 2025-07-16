@@ -349,7 +349,7 @@ class BlobService implements LoggerAwareInterface
         $fileData->setFile($file);
 
         // add file to blob db and the storage system
-        $this->addFile($fileData);
+        $fileData = $this->addFile($fileData);
 
         return $fileData;
     }
