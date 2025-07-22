@@ -343,13 +343,20 @@ class BlobService implements LoggerAwareInterface
             $fileData->setMetadata($metadata);
         }
 
-        // generate dummy file
-        /** @var File $file */
-        $file = $this->generateDummyFileWithGivenFilesize($filesize);
-        $fileData->setFile($file);
+        try {
+            $tempFilePath = null;
+            // generate dummy file
+            /** @var File $file */
+            $file = $this->generateDummyFileWithGivenFilesize($filesize, $tempFilePath);
+            $fileData->setFile($file);
 
-        // add file to blob db and the storage system
-        $fileData = $this->addFile($fileData);
+            // add file to blob db and the storage system
+            $fileData = $this->addFile($fileData);
+        } finally {
+            if ($tempFilePath !== null) {
+                @unlink($tempFilePath);
+            }
+        }
 
         return $fileData;
     }
@@ -949,13 +956,16 @@ class BlobService implements LoggerAwareInterface
         }
     }
 
-    private function generateDummyFileWithGivenFilesize(string $filesize): File
+    /**
+     * @param-out string $tempFilePath
+     */
+    private function generateDummyFileWithGivenFilesize(string $filesize, ?string &$tempFilePath): File
     {
-        $tempFilePath = tempnam(sys_get_temp_dir(), 'dbp_relay_blob_bundle_blob_service_');
-        if ($tempFilePath === false) {
+        $path = tempnam(sys_get_temp_dir(), 'dbp_relay_blob_bundle_blob_service_');
+        if ($path === false) {
             throw new \RuntimeException('Could not create a unique temporary file path');
         }
-
+        $tempFilePath = $path;
         $tempFileResource = fopen($tempFilePath, 'w');
         if ($tempFileResource === false) {
             throw new \RuntimeException('Could not open temporary file for writing');
