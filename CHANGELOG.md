@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.83
+
 - Make tests more reliable
 
 ## v0.1.82
