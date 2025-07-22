@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Make tests more reliable
+
 ## v0.1.82
 
 - Add `GenerateFileCommand` to enable generating dummy files of a given filesize with given blob information directly on the server 

@@ -407,15 +407,15 @@ class FileApiTest extends ApiTestCase
 
         $blobFiles = iterator_to_array($this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER));
         $this->assertCount(2, $blobFiles);
-        $this->assertContainsEquals($blobFile1, $blobFiles);
-        $this->assertContainsEquals($blobFile3, $blobFiles);
+        $this->assertContainsItemWithIdentifier($blobFiles, $blobFile1->getIdentifier());
+        $this->assertContainsItemWithIdentifier($blobFiles, $blobFile3->getIdentifier());
 
         $blobFiles = iterator_to_array($this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER,
             options: [BlobApi::INCLUDE_DELETE_AT_OPTION => true]));
         $this->assertCount(3, $blobFiles);
-        $this->assertContainsEquals($blobFile1, $blobFiles);
-        $this->assertContainsEquals($blobFile2, $blobFiles);
-        $this->assertContainsEquals($blobFile3, $blobFiles);
+        $this->assertContainsItemWithIdentifier($blobFiles, $blobFile1->getIdentifier());
+        $this->assertContainsItemWithIdentifier($blobFiles, $blobFile2->getIdentifier());
+        $this->assertContainsItemWithIdentifier($blobFiles, $blobFile3->getIdentifier());
     }
 
     /**
@@ -435,9 +435,9 @@ class FileApiTest extends ApiTestCase
         $this->assertCount(1, $blobFilePage2);
         $blobFiles = array_merge($blobFilePage1, $blobFilePage2);
 
-        $this->assertContainsEquals($blobFile1, $blobFiles);
-        $this->assertContainsEquals($blobFile2, $blobFiles);
-        $this->assertContainsEquals($blobFile3, $blobFiles);
+        $this->assertContainsItemWithIdentifier($blobFiles, $blobFile1->getIdentifier());
+        $this->assertContainsItemWithIdentifier($blobFiles, $blobFile2->getIdentifier());
+        $this->assertContainsItemWithIdentifier($blobFiles, $blobFile3->getIdentifier());
     }
 
     /**
@@ -680,5 +680,21 @@ class FileApiTest extends ApiTestCase
 
         $this->blobService->getDatasystemProvider($internalBucketIdentifier)
             ->saveFile($internalBucketIdentifier, $fileIdentifier, new \SplFileInfo($filePath));
+    }
+
+    protected function assertContainsItemWithIdentifier(array $array, string $identifier): void
+    {
+        $this->assertContainsWhere($array, function ($item) use ($identifier) {
+            return $item->getIdentifier() === $identifier;
+        });
+    }
+
+    protected function assertContainsWhere(array $array, callable $callback): void
+    {
+        $this->assertTrue(
+            array_reduce($array, function ($carry, $item) use ($callback) {
+                return $carry || $callback($item);
+            }, false)
+        );
     }
 }
