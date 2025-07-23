@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v0.1.84
+
+- Add proper tmpfile cleanup to `GenerateFileCommand`
+
 ## v0.1.83
 
 - Make tests more reliable
