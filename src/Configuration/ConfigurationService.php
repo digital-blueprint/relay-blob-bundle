@@ -139,8 +139,13 @@ class ConfigurationService
 
     public function checkConfig(): void
     {
-        // Make sure the schema files exist and are valid JSON
+        // if one bucket config is faulty for some reason, none of the buckets show up
+        // thus, we check if some buckets are present
+        if (empty($this->getBuckets())) {
+            throw new \RuntimeException('No buckets are defined, or one of the bucket configs is invalid');
+        }
         foreach ($this->getBuckets() as $bucket) {
+            // Make sure the schema files exist and are valid JSON
             foreach ($bucket->getAdditionalTypes() as $path) {
                 $content = file_get_contents($path);
                 if ($content === false) {
