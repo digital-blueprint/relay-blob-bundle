@@ -83,15 +83,18 @@ class SignatureUtils
                 'Parameter creationTime too old', $errorPrefix.'-creation-time-too-old');
         }
 
-        // check if the method specified in url and actual method used match
-        $method = $request->getMethod();
-        if ($urlMethod !== $method || !in_array($method, $allowedMethods, true)) {
-            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED,
-                'method is not suitable', $errorPrefix.'-method-not-suitable');
-        }
-
         if (false === SignatureUtils::isSignatureValid($bucket->getKey(), $signature, $request->getRequestUri())) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature invalid', 'blob:signature-invalid');
+        }
+
+        // check if the method specified in url and actual method used match
+        $method = $request->getMethod();
+
+        if (($urlMethod !== $method || !in_array($method, $allowedMethods, true)) ) {
+            if ($method !== 'HEAD' || $urlMethod !== 'GET') {
+                throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED,
+                    'method is not suitable', $errorPrefix.'-method-not-suitable');
+            }
         }
     }
 
