@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## v0.1.85
+- Allow `HEAD` requests when a valid `GET` url is given
+
 ## v0.1.84
 
 - Add proper tmpfile cleanup to `GenerateFileCommand`
