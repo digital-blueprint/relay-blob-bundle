@@ -88,13 +88,12 @@ class SignatureUtils
         }
 
         // check if the method specified in url and actual method used match
+        // or if method is HEAD and the urlMethod is GET, which is also allowed
         $method = $request->getMethod();
-
-        if ($urlMethod !== $method || !in_array($method, $allowedMethods, true)) {
-            if ($method !== 'HEAD' || $urlMethod !== 'GET') {
-                throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED,
-                    'method is not suitable', $errorPrefix.'-method-not-suitable');
-            }
+        if (($urlMethod !== $method || !in_array($method, $allowedMethods, true))
+            && ($method !== 'HEAD' || $urlMethod !== 'GET')) {
+            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED,
+                'method is not suitable', $errorPrefix.'-method-not-suitable');
         }
     }
 
