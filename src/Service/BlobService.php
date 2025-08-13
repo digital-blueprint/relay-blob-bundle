@@ -33,6 +33,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
+use Dbp\Relay\VerityBundle\Event\VerityRequestEvent;
 
 date_default_timezone_set('UTC');
 
@@ -858,16 +859,56 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
         }
 
-        $schemaPath = $additionalTypes[$additionalType];
-        $validator = new Validator();
-        $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($schemaPath)]);
-        if (!$validator->isValid()) {
-            $messages = [];
-            foreach ($validator->getErrors() as $error) {
-                $messages[$error['property']] = $error['message'];
+        $schemaPath = $additionalTypes[$additionalType]['json_schema_path'];
+        if ($schemaPath !== null) {
+            $validator = new Validator();
+            $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($schemaPath)]);
+            if (!$validator->isValid()) {
+                $messages = [];
+                foreach ($validator->getErrors() as $error) {
+                    $messages[$error['property']] = $error['message'];
+                }
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type',
+                    $errorPrefix.'-metadata-does-not-match-type', $messages);
             }
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type',
-                $errorPrefix.'-metadata-does-not-match-type', $messages);
+        }
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function validateFile(FileData $fileData, string $errorPrefix): void
+    {
+        $metadata = $fileData->getFile();
+        $additionalType = $fileData->getType();
+
+        // If additionalType is set the file has to validate with the given profile
+        if (!$additionalType) {
+            return;
+        }
+
+        // check if additionaltype is defined
+        $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
+        $additionalTypes = $bucket->getAdditionalTypes();
+        if (!array_key_exists($additionalType, $additionalTypes)) {
+            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
+        }
+
+        $verityProfile = $additionalTypes[$additionalType]['verity_profile'];
+        if ($verityProfile !== null) {
+            $event = new VerityRequestEvent(Uuid::v4()->toRfc4122(),
+                $fileData->getFileName(),
+                null,
+                $verityProfile,
+                file_get_contents($fileData->getFile()->getRealPath()),
+                $fileData->getMimeType(),
+                $fileData->getFileSize());
+
+            $result = $this->eventDispatcher->dispatch($event);
+            if (!$result->valid) {
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'file does not validate against the specified type',
+                    $errorPrefix.'-file-does-not-validate-against-type');
+            }
         }
     }
 
@@ -930,6 +971,7 @@ class BlobService implements LoggerAwareInterface
         $fileData->setInternalBucketId($this->configurationService->getInternalBucketIdByBucketID($fileData->getBucketId()));
 
         $this->validateMetadata($fileData, $errorPrefix);
+        $this->validateFile($fileData, $errorPrefix);
 
         $fileData->setFileHash($this->configurationService->storeFileAndMetadataChecksums() && $fileData->getFile() !== null ?
             \hash_file('sha256', $fileData->getFile()->getPathname()) : null);

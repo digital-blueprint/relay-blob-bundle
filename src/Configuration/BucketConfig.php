@@ -242,7 +242,7 @@ class BucketConfig
             array_key_exists('additional_types', $config)
             && is_array($config['additional_types'])
         ) {
-            $bucket->setAdditionalTypes(array_merge(...$config['additional_types']));
+            $bucket->setAdditionalTypes($config['additional_types']);
         }
 
         return $bucket;
