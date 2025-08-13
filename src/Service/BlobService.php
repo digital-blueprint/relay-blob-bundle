@@ -618,6 +618,7 @@ class BlobService implements LoggerAwareInterface
             $this->configurationService->getBucketIdByInternalBucketID($fileData->getInternalBucketId())
         );
 
+
         return $fileData;
     }
 
@@ -936,9 +937,19 @@ class BlobService implements LoggerAwareInterface
                     $errorPrefix.'-metadata-hash-mismatch');
             }
         }
-
-        $this->validateMetadata($fileData, $errorPrefix);
-        $this->validateFile($fileData, $errorPrefix);
+        $type = $fileData->getType();
+        if ($type === null) {
+            return;
+        }
+        $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
+        $additionalTypes = $bucket->getAdditionalTypes();
+        if ($additionalTypes[$type]['json_schema_path'] !== null) {
+            $this->validateMetadata($fileData, $errorPrefix);
+        }
+        if ($additionalTypes[$type]['verity_profile'] !== null) {
+            $fileData->setFile($this->getFileForFileData($fileData));
+            $this->validateFile($fileData, $errorPrefix);
+        }
     }
 
     public function clearEntityManager(): void
@@ -997,6 +1008,18 @@ class BlobService implements LoggerAwareInterface
                 'blob:failed-to-get-file-from-datasystem-service'
             );
         }
+    }
+
+    function getFileForFileData(FileData $fileData): File
+    {
+        $stream = $this->getFileStreamInternal($fileData);
+        $tempPath = tempnam(sys_get_temp_dir(), 'stream_');
+        $target = fopen($tempPath, 'w');
+        stream_copy_to_stream($stream->detach(), $target);
+
+        fclose($target);
+
+        return new File($tempPath, false);
     }
 
     /**
