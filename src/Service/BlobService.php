@@ -20,6 +20,7 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Helpers\Tools;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\Filter;
 use Dbp\Relay\CoreBundle\Rest\Query\Pagination\Pagination;
+use Dbp\Relay\VerityBundle\Event\VerityRequestEvent;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonSchema\Validator;
@@ -33,7 +34,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
-use Dbp\Relay\VerityBundle\Event\VerityRequestEvent;
 
 date_default_timezone_set('UTC');
 
@@ -618,7 +618,6 @@ class BlobService implements LoggerAwareInterface
             $this->configurationService->getBucketIdByInternalBucketID($fileData->getInternalBucketId())
         );
 
-
         return $fileData;
     }
 
@@ -1010,7 +1009,7 @@ class BlobService implements LoggerAwareInterface
         }
     }
 
-    function getFileForFileData(FileData $fileData): File
+    public function getFileForFileData(FileData $fileData): File
     {
         $stream = $this->getFileStreamInternal($fileData);
         $tempPath = tempnam(sys_get_temp_dir(), 'stream_');
