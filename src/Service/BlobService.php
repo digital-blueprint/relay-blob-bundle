@@ -938,6 +938,7 @@ class BlobService implements LoggerAwareInterface
         }
 
         $this->validateMetadata($fileData, $errorPrefix);
+        $this->validateFile($fileData, $errorPrefix);
     }
 
     public function clearEntityManager(): void
