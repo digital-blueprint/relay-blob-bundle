@@ -48,6 +48,10 @@ class BlobService implements LoggerAwareInterface
     public const ASSERT_BUCKET_ID_EQUALS_OPTION = 'assert_bucket_id_equals';
     public const BASE_URL_OPTION = 'base_url';
 
+    public const JSON_SCHEMA_PATH_CONFIG = 'json_schema_path';
+
+    public const VERITY_PROFILE_CONFIG = 'verity_profile';
+
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ConfigurationService $configurationService,
@@ -859,8 +863,8 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
         }
 
-        $schemaPath = $additionalTypes[$additionalType]['json_schema_path'];
-        if ($schemaPath !== null) {
+        if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $additionalTypes[$additionalType]) && $additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
+            $schemaPath = $additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG];
             $validator = new Validator();
             $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($schemaPath)]);
             if (!$validator->isValid()) {
@@ -879,7 +883,6 @@ class BlobService implements LoggerAwareInterface
      */
     public function validateFile(FileData $fileData, string $errorPrefix): void
     {
-        $metadata = $fileData->getFile();
         $additionalType = $fileData->getType();
 
         // If additionalType is set the file has to validate with the given profile
@@ -894,8 +897,8 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
         }
 
-        $verityProfile = $additionalTypes[$additionalType]['verity_profile'];
-        if ($verityProfile !== null) {
+        if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $additionalTypes[$additionalType]) && $additionalTypes[$additionalType][BlobService::VERITY_PROFILE_CONFIG] !== null) {
+            $verityProfile = $additionalTypes[$additionalType][BlobService::VERITY_PROFILE_CONFIG];
             $event = new VerityRequestEvent(Uuid::v4()->toRfc4122(),
                 $fileData->getFileName(),
                 null,
@@ -942,10 +945,10 @@ class BlobService implements LoggerAwareInterface
         }
         $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
         $additionalTypes = $bucket->getAdditionalTypes();
-        if ($additionalTypes[$type]['json_schema_path'] !== null) {
+        if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $additionalTypes[$type]) && $additionalTypes[$type][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
             $this->validateMetadata($fileData, $errorPrefix);
         }
-        if ($additionalTypes[$type]['verity_profile'] !== null) {
+        if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $additionalTypes[$type]) && $additionalTypes[$type][BlobService::VERITY_PROFILE_CONFIG] !== null) {
             $fileData->setFile($this->getFileForFileData($fileData));
             $this->validateFile($fileData, $errorPrefix);
         }
