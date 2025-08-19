@@ -910,7 +910,7 @@ class BlobService implements LoggerAwareInterface
             $result = $this->eventDispatcher->dispatch($event);
             if (!$result->valid) {
                 throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'file does not validate against the specified type',
-                    $errorPrefix.'-file-does-not-validate-against-type');
+                    $errorPrefix.'-file-does-not-validate-against-type', $result->errors);
             }
         }
     }
