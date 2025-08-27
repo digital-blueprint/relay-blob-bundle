@@ -20,6 +20,7 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Helpers\Tools;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\Filter;
 use Dbp\Relay\CoreBundle\Rest\Query\Pagination\Pagination;
+use Dbp\Relay\VerityBundle\Event\VerityRequestEvent;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use JsonSchema\Validator;
@@ -46,6 +47,10 @@ class BlobService implements LoggerAwareInterface
     public const UPDATE_LAST_ACCESS_TIMESTAMP_OPTION = 'update_last_access_timestamp';
     public const ASSERT_BUCKET_ID_EQUALS_OPTION = 'assert_bucket_id_equals';
     public const BASE_URL_OPTION = 'base_url';
+
+    public const JSON_SCHEMA_PATH_CONFIG = 'json_schema_path';
+
+    public const VERITY_PROFILE_CONFIG = 'verity_profile';
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -858,16 +863,55 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
         }
 
-        $schemaPath = $additionalTypes[$additionalType];
-        $validator = new Validator();
-        $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($schemaPath)]);
-        if (!$validator->isValid()) {
-            $messages = [];
-            foreach ($validator->getErrors() as $error) {
-                $messages[$error['property']] = $error['message'];
+        if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $additionalTypes[$additionalType]) && $additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
+            $schemaPath = $additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG];
+            $validator = new Validator();
+            $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($schemaPath)]);
+            if (!$validator->isValid()) {
+                $messages = [];
+                foreach ($validator->getErrors() as $error) {
+                    $messages[$error['property']] = $error['message'];
+                }
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type',
+                    $errorPrefix.'-metadata-does-not-match-type', $messages);
             }
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type',
-                $errorPrefix.'-metadata-does-not-match-type', $messages);
+        }
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function validateFile(FileData $fileData, string $errorPrefix): void
+    {
+        $additionalType = $fileData->getType();
+
+        // If additionalType is set the file has to validate with the given profile
+        if (!$additionalType) {
+            return;
+        }
+
+        // check if additionaltype is defined
+        $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
+        $additionalTypes = $bucket->getAdditionalTypes();
+        if (!array_key_exists($additionalType, $additionalTypes)) {
+            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
+        }
+
+        if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $additionalTypes[$additionalType]) && $additionalTypes[$additionalType][BlobService::VERITY_PROFILE_CONFIG] !== null) {
+            $verityProfile = $additionalTypes[$additionalType][BlobService::VERITY_PROFILE_CONFIG];
+            $event = new VerityRequestEvent(Uuid::v4()->toRfc4122(),
+                $fileData->getFileName(),
+                null,
+                $verityProfile,
+                file_get_contents($fileData->getFile()->getRealPath()),
+                $fileData->getMimeType(),
+                $fileData->getFileSize());
+
+            $result = $this->eventDispatcher->dispatch($event);
+            if (!$result->valid) {
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'file does not validate against the specified type',
+                    $errorPrefix.'-file-does-not-validate-against-type', $result->errors);
+            }
         }
     }
 
@@ -895,8 +939,19 @@ class BlobService implements LoggerAwareInterface
                     $errorPrefix.'-metadata-hash-mismatch');
             }
         }
-
-        $this->validateMetadata($fileData, $errorPrefix);
+        $type = $fileData->getType();
+        if ($type === null) {
+            return;
+        }
+        $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
+        $additionalTypes = $bucket->getAdditionalTypes();
+        if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $additionalTypes[$type]) && $additionalTypes[$type][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
+            $this->validateMetadata($fileData, $errorPrefix);
+        }
+        if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $additionalTypes[$type]) && $additionalTypes[$type][BlobService::VERITY_PROFILE_CONFIG] !== null) {
+            $fileData->setFile($this->getFileForFileData($fileData));
+            $this->validateFile($fileData, $errorPrefix);
+        }
     }
 
     public function clearEntityManager(): void
@@ -930,6 +985,7 @@ class BlobService implements LoggerAwareInterface
         $fileData->setInternalBucketId($this->configurationService->getInternalBucketIdByBucketID($fileData->getBucketId()));
 
         $this->validateMetadata($fileData, $errorPrefix);
+        $this->validateFile($fileData, $errorPrefix);
 
         $fileData->setFileHash($this->configurationService->storeFileAndMetadataChecksums() && $fileData->getFile() !== null ?
             \hash_file('sha256', $fileData->getFile()->getPathname()) : null);
@@ -954,6 +1010,18 @@ class BlobService implements LoggerAwareInterface
                 'blob:failed-to-get-file-from-datasystem-service'
             );
         }
+    }
+
+    public function getFileForFileData(FileData $fileData): File
+    {
+        $stream = $this->getFileStreamInternal($fileData);
+        $tempPath = tempnam(sys_get_temp_dir(), 'stream_');
+        $target = fopen($tempPath, 'w');
+        stream_copy_to_stream($stream->detach(), $target);
+
+        fclose($target);
+
+        return new File($tempPath, false);
     }
 
     /**
