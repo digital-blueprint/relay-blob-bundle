@@ -44,6 +44,8 @@ class BlobService implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
 
+    public const TEMP_FILE_PREFIX = 'dbp_blob_temp_file_';
+
     public const UPDATE_LAST_ACCESS_TIMESTAMP_OPTION = 'update_last_access_timestamp';
     public const ASSERT_BUCKET_ID_EQUALS_OPTION = 'assert_bucket_id_equals';
     public const BASE_URL_OPTION = 'base_url';
@@ -951,6 +953,7 @@ class BlobService implements LoggerAwareInterface
         if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $additionalTypes[$type]) && $additionalTypes[$type][BlobService::VERITY_PROFILE_CONFIG] !== null) {
             $fileData->setFile($this->getFileForFileData($fileData));
             $this->validateFile($fileData, $errorPrefix);
+            @unlink($fileData->getFile()->getFileInfo()->getRealPath());
         }
     }
 
@@ -1015,7 +1018,7 @@ class BlobService implements LoggerAwareInterface
     public function getFileForFileData(FileData $fileData): File
     {
         $stream = $this->getFileStreamInternal($fileData);
-        $tempPath = tempnam(sys_get_temp_dir(), 'stream_');
+        $tempPath = tempnam(sys_get_temp_dir(), self::TEMP_FILE_PREFIX);
         $target = fopen($tempPath, 'w');
         stream_copy_to_stream($stream->detach(), $target);
 
