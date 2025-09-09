@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## v0.1.86
+- Add `dbp/relay-verity-bundle` to check validity of documents
+
 ## v0.1.85
 - Allow `HEAD` requests when a valid `GET` url is given
 
