@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## v0.1.87
+- Update `dbp/relay-verity-bundle` and adapt to newest version
+
 ## v0.1.86
 - Add `dbp/relay-verity-bundle` to check validity of documents
 
