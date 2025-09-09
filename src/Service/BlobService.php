@@ -905,10 +905,9 @@ class BlobService implements LoggerAwareInterface
                 $fileData->getFileName(),
                 null,
                 $verityProfile,
-                file_get_contents($fileData->getFile()->getRealPath()),
+                $fileData->getFile(),
                 $fileData->getMimeType(),
                 $fileData->getFileSize());
-
             $result = $this->eventDispatcher->dispatch($event);
             if (!$result->valid) {
                 throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'file does not validate against the specified type',
