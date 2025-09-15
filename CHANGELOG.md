@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## v0.1.88
+- Update health-checks to match new config
+
 ## v0.1.87
 - Update `dbp/relay-verity-bundle` and adapt to newest version
 
