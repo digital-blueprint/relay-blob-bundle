@@ -146,7 +146,11 @@ class ConfigurationService
         }
         foreach ($this->getBuckets() as $bucket) {
             // Make sure the schema files exist and are valid JSON
-            foreach ($bucket->getAdditionalTypes() as $path) {
+            foreach ($bucket->getAdditionalTypes() as $type) {
+                $path = $type['json_schema_path'];
+                if ($path === null) {
+                    continue;
+                }
                 $content = file_get_contents($path);
                 if ($content === false) {
                     throw new \RuntimeException('Failed to read: '.$path);
