@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "api-platform/core",
-            "version": "v4.1.23",
+            "version": "v4.1.24",
             "source": {
                 "type": "git",
                 "url": "https://github.com/api-platform/core.git",
-                "reference": "d6b06da27bf87e5fadd8bb34efc02e5095b28bf6"
+                "reference": "91b34d1e4ce15c79348ab80927c471414f869af4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/api-platform/core/zipball/d6b06da27bf87e5fadd8bb34efc02e5095b28bf6",
-                "reference": "d6b06da27bf87e5fadd8bb34efc02e5095b28bf6",
+                "url": "https://api.github.com/repos/api-platform/core/zipball/91b34d1e4ce15c79348ab80927c471414f869af4",
+                "reference": "91b34d1e4ce15c79348ab80927c471414f869af4",
                 "shasum": ""
             },
             "require": {
@@ -219,9 +219,9 @@
             ],
             "support": {
                 "issues": "https://github.com/api-platform/core/issues",
-                "source": "https://github.com/api-platform/core/tree/v4.1.23"
+                "source": "https://github.com/api-platform/core/tree/v4.1.24"
             },
-            "time": "2025-09-05T09:06:52+00:00"
+            "time": "2025-09-16T07:49:00+00:00"
         },
         {
             "name": "brick/math",
@@ -444,16 +444,16 @@
         },
         {
             "name": "dbp/relay-verity-bundle",
-            "version": "v0.1.5",
+            "version": "v0.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/digital-blueprint/relay-verity-bundle.git",
-                "reference": "3868d8fd69a8351b478b3e483b4fbca86b1d7f2c"
+                "reference": "748dfa2bb291a506413fed6400511c40735496ca"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/digital-blueprint/relay-verity-bundle/zipball/3868d8fd69a8351b478b3e483b4fbca86b1d7f2c",
-                "reference": "3868d8fd69a8351b478b3e483b4fbca86b1d7f2c",
+                "url": "https://api.github.com/repos/digital-blueprint/relay-verity-bundle/zipball/748dfa2bb291a506413fed6400511c40735496ca",
+                "reference": "748dfa2bb291a506413fed6400511c40735496ca",
                 "shasum": ""
             },
             "require": {
@@ -499,9 +499,9 @@
             "description": "A validation bundle for the Relay API gateway",
             "support": {
                 "issues": "https://github.com/digital-blueprint/relay-verity-bundle/issues",
-                "source": "https://github.com/digital-blueprint/relay-verity-bundle/tree/v0.1.5"
+                "source": "https://github.com/digital-blueprint/relay-verity-bundle/tree/v0.1.7"
             },
-            "time": "2025-09-09T09:37:04+00:00"
+            "time": "2025-09-16T12:34:04+00:00"
         },
         {
             "name": "doctrine/collections",
