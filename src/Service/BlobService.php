@@ -112,6 +112,22 @@ class BlobService implements LoggerAwareInterface
         $fileData->setDateAccessed($now);
         $fileData->setDateModified($now);
 
+        // replace empty string patches with null,
+        // since formdata does not support a null value but people should still be able to remove data
+        // setting deleteAt to null is already handled elsewhere
+        if ($fileData->getMetadata() === '') {
+            $fileData->setMetadata(null);
+        }
+        if ($fileData->getNotifyEmail() === '') {
+            $fileData->setNotifyEmail(null);
+        }
+        if ($fileData->getType() === '') {
+            $fileData->setType(null);
+        }
+        if ($fileData->getFile() === null) {
+            $fileData->setFile($this->getFileForFileData($fileData));
+        }
+
         $errorPrefix = 'blob:patch-file-data';
         $this->ensureFileDataIsValid($fileData, $errorPrefix);
 
@@ -294,7 +310,7 @@ class BlobService implements LoggerAwareInterface
             $fileData->setPrefix($prefix);
         }
         if ($deleteIn !== null) {
-            if ($deleteIn === 'null') {
+            if ($deleteIn === 'null' || $deleteIn === '') {
                 $fileData->setDeleteAt(null);
             } else {
                 $fileData->setDeleteAt(BlobUtils::now()->add(new \DateInterval($deleteIn)));
