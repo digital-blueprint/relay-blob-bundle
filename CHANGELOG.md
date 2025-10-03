@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v0.1.89
+- Fix inconsistencies in blob PATCH
+- allow file validation through verity for PATCH requests
+
 ## v0.1.88
 - Update health-checks to match new config
 
