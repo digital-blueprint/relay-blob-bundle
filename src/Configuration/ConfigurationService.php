@@ -137,6 +137,11 @@ class ConfigurationService
         return $this->config['bucket_size_check_interval'];
     }
 
+    public function getFiledataSchema(): string
+    {
+        return $this->config['filedata_schema'];
+    }
+
     public function checkConfig(): void
     {
         // if one bucket config is faulty for some reason, none of the buckets show up

@@ -263,6 +263,14 @@ use Symfony\Component\Serializer\Annotation\Groups;
                         example: '2024-09-25T12:51:01+00:00',
                     ),
                     new Parameter(
+                        name: 'deleteIn',
+                        in: 'query',
+                        description: 'ISO8601 duration from creation date until the file will be deleted',
+                        required: false,
+                        schema: ['type' => 'string'],
+                        example: 'P1D',
+                    ),
+                    new Parameter(
                         name: 'expireIn',
                         in: 'query',
                         description: 'ISO8601 Duration from creationTime until when the link is usable',
@@ -442,7 +450,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
                         'multipart/form-data' => [
                             'schema' => [
                                 'type' => 'object',
-                                'required' => ['file', 'fileName', 'metadata'],
+                                'required' => ['file', 'fileName'],
                                 'properties' => [
                                     'file' => [
                                         'type' => 'string',
@@ -546,7 +554,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
 )]
 #[ORM\Table(name: 'blob_files')]
 #[ORM\Entity]
-class FileData
+class FileData implements \JsonSerializable
 {
     #[ORM\Id]
     #[ORM\Column(type: 'relay_blob_uuid_binary', unique: true)]
@@ -794,5 +802,46 @@ class FileData
     public function setBucketId(?string $bucketId): void
     {
         $this->bucketId = $bucketId;
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        $values = [];
+        $values['identifier'] = $this->identifier;
+        $values['prefix'] = $this->prefix;
+        $values['fileName'] = $this->fileName;
+        $values['mimeType'] = $this->mimeType;
+        $values['internalBucketId'] = $this->internalBucketId;
+        $values['bucketId'] = $this->bucketId;
+        if ($this->dateCreated instanceof \DateTimeImmutable) {
+            $values['dateCreated'] = $this->dateCreated->format('c');
+        } else {
+            $values['dateCreated'] = $this->dateCreated;
+        }
+        if ($this->dateAccessed instanceof \DateTimeImmutable) {
+            $values['dateAccessed'] = $this->dateAccessed->format('c');
+        } else {
+            $values['dateAccessed'] = $this->dateAccessed;
+        }
+        if ($this->dateModified instanceof \DateTimeImmutable) {
+            $values['dateModified'] = $this->dateModified->format('c');
+        } else {
+            $values['dateModified'] = $this->dateModified;
+        }
+        if ($this->deleteAt instanceof \DateTimeImmutable) {
+            $values['deleteAt'] = $this->deleteAt->format('c');
+        } else {
+            $values['deleteAt'] = $this->deleteAt;
+        }
+        $values['contentUrl'] = $this->contentUrl;
+        $values['file'] = $this->file;
+        $values['metadata'] = $this->metadata;
+        $values['type'] = $this->type;
+        $values['fileSize'] = $this->fileSize;
+        $values['fileHash'] = $this->fileHash;
+        $values['metadataHash'] = $this->metadataHash;
+        $values['notifyEmail'] = $this->notifyEmail;
+
+        return $values;
     }
 }

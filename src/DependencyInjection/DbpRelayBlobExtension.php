@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\DependencyInjection;
 
 use Dbp\Relay\BlobBundle\ApiPlatform\FileDataProvider;
+use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\BlobUuidBinaryType;
 use Dbp\Relay\CoreBundle\Doctrine\DoctrineConfiguration;
@@ -32,6 +33,9 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
         $loader->load('services.yaml');
 
         $definition = $container->getDefinition(ConfigurationService::class);
+        $definition->addMethodCall('setConfig', [$mergedConfig]);
+
+        $definition = $container->getDefinition(AuthorizationService::class);
         $definition->addMethodCall('setConfig', [$mergedConfig]);
 
         $typeDefinition = $container->getParameter('doctrine.dbal.connection_factory.types');

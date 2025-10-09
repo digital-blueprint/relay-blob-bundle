@@ -4,12 +4,25 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\DependencyInjection;
 
+use Dbp\Relay\CoreBundle\Authorization\AuthorizationConfigDefinition;
 use Dbp\Relay\CoreBundle\Rest\Rest;
+use Symfony\Component\Config\Definition\Builder\NodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 class Configuration implements ConfigurationInterface
 {
+    public const ROLE_METADATABACKUPS = 'ROLE_METADATABACKUPS';
+    public const ROLE_PROFILE_METADATABACKUPS = 'ROLE_PROFILE_METADATABACKUPS';
+
+    private function getAuthNode(): NodeDefinition
+    {
+        return AuthorizationConfigDefinition::create()
+            ->addRole(self::ROLE_METADATABACKUPS, 'user.isAuthenticated()', 'Returns true if the user is allowed to access middleware API.')
+            ->addResourcePermission(self::ROLE_PROFILE_METADATABACKUPS, 'false', 'Returns true if the user is allowed to access the metadata backup API.')
+            ->getNodeDefinition();
+    }
+
     public const DATABASE_URL = 'database_url';
 
     public function getConfigTreeBuilder(): TreeBuilder
@@ -45,6 +58,10 @@ class Configuration implements ConfigurationInterface
                     ->scalarNode('additional_auth')
                         ->isRequired()
                         ->defaultValue(false)
+                    ->end()
+                    ->scalarNode('filedata_schema')
+                        ->isRequired()
+                        ->defaultValue('%kernel.project_dir%/vendor/dbp/relay-blob-bundle/src/Resources/filedata-v1.schema.json')
                     ->end()
                     ->scalarNode('integrity_check_interval')
                         ->isRequired()

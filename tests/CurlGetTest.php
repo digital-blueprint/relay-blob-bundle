@@ -80,6 +80,15 @@ class CurlGetTest extends ApiTestCase
         return $client;
     }
 
+    protected function setUpBackupTestClient(): Client
+    {
+        $client = $this->withUser(TestClient::TEST_USER_IDENTIFIER, [], '24');
+        $client->disableReboot(); // allows multiple requests for one client
+        $this->entityManager = BlobApiTest::setUp($client->getContainer());
+
+        return $client;
+    }
+
     protected function getBucketConfig(Client $client): BucketConfig
     {
         $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -2397,6 +2406,74 @@ class CurlGetTest extends ApiTestCase
             throw $e;
         }
     }
+
+    /**
+     * TODO Integration test for creating a metadata backup job.
+     */
+    /*
+    public function testPostMetadataBackupJob(): void
+    {
+        try {
+            $client = $this->setUpTestClient();
+            $bucket = $this->getBucketConfig($client);
+            $url = '/blob/metadata-backup-jobs';
+
+            $url = $this->getMetabackupJobUrl($url, $bucket->getInternalBucketId());
+
+            // test without bearer
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                ],
+                'body' => '{}',
+            ];
+            $response = $client->request('POST', $url, $options);
+            $this->assertEquals(401, $response->getStatusCode());
+
+            // test with bearer without permission
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => 'Bearer 42',
+                ],
+                'body' => '{}',
+            ];
+            $client = $this->setUpTestClient();
+            $response = $client->request('POST', $url, $options);
+            $this->assertEquals(403, $response->getStatusCode());
+
+            // TODO test with valid bearer
+            // unclear how to test this without mocking keycloak
+            /*
+            $backupClient = $this->setUpBackupTestClient();
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => 'Bearer 24',
+                ],
+                'body' => '{}',
+            ];
+            $response = $backupClient->request('POST', $url, $options);
+
+            $this->assertEquals(201, $response->getStatusCode());
+
+            $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+            $this->assertArrayHasKey('hydra:view', $data);
+            $this->assertArrayHasKey('hydra:member', $data);
+
+        } catch (\Throwable $e) {
+            throw $e;
+        }
+    }
+
+    private function getMetabackupJobUrl(string $url, string $bucketIdentifier): string
+    {
+        return "$url?bucketIdentifier=$bucketIdentifier";
+    }
+    */
 
     private function generateSha256ChecksumFromUrl($url): string
     {

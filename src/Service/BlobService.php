@@ -6,8 +6,10 @@ namespace Dbp\Relay\BlobBundle\Service;
 
 use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
+use Dbp\Relay\BlobBundle\Entity\BucketLock;
 use Dbp\Relay\BlobBundle\Entity\BucketSize;
 use Dbp\Relay\BlobBundle\Entity\FileData;
+use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Event\AddFileDataByPostSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\ChangeFileDataByPatchSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\DeleteFileDataByDeleteSuccessEvent;
@@ -33,6 +35,9 @@ use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Uid\Uuid;
 
 date_default_timezone_set('UTC');
@@ -269,6 +274,15 @@ class BlobService implements LoggerAwareInterface
 
         $fileData->setBucketId($bucketIdentifier);
 
+        $lock = $this->getBucketLockByInternalBucketIdAndMethod($this->getInternalBucketIdByBucketID($bucketIdentifier), $request->getMethod());
+        if ($lock !== null && $lock) {
+            throw ApiError::withDetails(
+                Response::HTTP_FORBIDDEN,
+                $request->getMethod().' is locked for this bucket',
+                'blob:bucket-locked-post'
+            );
+        }
+
         if ($uploadedFile !== null) {
             if ($uploadedFile instanceof UploadedFile && $uploadedFile->getError() !== UPLOAD_ERR_OK) {
                 throw ApiError::withDetails(
@@ -399,6 +413,20 @@ class BlobService implements LoggerAwareInterface
         if ($internalBucketId === null
             || ($bucket = $this->configurationService->getBucketByInternalID($internalBucketId)) === null) {
             throw new \Exception('failed to get bucket config for file data');
+        }
+
+        return $bucket;
+    }
+
+    /**
+     * Returns the bucket config for the given internal bucket id.
+     *
+     * @throws \Exception
+     */
+    public function getBucketConfigByInternalBucketId(string $id): BucketConfig
+    {
+        if (($bucket = $this->configurationService->getBucketByInternalID($id)) === null) {
+            throw new \Exception('failed to get bucket config for identifier '.$id);
         }
 
         return $bucket;
@@ -613,6 +641,57 @@ class BlobService implements LoggerAwareInterface
         return $this->getFileStreamInternal($fileData);
     }
 
+    /**
+     * Cancel a metadata backup job.
+     *
+     * @throws \Exception
+     */
+    public function cancelMetadataBackupJob(string $identifier): MetadataBackupJob
+    {
+        $this->entityManager->beginTransaction();
+        /** @var ?MetadataBackupJob $job */
+        $job = $this->entityManager->getRepository(MetadataBackupJob::class)
+            ->createQueryBuilder('f')
+            ->where('f.identifier = :id')
+            ->setParameter('id', $identifier)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if ($job === null) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Identifier not found!', 'blob:no-job-with-given-identifier');
+        }
+
+        $job->setStatus(MetadataBackupJob::JOB_STATUS_CANCELLED);
+        $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
+        $this->saveMetadataBackupJob($job);
+        $this->entityManager->commit();
+
+        return $job;
+    }
+
+    /**
+     * Cancel a metadata backup job.
+     *
+     * @throws \Exception
+     */
+    public function checkMetadataBackupJobRunning(string $identifier): bool
+    {
+        $this->entityManager->getRepository(MetadataBackupJob::class)
+            ->createQueryBuilder('f')
+            ->where('f.identifier = :id')
+            ->setParameter('id', $identifier)
+            ->getQuery()
+            ->getResult();
+
+        $this->entityManager->flush();
+
+        /** @var MetadataBackupJob $job */
+        $job = $this->entityManager->getRepository(MetadataBackupJob::class)
+            ->findOneBy(['identifier' => $identifier]);
+
+        return $job->getStatus() === MetadataBackupJob::JOB_STATUS_RUNNING;
+    }
+
     private function getFileDataInternal(string $identifier): FileData
     {
         if (!Uuid::isValid($identifier)) {
@@ -641,6 +720,249 @@ class BlobService implements LoggerAwareInterface
         );
 
         return $fileData;
+    }
+
+    /**
+     * Get BucketLock of given identifier.
+     */
+    public function addBucketLock(mixed $lock): void
+    {
+        // try to persist BucketLock, or throw error
+        try {
+            $this->entityManager->persist($lock);
+            $this->entityManager->flush();
+        } catch (\Exception $e) {
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'BucketLock could not be saved!',
+                'blob:bucket-lock-not-saved',
+                ['message' => $e->getMessage()]
+            );
+        }
+    }
+
+    /**
+     * @param mixed $job job to add to metadata_backup_jobs table
+     */
+    public function saveMetadataBackupJob(mixed $job): void
+    {
+        // try to persist job, or throw error
+        try {
+            $this->entityManager->persist($job);
+            $this->entityManager->flush();
+        } catch (\Exception $e) {
+            $errorId = 'blob:metadata-backup-job-could-not-be-saved';
+            $errorMessage = 'MetadataBackupJob could not be saved! ';
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                $errorMessage,
+                $errorId,
+                ['message' => $e->getMessage()]
+            );
+        }
+    }
+
+    public function getBucketLockByInternalBucketId(string $internalBucketId): ?BucketLock
+    {
+        return $this->entityManager->getRepository(BucketLock::class)->findOneBy(['internalBucketId' => $internalBucketId]);
+    }
+
+    public function getBucketLockByInternalBucketIdAndMethod(string $internalBucketId, string $method): ?bool
+    {
+        $lock = $this->getBucketLockByInternalBucketId($internalBucketId);
+        if ($lock === null) {
+            return null;
+        }
+
+        if ($method === Request::METHOD_GET) {
+            return $lock->getGetLock();
+        } elseif ($method === Request::METHOD_DELETE) {
+            return $lock->getDeleteLock();
+        } elseif ($method === Request::METHOD_PATCH) {
+            return $lock->getPatchLock();
+        } elseif ($method === Request::METHOD_POST) {
+            return $lock->getPostLock();
+        } else {
+            return null;
+        }
+    }
+
+    public function getPostBucketLockByInternalBucketId(string $internalBucketId): bool
+    {
+        $lock = $this->getBucketLockByInternalBucketId($internalBucketId);
+        if ($lock === null) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketLock could not be found!',
+                'blob:bucket-lock-not-found');
+        }
+
+        return $lock->getPostLock();
+    }
+
+    public function getPatchBucketLockByInternalBucketId(string $internalBucketId): bool
+    {
+        $lock = $this->getBucketLockByInternalBucketId($internalBucketId);
+        if ($lock === null) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketLock could not be found!',
+                'blob:bucket-lock-not-found');
+        }
+
+        return $lock->getPatchLock();
+    }
+
+    public function getDeleteBucketLockByInternalBucketId(string $internalBucketId): bool
+    {
+        $lock = $this->getBucketLockByInternalBucketId($internalBucketId);
+        if ($lock === null) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketLock could not be found!',
+                'blob:bucket-lock-not-found');
+        }
+
+        return $lock->getDeleteLock();
+    }
+
+    /**
+     * Remove a given fileData from the entity manager.
+     */
+    public function removeBucketLock(string $identifier): void
+    {
+        $lock = $this->getBucketLock($identifier);
+        $this->entityManager->remove($lock);
+        $this->entityManager->flush();
+    }
+
+    /**
+     * Get BucketLock for bucket with given identifier.
+     */
+    public function getBucketLock(string $identifier): BucketLock
+    {
+        if (!Uuid::isValid($identifier)) {
+            throw ApiError::withDetails(
+                Response::HTTP_NOT_FOUND,
+                'BucketLock was not found!',
+                'blob:bucket-lock-not-found'
+            );
+        }
+
+        /** @var ?BucketLock $lock */
+        $lock = $this->entityManager
+            ->getRepository(BucketLock::class)
+            ->find($identifier);
+
+        if (!$lock) {
+            throw ApiError::withDetails(
+                Response::HTTP_NOT_FOUND,
+                'BucketLock was not found!',
+                'blob:bucket-lock-not-found'
+            );
+        }
+
+        return $lock;
+    }
+
+    /**
+     * Update BucketLock by given parameters.
+     */
+    public function updateBucketLock(string $id, array $filters, mixed $data): void
+    {
+        if (!Uuid::isValid($id)) {
+            throw ApiError::withDetails(
+                Response::HTTP_NOT_FOUND,
+                'BucketLock was not found!',
+                'blob:bucket-lock-not-found'
+            );
+        }
+        $this->addBucketLock($data);
+    }
+
+    /**
+     * @param string $id identifier of the job
+     */
+    public function getMetadataBackupJobById(string $id): ?object
+    {
+        $ret = $this->entityManager
+            ->getRepository(MetadataBackupJob::class)
+            ->findOneBy(['identifier' => $id]);
+        $this->entityManager->refresh($ret);
+
+        return $ret;
+    }
+
+    /**
+     * @param string $bucketID bucket id associated
+     */
+    public function getMetadataBackupJobsByBucketId(string $bucketID): array
+    {
+        return $this->entityManager
+            ->getRepository(MetadataBackupJob::class)
+            ->findBy(['bucketId' => $bucketID]);
+    }
+
+    /**
+     * @param string $id identifier of blob_files item
+     */
+    public function getMetadataById(string $id): object
+    {
+        return $this->entityManager
+            ->getRepository(FileData::class)
+            ->findOneBy(['identifier' => $id]);
+    }
+
+    /**
+     * Starts and performs a metadata backup.
+     *
+     * @param MetadataBackupJob $job job that is associated with the metadata backup
+     *
+     * @throws \Exception
+     */
+    public function startMetadataBackup(MetadataBackupJob $job): void
+    {
+        $intBucketId = $job->getBucketId();
+        $maxReceivedItems = 10000;
+        $receivedItems = $maxReceivedItems;
+        $currentPage = 1;
+        $service = $this->datasystemService->getService($this->getBucketConfig($intBucketId)->getService());
+        $opened = $service->openMetadataBackup($intBucketId);
+
+        $config = $this->getBucketConfigByInternalBucketId($intBucketId);
+        $config->setKey('<redacted>');
+
+        if (!$opened) {
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Metadata backup couldnt be opened!', 'blob:metadata-backup-not-opened');
+        }
+
+        $service->appendToMetadataBackup(json_encode($config)."\n");
+
+        // iterate over all files in steps of $maxReceivedItems and append the retrieved jsons using $service
+        while ($receivedItems === $maxReceivedItems) {
+            $status = $this->getMetadataBackupJobById($job->getIdentifier())->getStatus();
+
+            if ($status === MetadataBackupJob::JOB_STATUS_CANCELLED) {
+                if ($this->logger !== null) {
+                    $this->logger->warning('MetadataBackupJob '.$job->getIdentifier().' cancelled.');
+                }
+                break;
+            }
+            // empty prefix together with startsWith=true represents all prefixes
+            $items = $this->getFileDataCollection($intBucketId, null, $currentPage, $maxReceivedItems, true);
+            ++$currentPage;
+            $receivedItems = 0;
+
+            /**
+             * @var FileData $item
+             */
+            foreach ($items as $item) {
+                $json = json_encode($item);
+                if ($json === false) {
+                    throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Could not encode filedata as json!', 'blob:metadata-backup-cannot-encode-filedata-as-json');
+                }
+                $this->validateJsonFileData($json, 'blob:metadata-backup');
+                $service->appendToMetadataBackup($json."\n");
+                ++$receivedItems;
+            }
+            ++$currentPage;
+        }
+        // TODO check if backup was successfully closed
+        $closed = $service->closeMetadataBackup($intBucketId);
     }
 
     /**
@@ -724,6 +1046,15 @@ class BlobService implements LoggerAwareInterface
     private function removeFileData(FileData $fileData): void
     {
         $this->entityManager->remove($fileData);
+        $this->entityManager->flush();
+    }
+
+    /**
+     * Remove a given MetadataBackupJob from the entity manager.
+     */
+    public function removeMetadataBackupJob(MetadataBackupJob $job): void
+    {
+        $this->entityManager->remove($job);
         $this->entityManager->flush();
     }
 
@@ -929,6 +1260,21 @@ class BlobService implements LoggerAwareInterface
                 throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'file does not validate against the specified type',
                     $errorPrefix.'-file-does-not-validate-against-type', $result->errors);
             }
+        }
+    }
+
+    public function validateJsonFileData(string $fileDataJson, string $errorPrefix): void
+    {
+        $filedataDecoded = json_decode($fileDataJson, false, flags: JSON_THROW_ON_ERROR);
+        $schemaPath = $this->configurationService->getFiledataSchema();
+        $validator = new Validator();
+        $validator->validate($filedataDecoded, (object) ['$ref' => 'file://'.realpath($schemaPath)]);
+        if (!$validator->isValid()) {
+            $messages = [];
+            foreach ($validator->getErrors() as $error) {
+                $messages[$error['property']] = $error['message'];
+            }
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type', $errorPrefix.'-filedata-validation-failed', $messages);
         }
     }
 

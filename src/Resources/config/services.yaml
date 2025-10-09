@@ -53,3 +53,8 @@ services:
   Dbp\Relay\BlobBundle\TestUtils\TestDatasystemProviderService:
     autowire: true
     autoconfigure: true
+
+  Dbp\Relay\BlobBundle\Authorization\:
+    resource: '../../Authorization'
+    autowire: true
+    autoconfigure: true
