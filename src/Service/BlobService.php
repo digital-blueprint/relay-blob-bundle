@@ -890,11 +890,11 @@ class BlobService implements LoggerAwareInterface
     /**
      * @param string $bucketID bucket id associated
      */
-    public function getMetadataBackupJobsByBucketId(string $bucketID): array
+    public function getMetadataBackupJobsByInternalBucketId(string $intBucketID): array
     {
         return $this->entityManager
             ->getRepository(MetadataBackupJob::class)
-            ->findBy(['bucketId' => $bucketID]);
+            ->findBy(['bucketId' => $intBucketID]);
     }
 
     /**

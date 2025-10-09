@@ -64,7 +64,23 @@ class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAw
      */
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
-        $backupJobs = $this->blobService->getMetadataBackupJobsByBucketId($filters['bucketIdentifier']);
+        if (!array_key_exists('bucketIdentifier', $filters)) {
+            throw ApiError::withDetails(
+                Response::HTTP_BAD_REQUEST,
+                'Bucket could not be found!',
+                'blob:bucket-not-found'
+            );
+        }
+        $bucketIdentifier = $filters['bucketIdentifier'];
+        if ($bucketIdentifier === null) {
+            throw ApiError::withDetails(
+                Response::HTTP_BAD_REQUEST,
+                'Bucket could not be found!',
+                'blob:bucket-not-found'
+            );
+        }
+
+        $backupJobs = $this->blobService->getMetadataBackupJobsByInternalBucketId($this->blobService->getInternalBucketIdByBucketID($bucketIdentifier));
         if (empty($backupJobs)) {
             throw ApiError::withDetails(
                 Response::HTTP_NOT_FOUND,

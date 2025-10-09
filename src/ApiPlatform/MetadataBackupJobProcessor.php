@@ -44,8 +44,8 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
                 'blob:bucket-not-found'
             );
         }
-        $internalId = $filters['bucketIdentifier'];
-        if ($internalId === null) {
+        $bucketIdentifier = $filters['bucketIdentifier'];
+        if ($bucketIdentifier === null) {
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
                 'Bucket could not be found!',
@@ -53,7 +53,9 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
             );
         }
 
-        $this->authService->checkCanAccessMetadataBackup($internalId);
+        $internalId = $this->blobService->getInternalBucketIdByBucketId($bucketIdentifier);
+
+        $this->authService->checkCanAccessMetadataBackup($bucketIdentifier);
 
         $job->setIdentifier(Uuid::v7()->toRfc4122());
         $job->setBucketId($internalId);
@@ -68,11 +70,16 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
         $this->blobService->saveMetadataBackupJob($job);
         try {
             $this->blobService->startMetadataBackup($job);
+
         } catch (ApiError $e) {
             $job->setStatus(MetadataBackupJob::JOB_STATUS_ERROR);
+            $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
+            $this->blobService->saveMetadataBackupJob($job);
             throw ApiError::withDetails($e->getStatusCode(), $e->getMessage(), $e->getErrorId());
         } catch (\Exception $e) {
             $job->setStatus(MetadataBackupJob::JOB_STATUS_ERROR);
+            $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
+            $this->blobService->saveMetadataBackupJob($job);
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Something went wrong!');
         }
 
