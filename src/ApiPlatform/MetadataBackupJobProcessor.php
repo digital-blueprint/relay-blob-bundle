@@ -70,7 +70,6 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
         $this->blobService->saveMetadataBackupJob($job);
         try {
             $this->blobService->startMetadataBackup($job);
-
         } catch (ApiError $e) {
             $job->setStatus(MetadataBackupJob::JOB_STATUS_ERROR);
             $job->setFinished((new \DateTimeImmutable('now'))->format('c'));

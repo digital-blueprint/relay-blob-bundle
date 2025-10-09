@@ -15,13 +15,13 @@ class Configuration implements ConfigurationInterface
     public const ROLE_METADATABACKUPS = 'ROLE_METADATABACKUPS';
     public const ROLE_PROFILE_METADATABACKUPS = 'ROLE_PROFILE_METADATABACKUPS';
 
-    private function getAuthNode(): NodeDefinition
+    /*private function getAuthNode(): NodeDefinition
     {
         return AuthorizationConfigDefinition::create()
             ->addRole(self::ROLE_METADATABACKUPS, 'user.isAuthenticated()', 'Returns true if the user is allowed to access middleware API.')
             ->addResourcePermission(self::ROLE_PROFILE_METADATABACKUPS, 'false', 'Returns true if the user is allowed to access the metadata backup API.')
             ->getNodeDefinition();
-    }
+    }*/
 
     public const DATABASE_URL = 'database_url';
 
