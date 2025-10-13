@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\OpenApi\Model\Operation;
@@ -22,6 +23,25 @@ use Symfony\Component\Serializer\Annotation\Groups;
     shortName: 'BlobBucketLocks',
     types: ['https://schema.org/DigitalDocument'],
     operations: [
+        new GetCollection(
+            uriTemplate: '/bucket-locks',
+            openapi: new Operation(
+                tags: ['Blob'],
+                summary: 'Get the lock of a bucket',
+                parameters: [
+                    new Parameter(
+                        name: 'bucketIdentifier',
+                        in: 'query',
+                        description: 'Config identifier of bucket.',
+                        required: true,
+                        schema: ['type' => 'string'],
+                        example: 'test-bucket',
+                    ),
+                ]
+            ),
+            security: 'is_granted("IS_AUTHENTICATED_FULLY")',
+            provider: BucketLockProvider::class,
+        ),
         new Get(
             uriTemplate: '/bucket-locks/{identifier}',
             openapi: new Operation(

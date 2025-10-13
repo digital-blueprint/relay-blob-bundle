@@ -857,6 +857,29 @@ class BlobService implements LoggerAwareInterface
     }
 
     /**
+     * Get BucketLock for bucket with given identifier.
+     */
+    public function getBucketLocksByBucketId(string $bucketId): array
+    {
+        $intBucketId = $this->getInternalBucketIdByBucketID($bucketId);
+
+        if (!$intBucketId) {
+            throw ApiError::withDetails(
+                Response::HTTP_NOT_FOUND,
+                'bucketIdentifier was not found!',
+                'blob:bucket-identifier-not-found'
+            );
+        }
+
+        /** @var array $locks */
+        $locks = $this->entityManager
+            ->getRepository(BucketLock::class)
+            ->findBy(['internalBucketId' => $intBucketId]);
+
+        return $locks;
+    }
+
+    /**
      * Update BucketLock by given parameters.
      */
     public function updateBucketLock(string $id, array $filters, mixed $data): void
