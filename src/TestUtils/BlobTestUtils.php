@@ -118,10 +118,7 @@ class BlobTestUtils
             ],
             'authorization' => [
                 'roles' => [
-                    'ROLE_METADATABACKUPS' => 'user.isAuthenticated()',
-                ],
-                'resource_permissions' => [
-                    'ROLE_PROFILE_METADATABACKUPS' => 'user.get("SCOPE_BLOB_METADATA_BACKUP")',
+                    'ROLE_METADATABACKUPS' => 'user.get("SCOPE_BLOB_METADATA_BACKUP")',
                 ],
             ],
         ];

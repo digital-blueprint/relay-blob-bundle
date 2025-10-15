@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\DependencyInjection;
 
-use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Dbp\Relay\CoreBundle\Authorization\AuthorizationConfigDefinition;
 use Dbp\Relay\CoreBundle\Rest\Rest;
 use Symfony\Component\Config\Definition\Builder\NodeDefinition;

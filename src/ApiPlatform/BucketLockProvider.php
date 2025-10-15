@@ -40,6 +40,7 @@ class BucketLockProvider extends AbstractDataProvider implements LoggerAwareInte
     protected function getItemById(string $id, array $filters = [], array $options = []): ?BucketLock
     {
         $this->authorizationService->checkCanRoleAccessMetadataBackup();
+
         return $this->getBucketLockById($id, $filters);
     }
 
@@ -50,6 +51,7 @@ class BucketLockProvider extends AbstractDataProvider implements LoggerAwareInte
     protected function getBucketLockById(string $id, array $filters): object
     {
         $this->authorizationService->checkCanRoleAccessMetadataBackup();
+
         return $this->blobService->getBucketLock($id);
     }
 
