@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\DependencyInjection;
 
+use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Dbp\Relay\CoreBundle\Authorization\AuthorizationConfigDefinition;
 use Dbp\Relay\CoreBundle\Rest\Rest;
 use Symfony\Component\Config\Definition\Builder\NodeDefinition;
@@ -18,8 +19,7 @@ class Configuration implements ConfigurationInterface
     private function getAuthNode(): NodeDefinition
     {
         return AuthorizationConfigDefinition::create()
-            ->addRole(self::ROLE_METADATABACKUPS, 'user.isAuthenticated()', 'Returns true if the user is allowed to access middleware API.')
-            ->addResourcePermission(self::ROLE_PROFILE_METADATABACKUPS, 'false', 'Returns true if the user is allowed to access the metadata backup API.')
+            ->addRole(self::ROLE_METADATABACKUPS, 'false', 'Returns true if the user is allowed to access middleware API.')
             ->getNodeDefinition();
     }
 

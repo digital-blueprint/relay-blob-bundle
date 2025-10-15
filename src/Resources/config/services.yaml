@@ -54,7 +54,6 @@ services:
     autowire: true
     autoconfigure: true
 
-  Dbp\Relay\BlobBundle\Authorization\:
-    resource: '../../Authorization'
+  Dbp\Relay\BlobBundle\Authorization\AuthorizationService:
     autowire: true
     autoconfigure: true

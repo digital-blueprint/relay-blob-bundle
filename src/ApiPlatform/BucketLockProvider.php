@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
+use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Entity\BucketLock;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
@@ -22,7 +23,8 @@ class BucketLockProvider extends AbstractDataProvider implements LoggerAwareInte
     use LoggerAwareTrait;
 
     public function __construct(
-        private readonly BlobService $blobService
+        private readonly BlobService $blobService,
+        private readonly AuthorizationService $authorizationService
     ) {
         parent::__construct();
     }
@@ -37,6 +39,7 @@ class BucketLockProvider extends AbstractDataProvider implements LoggerAwareInte
      */
     protected function getItemById(string $id, array $filters = [], array $options = []): ?BucketLock
     {
+        $this->authorizationService->checkCanRoleAccessMetadataBackup();
         return $this->getBucketLockById($id, $filters);
     }
 
@@ -46,6 +49,7 @@ class BucketLockProvider extends AbstractDataProvider implements LoggerAwareInte
      */
     protected function getBucketLockById(string $id, array $filters): object
     {
+        $this->authorizationService->checkCanRoleAccessMetadataBackup();
         return $this->blobService->getBucketLock($id);
     }
 
@@ -54,6 +58,8 @@ class BucketLockProvider extends AbstractDataProvider implements LoggerAwareInte
      */
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
+        $this->authorizationService->checkCanRoleAccessMetadataBackup();
+
         $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');
 
         $intBucketId = $this->blobService->getInternalBucketIdByBucketID($bucketID);
