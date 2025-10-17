@@ -26,12 +26,12 @@ class AuthorizationService extends AbstractAuthorizationService
     /**
      * Returns if the current user has permissions access.
      */
-    private function getCanAccessBucket(string $bucketName): bool
+    /*private function getCanAccessBucket(string $bucketName): bool
     {
         $resource = new BucketData($bucketName);
 
         return $this->isGrantedResourcePermission(Configuration::ROLE_PROFILE_METADATABACKUPS, $resource);
-    }
+    }*/
 
     /**
      * Throws if the current user doesn't have permissions to sign with any qualified profile.
@@ -39,8 +39,8 @@ class AuthorizationService extends AbstractAuthorizationService
     public function checkCanAccessMetadataBackup(string $bucketName): void
     {
         $this->checkCanRoleAccessMetadataBackup();
-        if (!$this->getCanAccessBucket($bucketName)) {
+        /*if (!$this->getCanAccessBucket($bucketName)) {
             throw new AccessDeniedException();
-        }
+        }*/
     }
 }

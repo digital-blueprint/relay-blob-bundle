@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
+use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Service\BlobService;
@@ -23,7 +24,8 @@ class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAw
     use LoggerAwareTrait;
 
     public function __construct(
-        private readonly BlobService $blobService)
+        private readonly BlobService $blobService,
+        private readonly AuthorizationService $authService)
     {
         parent::__construct();
     }
@@ -48,6 +50,7 @@ class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAw
     protected function getMetadataBackupJobById(string $id, array $filters): object
     {
         $backupJob = $this->blobService->getMetadataBackupJobById($id);
+        $this->authService->checkCanAccessMetadataBackup($backupJob->getBucketId());
         if ($backupJob === null) {
             throw ApiError::withDetails(
                 Response::HTTP_NOT_FOUND,
@@ -79,8 +82,16 @@ class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAw
                 'blob:bucket-not-found'
             );
         }
-
-        $backupJobs = $this->blobService->getMetadataBackupJobsByInternalBucketId($this->blobService->getInternalBucketIdByBucketID($bucketIdentifier));
+        $this->authService->checkCanAccessMetadataBackup($bucketIdentifier);
+        $internalId = $this->blobService->getInternalBucketIdByBucketID($bucketIdentifier);
+        if ($internalId === null) {
+            throw ApiError::withDetails(
+                Response::HTTP_BAD_REQUEST,
+                'Bucket could not be found!',
+                'blob:bucket-not-found'
+            );
+        }
+        $backupJobs = $this->blobService->getMetadataBackupJobsByInternalBucketId($internalId);
         if (empty($backupJobs)) {
             throw ApiError::withDetails(
                 Response::HTTP_NOT_FOUND,

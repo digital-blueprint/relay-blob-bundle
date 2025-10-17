@@ -55,6 +55,14 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
 
         $internalId = $this->blobService->getInternalBucketIdByBucketId($bucketIdentifier);
 
+        if ($internalId === null) {
+            throw ApiError::withDetails(
+                Response::HTTP_BAD_REQUEST,
+                'Bucket could not be found!',
+                'blob:bucket-not-found'
+            );
+        }
+
         $this->authService->checkCanAccessMetadataBackup($bucketIdentifier);
 
         $job->setIdentifier(Uuid::v7()->toRfc4122());
