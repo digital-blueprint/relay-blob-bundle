@@ -886,7 +886,6 @@ class BlobService implements LoggerAwareInterface
     {
         // try to persist job, or throw error
         try {
-            dump($job);
             $this->entityManager->persist($job);
             $this->entityManager->flush();
         } catch (\Exception $e) {
