@@ -19,7 +19,7 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * @extends AbstractDataProvider<FileData>
  */
-class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAwareInterface
+class MetadataRestoreJobProvider extends AbstractDataProvider implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
 
@@ -40,14 +40,14 @@ class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAw
      */
     protected function getItemById(string $id, array $filters = [], array $options = []): ?MetadataBackupJob
     {
-        return $this->getMetadataBackupJobById($id, $filters);
+        return $this->getMetadataRestoreJobById($id, $filters);
     }
 
     /**
      * @throws \JsonException
      * @throws \Exception
      */
-    protected function getMetadataBackupJobById(string $id, array $filters): object
+    protected function getMetadataRestoreJobById(string $id, array $filters): object
     {
         $backupJob = $this->blobService->getMetadataBackupJobById($id);
         $this->authService->checkCanAccessMetadataBackup();

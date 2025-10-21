@@ -6,6 +6,7 @@ namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
 use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
+use Dbp\Relay\BlobBundle\Entity\MetadataRestoreJob;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProcessor;
@@ -14,7 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * @internal
  */
-class MetadataBackupJobProcessor extends AbstractDataProcessor
+class MetadataRestoreJobProcessor extends AbstractDataProcessor
 {
     public function __construct(
         private readonly BlobService $blobService, private readonly AuthorizationService $authService)
@@ -30,9 +31,9 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
     /**
      * @throws \Exception
      */
-    protected function addItem(mixed $data, array $filters): MetadataBackupJob
+    protected function addItem(mixed $data, array $filters): MetadataRestoreJob
     {
-        assert($data instanceof MetadataBackupJob);
+        assert($data instanceof MetadataRestoreJob);
         $job = $data;
 
         if (!array_key_exists('bucketIdentifier', $filters)) {
@@ -63,28 +64,26 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
 
         $this->authService->checkCanAccessMetadataBackup();
 
-        $this->blobService->setupMetadataBackupJob($job, $internalId);
-        $this->blobService->saveMetadataBackupJob($job);
+        $this->blobService->setupMetadataRestoreJob($job, $internalId);
         try {
-            $this->blobService->startMetadataBackup($job);
+            $this->blobService->startMetadataRestore($job);
         } catch (\Exception $e) {
-            $job->setStatus(MetadataBackupJob::JOB_STATUS_ERROR);
+            $job->setStatus(MetadataRestoreJob::JOB_STATUS_ERROR);
             $job->setErrorMessage($e->getMessage());
             if ($e instanceof ApiError) {
                 $job->setErrorId($e->getErrorId());
-                $this->blobService->finishAndSaveMetadataBackupJob($job, $internalId);
+                $this->blobService->finishAndSaveMetadataRestoreJob($job, $internalId);
                 throw ApiError::withDetails($e->getStatusCode(), $job->getErrorMessage(), $job->getErrorId());
             } else {
-                $this->blobService->finishAndSaveMetadataBackupJob($job, $internalId);
+                $this->blobService->finishAndSaveMetadataRestoreJob($job, $internalId);
                 throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Something went wrong!');
             }
         }
 
-        if ($this->blobService->getMetadataBackupJobById($job->getIdentifier())->getStatus() === MetadataBackupJob::JOB_STATUS_CANCELLED) {
-            return $this->blobService->getMetadataBackupJobById($job->getIdentifier());
+        if ($this->blobService->getMetadataRestoreJobById($job->getIdentifier())->getStatus() === MetadataRestoreJob::JOB_STATUS_CANCELLED) {
+            return $this->blobService->getMetadataRestoreJobById($job->getIdentifier());
         }
-
-        $this->blobService->finishAndSaveMetadataBackupJob($job, $internalId);
+        $this->blobService->finishAndSaveMetadataRestoreJob($job, $internalId);
 
         return $job;
     }

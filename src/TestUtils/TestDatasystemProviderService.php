@@ -77,9 +77,9 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
     {
     }
 
-    public function openMetadataBackup(string $internalBucketId): bool
+    public function openMetadataBackup(string $internalBucketId, string $mode): bool
     {
-        $ret = fopen('dummyBackup.json', 'w');
+        $ret = fopen('dummyBackup.json', $mode);
 
         if ($ret !== false) {
             $this->backupFile = $ret;
@@ -93,6 +93,17 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
         $ret = fwrite($this->backupFile, $item);
 
         return $ret !== false;
+    }
+
+    public function retrieveItemFromMetadataBackup(): string|false
+    {
+        $ret = fgets($this->backupFile);
+
+        if (!$ret) {
+            throw new \RuntimeException('Could not read line from metadata backup!');
+        }
+
+        return $ret;
     }
 
     public function closeMetadataBackup(string $internalBucketId): bool
@@ -116,5 +127,10 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
     public function getMetadataBackupFileRef(string $intBucketId): ?string
     {
         return 'dummyBackup.json';
+    }
+
+    public function hasNextItemInMetadataBackup(): bool
+    {
+        return feof($this->backupFile);
     }
 }

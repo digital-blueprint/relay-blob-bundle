@@ -16,7 +16,7 @@ use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 
-class CancelBackupJobAction extends AbstractController
+class CancelRestoreJobAction extends AbstractController
 {
     use CustomControllerTrait;
 
@@ -32,7 +32,7 @@ class CancelBackupJobAction extends AbstractController
     {
         $this->authService->checkCanAccessMetadataBackup();
 
-        if (!$this->blobService->checkMetadataBackupJobRunning($identifier)) {
+        if (!$this->blobService->checkMetadataRestoreJobRunning($identifier)) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Cannot cancel already finished job!', 'blob:cannot-cancel-finished-job');
         }
 
@@ -40,6 +40,6 @@ class CancelBackupJobAction extends AbstractController
         $normalizers = [new ObjectNormalizer()];
         $serializer = new Serializer($normalizers, $encoders);
 
-        return new JsonResponse($serializer->serialize($this->blobService->cancelMetadataBackupJob($identifier), 'json'), json: true);
+        return new JsonResponse($serializer->serialize($this->blobService->cancelMetadataRestoreJob($identifier), 'json'), json: true);
     }
 }

@@ -265,8 +265,7 @@ class BucketConfig implements \JsonSerializable
         $values['additionalTypes'] = $this->additionalTypes;
         $values['outputValidation'] = $this->outputValidation;
         $values['bucketSizeConfig'] = $this->bucketSizeConfig;
-        $json = json_encode($values);
 
-        return $json;
+        return $values;
     }
 }

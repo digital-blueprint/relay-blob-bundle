@@ -39,7 +39,7 @@ interface DatasystemProviderServiceInterface
      *
      * @return bool true if successful, else false
      */
-    public function openMetadataBackup(string $internalBucketId): bool;
+    public function openMetadataBackup(string $internalBucketId, string $mode): bool;
 
     /**
      * Appends given string to backup.
@@ -47,6 +47,20 @@ interface DatasystemProviderServiceInterface
      * @return bool true if successful, else false
      */
     public function appendToMetadataBackup(string $item): bool;
+
+    /**
+     * Retrieves the next item from the backup.
+     *
+     * @return string|false string if successful, else false
+     */
+    public function retrieveItemFromMetadataBackup(): string|false;
+
+    /**
+     * Checks whether the backup has a next item.
+     *
+     * @return bool true if successful, else false
+     */
+    public function hasNextItemInMetadataBackup(): bool;
 
     /**
      * Closes and saves metadata backup.

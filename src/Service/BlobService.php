@@ -10,6 +10,7 @@ use Dbp\Relay\BlobBundle\Entity\BucketLock;
 use Dbp\Relay\BlobBundle\Entity\BucketSize;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
+use Dbp\Relay\BlobBundle\Entity\MetadataRestoreJob;
 use Dbp\Relay\BlobBundle\Event\AddFileDataByPostSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\ChangeFileDataByPatchSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\DeleteFileDataByDeleteSuccessEvent;
@@ -35,6 +36,11 @@ use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Uid\Uuid;
 
 date_default_timezone_set('UTC');
@@ -667,7 +673,35 @@ class BlobService implements LoggerAwareInterface
     }
 
     /**
-     * Cancel a metadata backup job.
+     * Cancel a metadata restore job.
+     *
+     * @throws \Exception
+     */
+    public function cancelMetadataRestoreJob(string $identifier): MetadataRestoreJob
+    {
+        $this->entityManager->beginTransaction();
+        /** @var ?MetadataRestoreJob $job */
+        $job = $this->entityManager->getRepository(MetadataRestoreJob::class)
+            ->createQueryBuilder('f')
+            ->where('f.identifier = :id')
+            ->setParameter('id', $identifier)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if ($job === null) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Identifier not found!', 'blob:no-job-with-given-identifier');
+        }
+
+        $job->setStatus(MetadataRestoreJob::JOB_STATUS_CANCELLED);
+        $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
+        $this->saveMetadataRestoreJob($job);
+        $this->entityManager->commit();
+
+        return $job;
+    }
+
+    /**
+     * Check if a metadata backup job is running.
      *
      * @throws \Exception
      */
@@ -687,6 +721,29 @@ class BlobService implements LoggerAwareInterface
             ->findOneBy(['identifier' => $identifier]);
 
         return $job->getStatus() === MetadataBackupJob::JOB_STATUS_RUNNING;
+    }
+
+    /**
+     * Check if a metadata restore job is running.
+     *
+     * @throws \Exception
+     */
+    public function checkMetadataRestoreJobRunning(string $identifier): bool
+    {
+        $this->entityManager->getRepository(MetadataRestoreJob::class)
+            ->createQueryBuilder('f')
+            ->where('f.identifier = :id')
+            ->setParameter('id', $identifier)
+            ->getQuery()
+            ->getResult();
+
+        $this->entityManager->flush();
+
+        /** @var MetadataRestoreJob $job */
+        $job = $this->entityManager->getRepository(MetadataRestoreJob::class)
+            ->findOneBy(['identifier' => $identifier]);
+
+        return $job->getStatus() === MetadataRestoreJob::JOB_STATUS_RUNNING;
     }
 
     private function getFileDataInternal(string $identifier): FileData
@@ -750,6 +807,91 @@ class BlobService implements LoggerAwareInterface
         } catch (\Exception $e) {
             $errorId = 'blob:metadata-backup-job-could-not-be-saved';
             $errorMessage = 'MetadataBackupJob could not be saved! ';
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                $errorMessage,
+                $errorId,
+                ['message' => $e->getMessage()]
+            );
+        }
+    }
+
+    /**
+     * @param MetadataBackupJob $job        job to add to metadata_backup_jobs table
+     * @param string            $internalId internal bucket id
+     */
+    public function finishAndSaveMetadataBackupJob(mixed $job, string $internalId): void
+    {
+        $service = $this->datasystemService->getService($this->getBucketConfigByInternalBucketId($internalId)->getService());
+        if ($job->getStatus() !== MetadataBackupJob::JOB_STATUS_ERROR) {
+            $job->setStatus(MetadataBackupJob::JOB_STATUS_FINISHED);
+        }
+        $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
+        $job->setHash($service->getMetadataBackupFileHash($internalId));
+        $job->setFileRef($service->getMetadataBackupFileRef($internalId));
+        $this->saveMetadataBackupJob($job);
+    }
+
+    /**
+     * @param MetadataRestoreJob $job        job to add to metadata_backup_jobs table
+     * @param string             $internalId internal bucket id
+     */
+    public function finishAndSaveMetadataRestoreJob(mixed $job, string $internalId): void
+    {
+        $service = $this->datasystemService->getService($this->getBucketConfigByInternalBucketId($internalId)->getService());
+        if ($job->getStatus() !== MetadataRestoreJob::JOB_STATUS_ERROR) {
+            $job->setStatus(MetadataRestoreJob::JOB_STATUS_FINISHED);
+        }
+        $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
+        $job->setHash($service->getMetadataBackupFileHash($internalId));
+        $this->saveMetadataRestoreJob($job);
+    }
+
+    /**
+     * @param MetadataBackupJob $job job to add to metadata_backup_jobs table
+     */
+    public function setupMetadataBackupJob(mixed $job, string $internalId): void
+    {
+        $job->setIdentifier(Uuid::v7()->toRfc4122());
+        $job->setBucketId($internalId);
+        $job->setStatus(MetadataBackupJob::JOB_STATUS_RUNNING);
+        $job->setStarted((new \DateTimeImmutable('now'))->format('c'));
+        $job->setFinished(null);
+        $job->setErrorId(null);
+        $job->setErrorMessage(null);
+        $job->setHash(null);
+        $job->setFileRef(null);
+        $this->saveMetadataBackupJob($job);
+    }
+
+    /**
+     * @param MetadataRestoreJob $job job to add to metadata_restore_jobs table
+     */
+    public function setupMetadataRestoreJob(mixed $job, string $internalId): void
+    {
+        $job->setIdentifier(Uuid::v7()->toRfc4122());
+        $job->setBucketId($internalId);
+        $job->setStatus(MetadataRestoreJob::JOB_STATUS_RUNNING);
+        $job->setStarted((new \DateTimeImmutable('now'))->format('c'));
+        $job->setFinished(null);
+        $job->setErrorId(null);
+        $job->setErrorMessage(null);
+        $this->saveMetadataRestoreJob($job);
+    }
+
+    /**
+     * @param MetadataRestoreJob $job job to add to metadata_backup_jobs table
+     */
+    public function saveMetadataRestoreJob(mixed $job): void
+    {
+        // try to persist job, or throw error
+        try {
+            dump($job);
+            $this->entityManager->persist($job);
+            $this->entityManager->flush();
+        } catch (\Exception $e) {
+            $errorId = 'blob:metadata-restore-job-could-not-be-saved';
+            $errorMessage = 'MetadataRestoreJob could not be saved! ';
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
                 $errorMessage,
@@ -907,6 +1049,19 @@ class BlobService implements LoggerAwareInterface
         return $ret;
     }
 
+    /**
+     * @param string $id identifier of the job
+     */
+    public function getMetadataRestoreJobById(string $id): ?object
+    {
+        $ret = $this->entityManager
+            ->getRepository(MetadataRestoreJob::class)
+            ->findOneBy(['identifier' => $id]);
+        $this->entityManager->refresh($ret);
+
+        return $ret;
+    }
+
     public function getMetadataBackupJobsByInternalBucketId(string $intBucketID): array
     {
         return $this->entityManager
@@ -938,7 +1093,7 @@ class BlobService implements LoggerAwareInterface
         $receivedItems = $maxReceivedItems;
         $currentPage = 1;
         $service = $this->datasystemService->getService($this->getBucketConfig($intBucketId)->getService());
-        $opened = $service->openMetadataBackup($intBucketId);
+        $opened = $service->openMetadataBackup($intBucketId, 'w');
 
         $config = $this->getBucketConfigByInternalBucketId($intBucketId);
         $config->setKey('<redacted>');
@@ -977,6 +1132,70 @@ class BlobService implements LoggerAwareInterface
                 ++$receivedItems;
             }
             ++$currentPage;
+        }
+        // TODO check if backup was successfully closed
+        $closed = $service->closeMetadataBackup($intBucketId);
+    }
+
+    /**
+     * Starts and performs a metadata restore.
+     *
+     * @param MetadataRestoreJob $job job that is associated with the metadata backup
+     *
+     * @throws \Exception
+     */
+    public function startMetadataRestore(MetadataRestoreJob $job): void
+    {
+        $intBucketId = $job->getBucketId();
+        $service = $this->datasystemService->getService($this->getBucketConfig($intBucketId)->getService());
+        $opened = $service->openMetadataBackup($intBucketId, 'r');
+
+        if (!$opened) {
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Metadata backup couldnt be opened!', 'blob:metadata-backup-not-opened');
+        }
+
+        // handle bucket data separately
+        $bucketData = $service->retrieveItemFromMetadataBackup();
+
+        // iterate over all items in the metadata backup
+        while (!$service->hasNextItemInMetadataBackup()) {
+            $status = $this->getMetadataRestoreJobById($job->getIdentifier())->getStatus();
+
+            if ($status === MetadataRestoreJob::JOB_STATUS_CANCELLED) {
+                if ($this->logger !== null) {
+                    $this->logger->warning('MetadataRestoreJob '.$job->getIdentifier().' cancelled.');
+                }
+                break;
+            }
+            $item = $service->retrieveItemFromMetadataBackup();
+            if (!$item) {
+                continue;
+            }
+            $encoders = [new JsonEncoder()];
+            $normalizers = [new DateTimeNormalizer(), new ObjectNormalizer()];
+            $serializer = new Serializer($normalizers, $encoders);
+            $context = [
+                AbstractNormalizer::CALLBACKS => [
+                    'dateCreated' => function ($value) {
+                        return new \DateTimeImmutable($value);
+                    },
+                    'dateAccessed' => function ($value) {
+                        return new \DateTimeImmutable($value);
+                    },
+                    'dateModified' => function ($value) {
+                        return new \DateTimeImmutable($value);
+                    },
+                    'deleteAt' => function ($value) {
+                        if ($value !== null) {
+                            return new \DateTimeImmutable($value);
+                        } else {
+                            return null;
+                        }
+                    },
+                ],
+            ];
+            $fileData = $serializer->deserialize($item, FileData::class, 'json', $context);
+            $this->saveFileData($fileData);
         }
         // TODO check if backup was successfully closed
         $closed = $service->closeMetadataBackup($intBucketId);
