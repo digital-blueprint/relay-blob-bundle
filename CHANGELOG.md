@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## v0.1.90
+- only validate file in PATCH requests if the file is given in the request
+
 ## v0.1.89
 - Fix inconsistencies in blob PATCH
 - allow file validation through verity for PATCH requests
