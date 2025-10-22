@@ -124,6 +124,9 @@ class BlobService implements LoggerAwareInterface
         if ($fileData->getType() === '') {
             $fileData->setType(null);
         }
+        if ($previousFileData->getFileHash() !== null) {
+            $fileData->setFileHash($previousFileData->getFileHash());
+        }
 
         $errorPrefix = 'blob:patch-file-data';
         $this->ensureFileDataIsValid($fileData, $errorPrefix);
@@ -1002,8 +1005,15 @@ class BlobService implements LoggerAwareInterface
         $this->validateMetadata($fileData, $errorPrefix);
         $this->validateFile($fileData, $errorPrefix);
 
-        $fileData->setFileHash($this->configurationService->storeFileAndMetadataChecksums() && $fileData->getFile() !== null ?
-            \hash_file('sha256', $fileData->getFile()->getPathname()) : null);
+        if ($this->configurationService->storeFileAndMetadataChecksums()) {
+            // if no file is set but a filehash is given, trust the already stored filehash
+            if ($fileData->getFile() !== null) {
+                $fileData->setFileHash(\hash_file('sha256', $fileData->getFile()->getPathname()));
+            }
+        } else {
+            $fileData->setFileHash(null);
+        }
+
         $fileData->setMetadataHash($this->configurationService->storeFileAndMetadataChecksums() && $fileData->getMetadata() !== null ?
             hash('sha256', $fileData->getMetadata()) : null);
     }
