@@ -124,9 +124,6 @@ class BlobService implements LoggerAwareInterface
         if ($fileData->getType() === '') {
             $fileData->setType(null);
         }
-        if ($fileData->getFile() === null) {
-            $fileData->setFile($this->getFileForFileData($fileData));
-        }
 
         $errorPrefix = 'blob:patch-file-data';
         $this->ensureFileDataIsValid($fileData, $errorPrefix);
@@ -904,7 +901,7 @@ class BlobService implements LoggerAwareInterface
         $additionalType = $fileData->getType();
 
         // If additionalType is set the file has to validate with the given profile
-        if (!$additionalType) {
+        if (!$additionalType || !$fileData->getFile()) {
             return;
         }
 
