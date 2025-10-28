@@ -6,7 +6,7 @@ namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
 use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Entity\FileData;
-use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
+use Dbp\Relay\BlobBundle\Entity\MetadataRestoreJob;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
@@ -38,7 +38,7 @@ class MetadataRestoreJobProvider extends AbstractDataProvider implements LoggerA
     /**
      * @throws \JsonException
      */
-    protected function getItemById(string $id, array $filters = [], array $options = []): ?MetadataBackupJob
+    protected function getItemById(string $id, array $filters = [], array $options = []): ?MetadataRestoreJob
     {
         return $this->getMetadataRestoreJobById($id, $filters);
     }
@@ -49,8 +49,8 @@ class MetadataRestoreJobProvider extends AbstractDataProvider implements LoggerA
      */
     protected function getMetadataRestoreJobById(string $id, array $filters): object
     {
-        $backupJob = $this->blobService->getMetadataBackupJobById($id);
         $this->authService->checkCanAccessMetadataBackup();
+        $backupJob = $this->blobService->getMetadataRestoreJobById($id);
         if ($backupJob === null) {
             throw ApiError::withDetails(
                 Response::HTTP_NOT_FOUND,
@@ -91,7 +91,7 @@ class MetadataRestoreJobProvider extends AbstractDataProvider implements LoggerA
                 'blob:bucket-not-found'
             );
         }
-        $backupJobs = $this->blobService->getMetadataBackupJobsByInternalBucketId($internalId);
+        $backupJobs = $this->blobService->getMetadataRestoreJobsByInternalBucketId($internalId);
         if (empty($backupJobs)) {
             throw ApiError::withDetails(
                 Response::HTTP_NOT_FOUND,

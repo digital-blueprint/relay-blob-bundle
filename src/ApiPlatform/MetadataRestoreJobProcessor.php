@@ -36,46 +36,47 @@ class MetadataRestoreJobProcessor extends AbstractDataProcessor
         assert($data instanceof MetadataRestoreJob);
         $job = $data;
 
-        if (!array_key_exists('bucketIdentifier', $filters)) {
+        if (!array_key_exists('metadataBackupJobId', $filters)) {
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
-                'Bucket could not be found!',
-                'blob:bucket-not-found'
+                'MetadataBackupJob could not be found!',
+                'blob:metadata-backup-job-not-found'
             );
         }
-        $bucketIdentifier = $filters['bucketIdentifier'];
-        if ($bucketIdentifier === null) {
+        $metadataBackupJobId = $filters['metadataBackupJobId'];
+        if ($metadataBackupJobId === null) {
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
-                'Bucket could not be found!',
-                'blob:bucket-not-found'
+                'MetadataBackupJob could not be found!',
+                'blob:metadata-backup-job-not-found'
             );
         }
 
-        $internalId = $this->blobService->getInternalBucketIdByBucketId($bucketIdentifier);
+        $backupJob = $this->blobService->getMetadataBackupJobById($metadataBackupJobId);
 
-        if ($internalId === null) {
+        if ($backupJob === null) {
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
-                'Bucket could not be found!',
-                'blob:bucket-not-found'
+                'MetadataBackupJob could not be found!',
+                'blob:metadata-backup-job-not-found'
             );
         }
 
         $this->authService->checkCanAccessMetadataBackup();
 
-        $this->blobService->setupMetadataRestoreJob($job, $internalId);
+        $this->blobService->setupMetadataRestoreJob($job, $backupJob->getBucketId(), $metadataBackupJobId);
         try {
+            $this->blobService->deleteBucketByInternalBucketId($backupJob->getBucketId());
             $this->blobService->startMetadataRestore($job);
         } catch (\Exception $e) {
             $job->setStatus(MetadataRestoreJob::JOB_STATUS_ERROR);
             $job->setErrorMessage($e->getMessage());
             if ($e instanceof ApiError) {
                 $job->setErrorId($e->getErrorId());
-                $this->blobService->finishAndSaveMetadataRestoreJob($job, $internalId);
+                $this->blobService->finishAndSaveMetadataRestoreJob($job, $backupJob->getBucketId());
                 throw ApiError::withDetails($e->getStatusCode(), $job->getErrorMessage(), $job->getErrorId());
             } else {
-                $this->blobService->finishAndSaveMetadataRestoreJob($job, $internalId);
+                $this->blobService->finishAndSaveMetadataRestoreJob($job, $backupJob->getBucketId());
                 throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Something went wrong!');
             }
         }
@@ -83,7 +84,7 @@ class MetadataRestoreJobProcessor extends AbstractDataProcessor
         if ($this->blobService->getMetadataRestoreJobById($job->getIdentifier())->getStatus() === MetadataRestoreJob::JOB_STATUS_CANCELLED) {
             return $this->blobService->getMetadataRestoreJobById($job->getIdentifier());
         }
-        $this->blobService->finishAndSaveMetadataRestoreJob($job, $internalId);
+        $this->blobService->finishAndSaveMetadataRestoreJob($job, $backupJob->getBucketId());
 
         return $job;
     }
@@ -93,7 +94,7 @@ class MetadataRestoreJobProcessor extends AbstractDataProcessor
      */
     protected function removeItem(mixed $identifier, mixed $job, array $filters): void
     {
-        assert($job instanceof MetadataBackupJob);
+        assert($job instanceof MetadataRestoreJob);
         $backupJob = $job;
 
         $this->blobService->removeMetadataBackupJob($backupJob);

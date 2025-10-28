@@ -13,7 +13,7 @@ final class Version20251020093925 extends EntityManagerMigration
 {
     public function getDescription(): string
     {
-        return 'Add table for metadata backup jobs';
+        return 'Add table for metadata restore jobs';
     }
 
     public function up(Schema $schema): void

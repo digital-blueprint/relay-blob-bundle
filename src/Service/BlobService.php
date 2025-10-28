@@ -514,6 +514,21 @@ class BlobService implements LoggerAwareInterface
         }
     }
 
+    public function getLastFinishedMetadataBackupJobByInternalBucketId($intBucketId): MetadataBackupJob
+    {
+        $job = $this->entityManager->getRepository(MetadataBackupJob::class)
+            ->createQueryBuilder('f')
+            ->where('f.status = :status')
+            ->andWhere('f.internalBucketId = :bucketID')
+            ->setParameter('bucketID', $intBucketId)
+            ->setParameter('status', "FINISHED")
+            ->orderBy("f.finished", 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+        return $job;
+    }
+
     public function recalculateAndUpdateBucketSize(string $intBucketId, ?OutputInterface $out = null): void
     {
         try {
@@ -777,6 +792,24 @@ class BlobService implements LoggerAwareInterface
     }
 
     /**
+     * Deletes the whole bucket with the given bucketId
+     * Use with caution!
+     * @param string $internalBucketID
+     * @return void
+     */
+    public function deleteBucketByInternalBucketId(string $internalBucketID)
+    {
+        /** @var ?FileData $fileData */
+        $this->entityManager
+            ->createQueryBuilder()
+            ->delete(FileData::class, 'd')
+            ->where('d.internalBucketId=:bucketID')
+            ->setParameter('bucketID', $internalBucketID)
+            ->getQuery()
+            ->execute();
+    }
+
+    /**
      * Get BucketLock of given identifier.
      */
     public function addBucketLock(mixed $lock): void
@@ -843,7 +876,6 @@ class BlobService implements LoggerAwareInterface
             $job->setStatus(MetadataRestoreJob::JOB_STATUS_FINISHED);
         }
         $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
-        $job->setHash($service->getMetadataBackupFileHash($internalId));
         $this->saveMetadataRestoreJob($job);
     }
 
@@ -867,10 +899,11 @@ class BlobService implements LoggerAwareInterface
     /**
      * @param MetadataRestoreJob $job job to add to metadata_restore_jobs table
      */
-    public function setupMetadataRestoreJob(mixed $job, string $internalId): void
+    public function setupMetadataRestoreJob(mixed $job, string $internalBucketId, string $metadataBackupJobId): void
     {
         $job->setIdentifier(Uuid::v7()->toRfc4122());
-        $job->setBucketId($internalId);
+        $job->setBucketId($internalBucketId);
+        $job->setMetadataBackupJobId($metadataBackupJobId);
         $job->setStatus(MetadataRestoreJob::JOB_STATUS_RUNNING);
         $job->setStarted((new \DateTimeImmutable('now'))->format('c'));
         $job->setFinished(null);
@@ -1068,6 +1101,13 @@ class BlobService implements LoggerAwareInterface
             ->findBy(['bucketId' => $intBucketID]);
     }
 
+    public function getMetadataRestoreJobsByInternalBucketId(string $intBucketID): array
+    {
+        return $this->entityManager
+            ->getRepository(MetadataRestoreJob::class)
+            ->findBy(['bucketId' => $intBucketID]);
+    }
+
     /**
      * @param string $id identifier of blob_files item
      */
@@ -1114,7 +1154,7 @@ class BlobService implements LoggerAwareInterface
                 break;
             }
             // empty prefix together with startsWith=true represents all prefixes
-            $items = $this->getFileDataCollection($intBucketId, null, $currentPage, $maxReceivedItems, true);
+            $items = $this->getFileDataCollection($intBucketId, null, 0, $maxReceivedItems, true);
             ++$currentPage;
             $receivedItems = 0;
 
@@ -1285,9 +1325,9 @@ class BlobService implements LoggerAwareInterface
     }
 
     /**
-     * Remove a given MetadataBackupJob from the entity manager.
+     * Remove a given MetadataRestoreJob from the entity manager.
      */
-    public function removeMetadataBackupJob(MetadataBackupJob $job): void
+    public function removeMetadataBackupJob(MetadataRestoreJob $job): void
     {
         $this->entityManager->remove($job);
         $this->entityManager->flush();

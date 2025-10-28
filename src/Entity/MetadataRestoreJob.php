@@ -132,7 +132,7 @@ class MetadataRestoreJob
 
     #[ORM\Column(type: 'string')]
     #[Groups(['BlobMetadataRestoreJobs:output'])]
-    private ?string $hash = '';
+    private ?string $metadataBackupJobId = '';
 
     public const JOB_STATUS_RUNNING = 'RUNNING';
     public const JOB_STATUS_CANCELLED = 'CANCELLED';
@@ -209,13 +209,13 @@ class MetadataRestoreJob
         $this->errorMessage = $errorMessage;
     }
 
-    public function getHash(): string
+    public function getMetadataBackupJobId(): string
     {
-        return $this->hash;
+        return $this->metadataBackupJobId;
     }
 
-    public function setHash(?string $hash): void
+    public function setMetadataBackupJobId(?string $metadataBackupJobId): void
     {
-        $this->hash = $hash;
+        $this->metadataBackupJobId = $metadataBackupJobId;
     }
 }

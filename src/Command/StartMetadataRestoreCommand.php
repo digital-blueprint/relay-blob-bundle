@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Command;
 
+use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Entity\MetadataRestoreJob;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
@@ -49,8 +50,10 @@ class StartMetadataRestoreCommand extends Command
         }
 
         $job = new MetadataRestoreJob();
-        $this->blobService->setupMetadataRestoreJob($job, $intBucketId);
-        $output->writeln('Starting restore for bucket '.$intBucketId.' with jobId '.$job->getIdentifier().' ...');
+        /** @var MetadataBackupJob $backupJob */
+        $backupJob = $this->blobService->getLastFinishedMetadataBackupJobByInternalBucketId($intBucketId);
+        $this->blobService->setupMetadataRestoreJob($job, $intBucketId, $backupJob->getIdentifier());
+        $output->writeln('Starting restore for bucket '.$intBucketId.' with backupJobId '.$backupJob->getIdentifier().' and restoreJobId '.$job->getIdentifier().' ...');
         try {
             $this->blobService->startMetadataRestore($job);
         } catch (\Exception $e) {
