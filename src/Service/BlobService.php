@@ -406,6 +406,12 @@ class BlobService implements LoggerAwareInterface
         return $this->configurationService->getInternalBucketIdByBucketID($bucketID);
     }
 
+    public function getBucketIdByInternalBucketID(string $intBucketID): ?string
+    {
+        return $this->configurationService->getBucketIdByInternalBucketID($intBucketID);
+    }
+
+
     /**
      * Returns the bucket config for the given file.
      *
@@ -523,6 +529,34 @@ class BlobService implements LoggerAwareInterface
             ->setParameter('bucketID', $intBucketId)
             ->setParameter('status', "FINISHED")
             ->orderBy("f.finished", 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+        return $job;
+    }
+
+    public function getRunningMetadataRestoreJobByInternalBucketId(string $intBucketId): ?MetadataRestoreJob
+    {
+        $job = $this->entityManager->getRepository(MetadataBackupJob::class)
+            ->createQueryBuilder('f')
+            ->where('f.status = :status')
+            ->andWhere('f.internalBucketId = :bucketID')
+            ->setParameter('bucketID', $intBucketId)
+            ->setParameter('status', "RUNNING")
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+        return $job;
+    }
+
+    public function getRunningMetadataBackupJobByInternalBucketId(string $intBucketId): ?MetadataBackupJob
+    {
+        $job = $this->entityManager->getRepository(MetadataBackupJob::class)
+            ->createQueryBuilder('f')
+            ->where('f.status = :status')
+            ->andWhere('f.internalBucketId = :bucketID')
+            ->setParameter('bucketID', $intBucketId)
+            ->setParameter('status', "RUNNING")
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
@@ -884,6 +918,7 @@ class BlobService implements LoggerAwareInterface
      */
     public function setupMetadataBackupJob(mixed $job, string $internalId): void
     {
+        $this->checkIfMetadataBackupOrRestoreIsRunning($internalId);
         $job->setIdentifier(Uuid::v7()->toRfc4122());
         $job->setBucketId($internalId);
         $job->setStatus(MetadataBackupJob::JOB_STATUS_RUNNING);
@@ -901,6 +936,7 @@ class BlobService implements LoggerAwareInterface
      */
     public function setupMetadataRestoreJob(mixed $job, string $internalBucketId, string $metadataBackupJobId): void
     {
+        $this->checkIfMetadataBackupOrRestoreIsRunning($internalBucketId);
         $job->setIdentifier(Uuid::v7()->toRfc4122());
         $job->setBucketId($internalBucketId);
         $job->setMetadataBackupJobId($metadataBackupJobId);
@@ -1697,5 +1733,29 @@ class BlobService implements LoggerAwareInterface
         fclose($tempFileResource);
 
         return new File($tempFilePath);
+    }
+
+    /**
+     * @param string $internalId
+     * @return void
+     */
+    public function checkIfMetadataBackupOrRestoreIsRunning(string $internalId): void
+    {
+        $running = $this->getRunningMetadataRestoreJobByInternalBucketId($internalId);
+        if ($running != null) {
+            throw ApiError::withDetails(
+                Response::HTTP_BAD_REQUEST,
+                'A metadata restore job with ID ' . $running->getIdentifier() . ' is currently running for bucket ' . $this->getBucketIdByInternalBucketID($internalId),
+                'blob:other-bucket-metadata-restore-job-running'
+            );
+        }
+        $running = $this->getRunningMetadataBackupJobByInternalBucketId($internalId);
+        if ($running != null) {
+            throw ApiError::withDetails(
+                Response::HTTP_BAD_REQUEST,
+                'A metadata backup job with ID ' . $running->getIdentifier() . ' is currently running for bucket ' . $this->getBucketIdByInternalBucketID($internalId),
+                'blob:other-bucket-metadata-backup-job-running'
+            );
+        }
     }
 }
