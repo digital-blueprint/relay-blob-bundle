@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
 use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
-use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Entity\MetadataRestoreJob;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
@@ -97,6 +96,6 @@ class MetadataRestoreJobProcessor extends AbstractDataProcessor
         assert($job instanceof MetadataRestoreJob);
         $backupJob = $job;
 
-        $this->blobService->removeMetadataBackupJob($backupJob);
+        $this->blobService->removeMetadataRestoreJob($backupJob);
     }
 }

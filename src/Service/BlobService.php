@@ -411,7 +411,6 @@ class BlobService implements LoggerAwareInterface
         return $this->configurationService->getBucketIdByInternalBucketID($intBucketID);
     }
 
-
     /**
      * Returns the bucket config for the given file.
      *
@@ -527,11 +526,12 @@ class BlobService implements LoggerAwareInterface
             ->where('f.status = :status')
             ->andWhere('f.internalBucketId = :bucketID')
             ->setParameter('bucketID', $intBucketId)
-            ->setParameter('status', "FINISHED")
-            ->orderBy("f.finished", 'DESC')
+            ->setParameter('status', 'FINISHED')
+            ->orderBy('f.finished', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+
         return $job;
     }
 
@@ -542,10 +542,11 @@ class BlobService implements LoggerAwareInterface
             ->where('f.status = :status')
             ->andWhere('f.internalBucketId = :bucketID')
             ->setParameter('bucketID', $intBucketId)
-            ->setParameter('status', "RUNNING")
+            ->setParameter('status', 'RUNNING')
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+
         return $job;
     }
 
@@ -556,10 +557,11 @@ class BlobService implements LoggerAwareInterface
             ->where('f.status = :status')
             ->andWhere('f.internalBucketId = :bucketID')
             ->setParameter('bucketID', $intBucketId)
-            ->setParameter('status', "RUNNING")
+            ->setParameter('status', 'RUNNING')
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+
         return $job;
     }
 
@@ -828,12 +830,11 @@ class BlobService implements LoggerAwareInterface
     /**
      * Deletes the whole bucket with the given bucketId
      * Use with caution!
-     * @param string $internalBucketID
+     *
      * @return void
      */
     public function deleteBucketByInternalBucketId(string $internalBucketID)
     {
-        /** @var ?FileData $fileData */
         $this->entityManager
             ->createQueryBuilder()
             ->delete(FileData::class, 'd')
@@ -1361,9 +1362,18 @@ class BlobService implements LoggerAwareInterface
     }
 
     /**
+     * Remove a given MetadataBackupJob from the entity manager.
+     */
+    public function removeMetadataBackupJob(MetadataBackupJob $job): void
+    {
+        $this->entityManager->remove($job);
+        $this->entityManager->flush();
+    }
+
+    /**
      * Remove a given MetadataRestoreJob from the entity manager.
      */
-    public function removeMetadataBackupJob(MetadataRestoreJob $job): void
+    public function removeMetadataRestoreJob(MetadataRestoreJob $job): void
     {
         $this->entityManager->remove($job);
         $this->entityManager->flush();
@@ -1735,25 +1745,21 @@ class BlobService implements LoggerAwareInterface
         return new File($tempFilePath);
     }
 
-    /**
-     * @param string $internalId
-     * @return void
-     */
     public function checkIfMetadataBackupOrRestoreIsRunning(string $internalId): void
     {
         $running = $this->getRunningMetadataRestoreJobByInternalBucketId($internalId);
-        if ($running != null) {
+        if ($running !== null) {
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
-                'A metadata restore job with ID ' . $running->getIdentifier() . ' is currently running for bucket ' . $this->getBucketIdByInternalBucketID($internalId),
+                'A metadata restore job with ID '.$running->getIdentifier().' is currently running for bucket '.$this->getBucketIdByInternalBucketID($internalId),
                 'blob:other-bucket-metadata-restore-job-running'
             );
         }
         $running = $this->getRunningMetadataBackupJobByInternalBucketId($internalId);
-        if ($running != null) {
+        if ($running !== null) {
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
-                'A metadata backup job with ID ' . $running->getIdentifier() . ' is currently running for bucket ' . $this->getBucketIdByInternalBucketID($internalId),
+                'A metadata backup job with ID '.$running->getIdentifier().' is currently running for bucket '.$this->getBucketIdByInternalBucketID($internalId),
                 'blob:other-bucket-metadata-backup-job-running'
             );
         }
