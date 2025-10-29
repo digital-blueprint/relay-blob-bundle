@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
 use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
+use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Entity\MetadataRestoreJob;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
@@ -58,6 +59,14 @@ class MetadataRestoreJobProcessor extends AbstractDataProcessor
                 Response::HTTP_BAD_REQUEST,
                 'MetadataBackupJob could not be found!',
                 'blob:metadata-backup-job-not-found'
+            );
+        }
+
+        if ($backupJob->getStatus() !== MetadataBackupJob::JOB_STATUS_FINISHED) {
+            throw ApiError::withDetails(
+                Response::HTTP_BAD_REQUEST,
+                'Requested MetadataBackupJob is not finished!',
+                'blob:metadata-backup-job-not-finished'
             );
         }
 
