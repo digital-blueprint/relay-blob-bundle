@@ -44,7 +44,7 @@ class MetadataRestoreJobProcessor extends AbstractDataProcessor
             );
         }
         $metadataBackupJobId = $filters['metadataBackupJobId'];
-        if ($metadataBackupJobId === null) {
+        if (empty($metadataBackupJobId)) {
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
                 'MetadataBackupJob could not be found!',

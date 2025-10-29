@@ -1113,7 +1113,9 @@ class BlobService implements LoggerAwareInterface
         $ret = $this->entityManager
             ->getRepository(MetadataBackupJob::class)
             ->findOneBy(['identifier' => $id]);
-        $this->entityManager->refresh($ret);
+        if ($ret !== null) {
+            $this->entityManager->refresh($ret);
+        }
 
         return $ret;
     }
@@ -1126,7 +1128,9 @@ class BlobService implements LoggerAwareInterface
         $ret = $this->entityManager
             ->getRepository(MetadataRestoreJob::class)
             ->findOneBy(['identifier' => $id]);
-        $this->entityManager->refresh($ret);
+        if ($ret !== null) {
+            $this->entityManager->refresh($ret);
+        }
 
         return $ret;
     }
