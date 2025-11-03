@@ -764,6 +764,7 @@ class BlobService implements LoggerAwareInterface
         if ($job === null) {
             return false;
         }
+
         return $job->getStatus() === MetadataBackupJob::JOB_STATUS_RUNNING;
     }
 
@@ -780,6 +781,7 @@ class BlobService implements LoggerAwareInterface
         if ($job === null) {
             return false;
         }
+
         return $job->getStatus() === MetadataRestoreJob::JOB_STATUS_RUNNING;
     }
 
