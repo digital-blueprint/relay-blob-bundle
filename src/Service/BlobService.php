@@ -758,19 +758,12 @@ class BlobService implements LoggerAwareInterface
      */
     public function checkMetadataBackupJobRunning(string $identifier): bool
     {
-        $this->entityManager->getRepository(MetadataBackupJob::class)
-            ->createQueryBuilder('f')
-            ->where('f.identifier = :id')
-            ->setParameter('id', $identifier)
-            ->getQuery()
-            ->getResult();
+        /** @var MetadataBackupJob|null $job */
+        $job = $this->getMetadataBackupJobById($identifier);
 
-        $this->entityManager->flush();
-
-        /** @var MetadataBackupJob $job */
-        $job = $this->entityManager->getRepository(MetadataBackupJob::class)
-            ->findOneBy(['identifier' => $identifier]);
-
+        if ($job === null) {
+            return false;
+        }
         return $job->getStatus() === MetadataBackupJob::JOB_STATUS_RUNNING;
     }
 
@@ -781,19 +774,12 @@ class BlobService implements LoggerAwareInterface
      */
     public function checkMetadataRestoreJobRunning(string $identifier): bool
     {
-        $this->entityManager->getRepository(MetadataRestoreJob::class)
-            ->createQueryBuilder('f')
-            ->where('f.identifier = :id')
-            ->setParameter('id', $identifier)
-            ->getQuery()
-            ->getResult();
+        /** @var MetadataBackupJob|null $job */
+        $job = $this->getMetadataBackupJobById($identifier);
 
-        $this->entityManager->flush();
-
-        /** @var MetadataRestoreJob $job */
-        $job = $this->entityManager->getRepository(MetadataRestoreJob::class)
-            ->findOneBy(['identifier' => $identifier]);
-
+        if ($job === null) {
+            return false;
+        }
         return $job->getStatus() === MetadataRestoreJob::JOB_STATUS_RUNNING;
     }
 
