@@ -12,13 +12,13 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 class Configuration implements ConfigurationInterface
 {
-    public const ROLE_METADATABACKUPS = 'ROLE_METADATABACKUPS';
+    public const ROLE_METADATA_BACKUP_AND_RESTORE = 'ROLE_METADATA_BACKUP_AND_RESTORE';
     public const ROLE_PROFILE_METADATABACKUPS = 'ROLE_PROFILE_METADATABACKUPS';
 
     private function getAuthNode(): NodeDefinition
     {
         return AuthorizationConfigDefinition::create()
-            ->addRole(self::ROLE_METADATABACKUPS, 'false', 'Returns true if the user is allowed to access middleware API.')
+            ->addRole(self::ROLE_METADATA_BACKUP_AND_RESTORE, 'false', 'Returns true if the user is allowed to access middleware API.')
             ->getNodeDefinition();
     }
 

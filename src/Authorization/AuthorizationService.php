@@ -19,7 +19,7 @@ class AuthorizationService extends AbstractAuthorizationService
      */
     public function checkCanRoleAccessMetadataBackup(): void
     {
-        $this->denyAccessUnlessIsGrantedRole(Configuration::ROLE_METADATABACKUPS);
+        $this->denyAccessUnlessIsGrantedRole(Configuration::ROLE_METADATA_BACKUP_AND_RESTORE);
     }
 
     /**
@@ -28,5 +28,10 @@ class AuthorizationService extends AbstractAuthorizationService
     public function checkCanAccessMetadataBackup(): void
     {
         $this->checkCanRoleAccessMetadataBackup();
+    }
+
+    public function getCanUse(): bool
+    {
+        return $this->isGrantedRole(Configuration::ROLE_METADATA_BACKUP_AND_RESTORE);
     }
 }

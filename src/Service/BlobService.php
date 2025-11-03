@@ -537,10 +537,10 @@ class BlobService implements LoggerAwareInterface
 
     public function getRunningMetadataRestoreJobByInternalBucketId(string $intBucketId): ?MetadataRestoreJob
     {
-        $job = $this->entityManager->getRepository(MetadataBackupJob::class)
+        $job = $this->entityManager->getRepository(MetadataRestoreJob::class)
             ->createQueryBuilder('f')
             ->where('f.status = :status')
-            ->andWhere('f.internalBucketId = :bucketID')
+            ->andWhere('f.bucketId = :bucketID')
             ->setParameter('bucketID', $intBucketId)
             ->setParameter('status', 'RUNNING')
             ->setMaxResults(1)
@@ -555,7 +555,7 @@ class BlobService implements LoggerAwareInterface
         $job = $this->entityManager->getRepository(MetadataBackupJob::class)
             ->createQueryBuilder('f')
             ->where('f.status = :status')
-            ->andWhere('f.internalBucketId = :bucketID')
+            ->andWhere('f.bucketId = :bucketID')
             ->setParameter('bucketID', $intBucketId)
             ->setParameter('status', 'RUNNING')
             ->setMaxResults(1)

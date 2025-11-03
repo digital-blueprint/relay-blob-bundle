@@ -35,6 +35,11 @@ class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAw
         return true;
     }
 
+    protected function isCurrentUserGrantedOperationAccess(int $operation): bool
+    {
+        return $this->authService->getCanUse();
+    }
+
     /**
      * @throws \JsonException
      */
