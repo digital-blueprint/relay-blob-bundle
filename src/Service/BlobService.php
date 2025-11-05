@@ -916,7 +916,6 @@ class BlobService implements LoggerAwareInterface
         $job->setHash($service->getMetadataBackupFileHash($internalId));
         $job->setFileRef($service->getMetadataBackupFileRef($internalId));
         $this->saveMetadataBackupJob($job);
-
     }
 
     /**
