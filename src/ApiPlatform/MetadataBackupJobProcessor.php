@@ -85,6 +85,7 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
         }
 
         $this->blobService->finishAndSaveMetadataBackupJob($job, $internalId);
+        $this->blobService->deleteFinishedMetadataBackupJobsExceptGivenOneByInternalBucketId($job->getBucketId(), $job->getIdentifier()); // delete other FINISHED job afterwards in case of an error
 
         return $job;
     }

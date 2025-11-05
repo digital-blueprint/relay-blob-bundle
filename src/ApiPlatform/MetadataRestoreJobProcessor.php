@@ -93,6 +93,7 @@ class MetadataRestoreJobProcessor extends AbstractDataProcessor
             return $this->blobService->getMetadataRestoreJobById($job->getIdentifier());
         }
         $this->blobService->finishAndSaveMetadataRestoreJob($job, $backupJob->getBucketId());
+        $this->blobService->deleteFinishedMetadataRestoreJobsExceptGivenOneByInternalBucketId($job->getBucketId(), $job->getIdentifier()); // delete other FINISHED job afterwards in case of an error
 
         return $job;
     }

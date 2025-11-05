@@ -519,6 +519,36 @@ class BlobService implements LoggerAwareInterface
         }
     }
 
+    public function deleteFinishedMetadataBackupJobsExceptGivenOneByInternalBucketId($intBucketId, $jobId): void
+    {
+        $this->entityManager
+            ->createQueryBuilder()
+            ->delete(MetadataBackupJob::class, 'd')
+            ->where('d.bucketId=:bucketID')
+            ->andWhere('d.status=:status')
+            ->andWhere('d.identifier<>:jobId')
+            ->setParameter('bucketID', $intBucketId)
+            ->setParameter('status', MetadataBackupJob::JOB_STATUS_FINISHED)
+            ->setParameter('jobId', $jobId)
+            ->getQuery()
+            ->execute();
+    }
+
+    public function deleteFinishedMetadataRestoreJobsExceptGivenOneByInternalBucketId($intBucketId, $jobId): void
+    {
+        $this->entityManager
+            ->createQueryBuilder()
+            ->delete(MetadataRestoreJob::class, 'd')
+            ->where('d.bucketId=:bucketID')
+            ->andWhere('d.status=:status')
+            ->andWhere('d.identifier<>:jobId')
+            ->setParameter('bucketID', $intBucketId)
+            ->setParameter('status', MetadataRestoreJob::JOB_STATUS_FINISHED)
+            ->setParameter('jobId', $jobId)
+            ->getQuery()
+            ->execute();
+    }
+
     public function getLastFinishedMetadataBackupJobByInternalBucketId($intBucketId): MetadataBackupJob
     {
         $job = $this->entityManager->getRepository(MetadataBackupJob::class)
@@ -526,7 +556,7 @@ class BlobService implements LoggerAwareInterface
             ->where('f.status = :status')
             ->andWhere('f.internalBucketId = :bucketID')
             ->setParameter('bucketID', $intBucketId)
-            ->setParameter('status', 'FINISHED')
+            ->setParameter('status', MetadataBackupJob::JOB_STATUS_FINISHED)
             ->orderBy('f.finished', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
@@ -542,7 +572,7 @@ class BlobService implements LoggerAwareInterface
             ->where('f.status = :status')
             ->andWhere('f.bucketId = :bucketID')
             ->setParameter('bucketID', $intBucketId)
-            ->setParameter('status', 'RUNNING')
+            ->setParameter('status', MetadataRestoreJob::JOB_STATUS_RUNNING)
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
@@ -557,7 +587,7 @@ class BlobService implements LoggerAwareInterface
             ->where('f.status = :status')
             ->andWhere('f.bucketId = :bucketID')
             ->setParameter('bucketID', $intBucketId)
-            ->setParameter('status', 'RUNNING')
+            ->setParameter('status', MetadataBackupJob::JOB_STATUS_RUNNING)
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
@@ -886,6 +916,7 @@ class BlobService implements LoggerAwareInterface
         $job->setHash($service->getMetadataBackupFileHash($internalId));
         $job->setFileRef($service->getMetadataBackupFileRef($internalId));
         $this->saveMetadataBackupJob($job);
+
     }
 
     /**
