@@ -74,6 +74,6 @@ class BucketLockProvider extends AbstractDataProvider implements LoggerAwareInte
             );
         }
 
-        return $this->blobService->getBucketLocksByBucketId($bucketID);
+        return $this->blobService->getBucketLocksByBucketId($bucketID, $currentPageNumber, $maxNumItemsPerPage);
     }
 }

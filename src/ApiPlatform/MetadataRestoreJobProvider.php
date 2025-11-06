@@ -91,7 +91,7 @@ class MetadataRestoreJobProvider extends AbstractDataProvider implements LoggerA
                 'blob:bucket-not-found'
             );
         }
-        $backupJobs = $this->blobService->getMetadataRestoreJobsByInternalBucketId($internalId);
+        $backupJobs = $this->blobService->getMetadataRestoreJobsByInternalBucketId($internalId, $currentPageNumber, $maxNumItemsPerPage);
         if (empty($backupJobs)) {
             throw ApiError::withDetails(
                 Response::HTTP_NOT_FOUND,

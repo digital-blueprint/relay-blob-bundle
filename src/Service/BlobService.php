@@ -1088,7 +1088,7 @@ class BlobService implements LoggerAwareInterface
     /**
      * Get BucketLock for bucket with given identifier.
      */
-    public function getBucketLocksByBucketId(string $bucketId): array
+    public function getBucketLocksByBucketId(string $bucketId, int $page, int $perPage): array
     {
         $intBucketId = $this->getInternalBucketIdByBucketID($bucketId);
 
@@ -1103,7 +1103,7 @@ class BlobService implements LoggerAwareInterface
         /** @var array $locks */
         $locks = $this->entityManager
             ->getRepository(BucketLock::class)
-            ->findBy(['internalBucketId' => $intBucketId]);
+            ->findBy(['internalBucketId' => $intBucketId], null, $perPage, ($page - 1) * $perPage);
 
         return $locks;
     }
@@ -1153,18 +1153,18 @@ class BlobService implements LoggerAwareInterface
         return $ret;
     }
 
-    public function getMetadataBackupJobsByInternalBucketId(string $intBucketID): array
+    public function getMetadataBackupJobsByInternalBucketId(string $intBucketID, int $page, int $perPage): array
     {
         return $this->entityManager
             ->getRepository(MetadataBackupJob::class)
-            ->findBy(['bucketId' => $intBucketID]);
+            ->findBy(['bucketId' => $intBucketID], null, $perPage, ($page - 1) * $perPage);
     }
 
-    public function getMetadataRestoreJobsByInternalBucketId(string $intBucketID): array
+    public function getMetadataRestoreJobsByInternalBucketId(string $intBucketID, int $page, int $perPage): array
     {
         return $this->entityManager
             ->getRepository(MetadataRestoreJob::class)
-            ->findBy(['bucketId' => $intBucketID]);
+            ->findBy(['bucketId' => $intBucketID], null, $perPage, ($page - 1) * $perPage);
     }
 
     /**
