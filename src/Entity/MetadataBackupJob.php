@@ -70,6 +70,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
         ),
         new Post(
             uriTemplate: '/metadata-backup-jobs',
+            status: 202,
             openapi: new Operation(
                 tags: ['Blob'],
                 parameters: [

@@ -62,6 +62,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
         ),
         new Post(
             uriTemplate: '/metadata-restore-jobs',
+            status: 202,
             openapi: new Operation(
                 tags: ['Blob'],
                 parameters: [

@@ -42,6 +42,10 @@ services:
     autowire: true
     autoconfigure: true
 
+  Dbp\Relay\BlobBundle\MessageHandler\MessageHandler:
+    autowire: true
+    autoconfigure: true
+
   Dbp\Relay\BlobBundle\Api\FileApi:
     autowire: true
     autoconfigure: true

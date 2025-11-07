@@ -7,9 +7,11 @@ namespace Dbp\Relay\BlobBundle\ApiPlatform;
 use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Task\MetadataBackupTask;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProcessor;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * @internal
@@ -17,7 +19,7 @@ use Symfony\Component\HttpFoundation\Response;
 class MetadataBackupJobProcessor extends AbstractDataProcessor
 {
     public function __construct(
-        private readonly BlobService $blobService, private readonly AuthorizationService $authService)
+        private readonly BlobService $blobService, private readonly AuthorizationService $authService, private MessageBusInterface $messageBus)
     {
         parent::__construct();
     }
@@ -65,27 +67,8 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
 
         $this->blobService->setupMetadataBackupJob($job, $internalId);
         $this->blobService->saveMetadataBackupJob($job);
-        try {
-            $this->blobService->startMetadataBackup($job);
-        } catch (\Exception $e) {
-            $job->setStatus(MetadataBackupJob::JOB_STATUS_ERROR);
-            $job->setErrorMessage($e->getMessage());
-            if ($e instanceof ApiError) {
-                $job->setErrorId($e->getErrorId());
-                $this->blobService->finishAndSaveMetadataBackupJob($job, $internalId);
-                throw ApiError::withDetails($e->getStatusCode(), $job->getErrorMessage(), $job->getErrorId());
-            } else {
-                $this->blobService->finishAndSaveMetadataBackupJob($job, $internalId);
-                throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Something went wrong!');
-            }
-        }
 
-        if ($this->blobService->getMetadataBackupJobById($job->getIdentifier())->getStatus() === MetadataBackupJob::JOB_STATUS_CANCELLED) {
-            return $this->blobService->getMetadataBackupJobById($job->getIdentifier());
-        }
-
-        $this->blobService->finishAndSaveMetadataBackupJob($job, $internalId);
-        $this->blobService->deleteFinishedMetadataBackupJobsExceptGivenOneByInternalBucketId($job->getBucketId(), $job->getIdentifier()); // delete other FINISHED job afterwards in case of an error
+        $this->messageBus->dispatch(new MetadataBackupTask($job));
 
         return $job;
     }
