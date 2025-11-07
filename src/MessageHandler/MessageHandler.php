@@ -22,6 +22,7 @@ class MessageHandler
     {
         $this->blobService = $blobService;
     }
+
     #[AsMessageHandler]
     public function handleBackupTask(MetadataBackupTask $task): void
     {
@@ -45,6 +46,7 @@ class MessageHandler
         $this->blobService->finishAndSaveMetadataBackupJob($job, $internalId);
         $this->blobService->deleteFinishedMetadataBackupJobsExceptGivenOneByInternalBucketId($job->getBucketId(), $job->getIdentifier()); // delete other FINISHED job afterwards in case of an error
     }
+
     #[AsMessageHandler]
     public function handleRestoreTask(MetadataRestoreTask $task): void
     {

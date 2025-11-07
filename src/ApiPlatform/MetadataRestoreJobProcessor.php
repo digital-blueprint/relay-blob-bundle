@@ -8,7 +8,6 @@ use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Entity\MetadataRestoreJob;
 use Dbp\Relay\BlobBundle\Service\BlobService;
-use Dbp\Relay\BlobBundle\Task\MetadataBackupTask;
 use Dbp\Relay\BlobBundle\Task\MetadataRestoreTask;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProcessor;
