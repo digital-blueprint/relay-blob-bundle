@@ -12,13 +12,12 @@ use Dbp\Relay\BlobBundle\Task\MetadataRestoreTask;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Messenger\MessageBusInterface;
 
 class MessageHandler
 {
     private BlobService $blobService;
 
-    public function __construct(BlobService $blobService, MessageBusInterface $messageBus)
+    public function __construct(BlobService $blobService)
     {
         $this->blobService = $blobService;
     }
