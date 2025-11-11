@@ -2975,7 +2975,6 @@ class CurlGetTest extends AbstractApiTest
         }
     }
 
-
     private function getMetadataBackupJobPostUrl(string $bucketIdentifier): string
     {
         return "$this->metadataBackupJobBaseUrl?bucketIdentifier=$bucketIdentifier";
