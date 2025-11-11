@@ -119,19 +119,19 @@ class MetadataRestoreJob
     #[Groups(['BlobMetadataRestoreJobs:output'])]
     private string $started = '';
 
-    #[ORM\Column(type: 'string')]
+    #[ORM\Column(type: 'string', nullable: true)]
     #[Groups(['BlobMetadataRestoreJobs:output'])]
     private ?string $finished = '';
 
-    #[ORM\Column(type: 'string')]
+    #[ORM\Column(type: 'string', nullable: true)]
     #[Groups(['BlobMetadataRestoreJobs:output'])]
     private ?string $errorId = '';
 
-    #[ORM\Column(type: 'string')]
+    #[ORM\Column(type: 'string', nullable: true)]
     #[Groups(['BlobMetadataRestoreJobs:output'])]
     private ?string $errorMessage = '';
 
-    #[ORM\Column(type: 'string')]
+    #[ORM\Column(type: 'string', nullable: true)]
     #[Groups(['BlobMetadataRestoreJobs:output'])]
     private ?string $metadataBackupJobId = '';
 

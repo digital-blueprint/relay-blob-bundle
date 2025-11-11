@@ -75,16 +75,16 @@ class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAw
         if (!array_key_exists('bucketIdentifier', $filters)) {
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
-                'Bucket could not be found!',
-                'blob:bucket-not-found'
+                'No bucketIdentifier given!',
+                'blob:bucket-id-not-given'
             );
         }
         $bucketIdentifier = $filters['bucketIdentifier'];
         if ($bucketIdentifier === null) {
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
-                'Bucket could not be found!',
-                'blob:bucket-not-found'
+                'No bucketIdentifier given!!',
+                'blob:bucket-id-not-given'
             );
         }
         $this->authService->checkCanAccessMetadataBackup();

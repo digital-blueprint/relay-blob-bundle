@@ -119,23 +119,23 @@ class MetadataBackupJob
     #[Groups(['BlobMetadataBackupJobs:output'])]
     private string $started = '';
 
-    #[ORM\Column(type: 'string')]
+    #[ORM\Column(type: 'string', nullable: true)]
     #[Groups(['BlobMetadataBackupJobs:output'])]
     private ?string $finished = '';
 
-    #[ORM\Column(type: 'string')]
+    #[ORM\Column(type: 'string', nullable: true)]
     #[Groups(['BlobMetadataBackupJobs:output'])]
     private ?string $errorId = '';
 
-    #[ORM\Column(type: 'string')]
+    #[ORM\Column(type: 'string', nullable: true)]
     #[Groups(['BlobMetadataBackupJobs:output'])]
     private ?string $errorMessage = '';
 
-    #[ORM\Column(type: 'string')]
+    #[ORM\Column(type: 'string', nullable: true)]
     #[Groups(['BlobMetadataBackupJobs:output'])]
     private ?string $hash = '';
 
-    #[ORM\Column(type: 'string')]
+    #[ORM\Column(type: 'string', nullable: true)]
     #[Groups(['BlobMetadataBackupJobs:output'])]
     private ?string $fileRef = '';
 

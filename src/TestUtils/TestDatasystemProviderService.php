@@ -99,7 +99,7 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
     {
         $ret = fgets($this->backupFile);
 
-        if (!$ret) {
+        if (!$ret && !feof($this->backupFile)) {
             throw new \RuntimeException('Could not read line from metadata backup!');
         }
 
