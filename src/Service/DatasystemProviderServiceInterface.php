@@ -64,10 +64,11 @@ interface DatasystemProviderServiceInterface
 
     /**
      * Closes and saves metadata backup.
+     * If requested, the old backup is restored (in case of cancel).
      *
      * @return bool true if successful, else false
      */
-    public function closeMetadataBackup(string $internalBucketId): bool;
+    public function closeMetadataBackup(string $internalBucketId, bool $restoreOldBackup = false): bool;
 
     /**
      * Calculates and gets the filehash of the metadata backup file.

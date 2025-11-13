@@ -1192,6 +1192,7 @@ class BlobService implements LoggerAwareInterface
         $currentPage = 1;
         $service = $this->datasystemService->getService($this->getBucketConfig($intBucketId)->getService());
         $opened = $service->openMetadataBackup($intBucketId, 'w');
+        $restoreOldBackup = false;
 
         $config = $this->getBucketConfigByInternalBucketId($intBucketId);
         $config->setKey('<redacted>');
@@ -1210,6 +1211,7 @@ class BlobService implements LoggerAwareInterface
                 if ($this->logger !== null) {
                     $this->logger->warning('MetadataBackupJob '.$job->getIdentifier().' cancelled.');
                 }
+                $restoreOldBackup = true;
                 break;
             }
             // empty prefix together with startsWith=true represents all prefixes
@@ -1232,7 +1234,7 @@ class BlobService implements LoggerAwareInterface
             ++$currentPage;
         }
         // TODO check if backup was successfully closed
-        $closed = $service->closeMetadataBackup($intBucketId);
+        $closed = $service->closeMetadataBackup($intBucketId, $restoreOldBackup);
     }
 
     /**

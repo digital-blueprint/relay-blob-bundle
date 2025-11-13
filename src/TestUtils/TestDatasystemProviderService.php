@@ -106,7 +106,7 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
         return $ret;
     }
 
-    public function closeMetadataBackup(string $internalBucketId): bool
+    public function closeMetadataBackup(string $internalBucketId, bool $restoreOldBackup = false): bool
     {
         $ret = fclose($this->backupFile);
 
