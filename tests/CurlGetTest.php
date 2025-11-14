@@ -13,8 +13,10 @@ use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
 use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
+use Dbp\Relay\BlobBundle\TestUtils\TestEntityManager;
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
+use Dbp\Relay\CoreBundle\TestUtils\AbstractApiTest;
 use Dbp\Relay\CoreBundle\TestUtils\TestClient;
 use Dbp\Relay\CoreBundle\TestUtils\UserAuthTrait;
 use Doctrine\ORM\EntityManagerInterface;
@@ -28,10 +30,8 @@ use Symfony\Component\Uid\Uuid;
  * - Split tests into smaller chunks
  * - Don't mix unit tests and API tests (which use a test client/kernel).
  */
-class CurlGetTest extends ApiTestCase
+class CurlGetTest extends AbstractApiTest
 {
-    use UserAuthTrait;
-
     private EntityManagerInterface $entityManager;
 
     /** @var array[] */
@@ -42,6 +42,8 @@ class CurlGetTest extends ApiTestCase
      */
     protected function setUp(): void
     {
+        parent::setUp();
+        BlobApiTest::setUp($this->testClient->getContainer());
         $this->files = [
             0 => [
                 'name' => $n = 'test.txt',
@@ -71,11 +73,9 @@ class CurlGetTest extends ApiTestCase
         BlobTestUtils::tearDown();
     }
 
-    protected function setUpTestClient(): Client
+    protected function setUpClient(): Client
     {
-        $client = $this->withUser(TestClient::TEST_USER_IDENTIFIER, [], '42');
-        $client->disableReboot(); // allows multiple requests for one client
-        $this->entityManager = BlobApiTest::setUp($client->getContainer());
+        $client = $this->testClient->getClient();
 
         return $client;
     }
@@ -93,18 +93,16 @@ class CurlGetTest extends ApiTestCase
     public function testGet(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             $bucket = $this->getBucketConfig($client);
             $url = SignatureUtils::getSignedUrl('/blob/files', $bucket->getKey(), $bucket->getBucketId(), 'GET', ['prefix' => 'playground']);
 
             $options = [
                 'headers' => [
-                    'Authorization' => 'Bearer 42',
                     'Accept' => 'application/ld+json',
                 ],
             ];
-
-            $response = $client->request('GET', $url, $options);
+            $response = $this->testClient->request('GET', $url, $options);
 
             $this->assertEquals(200, $response->getStatusCode());
 
@@ -129,7 +127,7 @@ class CurlGetTest extends ApiTestCase
     public function testPostGetDelete(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
 
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
@@ -354,7 +352,7 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
 
             $response = $client->request('GET', $url.'&sig='.$token, $options);
 
@@ -379,7 +377,7 @@ class CurlGetTest extends ApiTestCase
     public function testGetDeleteById(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             /** @var ConfigurationService $configService */
@@ -491,7 +489,7 @@ class CurlGetTest extends ApiTestCase
             ];
 
             $token = SignatureTools::createSignature($secret, $payload);
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
 
             $response = $client->request('GET', $url.'&sig='.$token, $options);
 
@@ -512,7 +510,7 @@ class CurlGetTest extends ApiTestCase
     public function testGetExpired(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             $configService = $client->getContainer()->get(ConfigurationService::class);
 
             // =======================================================
@@ -552,7 +550,7 @@ class CurlGetTest extends ApiTestCase
     public function testGetDeleteByUnknownId(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var ConfigurationService $configService */
             $configService = $client->getContainer()->get(ConfigurationService::class);
 
@@ -609,7 +607,7 @@ class CurlGetTest extends ApiTestCase
     public function testPostWithWrongAction(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -671,7 +669,7 @@ class CurlGetTest extends ApiTestCase
     public function testGetAllWithWrongAction(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -713,7 +711,7 @@ class CurlGetTest extends ApiTestCase
     public function testGETWithWrongAction(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -814,7 +812,7 @@ class CurlGetTest extends ApiTestCase
     public function testPATCHWithWrongAction(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -900,7 +898,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                 ];
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
                 $response = $client->request('PATCH', $url.'&sig='.$token, $options);
 
                 $this->assertEquals(405, $response->getStatusCode());
@@ -916,7 +914,7 @@ class CurlGetTest extends ApiTestCase
     public function testPATCH(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1036,7 +1034,7 @@ class CurlGetTest extends ApiTestCase
     public function testAllMethodsWithWrongActions(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1121,7 +1119,7 @@ class CurlGetTest extends ApiTestCase
                         ],
                     ];
 
-                    $client = $this->setUpTestClient();
+                    $client = $this->setUpClient();
                     $response = $client->request($method, $url.'&sig='.$token, $options);
                     $this->assertEquals(405, $response->getStatusCode());
                 }
@@ -1137,7 +1135,7 @@ class CurlGetTest extends ApiTestCase
     public function testRedirectToBinary(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1230,7 +1228,7 @@ class CurlGetTest extends ApiTestCase
     public function testOperationsWithMissingParameters(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1333,7 +1331,7 @@ class CurlGetTest extends ApiTestCase
                         ],
                     ];
 
-                    $client = $this->setUpTestClient();
+                    $client = $this->setUpClient();
 
                     $response = $client->request($action, $baseUrl.$token, $options);
                     $this->assertEquals(400, $response->getStatusCode());
@@ -1392,7 +1390,7 @@ class CurlGetTest extends ApiTestCase
                         ],
                     ];
 
-                    $client = $this->setUpTestClient();
+                    $client = $this->setUpClient();
 
                     $response = $client->request($action, $baseUrl.$token, $options);
                     $this->assertEquals(400, $response->getStatusCode());
@@ -1466,7 +1464,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                 ];
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request('POST', $baseUrl.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
@@ -1511,7 +1509,7 @@ class CurlGetTest extends ApiTestCase
                     'body' => '{}',
                 ];
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
                 $response = $client->request('PATCH', $baseUrl, $options);
                 $this->assertEquals(400, $response->getStatusCode());
             }
@@ -1526,7 +1524,7 @@ class CurlGetTest extends ApiTestCase
     public function testOperationsWithCorrectSignatureButWrongChecksum(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1605,7 +1603,7 @@ class CurlGetTest extends ApiTestCase
                         'Accept' => 'application/ld+json',
                     ],
                 ];
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
@@ -1624,7 +1622,7 @@ class CurlGetTest extends ApiTestCase
                 ];
 
                 $token = SignatureTools::createSignature($secret, $payload);
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
@@ -1647,7 +1645,7 @@ class CurlGetTest extends ApiTestCase
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
@@ -1681,7 +1679,7 @@ class CurlGetTest extends ApiTestCase
     public function testOperationsWithCorrectChecksumButWrongSignature(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1765,7 +1763,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                 ];
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
@@ -1788,7 +1786,7 @@ class CurlGetTest extends ApiTestCase
 
                 $token = SignatureTools::createSignature($secret, $payload);
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
@@ -1814,7 +1812,7 @@ class CurlGetTest extends ApiTestCase
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
@@ -1848,7 +1846,7 @@ class CurlGetTest extends ApiTestCase
     public function testOperationsWithOverdueCreationTime(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1930,7 +1928,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                 ];
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
@@ -1950,7 +1948,7 @@ class CurlGetTest extends ApiTestCase
 
                 $token = SignatureTools::createSignature($secret, $payload);
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
@@ -1973,7 +1971,7 @@ class CurlGetTest extends ApiTestCase
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
@@ -2007,7 +2005,7 @@ class CurlGetTest extends ApiTestCase
     public function testOperationsWithUnconfiguredBucket(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -2089,7 +2087,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                 ];
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
@@ -2109,7 +2107,7 @@ class CurlGetTest extends ApiTestCase
 
                 $token = SignatureTools::createSignature($secret, $payload);
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
@@ -2132,7 +2130,7 @@ class CurlGetTest extends ApiTestCase
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
@@ -2160,7 +2158,7 @@ class CurlGetTest extends ApiTestCase
     public function testBinaryDownload(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -2249,7 +2247,7 @@ class CurlGetTest extends ApiTestCase
     public function testDownloadWithInvalidOrMissingParameters(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -2354,7 +2352,7 @@ class CurlGetTest extends ApiTestCase
                     ],
                 ];
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request('GET', $baseUrl.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
@@ -2380,7 +2378,7 @@ class CurlGetTest extends ApiTestCase
                 ],
             ];
 
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
 
             $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
             $this->assertEquals(403, $response->getStatusCode());
@@ -2390,7 +2388,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             $baseUrl = '/blob/files/'.$this->files[0]['uuid'];
             $url = SignatureUtils::getSignedUrl($baseUrl, $secret, $bucketID, 'DELETE');
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(405, $response->getStatusCode());
         } catch (\Throwable $e) {
