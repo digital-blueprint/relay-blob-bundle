@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## v0.1.91
+- Update dependencies
+
 ## v0.1.90
 - only validate file in PATCH requests if the file is given in the request
 
