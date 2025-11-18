@@ -532,6 +532,7 @@ class BlobService implements LoggerAwareInterface
             ->setParameter('jobId', $jobId)
             ->getQuery()
             ->execute();
+        $this->entityManager->flush();
     }
 
     public function deleteFinishedMetadataRestoreJobsExceptGivenOneByInternalBucketId($intBucketId, $jobId): void
@@ -547,6 +548,8 @@ class BlobService implements LoggerAwareInterface
             ->setParameter('jobId', $jobId)
             ->getQuery()
             ->execute();
+
+        $this->entityManager->flush();
     }
 
     public function getLastFinishedMetadataBackupJobByInternalBucketId($intBucketId): MetadataBackupJob
