@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v0.1.92
+- Drop support for api-platform 3
+- Dependency cleanups
+
 ## v0.1.91
 - Update dependencies
 
