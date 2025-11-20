@@ -8,6 +8,8 @@ use Dbp\Relay\BlobBundle\ApiPlatform\FileDataProvider;
 use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\BlobUuidBinaryType;
+use Dbp\Relay\BlobBundle\Task\MetadataBackupTask;
+use Dbp\Relay\BlobBundle\Task\MetadataRestoreTask;
 use Dbp\Relay\CoreBundle\Doctrine\DoctrineConfiguration;
 use Dbp\Relay\CoreBundle\Extension\ExtensionTrait;
 use Symfony\Component\Config\FileLocator;
@@ -48,6 +50,8 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
 
     public function prepend(ContainerBuilder $container): void
     {
+        $this->addQueueMessageClass($container, MetadataBackupTask::class);
+        $this->addQueueMessageClass($container, MetadataRestoreTask::class);
         $configs = $container->getExtensionConfig($this->getAlias());
         $config = $this->processConfiguration(new Configuration(), $configs);
 

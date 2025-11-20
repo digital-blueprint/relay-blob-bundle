@@ -26,6 +26,8 @@ class MessageHandler
     public function handleBackupTask(MetadataBackupTask $task): void
     {
         $job = $task->getJob();
+        // get job again, otherwise doctrine is confused because its a differen EM between sync and async
+        $job = $this->blobService->getMetadataBackupJobById($job->getIdentifier());
         $internalId = $job->getBucketId();
         try {
             $this->blobService->startMetadataBackup($job);
@@ -41,7 +43,6 @@ class MessageHandler
                 throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Something went wrong!');
             }
         }
-
         $this->blobService->finishAndSaveMetadataBackupJob($job, $internalId);
         $this->blobService->deleteFinishedMetadataBackupJobsExceptGivenOneByInternalBucketId($job->getBucketId(), $job->getIdentifier()); // delete other FINISHED job afterwards in case of an error
     }
@@ -50,6 +51,8 @@ class MessageHandler
     public function handleRestoreTask(MetadataRestoreTask $task): void
     {
         $job = $task->getJob();
+        // get job again, otherwise doctrine is confused because its a different EM between sync and async
+        $job = $this->blobService->getMetadataRestoreJobById($job->getIdentifier());
         $internalId = $job->getBucketId();
         try {
             $this->blobService->deleteBucketByInternalBucketId($internalId);
@@ -66,7 +69,6 @@ class MessageHandler
                 throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Something went wrong!');
             }
         }
-
         $this->blobService->finishAndSaveMetadataRestoreJob($job, $internalId);
         $this->blobService->deleteFinishedMetadataRestoreJobsExceptGivenOneByInternalBucketId($job->getBucketId(), $job->getIdentifier()); // delete other FINISHED job afterwards in case of an error
     }
