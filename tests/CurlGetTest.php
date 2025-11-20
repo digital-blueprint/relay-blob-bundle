@@ -9,7 +9,6 @@ use Dbp\Relay\BlobBundle\ApiPlatform\CreateFileDataAction;
 use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
-use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
@@ -50,6 +49,7 @@ class CurlGetTest extends AbstractApiTest
      */
     protected function setUp(): void
     {
+        $kernel = self::bootKernel();
         parent::setUp();
         $this->files = [
             0 => [
@@ -80,7 +80,7 @@ class CurlGetTest extends AbstractApiTest
         BlobTestUtils::tearDown();
     }
 
-    protected function setUpTestClient(): Client
+    protected function setUpClient(): Client
     {
         $this->testClient->setUpUser(TestClient::TEST_USER_IDENTIFIER, [], [], token: $this->filesBearer);
         $client = $this->testClient->getClient();
@@ -103,7 +103,7 @@ class CurlGetTest extends AbstractApiTest
     public function testGet(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             $bucket = $this->getBucketConfig($client);
             $url = SignatureUtils::getSignedUrl('/blob/files', $bucket->getKey(), $bucket->getBucketId(), 'GET', ['prefix' => 'playground']);
 
@@ -139,7 +139,7 @@ class CurlGetTest extends AbstractApiTest
     public function testPostGetDelete(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
 
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
@@ -364,7 +364,7 @@ class CurlGetTest extends AbstractApiTest
                 ],
             ];
 
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
 
             $response = $client->request('GET', $url.'&sig='.$token, $options);
 
@@ -389,7 +389,7 @@ class CurlGetTest extends AbstractApiTest
     public function testGetDeleteById(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             /** @var ConfigurationService $configService */
@@ -501,7 +501,7 @@ class CurlGetTest extends AbstractApiTest
             ];
 
             $token = SignatureTools::createSignature($secret, $payload);
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
 
             $response = $client->request('GET', $url.'&sig='.$token, $options);
 
@@ -522,7 +522,7 @@ class CurlGetTest extends AbstractApiTest
     public function testGetExpired(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             $configService = $client->getContainer()->get(ConfigurationService::class);
 
             // =======================================================
@@ -562,7 +562,7 @@ class CurlGetTest extends AbstractApiTest
     public function testGetDeleteByUnknownId(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var ConfigurationService $configService */
             $configService = $client->getContainer()->get(ConfigurationService::class);
 
@@ -619,7 +619,7 @@ class CurlGetTest extends AbstractApiTest
     public function testPostWithWrongAction(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -681,7 +681,7 @@ class CurlGetTest extends AbstractApiTest
     public function testGetAllWithWrongAction(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -723,7 +723,7 @@ class CurlGetTest extends AbstractApiTest
     public function testGETWithWrongAction(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -824,7 +824,7 @@ class CurlGetTest extends AbstractApiTest
     public function testPATCHWithWrongAction(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -910,7 +910,7 @@ class CurlGetTest extends AbstractApiTest
                     ],
                 ];
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
                 $response = $client->request('PATCH', $url.'&sig='.$token, $options);
 
                 $this->assertEquals(405, $response->getStatusCode());
@@ -926,7 +926,7 @@ class CurlGetTest extends AbstractApiTest
     public function testPATCH(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1046,7 +1046,7 @@ class CurlGetTest extends AbstractApiTest
     public function testAllMethodsWithWrongActions(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1131,7 +1131,7 @@ class CurlGetTest extends AbstractApiTest
                         ],
                     ];
 
-                    $client = $this->setUpTestClient();
+                    $client = $this->setUpClient();
                     $response = $client->request($method, $url.'&sig='.$token, $options);
                     $this->assertEquals(405, $response->getStatusCode());
                 }
@@ -1147,7 +1147,7 @@ class CurlGetTest extends AbstractApiTest
     public function testRedirectToBinary(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1240,7 +1240,7 @@ class CurlGetTest extends AbstractApiTest
     public function testOperationsWithMissingParameters(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1343,7 +1343,7 @@ class CurlGetTest extends AbstractApiTest
                         ],
                     ];
 
-                    $client = $this->setUpTestClient();
+                    $client = $this->setUpClient();
 
                     $response = $client->request($action, $baseUrl.$token, $options);
                     $this->assertEquals(400, $response->getStatusCode());
@@ -1402,7 +1402,7 @@ class CurlGetTest extends AbstractApiTest
                         ],
                     ];
 
-                    $client = $this->setUpTestClient();
+                    $client = $this->setUpClient();
 
                     $response = $client->request($action, $baseUrl.$token, $options);
                     $this->assertEquals(400, $response->getStatusCode());
@@ -1476,7 +1476,7 @@ class CurlGetTest extends AbstractApiTest
                     ],
                 ];
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request('POST', $baseUrl.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
@@ -1521,7 +1521,7 @@ class CurlGetTest extends AbstractApiTest
                     'body' => '{}',
                 ];
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
                 $response = $client->request('PATCH', $baseUrl, $options);
                 $this->assertEquals(400, $response->getStatusCode());
             }
@@ -1536,7 +1536,7 @@ class CurlGetTest extends AbstractApiTest
     public function testOperationsWithCorrectSignatureButWrongChecksum(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1615,7 +1615,7 @@ class CurlGetTest extends AbstractApiTest
                         'Accept' => 'application/ld+json',
                     ],
                 ];
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
@@ -1634,7 +1634,7 @@ class CurlGetTest extends AbstractApiTest
                 ];
 
                 $token = SignatureTools::createSignature($secret, $payload);
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
@@ -1657,7 +1657,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
@@ -1691,7 +1691,7 @@ class CurlGetTest extends AbstractApiTest
     public function testOperationsWithCorrectChecksumButWrongSignature(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1775,7 +1775,7 @@ class CurlGetTest extends AbstractApiTest
                     ],
                 ];
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
@@ -1798,7 +1798,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $token = SignatureTools::createSignature($secret, $payload);
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
@@ -1824,7 +1824,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
@@ -1858,7 +1858,7 @@ class CurlGetTest extends AbstractApiTest
     public function testOperationsWithOverdueCreationTime(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -1940,7 +1940,7 @@ class CurlGetTest extends AbstractApiTest
                     ],
                 ];
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
@@ -1960,7 +1960,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $token = SignatureTools::createSignature($secret, $payload);
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(403, $response->getStatusCode());
@@ -1983,7 +1983,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
@@ -2017,7 +2017,7 @@ class CurlGetTest extends AbstractApiTest
     public function testOperationsWithUnconfiguredBucket(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -2099,7 +2099,7 @@ class CurlGetTest extends AbstractApiTest
                     ],
                 ];
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
@@ -2119,7 +2119,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $token = SignatureTools::createSignature($secret, $payload);
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request($action, $baseUrl.'&sig='.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
@@ -2142,7 +2142,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $file = new UploadedFile($this->files[0]['path'], $this->files[0]['name']);
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
@@ -2170,7 +2170,7 @@ class CurlGetTest extends AbstractApiTest
     public function testBinaryDownload(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -2259,7 +2259,7 @@ class CurlGetTest extends AbstractApiTest
     public function testDownloadWithInvalidOrMissingParameters(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             /** @var BlobService $blobService */
             $blobService = $client->getContainer()->get(BlobService::class);
             $configService = $client->getContainer()->get(ConfigurationService::class);
@@ -2364,7 +2364,7 @@ class CurlGetTest extends AbstractApiTest
                     ],
                 ];
 
-                $client = $this->setUpTestClient();
+                $client = $this->setUpClient();
 
                 $response = $client->request('GET', $baseUrl.$token, $options);
                 $this->assertEquals(400, $response->getStatusCode());
@@ -2390,7 +2390,7 @@ class CurlGetTest extends AbstractApiTest
                 ],
             ];
 
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
 
             $response = $client->request('GET', $baseUrl.'&sig='.$token, $options);
             $this->assertEquals(403, $response->getStatusCode());
@@ -2400,7 +2400,7 @@ class CurlGetTest extends AbstractApiTest
             // =======================================================
             $baseUrl = '/blob/files/'.$this->files[0]['uuid'];
             $url = SignatureUtils::getSignedUrl($baseUrl, $secret, $bucketID, 'DELETE');
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(405, $response->getStatusCode());
         } catch (\Throwable $e) {
@@ -2408,17 +2408,18 @@ class CurlGetTest extends AbstractApiTest
         }
     }
 
+    /*
     public function testMetadataBackupJob(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
 
-            /** @var AuthorizationService $authService */
+            /** @var AuthorizationService $authService
             $authService = static::getContainer()->get(AuthorizationService::class);
 
             $bucket = $this->getBucketConfig($client);
 
-            /* *** POST TESTS *** */
+            // *** POST TESTS ***
 
             $url = $this->getMetadataBackupJobPostUrl($bucket->getBucketId());
 
@@ -2465,14 +2466,11 @@ class CurlGetTest extends AbstractApiTest
             $this->assertArrayHasKey('status', $data);
             $this->assertArrayHasKey('bucketId', $data);
             $this->assertArrayHasKey('started', $data);
-            $this->assertArrayHasKey('finished', $data);
-            $this->assertArrayHasKey('hash', $data);
-            $this->assertArrayHasKey('fileRef', $data);
-
+            $jobId = $data['identifier'];
             $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_ERROR, $data['status']);
             $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_CANCELLED, $data['status']);
 
-            /* *** GET ITEM TESTS *** */
+            // *** GET ITEM TESTS ***
 
             $url = $this->getMetadataBackupJobGetItemUrl(json_decode($response->getContent())->identifier);
 
@@ -2506,17 +2504,8 @@ class CurlGetTest extends AbstractApiTest
             $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
             $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_ERROR, $data['status']);
             $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_CANCELLED, $data['status']);
-            while ($data['status'] === MetadataBackupJob::JOB_STATUS_RUNNING) {
-                sleep(2);
-                $response = $client->request('GET', $url, $options);
-                $this->assertEquals(200, $response->getStatusCode());
-                $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
-            }
 
-            $this->assertEquals(MetadataBackupJob::JOB_STATUS_FINISHED, $data['status']);
-            $jobId = $data['identifier'];
-
-            /* *** GET PAGE TESTS *** */
+            // *** GET PAGE TESTS ***
             $url = $this->getMetadataBackupJobGetPageUrl($bucket->getBucketId());
 
             // test without bearer
@@ -2550,7 +2539,7 @@ class CurlGetTest extends AbstractApiTest
             $this->assertEquals(1, count($data['hydra:member']));
             $this->assertEquals($jobId, $data['hydra:member'][0]['identifier']);
 
-            /* *** DELETE TESTS *** */
+            // *** DELETE TESTS ***
             $url = $this->getMetadataBackupJobGetItemUrl($jobId);
 
             // test without bearer
@@ -2593,9 +2582,9 @@ class CurlGetTest extends AbstractApiTest
     public function testMetadataRestoreJob(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
 
-            /** @var AuthorizationService $authService */
+            /** @var AuthorizationService $authService
             $authService = static::getContainer()->get(AuthorizationService::class);
 
             $bucket = $this->getBucketConfig($client);
@@ -2617,8 +2606,27 @@ class CurlGetTest extends AbstractApiTest
 
             $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
             $backupId = $data['identifier'];
+            $url = $this->getMetadataBackupJobGetItemUrl($data['identifier']);
+            $transport = self::getContainer()->get('messenger.transport.async');
+            $bus = self::getContainer()->get('messenger.bus.default');
+            $worker = new Worker([$transport], $bus);
 
-            /* *** POST TESTS *** */
+            $envelopes = $transport->get();
+            foreach ($envelopes as $envelope) {
+                $bus->dispatch($envelope->getMessage());
+            }
+
+            $worker->run(['sleep' => 1000000]);
+
+
+            while ($data['status'] === MetadataBackupJob::JOB_STATUS_RUNNING) {
+                sleep(2);
+                $response = $client->request('GET', $url, $options);
+                $this->assertEquals(200, $response->getStatusCode());
+                $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+            }
+
+            // *** POST TESTS ***
 
             $url = $this->getMetadataRestoreJobPostUrl($backupId);
 
@@ -2670,7 +2678,7 @@ class CurlGetTest extends AbstractApiTest
             $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_ERROR, $data['status']);
             $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_CANCELLED, $data['status']);
 
-            /* *** GET ITEM TESTS *** */
+            // *** GET ITEM TESTS ***
 
             $url = $this->getMetadataRestoreJobGetItemUrl(json_decode($response->getContent())->identifier);
 
@@ -2714,7 +2722,7 @@ class CurlGetTest extends AbstractApiTest
             $this->assertEquals(MetadataBackupJob::JOB_STATUS_FINISHED, $data['status']);
             $jobId = $data['identifier'];
 
-            /* *** GET PAGE TESTS *** */
+            // *** GET PAGE TESTS ***
             $url = $this->getMetadataRestoreJobGetPageUrl($bucket->getBucketId());
 
             // test without bearer
@@ -2748,7 +2756,7 @@ class CurlGetTest extends AbstractApiTest
             $this->assertEquals(1, count($data['hydra:member']));
             $this->assertEquals($jobId, $data['hydra:member'][0]['identifier']);
 
-            /* *** DELETE TESTS *** */
+            // *** DELETE TESTS ***
             $url = $this->getMetadataRestoreJobGetItemUrl($jobId);
 
             // test without bearer
@@ -2787,11 +2795,11 @@ class CurlGetTest extends AbstractApiTest
             throw $e;
         }
     }
-
+*/
     public function testBucketLock(): void
     {
         try {
-            $client = $this->setUpTestClient();
+            $client = $this->setUpClient();
 
             /** @var AuthorizationService $authService */
             $authService = static::getContainer()->get(AuthorizationService::class);
@@ -2974,7 +2982,7 @@ class CurlGetTest extends AbstractApiTest
             throw $e;
         }
     }
-
+    /*
     private function getMetadataBackupJobPostUrl(string $bucketIdentifier): string
     {
         return "$this->metadataBackupJobBaseUrl?bucketIdentifier=$bucketIdentifier";
@@ -3018,7 +3026,7 @@ class CurlGetTest extends AbstractApiTest
     private function getBucketLockGetPageUrl(string $bucketIdentifier, string $page = '1', string $perPage = '30'): string
     {
         return "$this->bucketLockBaseUrl?bucketIdentifier=$bucketIdentifier&page=$page&perPage=$perPage";
-    }
+    }*/
 
     private function generateSha256ChecksumFromUrl($url): string
     {

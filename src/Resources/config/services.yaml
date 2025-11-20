@@ -45,6 +45,7 @@ services:
   Dbp\Relay\BlobBundle\MessageHandler\MessageHandler:
     autowire: true
     autoconfigure: true
+    tags: ['messenger.message_handler']
 
   Dbp\Relay\BlobBundle\Api\FileApi:
     autowire: true

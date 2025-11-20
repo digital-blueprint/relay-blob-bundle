@@ -6,6 +6,7 @@ namespace Dbp\Relay\BlobBundle\Tests;
 
 use ApiPlatform\Symfony\Bundle\ApiPlatformBundle;
 use Dbp\Relay\BlobBundle\DbpRelayBlobBundle;
+use Dbp\Relay\BlobBundle\MessageHandler\MessageHandler;
 use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
 use Dbp\Relay\CoreBundle\DbpRelayCoreBundle;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
@@ -58,5 +59,8 @@ class Kernel extends BaseKernel
         ]);
 
         $container->extension('dbp_relay_blob', BlobTestUtils::getTestConfig());
+        $container->services()->set(MessageHandler::class)
+            ->tag('messenger.message_handler')
+            ->public();
     }
 }

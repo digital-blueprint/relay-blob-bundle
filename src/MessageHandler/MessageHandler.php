@@ -13,9 +13,21 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
+#[AsMessageHandler(handles: MetadataRestoreTask::class)]
+#[AsMessageHandler(handles: MetadataBackupTask::class)]
 class MessageHandler
 {
     private BlobService $blobService;
+
+    public function __invoke(MetadataBackupTask|MetadataRestoreTask $message)
+    {
+        if ($message instanceof MetadataBackupTask) {
+            $this->handleBackupTask($message);
+        }
+        if ($message instanceof MetadataRestoreTask) {
+            $this->handleRestoreTask($message);
+        }
+    }
 
     public function __construct(BlobService $blobService)
     {
@@ -26,7 +38,7 @@ class MessageHandler
     public function handleBackupTask(MetadataBackupTask $task): void
     {
         $job = $task->getJob();
-        // get job again, otherwise doctrine is confused because its a differen EM between sync and async
+        // get job again, otherwise doctrine is confused because its a different EM between sync and async
         $job = $this->blobService->getMetadataBackupJobById($job->getIdentifier());
         $internalId = $job->getBucketId();
         try {
