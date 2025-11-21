@@ -3011,7 +3011,7 @@ class CurlGetTest extends AbstractApiTest
     private function getMetadataRestoreJobGetPageUrl(string $bucketIdentifier, string $page = '1', string $perPage = '30'): string
     {
         return "$this->metadataRestoreJobBaseUrl?bucketIdentifier=$bucketIdentifier&page=$page&perPage=$perPage";
-    }
+    }*/
 
     private function getBucketLockPostUrl(string $bucketIdentifier): string
     {
@@ -3026,7 +3026,7 @@ class CurlGetTest extends AbstractApiTest
     private function getBucketLockGetPageUrl(string $bucketIdentifier, string $page = '1', string $perPage = '30'): string
     {
         return "$this->bucketLockBaseUrl?bucketIdentifier=$bucketIdentifier&page=$page&perPage=$perPage";
-    }*/
+    }
 
     private function generateSha256ChecksumFromUrl($url): string
     {
