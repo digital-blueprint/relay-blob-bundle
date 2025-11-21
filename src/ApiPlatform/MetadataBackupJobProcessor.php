@@ -37,6 +37,8 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
         assert($data instanceof MetadataBackupJob);
         $job = $data;
 
+        $this->authService->checkCanAccessMetadataBackup();
+
         if (!array_key_exists('bucketIdentifier', $filters)) {
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
@@ -62,8 +64,6 @@ class MetadataBackupJobProcessor extends AbstractDataProcessor
                 'blob:bucket-not-found'
             );
         }
-
-        $this->authService->checkCanAccessMetadataBackup();
 
         $this->blobService->setupMetadataBackupJob($job, $internalId);
         $this->blobService->saveMetadataBackupJob($job);

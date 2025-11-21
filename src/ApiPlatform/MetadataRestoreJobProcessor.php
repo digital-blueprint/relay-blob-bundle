@@ -38,6 +38,8 @@ class MetadataRestoreJobProcessor extends AbstractDataProcessor
         assert($data instanceof MetadataRestoreJob);
         $job = $data;
 
+        $this->authService->checkCanAccessMetadataBackup();
+
         if (!array_key_exists('metadataBackupJobId', $filters)) {
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
@@ -71,8 +73,6 @@ class MetadataRestoreJobProcessor extends AbstractDataProcessor
                 'blob:metadata-backup-job-not-finished'
             );
         }
-
-        $this->authService->checkCanAccessMetadataBackup();
 
         $this->blobService->setupMetadataRestoreJob($job, $backupJob->getBucketId(), $metadataBackupJobId);
 

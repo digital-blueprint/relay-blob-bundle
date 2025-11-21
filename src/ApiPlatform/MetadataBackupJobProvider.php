@@ -72,6 +72,7 @@ class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAw
      */
     protected function getPage(int $currentPageNumber, int $maxNumItemsPerPage, array $filters = [], array $options = []): array
     {
+        $this->authService->checkCanAccessMetadataBackup();
         if (!array_key_exists('bucketIdentifier', $filters)) {
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
@@ -87,7 +88,6 @@ class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAw
                 'blob:bucket-id-not-given'
             );
         }
-        $this->authService->checkCanAccessMetadataBackup();
         $internalId = $this->blobService->getInternalBucketIdByBucketID($bucketIdentifier);
         if ($internalId === null) {
             throw ApiError::withDetails(
