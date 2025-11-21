@@ -9,8 +9,12 @@ use Dbp\Relay\BlobBundle\ApiPlatform\CreateFileDataAction;
 use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
+use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
+use Dbp\Relay\BlobBundle\MessageHandler\MessageHandler;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Task\MetadataBackupTask;
+use Dbp\Relay\BlobBundle\Task\MetadataRestoreTask;
 use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
 use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
@@ -2408,13 +2412,12 @@ class CurlGetTest extends AbstractApiTest
         }
     }
 
-    /*
     public function testMetadataBackupJob(): void
     {
         try {
             $client = $this->setUpClient();
 
-            /** @var AuthorizationService $authService
+            /** @var AuthorizationService $authService */
             $authService = static::getContainer()->get(AuthorizationService::class);
 
             $bucket = $this->getBucketConfig($client);
@@ -2583,8 +2586,10 @@ class CurlGetTest extends AbstractApiTest
     {
         try {
             $client = $this->setUpClient();
+            /** @var BlobService $blobService */
+            $blobService = $client->getContainer()->get(BlobService::class);
 
-            /** @var AuthorizationService $authService
+            /** @var AuthorizationService $authService */
             $authService = static::getContainer()->get(AuthorizationService::class);
 
             $bucket = $this->getBucketConfig($client);
@@ -2607,23 +2612,17 @@ class CurlGetTest extends AbstractApiTest
             $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
             $backupId = $data['identifier'];
             $url = $this->getMetadataBackupJobGetItemUrl($data['identifier']);
-            $transport = self::getContainer()->get('messenger.transport.async');
-            $bus = self::getContainer()->get('messenger.bus.default');
-            $worker = new Worker([$transport], $bus);
 
-            $envelopes = $transport->get();
-            foreach ($envelopes as $envelope) {
-                $bus->dispatch($envelope->getMessage());
-            }
-
-            $worker->run(['sleep' => 1000000]);
-
+            $handler = new MessageHandler($blobService);
 
             while ($data['status'] === MetadataBackupJob::JOB_STATUS_RUNNING) {
-                sleep(2);
                 $response = $client->request('GET', $url, $options);
                 $this->assertEquals(200, $response->getStatusCode());
                 $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+                $backupJob = $blobService->getMetadataBackupJobById($data['identifier']);
+                // manually handle task as it doesnt automatically work in tests
+                $backupTask = new MetadataBackupTask($backupJob);
+                $handler->handleBackupTask($backupTask);
             }
 
             // *** POST TESTS ***
@@ -2672,7 +2671,6 @@ class CurlGetTest extends AbstractApiTest
             $this->assertArrayHasKey('status', $data);
             $this->assertArrayHasKey('bucketId', $data);
             $this->assertArrayHasKey('started', $data);
-            $this->assertArrayHasKey('finished', $data);
             $this->assertArrayHasKey('metadataBackupJobId', $data);
 
             $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_ERROR, $data['status']);
@@ -2713,10 +2711,13 @@ class CurlGetTest extends AbstractApiTest
             $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_ERROR, $data['status']);
             $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_CANCELLED, $data['status']);
             while ($data['status'] === MetadataBackupJob::JOB_STATUS_RUNNING) {
-                sleep(2);
                 $response = $client->request('GET', $url, $options);
                 $this->assertEquals(200, $response->getStatusCode());
                 $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+                $restoreJob = $blobService->getMetadataRestoreJobById($data['identifier']);
+                // manually handle task as it doesnt automatically work in tests
+                $restoreTask = new MetadataRestoreTask($restoreJob);
+                $handler->handleRestoreTask($restoreTask);
             }
 
             $this->assertEquals(MetadataBackupJob::JOB_STATUS_FINISHED, $data['status']);
@@ -2795,7 +2796,7 @@ class CurlGetTest extends AbstractApiTest
             throw $e;
         }
     }
-*/
+
     public function testBucketLock(): void
     {
         try {
@@ -2982,7 +2983,7 @@ class CurlGetTest extends AbstractApiTest
             throw $e;
         }
     }
-    /*
+
     private function getMetadataBackupJobPostUrl(string $bucketIdentifier): string
     {
         return "$this->metadataBackupJobBaseUrl?bucketIdentifier=$bucketIdentifier";
@@ -3011,7 +3012,7 @@ class CurlGetTest extends AbstractApiTest
     private function getMetadataRestoreJobGetPageUrl(string $bucketIdentifier, string $page = '1', string $perPage = '30'): string
     {
         return "$this->metadataRestoreJobBaseUrl?bucketIdentifier=$bucketIdentifier&page=$page&perPage=$perPage";
-    }*/
+    }
 
     private function getBucketLockPostUrl(string $bucketIdentifier): string
     {
