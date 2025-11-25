@@ -456,8 +456,8 @@ class BlobService implements LoggerAwareInterface
         } catch (\Exception $e) {
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
-                'File could not be saved!',
-                'blob:file-not-saved',
+                'Filedata could not be saved!',
+                'blob:filedata-not-saved',
                 ['message' => $e->getMessage()]
             );
         }
@@ -863,6 +863,7 @@ class BlobService implements LoggerAwareInterface
             ->setParameter('bucketID', $internalBucketID)
             ->getQuery()
             ->execute();
+        $this->entityManager->clear();
     }
 
     /**
@@ -1298,6 +1299,7 @@ class BlobService implements LoggerAwareInterface
                     },
                 ],
             ];
+
             $fileData = $serializer->deserialize($item, FileData::class, 'json', $context);
             $this->saveFileData($fileData);
         }

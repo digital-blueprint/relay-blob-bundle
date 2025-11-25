@@ -34,7 +34,6 @@ class MessageHandler
         $this->blobService = $blobService;
     }
 
-    #[AsMessageHandler]
     public function handleBackupTask(MetadataBackupTask $task): void
     {
         $job = $task->getJob();
@@ -59,15 +58,15 @@ class MessageHandler
         $this->blobService->deleteFinishedMetadataBackupJobsExceptGivenOneByInternalBucketId($job->getBucketId(), $job->getIdentifier()); // delete other FINISHED job afterwards in case of an error
     }
 
-    #[AsMessageHandler]
     public function handleRestoreTask(MetadataRestoreTask $task): void
     {
         $job = $task->getJob();
-        // get job again, otherwise doctrine is confused because its a different EM between sync and async
-        $job = $this->blobService->getMetadataRestoreJobById($job->getIdentifier());
         $internalId = $job->getBucketId();
         try {
-            $this->blobService->deleteBucketByInternalBucketId($internalId);
+            $this->blobService->deleteBucketByInternalBucketId($internalId); // this deletes the ORM identity map!
+            // get job again, otherwise doctrine is confused because its a different EM between sync and async
+            // also, map was cleared beforehand!
+            $job = $this->blobService->getMetadataRestoreJobById($job->getIdentifier());
             $this->blobService->startMetadataRestore($job);
         } catch (\Exception $e) {
             $job->setStatus(MetadataRestoreJob::JOB_STATUS_ERROR);
