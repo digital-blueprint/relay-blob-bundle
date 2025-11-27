@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\DependencyInjection;
 
 use Dbp\Relay\BlobBundle\ApiPlatform\FileDataProvider;
+use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\BlobUuidBinaryType;
+use Dbp\Relay\BlobBundle\Task\MetadataBackupTask;
+use Dbp\Relay\BlobBundle\Task\MetadataRestoreTask;
 use Dbp\Relay\CoreBundle\Doctrine\DoctrineConfiguration;
 use Dbp\Relay\CoreBundle\Extension\ExtensionTrait;
 use Symfony\Component\Config\FileLocator;
@@ -34,6 +37,9 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
         $definition = $container->getDefinition(ConfigurationService::class);
         $definition->addMethodCall('setConfig', [$mergedConfig]);
 
+        $definition = $container->getDefinition(AuthorizationService::class);
+        $definition->addMethodCall('setConfig', [$mergedConfig]);
+
         $typeDefinition = $container->getParameter('doctrine.dbal.connection_factory.types');
         $typeDefinition['relay_blob_uuid_binary'] = ['class' => BlobUuidBinaryType::class];
         $container->setParameter('doctrine.dbal.connection_factory.types', $typeDefinition);
@@ -44,6 +50,8 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
 
     public function prepend(ContainerBuilder $container): void
     {
+        $this->addQueueMessageClass($container, MetadataBackupTask::class);
+        $this->addQueueMessageClass($container, MetadataRestoreTask::class);
         $configs = $container->getExtensionConfig($this->getAlias());
         $config = $this->processConfiguration(new Configuration(), $configs);
 

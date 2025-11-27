@@ -6,15 +6,22 @@ namespace Dbp\Relay\BlobBundle\Tests;
 
 use ApiPlatform\Symfony\Bundle\Test\Client;
 use Dbp\Relay\BlobBundle\ApiPlatform\CreateFileDataAction;
+use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
+use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
+use Dbp\Relay\BlobBundle\MessageHandler\MessageHandler;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Task\MetadataBackupTask;
+use Dbp\Relay\BlobBundle\Task\MetadataRestoreTask;
 use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
 use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\TestUtils\AbstractApiTest;
+use Dbp\Relay\CoreBundle\TestUtils\TestAuthorizationService;
+use Dbp\Relay\CoreBundle\TestUtils\TestClient;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -32,6 +39,14 @@ class CurlGetTest extends AbstractApiTest
 
     /** @var array[] */
     private array $files;
+
+    private string $filesBearer = '24';
+
+    private string $metadataBackupJobBaseUrl = '/blob/metadata-backup-jobs';
+
+    private string $metadataRestoreJobBaseUrl = '/blob/metadata-restore-jobs';
+
+    private string $bucketLockBaseUrl = '/blob/bucket-locks';
 
     /**
      * @throws \Exception
@@ -71,7 +86,9 @@ class CurlGetTest extends AbstractApiTest
 
     protected function setUpClient(): Client
     {
+        $this->testClient->setUpUser(TestClient::TEST_USER_IDENTIFIER, [], [], token: $this->filesBearer);
         $client = $this->testClient->getClient();
+        $client->disableReboot(); // allows multiple requests for one client
         $this->entityManager = BlobApiTest::setUp($client->getContainer());
 
         return $client;
@@ -96,10 +113,11 @@ class CurlGetTest extends AbstractApiTest
 
             $options = [
                 'headers' => [
+                    'Authorization' => "Bearer $this->filesBearer",
                     'Accept' => 'application/ld+json',
                 ],
             ];
-            $response = $this->testClient->request('GET', $url, $options);
+            $response = $client->request('GET', $url, $options);
 
             $this->assertEquals(200, $response->getStatusCode());
 
@@ -163,7 +181,7 @@ class CurlGetTest extends AbstractApiTest
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
                 [
-                    'Authorization' => 'Bearer 42',
+                    'Authorization' => "Bearer $this->filesBearer",
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[0]['content'])
@@ -199,7 +217,7 @@ class CurlGetTest extends AbstractApiTest
 
             $options = [
                 'headers' => [
-                    'Authorization' => 'Bearer 42',
+                    'Authorization' => "Bearer $this->filesBearer",
                     'Accept' => 'application/ld+json',
                 ],
             ];
@@ -253,7 +271,7 @@ class CurlGetTest extends AbstractApiTest
                     'file' => new UploadedFile($this->files[1]['path'], $this->files[1]['name'], $this->files[1]['mime']),
                 ],
                 [
-                    'Authorization' => 'Bearer 42',
+                    'Authorization' => "Bearer $this->filesBearer",
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                     .'file='.base64_encode($this->files[1]['content'])
@@ -345,7 +363,7 @@ class CurlGetTest extends AbstractApiTest
             $token = SignatureTools::createSignature($secret, $payload);
             $options = [
                 'headers' => [
-                    'Authorization' => 'Bearer 42',
+                    'Authorization' => "Bearer $this->filesBearer",
                 ],
             ];
 
@@ -412,7 +430,7 @@ class CurlGetTest extends AbstractApiTest
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
                 [
-                    'Authorization' => 'Bearer 42',
+                    'Authorization' => "Bearer $this->filesBearer",
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
@@ -436,7 +454,7 @@ class CurlGetTest extends AbstractApiTest
             $url = SignatureUtils::getSignedUrl('/blob/files/'.$this->files[0]['uuid'], $secret, $bucketID, 'GET', ['includeDeleteAt' => '1']);
             $options = [
                 'headers' => [
-                    'Authorization' => 'Bearer 42',
+                    'Authorization' => "Bearer $this->filesBearer",
                 ],
             ];
 
@@ -460,7 +478,7 @@ class CurlGetTest extends AbstractApiTest
 
             $options = [
                 'headers' => [
-                    'Authorization' => 'Bearer 42',
+                    'Authorization' => "Bearer $this->filesBearer",
                     'Accept' => 'application/ld+json',
                 ],
             ];
@@ -889,7 +907,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $options = [
                     'headers' => [
-                        'Authorization' => 'Bearer 42',
+                        'Authorization' => "Bearer $this->filesBearer",
                         'Accept' => 'application/ld+json',
                         'Content-Type' => 'application/merge-patch+json',
                     ],
@@ -953,7 +971,7 @@ class CurlGetTest extends AbstractApiTest
                     'file' => new UploadedFile($this->files[0]['path'], $this->files[0]['name'], $this->files[0]['mime']),
                 ],
                 [
-                    'Authorization' => 'Bearer 42',
+                    'Authorization' => "Bearer $this->filesBearer",
                 ],
                 "HTTP_ACCEPT: application/ld+json\r\n"
                 .'file='.base64_encode($this->files[0]['content'])
@@ -991,7 +1009,7 @@ class CurlGetTest extends AbstractApiTest
 
             $options = [
                 'headers' => [
-                    'Authorization' => 'Bearer 42',
+                    'Authorization' => "Bearer $this->filesBearer",
                     'Accept' => 'application/ld+json',
                     'Content-Type' => 'multipart/form-data; boundary=--------------------------1',
                 ],
@@ -1012,7 +1030,7 @@ class CurlGetTest extends AbstractApiTest
 
             $options2 = [
                 'headers' => [
-                    'Authorization' => 'Bearer 42',
+                    'Authorization' => "Bearer $this->filesBearer",
                 ],
             ];
 
@@ -1112,7 +1130,7 @@ class CurlGetTest extends AbstractApiTest
                         'headers' => [
                             'Accept' => 'application/ld+json',
                             'Content-Type' => ($method === 'PATCH') ? 'application/merge-patch+json' : (($method === 'POST') ? 'multipart/form-data' : 'application/ld+json'),
-                            'Authorization' => 'Bearer 42',
+                            'Authorization' => "Bearer $this->filesBearer",
                         ],
                     ];
 
@@ -1203,7 +1221,7 @@ class CurlGetTest extends AbstractApiTest
 
             $options = [
                 'headers' => [
-                    'Authorization' => 'Bearer 42',
+                    'Authorization' => "Bearer $this->filesBearer",
                     'Accept' => 'application/ld+json',
                 ],
             ];
@@ -1323,7 +1341,7 @@ class CurlGetTest extends AbstractApiTest
 
                     $options = [
                         'headers' => [
-                            'Authorization' => 'Bearer 42',
+                            'Authorization' => "Bearer $this->filesBearer",
                             'Accept' => 'application/ld+json',
                         ],
                     ];
@@ -1377,7 +1395,7 @@ class CurlGetTest extends AbstractApiTest
 
                     $options = [
                         'headers' => [
-                            'Authorization' => 'Bearer 42',
+                            'Authorization' => "Bearer $this->filesBearer",
                             'Accept' => 'application/ld+json',
                         ],
                         'extra' => [
@@ -1432,7 +1450,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $options = [
                     'headers' => [
-                        'Authorization' => 'Bearer 42',
+                        'Authorization' => "Bearer $this->filesBearer",
                         'Accept' => 'application/ld+json',
                         'Content-Type' => 'multipart/form-data',
                     ],
@@ -1499,7 +1517,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $options = [
                     'headers' => [
-                        'Authorization' => 'Bearer 42',
+                        'Authorization' => "Bearer $this->filesBearer",
                         'Accept' => 'application/ld+json',
                         'Content-Type' => 'application/merge-patch+json',
                     ],
@@ -1596,7 +1614,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $options = [
                     'headers' => [
-                        'Authorization' => 'Bearer 42',
+                        'Authorization' => "Bearer $this->filesBearer",
                         'Accept' => 'application/ld+json',
                     ],
                 ];
@@ -1648,7 +1666,7 @@ class CurlGetTest extends AbstractApiTest
                     [
                         'headers' => [
                             'Content-Type' => 'multipart/form-data',
-                            'Authorization' => 'Bearer 42',
+                            'Authorization' => "Bearer $this->filesBearer",
                         ],
                         'extra' => [
                             'files' => [
@@ -1755,7 +1773,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $options = [
                     'headers' => [
-                        'Authorization' => 'Bearer 42',
+                        'Authorization' => "Bearer $this->filesBearer",
                         'Accept' => 'application/ld+json',
                     ],
                 ];
@@ -1814,7 +1832,7 @@ class CurlGetTest extends AbstractApiTest
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
                         'headers' => [
-                            'Authorization' => 'Bearer 42',
+                            'Authorization' => "Bearer $this->filesBearer",
                             'Content-Type' => 'multipart/form-data',
                         ],
                         'extra' => [
@@ -1920,7 +1938,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $options = [
                     'headers' => [
-                        'Authorization' => 'Bearer 42',
+                        'Authorization' => "Bearer $this->filesBearer",
                         'Accept' => 'application/ld+json',
                     ],
                 ];
@@ -1974,7 +1992,7 @@ class CurlGetTest extends AbstractApiTest
                     [
                         'headers' => [
                             'Content-Type' => 'multipart/form-data',
-                            'Authorization' => 'Bearer 42',
+                            'Authorization' => "Bearer $this->filesBearer",
                         ],
                         'extra' => [
                             'files' => [
@@ -2079,7 +2097,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $options = [
                     'headers' => [
-                        'Authorization' => 'Bearer 42',
+                        'Authorization' => "Bearer $this->filesBearer",
                         'Accept' => 'application/ld+json',
                     ],
                 ];
@@ -2133,7 +2151,7 @@ class CurlGetTest extends AbstractApiTest
                     [
                         'headers' => [
                             'Content-Type' => 'multipart/form-data',
-                            'Authorization' => 'Bearer 42',
+                            'Authorization' => "Bearer $this->filesBearer",
                         ],
                         'extra' => [
                             'files' => [
@@ -2224,7 +2242,7 @@ class CurlGetTest extends AbstractApiTest
 
             $options = [
                 'headers' => [
-                    'Authorization' => 'Bearer 42',
+                    'Authorization' => "Bearer $this->filesBearer",
                     'Accept' => 'application/ld+json',
                 ],
             ];
@@ -2339,7 +2357,7 @@ class CurlGetTest extends AbstractApiTest
 
                 $options = [
                     'headers' => [
-                        'Authorization' => 'Bearer 42',
+                        'Authorization' => "Bearer $this->filesBearer",
                         'Accept' => 'application/ld+json',
                     ],
                     'extra' => [
@@ -2370,7 +2388,7 @@ class CurlGetTest extends AbstractApiTest
 
             $options = [
                 'headers' => [
-                    'Authorization' => 'Bearer 42',
+                    'Authorization' => "Bearer $this->filesBearer",
                     'Accept' => 'application/ld+json',
                 ],
             ];
@@ -2391,6 +2409,623 @@ class CurlGetTest extends AbstractApiTest
         } catch (\Throwable $e) {
             throw $e;
         }
+    }
+
+    public function testMetadataBackupJob(): void
+    {
+        try {
+            $client = $this->setUpClient();
+
+            /** @var AuthorizationService $authService */
+            $authService = static::getContainer()->get(AuthorizationService::class);
+
+            $bucket = $this->getBucketConfig($client);
+
+            // *** POST TESTS ***
+
+            $url = $this->getMetadataBackupJobPostUrl($bucket->getBucketId());
+
+            // test without bearer
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                ],
+                'body' => '{}',
+            ];
+            $response = $client->request('POST', $url, $options);
+            $this->assertEquals(401, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+
+            // test with bearer without permission
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+                'body' => '{}',
+            ];
+            $response = $client->request('POST', $url, $options);
+            $this->assertEquals(403, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+                'body' => '{}',
+            ];
+            $response = $client->request('POST', $url, $options);
+
+            $this->assertEquals(202, $response->getStatusCode());
+
+            $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+            $this->assertArrayHasKey('status', $data);
+            $this->assertArrayHasKey('bucketId', $data);
+            $this->assertArrayHasKey('started', $data);
+            $jobId = $data['identifier'];
+            $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_ERROR, $data['status']);
+            $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_CANCELLED, $data['status']);
+
+            // *** GET ITEM TESTS ***
+
+            $url = $this->getMetadataBackupJobGetItemUrl(json_decode($response->getContent())->identifier);
+
+            // test without bearer
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                ],
+            ];
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(401, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+
+            // test without wrong scope
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+            ];
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(403, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(200, $response->getStatusCode());
+            $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+            $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_ERROR, $data['status']);
+            $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_CANCELLED, $data['status']);
+
+            // *** GET PAGE TESTS ***
+            $url = $this->getMetadataBackupJobGetPageUrl($bucket->getBucketId());
+
+            // test without bearer
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                ],
+            ];
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(401, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+
+            // test without wrong scope
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+            ];
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(403, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(200, $response->getStatusCode());
+            $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+            $this->assertEquals(1, count($data['hydra:member']));
+            $this->assertEquals($jobId, $data['hydra:member'][0]['identifier']);
+
+            // *** DELETE TESTS ***
+            $url = $this->getMetadataBackupJobGetItemUrl($jobId);
+
+            // test without bearer
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                ],
+            ];
+            $response = $client->request('DELETE', $url, $options);
+            $this->assertEquals(401, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+
+            // test without wrong scope
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+            ];
+            $response = $client->request('DELETE', $url, $options);
+            $this->assertEquals(403, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+
+            $response = $client->request('DELETE', $url, $options);
+            $this->assertEquals(204, $response->getStatusCode());
+
+            $url = $this->getMetadataBackupJobGetPageUrl($bucket->getBucketId());
+
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(404, $response->getStatusCode());
+        } catch (\Throwable $e) {
+            throw $e;
+        }
+    }
+
+    public function testMetadataRestoreJob(): void
+    {
+        try {
+            $client = $this->setUpClient();
+            /** @var BlobService $blobService */
+            $blobService = $client->getContainer()->get(BlobService::class);
+
+            /** @var AuthorizationService $authService */
+            $authService = static::getContainer()->get(AuthorizationService::class);
+
+            $bucket = $this->getBucketConfig($client);
+
+            // POST backupJob to use for restore tests
+            $url = $this->getMetadataBackupJobPostUrl($bucket->getBucketId());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+                'body' => '{}',
+            ];
+            $response = $client->request('POST', $url, $options);
+            $this->assertEquals(202, $response->getStatusCode());
+
+            $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+            $backupId = $data['identifier'];
+            $url = $this->getMetadataBackupJobGetItemUrl($data['identifier']);
+
+            $handler = new MessageHandler($blobService);
+
+            while ($data['status'] === MetadataBackupJob::JOB_STATUS_RUNNING) {
+                $response = $client->request('GET', $url, $options);
+                $this->assertEquals(200, $response->getStatusCode());
+                $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+                $backupJob = $blobService->getMetadataBackupJobById($data['identifier']);
+                // manually handle task as it doesnt automatically work in tests
+                $backupTask = new MetadataBackupTask($backupJob);
+                $handler->handleBackupTask($backupTask);
+            }
+
+            // *** POST TESTS ***
+
+            $url = $this->getMetadataRestoreJobPostUrl($backupId);
+
+            // test without bearer
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                ],
+                'body' => '{}',
+            ];
+            $response = $client->request('POST', $url, $options);
+            $this->assertEquals(401, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+
+            // test with bearer without permission
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+                'body' => '{}',
+            ];
+            $response = $client->request('POST', $url, $options);
+            $this->assertEquals(403, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+                'body' => '{}',
+            ];
+            $response = $client->request('POST', $url, $options);
+            $this->assertEquals(202, $response->getStatusCode());
+
+            $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+            $this->assertArrayHasKey('status', $data);
+            $this->assertArrayHasKey('bucketId', $data);
+            $this->assertArrayHasKey('started', $data);
+            $this->assertArrayHasKey('metadataBackupJobId', $data);
+
+            $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_ERROR, $data['status']);
+            $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_CANCELLED, $data['status']);
+
+            // *** GET ITEM TESTS ***
+
+            $url = $this->getMetadataRestoreJobGetItemUrl(json_decode($response->getContent())->identifier);
+
+            // test without bearer
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                ],
+            ];
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(401, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+
+            // test without wrong scope
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+            ];
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(403, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(200, $response->getStatusCode());
+            $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+            $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_ERROR, $data['status']);
+            $this->assertNotEquals(MetadataBackupJob::JOB_STATUS_CANCELLED, $data['status']);
+            while ($data['status'] === MetadataBackupJob::JOB_STATUS_RUNNING) {
+                $response = $client->request('GET', $url, $options);
+                $this->assertEquals(200, $response->getStatusCode());
+                $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+                $restoreJob = $blobService->getMetadataRestoreJobById($data['identifier']);
+                // manually handle task as it doesnt automatically work in tests
+                $restoreTask = new MetadataRestoreTask($restoreJob);
+                $handler->handleRestoreTask($restoreTask);
+            }
+
+            $this->assertEquals(MetadataBackupJob::JOB_STATUS_FINISHED, $data['status']);
+            $jobId = $data['identifier'];
+
+            // *** GET PAGE TESTS ***
+            $url = $this->getMetadataRestoreJobGetPageUrl($bucket->getBucketId());
+
+            // test without bearer
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                ],
+            ];
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(401, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+
+            // test without wrong scope
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+            ];
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(403, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(200, $response->getStatusCode());
+            $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+            $this->assertEquals(1, count($data['hydra:member']));
+            $this->assertEquals($jobId, $data['hydra:member'][0]['identifier']);
+
+            // *** DELETE TESTS ***
+            $url = $this->getMetadataRestoreJobGetItemUrl($jobId);
+
+            // test without bearer
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                ],
+            ];
+            $response = $client->request('DELETE', $url, $options);
+            $this->assertEquals(401, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+
+            // test without wrong scope
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+            ];
+            $response = $client->request('DELETE', $url, $options);
+            $this->assertEquals(403, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+
+            $response = $client->request('DELETE', $url, $options);
+            $this->assertEquals(204, $response->getStatusCode());
+
+            $url = $this->getMetadataRestoreJobGetPageUrl($bucket->getBucketId());
+
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(404, $response->getStatusCode());
+        } catch (\Throwable $e) {
+            throw $e;
+        }
+    }
+
+    public function testBucketLock(): void
+    {
+        try {
+            $client = $this->setUpClient();
+
+            /** @var AuthorizationService $authService */
+            $authService = static::getContainer()->get(AuthorizationService::class);
+
+            $bucket = $this->getBucketConfig($client);
+
+            /* *** POST TESTS *** */
+
+            $url = $this->getBucketLockPostUrl($bucket->getBucketId());
+
+            $lockBody = [
+                'getLock' => true,
+                'postLock' => false,
+                'patchLock' => false,
+                'deleteLock' => false,
+            ];
+
+            $lockBody = json_encode($lockBody);
+
+            // test without bearer
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                ],
+                'body' => $lockBody,
+            ];
+            $response = $client->request('POST', $url, $options);
+            $this->assertEquals(401, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+
+            // test with bearer without permission
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+                'body' => $lockBody,
+            ];
+            $response = $client->request('POST', $url, $options);
+            $this->assertEquals(403, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+                'body' => $lockBody,
+            ];
+            $response = $client->request('POST', $url, $options);
+            $this->assertEquals(201, $response->getStatusCode());
+
+            $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+            $this->assertArrayHasKey('getLock', $data);
+            $this->assertArrayHasKey('postLock', $data);
+            $this->assertArrayHasKey('patchLock', $data);
+            $this->assertArrayHasKey('deleteLock', $data);
+
+            $this->assertEquals(true, $data['getLock']);
+            $this->assertEquals(false, $data['postLock']);
+            $this->assertEquals(false, $data['patchLock']);
+            $this->assertEquals(false, $data['deleteLock']);
+
+            $bucketLockId = $data['identifier'];
+
+            /* *** GET ITEM TESTS *** */
+
+            $url = $this->getBucketLockGetItemUrl($bucketLockId);
+
+            // test without bearer
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                ],
+            ];
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(401, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+
+            // test without wrong scope
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+            ];
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(403, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(200, $response->getStatusCode());
+            $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+            $this->assertEquals(true, $data['getLock']);
+            $this->assertEquals(false, $data['postLock']);
+            $this->assertEquals(false, $data['patchLock']);
+            $this->assertEquals(false, $data['deleteLock']);
+
+            /* *** GET PAGE TESTS *** */
+            $url = $this->getBucketLockGetPageUrl($bucket->getBucketId());
+
+            // test without bearer
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                ],
+            ];
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(401, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+
+            // test without wrong scope
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+            ];
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(403, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+
+            $response = $client->request('GET', $url, $options);
+            $this->assertEquals(200, $response->getStatusCode());
+            $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+            $this->assertEquals(1, count($data['hydra:member']));
+
+            /* *** DELETE TESTS *** */
+            $url = $this->getBucketLockGetItemUrl($bucketLockId);
+
+            // test without bearer
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                ],
+            ];
+            $response = $client->request('DELETE', $url, $options);
+            $this->assertEquals(401, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+
+            // test without wrong scope
+            $options = [
+                'headers' => [
+                    'accept' => 'application/ld+json',
+                    'Content-Type' => 'application/ld+json',
+                    'Authorization' => "Bearer $this->filesBearer",
+                ],
+            ];
+            $response = $client->request('DELETE', $url, $options);
+            $this->assertEquals(403, $response->getStatusCode());
+
+            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+
+            $response = $client->request('DELETE', $url, $options);
+            $this->assertEquals(204, $response->getStatusCode());
+
+            $url = $this->getBucketLockGetPageUrl($bucket->getBucketId());
+
+            $response = $client->request('GET', $url, $options);
+            $data = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+            $this->assertEquals(200, $response->getStatusCode());
+            $this->assertEquals(0, count($data['hydra:member']));
+        } catch (\Throwable $e) {
+            throw $e;
+        }
+    }
+
+    private function getMetadataBackupJobPostUrl(string $bucketIdentifier): string
+    {
+        return "$this->metadataBackupJobBaseUrl?bucketIdentifier=$bucketIdentifier";
+    }
+
+    private function getMetadataBackupJobGetItemUrl(string $identifier): string
+    {
+        return "$this->metadataBackupJobBaseUrl/$identifier";
+    }
+
+    private function getMetadataBackupJobGetPageUrl(string $bucketIdentifier, string $page = '1', string $perPage = '30'): string
+    {
+        return "$this->metadataBackupJobBaseUrl?bucketIdentifier=$bucketIdentifier&page=$page&perPage=$perPage";
+    }
+
+    private function getMetadataRestoreJobPostUrl(string $bucketIdentifier): string
+    {
+        return "$this->metadataRestoreJobBaseUrl?metadataBackupJobId=$bucketIdentifier";
+    }
+
+    private function getMetadataRestoreJobGetItemUrl(string $identifier): string
+    {
+        return "$this->metadataRestoreJobBaseUrl/$identifier";
+    }
+
+    private function getMetadataRestoreJobGetPageUrl(string $bucketIdentifier, string $page = '1', string $perPage = '30'): string
+    {
+        return "$this->metadataRestoreJobBaseUrl?bucketIdentifier=$bucketIdentifier&page=$page&perPage=$perPage";
+    }
+
+    private function getBucketLockPostUrl(string $bucketIdentifier): string
+    {
+        return "$this->bucketLockBaseUrl?bucketIdentifier=$bucketIdentifier";
+    }
+
+    private function getBucketLockGetItemUrl(string $identifier): string
+    {
+        return "$this->bucketLockBaseUrl/$identifier";
+    }
+
+    private function getBucketLockGetPageUrl(string $bucketIdentifier, string $page = '1', string $perPage = '30'): string
+    {
+        return "$this->bucketLockBaseUrl?bucketIdentifier=$bucketIdentifier&page=$page&perPage=$perPage";
     }
 
     private function generateSha256ChecksumFromUrl($url): string

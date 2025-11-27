@@ -1,0 +1,86 @@
+{
+    "id": "filedata-v1",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "FileData schema",
+    "description": "JSON Schema of FileData entity",
+    "type": "object",
+    "required": [
+        "identifier",
+        "prefix",
+        "fileName",
+        "internalBucketId",
+        "dateCreated",
+        "dateAccessed",
+        "metadata",
+        "mimeType",
+        "deleteAt",
+        "fileSize",
+        "notifyEmail",
+        "dateModified",
+        "type",
+        "fileHash",
+        "metadataHash"
+    ],
+    "properties": {
+        "identifier": {
+            "description": "Identifier of this entity.",
+            "type": "string"
+        },
+        "prefix": {
+            "description": "Prefix of this entity.",
+            "type": "string"
+        },
+        "fileName": {
+            "description": "Filename given during upload.",
+            "type": "string"
+        },
+        "internalBucketId": {
+            "description": "MimeType of the corresponding file.",
+            "type": "string"
+        },
+        "dateCreated": {
+            "description": "ISO8601 string of the datetime where the entity was created.",
+            "type": "string"
+        },
+        "dateAccessed": {
+            "description": "ISO8601 string of the datetime where the entity was last accessed.",
+            "type": "string"
+        },
+        "metadata": {
+            "description": "Metadata saved in this entity.",
+            "type": ["string", "null"]
+        },
+        "mimeType": {
+            "description": "MimeType of the corresponding file.",
+            "type": "string"
+        },
+        "deleteAt": {
+            "description": "ISO8601 string of the datetime where the entity should be deleted.",
+            "type": ["string", "null"]
+        },
+        "fileSize": {
+            "description": "Size in bytes of the corresponding file.",
+            "type": "integer"
+        },
+        "notifyEmail": {
+            "description": "Email that should get notified before deletion of the corresponding item.",
+            "type": ["string", "null"]
+        },
+        "dateModified": {
+            "description": "ISO8601 string of the datetime where the entity was last modified.",
+            "type": "string"
+        },
+        "type": {
+            "description": "Metadata type saved in this entity.",
+            "type": ["string", "null"]
+        },
+        "fileHash": {
+            "description": "SHA256 hash of the corresponding file.",
+            "type": ["string", "null"]
+        },
+        "metadataHash": {
+            "description": "SHA256 hash of the attribute 'metadata'.",
+            "type": ["string", "null"]
+        }
+    }
+}

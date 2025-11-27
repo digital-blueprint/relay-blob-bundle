@@ -9,6 +9,7 @@ use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobLibrary\Api\BlobApi;
+use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProvider;
 use Dbp\Relay\CoreBundle\Rest\Options;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
@@ -16,6 +17,7 @@ use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @internal
@@ -65,6 +67,15 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
         $includeData = ($filters['includeData'] ?? null) === '1';
         $bucketIdentifier = $filters['bucketIdentifier'];
 
+        $lock = $this->blobService->getBucketLockByInternalBucketIdAndMethod($this->blobService->getInternalBucketIdByBucketID($bucketIdentifier), $filters['method']);
+        if ($lock) {
+            throw ApiError::withDetails(
+                Response::HTTP_FORBIDDEN,
+                $filters['method'].' is locked for this bucket',
+                'blob:bucket-locked'
+            );
+        }
+
         $fileData = $this->blobService->getFileData($id, [
             BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => $disableOutputValidation,
             BlobApi::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
@@ -106,6 +117,15 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
         $includeData = ($filters['includeData'] ?? null) === '1';
         $includeDeleteAt = ($filters['includeDeleteAt'] ?? null) === '1';
         $baseUrl = $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost();
+
+        $lock = $this->blobService->getBucketLockByInternalBucketIdAndMethod($this->blobService->getInternalBucketIdByBucketID($bucketIdentifier), $filters['method']);
+        if ($lock) {
+            throw ApiError::withDetails(
+                Response::HTTP_FORBIDDEN,
+                $filters['method'].' is locked for this bucket',
+                'blob:bucket-locked'
+            );
+        }
 
         return $this->blobService->getFiles($bucketIdentifier, $filter, [
             BlobApi::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,

@@ -42,6 +42,11 @@ services:
     autowire: true
     autoconfigure: true
 
+  Dbp\Relay\BlobBundle\MessageHandler\MessageHandler:
+    autowire: true
+    autoconfigure: true
+    tags: ['messenger.message_handler']
+
   Dbp\Relay\BlobBundle\Api\FileApi:
     autowire: true
     autoconfigure: true
@@ -51,5 +56,9 @@ services:
     public: true
 
   Dbp\Relay\BlobBundle\TestUtils\TestDatasystemProviderService:
+    autowire: true
+    autoconfigure: true
+
+  Dbp\Relay\BlobBundle\Authorization\AuthorizationService:
     autowire: true
     autoconfigure: true

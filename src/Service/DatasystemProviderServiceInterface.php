@@ -33,4 +33,54 @@ interface DatasystemProviderServiceInterface
      * @return iterable<string>
      */
     public function listFiles(string $internalBucketId): iterable;
+
+    /**
+     * Opens metadata backup to be able to write to it.
+     *
+     * @return bool true if successful, else false
+     */
+    public function openMetadataBackup(string $internalBucketId, string $mode): bool;
+
+    /**
+     * Appends given string to backup.
+     *
+     * @return bool true if successful, else false
+     */
+    public function appendToMetadataBackup(string $item): bool;
+
+    /**
+     * Retrieves the next item from the backup.
+     *
+     * @return string|false string if successful, else false
+     */
+    public function retrieveItemFromMetadataBackup(): string|false;
+
+    /**
+     * Checks whether the backup has a next item.
+     *
+     * @return bool true if successful, else false
+     */
+    public function hasNextItemInMetadataBackup(): bool;
+
+    /**
+     * Closes and saves metadata backup.
+     * If requested, the old backup is restored (in case of cancel).
+     *
+     * @return bool true if successful, else false
+     */
+    public function closeMetadataBackup(string $internalBucketId, bool $restoreOldBackup = false): bool;
+
+    /**
+     * Calculates and gets the filehash of the metadata backup file.
+     *
+     * @return string sha256 filehash if successful, else null
+     */
+    public function getMetadataBackupFileHash(string $intBucketId): ?string;
+
+    /**
+     * Gets the place where the metadata backup file is stored.
+     *
+     * @return string file ref if successful, else null
+     */
+    public function getMetadataBackupFileRef(string $intBucketId): ?string;
 }
