@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Add support for metaadata backups and restores
 
 ## v0.1.92
 - Drop support for api-platform 3
