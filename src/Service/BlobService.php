@@ -1312,7 +1312,7 @@ class BlobService implements LoggerAwareInterface
             } else {
                 $this->saveFileData($fileData, false);
             }
-            $items++;
+            ++$items;
         }
         // flush remaining items
         $this->entityManager->flush();
