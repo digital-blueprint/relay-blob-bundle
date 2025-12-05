@@ -55,10 +55,14 @@ class StartMetadataRestoreCommand extends Command
         $this->blobService->setupMetadataRestoreJob($job, $intBucketId, $backupJob->getIdentifier());
         $output->writeln('Starting restore for bucket '.$intBucketId.' with backupJobId '.$backupJob->getIdentifier().' and restoreJobId '.$job->getIdentifier().' ...');
         try {
+            $this->blobService->deleteBucketByInternalBucketId($intBucketId); // this deletes the ORM identity map!
+            // get job again, otherwise doctrine is confused because its a different EM between sync and async
+            // also, map was cleared beforehand!
+            $job = $this->blobService->getMetadataRestoreJobById($job->getIdentifier());
             $this->blobService->startMetadataRestore($job);
         } catch (\Exception $e) {
             $job->setStatus(MetadataRestoreJob::JOB_STATUS_ERROR);
-            $job->setErrorMessage($e->getMessage());
+            $job->setErrorMessage($e->__toString());
             if ($e instanceof ApiError) {
                 $job->setErrorId($e->getErrorId());
                 $this->blobService->finishAndSaveMetadataRestoreJob($job, $intBucketId);
@@ -69,6 +73,7 @@ class StartMetadataRestoreCommand extends Command
             }
         }
         $this->blobService->finishAndSaveMetadataRestoreJob($job, $intBucketId);
+        $this->blobService->deleteFinishedMetadataRestoreJobsExceptGivenOneByInternalBucketId($job->getBucketId(), $job->getIdentifier()); // delete other FINISHED job afterwards in case of an error
         $output->writeln('Successfully restored bucket '.$intBucketId.'!');
 
         return 0;

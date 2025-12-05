@@ -55,7 +55,7 @@ class StartMetadataBackupCommand extends Command
             $this->blobService->startMetadataBackup($job);
         } catch (\Exception $e) {
             $job->setStatus(MetadataBackupJob::JOB_STATUS_ERROR);
-            $job->setErrorMessage($e->getMessage());
+            $job->setErrorMessage($e->__toString());
             if ($e instanceof ApiError) {
                 $job->setErrorId($e->getErrorId());
                 $this->blobService->finishAndSaveMetadataBackupJob($job, $intBucketId);
@@ -66,6 +66,7 @@ class StartMetadataBackupCommand extends Command
             }
         }
         $this->blobService->finishAndSaveMetadataBackupJob($job, $intBucketId);
+        $output->writeln('Successfully finished metadata backup for bucket '.$intBucketId.' with jobId '.$job->getIdentifier());
 
         return 0;
     }

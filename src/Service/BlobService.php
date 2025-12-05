@@ -447,12 +447,14 @@ class BlobService implements LoggerAwareInterface
      *
      * @throws \Exception
      */
-    public function saveFileData(FileData $fileData): void
+    public function saveFileData(FileData $fileData, bool $flush = true): void
     {
         // try to persist fileData, or throw error
         try {
             $this->entityManager->persist($fileData);
-            $this->entityManager->flush();
+            if ($flush) {
+                $this->entityManager->flush();
+            }
         } catch (\Exception $e) {
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
@@ -557,7 +559,7 @@ class BlobService implements LoggerAwareInterface
         $job = $this->entityManager->getRepository(MetadataBackupJob::class)
             ->createQueryBuilder('f')
             ->where('f.status = :status')
-            ->andWhere('f.internalBucketId = :bucketID')
+            ->andWhere('f.bucketId = :bucketID')
             ->setParameter('bucketID', $intBucketId)
             ->setParameter('status', MetadataBackupJob::JOB_STATUS_FINISHED)
             ->orderBy('f.finished', 'DESC')
@@ -1262,6 +1264,12 @@ class BlobService implements LoggerAwareInterface
         // handle bucket data separately
         $bucketData = $service->retrieveItemFromMetadataBackup();
 
+        $items = 1;
+
+        $encoders = [new JsonEncoder()];
+        $normalizers = [new DateTimeNormalizer(), new ObjectNormalizer()];
+        $serializer = new Serializer($normalizers, $encoders);
+
         // iterate over all items in the metadata backup
         while (!$service->hasNextItemInMetadataBackup()) {
             $status = $this->getMetadataRestoreJobById($job->getIdentifier())->getStatus();
@@ -1276,9 +1284,6 @@ class BlobService implements LoggerAwareInterface
             if (!$item) {
                 continue;
             }
-            $encoders = [new JsonEncoder()];
-            $normalizers = [new DateTimeNormalizer(), new ObjectNormalizer()];
-            $serializer = new Serializer($normalizers, $encoders);
             $context = [
                 AbstractNormalizer::CALLBACKS => [
                     'dateCreated' => function ($value) {
@@ -1299,10 +1304,19 @@ class BlobService implements LoggerAwareInterface
                     },
                 ],
             ];
-
             $fileData = $serializer->deserialize($item, FileData::class, 'json', $context);
-            $this->saveFileData($fileData);
+
+            // only flush every 1k items for performance reasons
+            if ($items % 1000 === 0) {
+                $this->saveFileData($fileData);
+            } else {
+                $this->saveFileData($fileData, false);
+            }
+            $items++;
         }
+        // flush remaining items
+        $this->entityManager->flush();
+
         // TODO check if backup was successfully closed
         $closed = $service->closeMetadataBackup($intBucketId);
     }

@@ -44,7 +44,7 @@ class MessageHandler
             $this->blobService->startMetadataBackup($job);
         } catch (\Exception $e) {
             $job->setStatus(MetadataBackupJob::JOB_STATUS_ERROR);
-            $job->setErrorMessage($e->getMessage());
+            $job->setErrorMessage($e->__toString());
             if ($e instanceof ApiError) {
                 $job->setErrorId($e->getErrorId());
                 $this->blobService->finishAndSaveMetadataBackupJob($job, $internalId);
@@ -70,7 +70,7 @@ class MessageHandler
             $this->blobService->startMetadataRestore($job);
         } catch (\Exception $e) {
             $job->setStatus(MetadataRestoreJob::JOB_STATUS_ERROR);
-            $job->setErrorMessage($e->getMessage());
+            $job->setErrorMessage($e->__toString());
             if ($e instanceof ApiError) {
                 $job->setErrorId($e->getErrorId());
                 $this->blobService->finishAndSaveMetadataRestoreJob($job, $internalId);
