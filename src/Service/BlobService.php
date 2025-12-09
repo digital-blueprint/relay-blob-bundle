@@ -1195,8 +1195,7 @@ class BlobService implements LoggerAwareInterface
     {
         $intBucketId = $job->getBucketId();
         $maxReceivedItems = 10000;
-        $receivedItems = $maxReceivedItems;
-        $currentPage = 1;
+        $receivedItems = 0;
         $service = $this->datasystemService->getService($this->getBucketConfig($intBucketId)->getService());
         $opened = $service->openMetadataBackup($intBucketId, 'w');
         $restoreOldBackup = false;
@@ -1211,7 +1210,7 @@ class BlobService implements LoggerAwareInterface
         $service->appendToMetadataBackup(json_encode($config)."\n");
 
         // iterate over all files in steps of $maxReceivedItems and append the retrieved jsons using $service
-        while ($receivedItems === $maxReceivedItems) {
+        while ($receivedItems % $maxReceivedItems == 0) {
             $status = $this->getMetadataBackupJobById($job->getIdentifier())->getStatus();
 
             if ($status === MetadataBackupJob::JOB_STATUS_CANCELLED) {
@@ -1222,9 +1221,7 @@ class BlobService implements LoggerAwareInterface
                 break;
             }
             // empty prefix together with startsWith=true represents all prefixes
-            $items = $this->getFileDataCollection($intBucketId, null, 0, $maxReceivedItems, true);
-            ++$currentPage;
-            $receivedItems = 0;
+            $items = $this->getFileDataCollection($intBucketId, null, $receivedItems, $maxReceivedItems, true);
 
             /**
              * @var FileData $item
@@ -1238,7 +1235,6 @@ class BlobService implements LoggerAwareInterface
                 $service->appendToMetadataBackup($json."\n");
                 ++$receivedItems;
             }
-            ++$currentPage;
         }
         // TODO check if backup was successfully closed
         $closed = $service->closeMetadataBackup($intBucketId, $restoreOldBackup);
