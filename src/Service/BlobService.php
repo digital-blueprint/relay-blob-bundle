@@ -1210,7 +1210,7 @@ class BlobService implements LoggerAwareInterface
         $service->appendToMetadataBackup(json_encode($config)."\n");
 
         // iterate over all files in steps of $maxReceivedItems and append the retrieved jsons using $service
-        while ($receivedItems % $maxReceivedItems == 0) {
+        while ($receivedItems % $maxReceivedItems === 0) {
             $status = $this->getMetadataBackupJobById($job->getIdentifier())->getStatus();
 
             if ($status === MetadataBackupJob::JOB_STATUS_CANCELLED) {
