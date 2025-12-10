@@ -66,6 +66,7 @@ class StartMetadataBackupCommand extends Command
             }
         }
         $this->blobService->finishAndSaveMetadataBackupJob($job, $intBucketId);
+        $this->blobService->deleteFinishedMetadataBackupJobsExceptGivenOneByInternalBucketId($job->getBucketId(), $job->getIdentifier()); // delete other FINISHED job afterwards in case of an error
         $output->writeln('Successfully finished metadata backup for bucket '.$intBucketId.' with jobId '.$job->getIdentifier());
 
         return 0;
