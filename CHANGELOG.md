@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.93
+## v0.2.0
 - Add support for metadata backups and restores
 
 ## v0.1.92
