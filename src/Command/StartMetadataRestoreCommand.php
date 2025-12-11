@@ -59,8 +59,14 @@ class StartMetadataRestoreCommand extends Command
             // get job again, otherwise doctrine is confused because its a different EM between sync and async
             // also, map was cleared beforehand!
             $job = $this->blobService->getMetadataRestoreJobById($job->getIdentifier());
-            $this->blobService->startMetadataRestore($job);
+            $this->blobService->startMetadataRestore($job); // this deletes the ORM identity map!
+            // get job again, otherwise doctrine is confused because its a different EM between sync and async
+            // also, map was cleared beforehand!
+            $job = $this->blobService->getMetadataRestoreJobById($job->getIdentifier());
         } catch (\Exception $e) {
+            // get job again, otherwise doctrine is confused because its a different EM between sync and async
+            // also, map was cleared beforehand!
+            $job = $this->blobService->getMetadataRestoreJobById($job->getIdentifier());
             $job->setStatus(MetadataRestoreJob::JOB_STATUS_ERROR);
             $job->setErrorMessage($e->__toString());
             if ($e instanceof ApiError) {

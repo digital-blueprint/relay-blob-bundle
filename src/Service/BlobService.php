@@ -1240,6 +1240,10 @@ class BlobService implements LoggerAwareInterface
                 $service->appendToMetadataBackup($json."\n");
                 ++$receivedItems;
             }
+
+            // flush & clear for memory efficiency
+            $this->entityManager->flush();
+            $this->entityManager->clear();
         }
         // TODO check if backup was successfully closed
         $closed = $service->closeMetadataBackup($intBucketId, $restoreOldBackup);
@@ -1307,9 +1311,11 @@ class BlobService implements LoggerAwareInterface
             ];
             $fileData = $serializer->deserialize($item, FileData::class, 'json', $context);
 
-            // only flush every 1k items for performance reasons
+            // only flush&clear every 1k items for performance reasons
             if ($items % 1000 === 0) {
                 $this->saveFileData($fileData);
+                // clear for memory efficiency
+                $this->entityManager->clear();
             } else {
                 $this->saveFileData($fileData, false);
             }
@@ -1317,6 +1323,7 @@ class BlobService implements LoggerAwareInterface
         }
         // flush remaining items
         $this->entityManager->flush();
+        $this->entityManager->clear();
 
         // TODO check if backup was successfully closed
         $closed = $service->closeMetadataBackup($intBucketId);

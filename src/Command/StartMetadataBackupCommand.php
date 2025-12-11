@@ -52,8 +52,14 @@ class StartMetadataBackupCommand extends Command
         $this->blobService->setupMetadataBackupJob($job, $intBucketId);
         $output->writeln('Starting backup for bucket '.$intBucketId.' with jobId '.$job->getIdentifier().' ...');
         try {
-            $this->blobService->startMetadataBackup($job);
+            $this->blobService->startMetadataBackup($job); // this deletes the ORM identity map!
+            // get job again, otherwise doctrine is confused because its a different EM between sync and async
+            // also, map was cleared beforehand!
+            $job = $this->blobService->getMetadataBackupJobById($job->getIdentifier());
         } catch (\Exception $e) {
+            // get job again, otherwise doctrine is confused because its a different EM between sync and async
+            // also, map was cleared beforehand!
+            $job = $this->blobService->getMetadataBackupJobById($job->getIdentifier());
             $job->setStatus(MetadataBackupJob::JOB_STATUS_ERROR);
             $job->setErrorMessage($e->__toString());
             if ($e instanceof ApiError) {
