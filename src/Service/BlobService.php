@@ -1224,7 +1224,7 @@ class BlobService implements LoggerAwareInterface
             $items = $this->getFileDataCollection($intBucketId, null, $receivedItems, $maxReceivedItems, true);
 
             // no items to backup
-            if (empty($items) && $receivedItems === 0) {
+            if (empty($items)) {
                 break;
             }
 
