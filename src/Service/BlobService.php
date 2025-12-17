@@ -1322,8 +1322,6 @@ class BlobService implements LoggerAwareInterface
                 $this->saveFileData($fileData, false);
             }
             unset($item);
-            $this->entityManager->flush();
-            $this->entityManager->clear();
             ++$items;
         }
         // flush remaining items
