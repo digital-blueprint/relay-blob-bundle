@@ -1277,14 +1277,6 @@ class BlobService implements LoggerAwareInterface
 
         // iterate over all items in the metadata backup
         while (!$service->hasNextItemInMetadataBackup()) {
-            $status = $this->getMetadataRestoreJobById($job->getIdentifier())->getStatus();
-
-            if ($status === MetadataRestoreJob::JOB_STATUS_CANCELLED) {
-                if ($this->logger !== null) {
-                    $this->logger->warning('MetadataRestoreJob '.$job->getIdentifier().' cancelled.');
-                }
-                break;
-            }
             $item = $service->retrieveItemFromMetadataBackup();
             if (!$item) {
                 continue;
@@ -1312,13 +1304,26 @@ class BlobService implements LoggerAwareInterface
             $fileData = $serializer->deserialize($item, FileData::class, 'json', $context);
 
             // only flush&clear every 1k items for performance reasons
+            // only check job status every 1k items for performance reasons
             if ($items % 1000 === 0) {
+                $status = $this->getMetadataRestoreJobById($job->getIdentifier())->getStatus();
+
+                if ($status === MetadataRestoreJob::JOB_STATUS_CANCELLED) {
+                    if ($this->logger !== null) {
+                        $this->logger->warning('MetadataRestoreJob '.$job->getIdentifier().' cancelled.');
+                    }
+                    break;
+                }
+
                 $this->saveFileData($fileData);
                 // clear for memory efficiency
                 $this->entityManager->clear();
             } else {
                 $this->saveFileData($fileData, false);
             }
+            unset($item);
+            $this->entityManager->flush();
+            $this->entityManager->clear();
             ++$items;
         }
         // flush remaining items
