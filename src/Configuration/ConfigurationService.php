@@ -127,6 +127,11 @@ class ConfigurationService
         return $this->config['additional_auth'];
     }
 
+    public function getMetadataSizeLimit(): int
+    {
+        return $this->config['metadata_size_limit'];
+    }
+
     public function getIntegrityCheckInterval(): string
     {
         return $this->config['integrity_check_interval'];
