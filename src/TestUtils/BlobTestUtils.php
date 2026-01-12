@@ -69,6 +69,7 @@ class BlobTestUtils
             'bucket_size_check_interval' => '0 2 * * 1',
             'quota_warning_interval' => '0 6 * * *',
             'filedata_schema' => '%kernel.project_dir%/vendor/dbp/relay-blob-bundle/src/Resources/filedata-v1.schema.json',
+            'metadata_size_limit' => 1000000,
             'buckets' => [
                 [
                     'service' => 'Dbp\Relay\BlobBundle\TestUtils\TestDatasystemProviderService',
