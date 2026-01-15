@@ -54,8 +54,8 @@ class MetadataBackupJobProvider extends AbstractDataProvider implements LoggerAw
      */
     protected function getMetadataBackupJobById(string $id, array $filters): object
     {
-        $backupJob = $this->blobService->getMetadataBackupJobById($id);
         $this->authService->checkCanAccessMetadataBackup();
+        $backupJob = $this->blobService->getMetadataBackupJobById($id);
         if ($backupJob === null) {
             throw ApiError::withDetails(
                 Response::HTTP_NOT_FOUND,

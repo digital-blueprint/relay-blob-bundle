@@ -88,6 +88,7 @@ class MetadataRestoreJobProcessor extends AbstractDataProcessor
     {
         assert($job instanceof MetadataRestoreJob);
         $backupJob = $job;
+        $this->authService->checkCanAccessMetadataBackup();
 
         $this->blobService->removeMetadataRestoreJob($backupJob);
     }
