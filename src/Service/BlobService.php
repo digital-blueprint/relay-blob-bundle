@@ -43,8 +43,6 @@ use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Uid\Uuid;
 
-date_default_timezone_set('UTC');
-
 /**
  * @internal
  */
@@ -61,6 +59,8 @@ class BlobService implements LoggerAwareInterface
     public const JSON_SCHEMA_PATH_CONFIG = 'json_schema_path';
 
     public const VERITY_PROFILE_CONFIG = 'verity_profile';
+
+    private const TYPE_DATETIME_IMMUTABLE_UTC = 'relay_blob_datetime_immutable_utc';
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -758,7 +758,7 @@ class BlobService implements LoggerAwareInterface
         }
 
         $job->setStatus(MetadataBackupJob::JOB_STATUS_CANCELLED);
-        $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
+        $job->setFinished(BlobUtils::now()->format('c'));
         $this->saveMetadataBackupJob($job);
         $this->entityManager->commit();
 
@@ -786,7 +786,7 @@ class BlobService implements LoggerAwareInterface
         }
 
         $job->setStatus(MetadataRestoreJob::JOB_STATUS_CANCELLED);
-        $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
+        $job->setFinished(BlobUtils::now()->format('c'));
         $this->saveMetadataRestoreJob($job);
         $this->entityManager->commit();
 
@@ -925,7 +925,7 @@ class BlobService implements LoggerAwareInterface
         if ($job->getStatus() !== MetadataBackupJob::JOB_STATUS_ERROR) {
             $job->setStatus(MetadataBackupJob::JOB_STATUS_FINISHED);
         }
-        $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
+        $job->setFinished(BlobUtils::now()->format('c'));
         $job->setHash($service->getMetadataBackupFileHash($internalId));
         $job->setFileRef($service->getMetadataBackupFileRef($internalId));
         $this->saveMetadataBackupJob($job);
@@ -942,7 +942,7 @@ class BlobService implements LoggerAwareInterface
         if ($job->getStatus() !== MetadataRestoreJob::JOB_STATUS_ERROR) {
             $job->setStatus(MetadataRestoreJob::JOB_STATUS_FINISHED);
         }
-        $job->setFinished((new \DateTimeImmutable('now'))->format('c'));
+        $job->setFinished(BlobUtils::now()->format('c'));
         $this->saveMetadataRestoreJob($job);
     }
 
@@ -955,7 +955,7 @@ class BlobService implements LoggerAwareInterface
         $job->setIdentifier(Uuid::v7()->toRfc4122());
         $job->setBucketId($internalId);
         $job->setStatus(MetadataBackupJob::JOB_STATUS_RUNNING);
-        $job->setStarted((new \DateTimeImmutable('now'))->format('c'));
+        $job->setStarted(BlobUtils::now()->format('c'));
         $job->setFinished(null);
         $job->setErrorId(null);
         $job->setErrorMessage(null);
@@ -974,7 +974,7 @@ class BlobService implements LoggerAwareInterface
         $job->setBucketId($internalBucketId);
         $job->setMetadataBackupJobId($metadataBackupJobId);
         $job->setStatus(MetadataRestoreJob::JOB_STATUS_RUNNING);
-        $job->setStarted((new \DateTimeImmutable('now'))->format('c'));
+        $job->setStarted(BlobUtils::now()->format('c'));
         $job->setFinished(null);
         $job->setErrorId(null);
         $job->setErrorMessage(null);
@@ -1362,7 +1362,7 @@ class BlobService implements LoggerAwareInterface
                 $queryBuilder->expr()->orX(
                     $queryBuilder->expr()->gt("$FILE_DATA_ENTITY_ALIAS.deleteAt", ':now'),
                     $queryBuilder->expr()->isNull("$FILE_DATA_ENTITY_ALIAS.deleteAt")))
-                ->setParameter('now', BlobUtils::now());
+                ->setParameter('now', BlobUtils::now(), self::TYPE_DATETIME_IMMUTABLE_UTC);
         } else {
             $queryBuilder = $queryBuilder->andWhere($queryBuilder->expr()->isNull('f.deleteAt'));
         }
@@ -1478,7 +1478,7 @@ class BlobService implements LoggerAwareInterface
                 ->createQueryBuilder('f')
                 ->where('f.deleteAt IS NOT NULL')
                 ->andWhere('f.deleteAt < :now')
-                ->setParameter('now', $now)
+                ->setParameter('now', $now, self::TYPE_DATETIME_IMMUTABLE_UTC)
                 ->setMaxResults($maxNumItemsPerPage)
                 ->getQuery()
                 ->getResult();

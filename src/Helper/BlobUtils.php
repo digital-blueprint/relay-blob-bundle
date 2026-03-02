@@ -33,6 +33,6 @@ class BlobUtils
 
     public static function now(): \DateTimeImmutable
     {
-        return new \DateTimeImmutable('now');
+        return new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
     }
 }

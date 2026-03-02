@@ -573,7 +573,12 @@ class BlobChecks implements LoggerAwareInterface
 
     public static function getDateTimeString(?\DateTimeImmutable $dateTime = null, bool $isForFilename = false): string
     {
-        return ($dateTime ?? new \DateTimeImmutable())->format($isForFilename ? 'Y-m-d_H-i-s' : 'Y-m-d H:i:s');
+        if ($dateTime === null) {
+            $dateTime = new \DateTimeImmutable('now');
+        }
+        $dateTime = $dateTime->setTimezone(new \DateTimeZone('UTC'));
+
+        return $dateTime->format($isForFilename ? 'Y-m-d_H-i-s' : 'Y-m-d H:i:s');
     }
 
     private static function output(string $message, ?OutputInterface $out = null, ?string $outFileName = null): void

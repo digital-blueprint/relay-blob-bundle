@@ -10,6 +10,7 @@ use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\BlobUuidBinaryType;
 use Dbp\Relay\BlobBundle\Task\MetadataBackupTask;
 use Dbp\Relay\BlobBundle\Task\MetadataRestoreTask;
+use Dbp\Relay\CoreBundle\Doctrine\DateTimeImmutableUtcType;
 use Dbp\Relay\CoreBundle\Doctrine\DoctrineConfiguration;
 use Dbp\Relay\CoreBundle\Extension\ExtensionTrait;
 use Symfony\Component\Config\FileLocator;
@@ -46,6 +47,11 @@ class DbpRelayBlobExtension extends ConfigurableExtension implements PrependExte
 
         $definition = $container->getDefinition(FileDataProvider::class);
         $definition->addMethodCall('setConfig', [$mergedConfig]);
+
+        $typeDefinition = $container->getParameter('doctrine.dbal.connection_factory.types');
+        assert(is_array($typeDefinition));
+        $typeDefinition['relay_blob_datetime_immutable_utc'] = ['class' => DateTimeImmutableUtcType::class];
+        $container->setParameter('doctrine.dbal.connection_factory.types', $typeDefinition);
     }
 
     public function prepend(ContainerBuilder $container): void

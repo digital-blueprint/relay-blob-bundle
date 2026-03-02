@@ -320,8 +320,8 @@ class CurlGetTest extends AbstractApiTest
                         $this->assertEquals($file['size'], $resultFile['fileSize'], 'File size not correct.');
                         $until = $file['created']->add(new \DateInterval($file['retention']));
                         $this->assertEquals(
-                            $until->format('c'),
-                            $resultFile['deleteAt'],
+                            $until->getTimestamp(),
+                            (new \DateTimeImmutable($resultFile['deleteAt']))->getTimestamp(),
                             'File retention time not correct.'
                         );
 

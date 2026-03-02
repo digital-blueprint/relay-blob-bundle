@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Entity;
 
-date_default_timezone_set('UTC');
-
 use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
@@ -579,19 +577,19 @@ class FileData implements \JsonSerializable
 
     private ?string $bucketId = null;
 
-    #[ORM\Column(type: 'datetime_immutable')]
+    #[ORM\Column(type: 'relay_blob_datetime_immutable_utc')]
     #[Groups(['BlobFiles:output'])]
     private ?\DateTimeImmutable $dateCreated = null;
 
-    #[ORM\Column(type: 'datetime_immutable')]
+    #[ORM\Column(type: 'relay_blob_datetime_immutable_utc')]
     #[Groups(['BlobFiles:output'])]
     private ?\DateTimeImmutable $dateAccessed = null;
 
-    #[ORM\Column(type: 'datetime_immutable')]
+    #[ORM\Column(type: 'relay_blob_datetime_immutable_utc')]
     #[Groups(['BlobFiles:output'])]
     private ?\DateTimeImmutable $dateModified = null;
 
-    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    #[ORM\Column(type: 'relay_blob_datetime_immutable_utc', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:update:exists'])]
     private ?\DateTimeImmutable $deleteAt = null;
 
