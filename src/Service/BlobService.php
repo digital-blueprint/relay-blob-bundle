@@ -321,6 +321,13 @@ class BlobService implements LoggerAwareInterface
             }
         }
         if ($fileName !== null) {
+            if (str_contains($fileName, '/')) {
+                throw ApiError::withDetails(
+                    Response::HTTP_FORBIDDEN,
+                    '/ is not allowed in a filename',
+                    $errorPrefix.'-invalid-file-name'
+                );
+            }
             $fileData->setFileName($fileName);
         }
         if ($prefix) {
