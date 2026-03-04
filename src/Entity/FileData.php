@@ -21,6 +21,8 @@ use Dbp\Relay\BlobBundle\ApiPlatform\FileDataProvider;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Attribute\Context;
+use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 
 #[ApiResource(
     shortName: 'BlobFiles',
@@ -579,18 +581,28 @@ class FileData implements \JsonSerializable
 
     #[ORM\Column(type: 'relay_blob_datetime_immutable_utc')]
     #[Groups(['BlobFiles:output'])]
+    #[Context(normalizationContext: [DateTimeNormalizer::TIMEZONE_KEY => 'UTC'])]
     private ?\DateTimeImmutable $dateCreated = null;
 
     #[ORM\Column(type: 'relay_blob_datetime_immutable_utc')]
     #[Groups(['BlobFiles:output'])]
+    #[Context(normalizationContext: [DateTimeNormalizer::TIMEZONE_KEY => 'UTC'])]
     private ?\DateTimeImmutable $dateAccessed = null;
 
     #[ORM\Column(type: 'relay_blob_datetime_immutable_utc')]
     #[Groups(['BlobFiles:output'])]
+    #[Context(normalizationContext: [DateTimeNormalizer::TIMEZONE_KEY => 'UTC'])]
     private ?\DateTimeImmutable $dateModified = null;
 
     #[ORM\Column(type: 'relay_blob_datetime_immutable_utc', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:update:exists'])]
+    #[Context(
+        normalizationContext: [DateTimeNormalizer::TIMEZONE_KEY => 'UTC'],
+        denormalizationContext: [
+            DateTimeNormalizer::TIMEZONE_KEY => 'UTC',
+            DateTimeNormalizer::FORCE_TIMEZONE_KEY => true,
+        ],
+    )]
     private ?\DateTimeImmutable $deleteAt = null;
 
     #[Groups(['BlobFiles:output'])]
