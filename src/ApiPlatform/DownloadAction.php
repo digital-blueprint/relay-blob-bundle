@@ -37,8 +37,8 @@ class DownloadAction extends AbstractController
         SignatureUtils::checkSignature(
             $errorPrefix, $this->config, $request, $request->query->all(), ['GET']);
 
-        $disableOutputValidation = $request->get('disableOutputValidation') === '1';
-        $includeDeleteAt = $request->get('includeDeleteAt') === '1';
+        $disableOutputValidation = $request->query->get('disableOutputValidation') === '1';
+        $includeDeleteAt = $request->query->get('includeDeleteAt') === '1';
 
         $fileData = $this->blobService->getFileData($identifier, [
             BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => $disableOutputValidation,
