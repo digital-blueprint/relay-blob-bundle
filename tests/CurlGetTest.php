@@ -548,6 +548,7 @@ class CurlGetTest extends AbstractApiTest
             $options = [
                 'headers' => [
                     'Accept' => 'application/ld+json',
+                    'Authorization' => 'Bearer '.$this->filesBearer,
                 ],
             ];
 
@@ -587,7 +588,11 @@ class CurlGetTest extends AbstractApiTest
 
             $token = SignatureTools::createSignature($secret, $payload);
 
-            $response = $client->request('GET', $url.'&sig='.$token, []);
+            $response = $client->request('GET', $url.'&sig='.$token, [
+                'headers' => [
+                    'Authorization' => 'Bearer '.$this->filesBearer,
+                ],
+            ]);
 
             $this->assertEquals(404, $response->getStatusCode());
 
@@ -605,6 +610,7 @@ class CurlGetTest extends AbstractApiTest
             $options = [
                 'headers' => [
                     'Accept' => 'application/ld+json',
+                    'Authorization' => 'Bearer '.$this->filesBearer,
                 ],
             ];
 
@@ -709,6 +715,7 @@ class CurlGetTest extends AbstractApiTest
             $options = [
                 'headers' => [
                     'Accept' => 'application/ld+json',
+                    'Authorization' => 'Bearer '.$this->filesBearer,
                 ],
             ];
 
@@ -809,6 +816,7 @@ class CurlGetTest extends AbstractApiTest
                 $options = [
                     'headers' => [
                         'Accept' => 'application/ld+json',
+                        'Authorization' => 'Bearer '.$this->filesBearer,
                     ],
                 ];
 
