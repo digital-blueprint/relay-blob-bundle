@@ -66,10 +66,9 @@ class StartMetadataBackupCommand extends Command
                 $job->setErrorId($e->getErrorId());
                 $this->blobService->finishAndSaveMetadataBackupJob($job, $intBucketId);
                 throw ApiError::withDetails($e->getStatusCode(), $job->getErrorMessage(), $job->getErrorId());
-            } else {
-                $this->blobService->finishAndSaveMetadataBackupJob($job, $intBucketId);
-                throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Something went wrong!');
             }
+            $this->blobService->finishAndSaveMetadataBackupJob($job, $intBucketId);
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Something went wrong!');
         }
         $this->blobService->finishAndSaveMetadataBackupJob($job, $intBucketId);
         $this->blobService->deleteFinishedMetadataBackupJobsExceptGivenOneByInternalBucketId($job->getBucketId(), $job->getIdentifier()); // delete other FINISHED job afterwards in case of an error

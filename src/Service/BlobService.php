@@ -1022,9 +1022,9 @@ class BlobService implements LoggerAwareInterface
             return $lock->getPatchLock();
         } elseif ($method === Request::METHOD_POST) {
             return $lock->getPostLock();
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     public function getPostBucketLockByInternalBucketId(string $internalBucketId): bool
@@ -1302,9 +1302,9 @@ class BlobService implements LoggerAwareInterface
                     'deleteAt' => function ($value) {
                         if ($value !== null) {
                             return new \DateTimeImmutable($value);
-                        } else {
-                            return null;
                         }
+
+                        return null;
                     },
                 ],
             ];
