@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+- Fix DB datetime handling in case the global timezone is not UTC
+- Adjust datetime format to include milliseconds and end with "Z" instead of "+00:00" for consistency.
+- Drop support for Symfony 6
+- Fix unit tests with api-platform 4.3
+- Fix various Symfony 7 deprecation warnings
+
 ## v0.2.0
 - Add support for metadata backups and restores
 
