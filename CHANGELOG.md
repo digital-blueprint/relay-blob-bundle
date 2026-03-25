@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.2.2
+- phpstan workarounds
+
 ## v0.2.1
 - Fix DB datetime handling in case the global timezone is not UTC
 - Adjust datetime format to include milliseconds and end with "Z" instead of "+00:00" for consistency.
