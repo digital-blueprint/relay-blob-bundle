@@ -400,6 +400,7 @@ class BlobService implements LoggerAwareInterface
             // add file to blob db and the storage system
             $fileData = $this->addFile($fileData);
         } finally {
+            // @phpstan-ignore-next-line
             if ($tempFilePath !== null) {
                 @unlink($tempFilePath);
             }
