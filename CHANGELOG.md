@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.2.3
+- Remove dependency on `ramsey/uuid`
+
 ## v0.2.2
 - phpstan workarounds
 
