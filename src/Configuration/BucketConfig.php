@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Configuration;
 
-use Ramsey\Uuid\Validator\GenericValidator;
+use Symfony\Component\Uid\Uuid;
 
 class BucketConfig implements \JsonSerializable
 {
@@ -178,7 +178,7 @@ class BucketConfig implements \JsonSerializable
     public static function fromConfig(array $config): BucketConfig
     {
         $bucket = new BucketConfig();
-        if ($config['internal_bucket_id'] && !(new GenericValidator())->validate((string) $config['internal_bucket_id'])) {
+        if ($config['internal_bucket_id'] && !Uuid::isValid((string) $config['internal_bucket_id'])) {
             throw new \RuntimeException(sprintf('the config entry internal_bucket_id is no valid uuid for bucket \'%s\'', (string) $config['internal_bucket_id']));
         }
         $bucket->setInternalBucketId((string) $config['internal_bucket_id']);
