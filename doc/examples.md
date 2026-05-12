@@ -48,7 +48,7 @@ Assuming the above mentioned setting, the url part so far would look like this:
 ```
 /blob/files/de1aaf61-bc52-4c91-a679-bef2f24e3cf7?bucketIdentifier=1248&creationTime=2024-10-09T11%3A50%3A54.431Z&method=GET
 ```
-This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `ucs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
+This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `ucs` of the above mentioned url part. More on this can be found in the section [Signature](#example-checksum-and-signature).
 
 Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `3f1c1d2280f978b3f7203c33a7a21ab0738a06f9d30cd087e1491ae462a31062`. This checksum then has to be added to a json with the key `ucs`.
 This then has to be signed using the secret key, and appended to the url. The result will look something like this:
@@ -156,7 +156,7 @@ Assuming the above mentioned setting, the url part so far would look like this:
 ```
 /blob/files?bucketIdentifier=1248&creationTime=2024-10-09T11%3A50%3A54.431Z&prefix=myData&method=GET
 ```
-This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `ucs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
+This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `ucs` of the above mentioned url part. More on this can be found in the section [Signature](#example-checksum-and-signature).
 
 Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `66f246f0df4dce19fa2a54e8cbb048a4bb793b636938cf7e3ef7a6cfffcd7a81`. This checksum then has to be added to a json with the key `ucs`.
 This then has to be signed using the secret key, and appended to the url. The result will look something like this:
@@ -289,7 +289,7 @@ Assuming the above mentioned setting, the url part so far would look like this:
 ```
 /blob/files?bucketIdentifier=1248&creationTime=2024-10-09T11%3A50%3A54.431Z&prefix=myData&method=POST
 ```
-This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `ucs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
+This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `ucs` of the above mentioned url part. More on this can be found in the section [Signature](#example-checksum-and-signature).
 Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `b8604c770c1af7686a3b54ad0ccc0ecd193acfa6d99d9bcba3a1cbb593272979`. This checksum then has to be added to a json with the key `ucs`.
 This then has to be signed using the secret key, and appended to the url. The result will look something like this:
 ```
@@ -415,7 +415,7 @@ Assuming the above mentioned setting, the url part so far would look like this:
 ```
 /blob/files/8183d841-4783-4a4c-9680-e8d7c22c896e?bucketIdentifier=1248&creationTime=2024-10-09T11%3A50%3A54.431Z&method=PATCH
 ```
-This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `ucs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
+This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `ucs` of the above mentioned url part. More on this can be found in the section [Signature](#example-checksum-and-signature).
 Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `8c8e861aa2711760a00dd2a28c80d4b05f4cf8036bd3dcb3c73932c340727bf3`. This checksum then has to be added to a json with the key `ucs`.
 This then has to be signed using the secret key, and appended to the url. The result will look something like this:
 ```
@@ -529,7 +529,7 @@ Assuming the above mentioned setting, the url part so far would look like this:
 ```
 /blob/files/4da14ef0-d552-4e27-975e-e1f3db5a0e81?bucketIdentifier=1248&creationTime=2024-10-09T11%3A50%3A54.431Z&method=DELETE
 ```
-This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `ucs` of the above mentioned url part. More on this can be found in the section [Signature](##signature).
+This only missing parameter is `sig`, which represents the signature of the SHA-256 checksum `ucs` of the above mentioned url part. More on this can be found in the section [Signature](#example-checksum-and-signature).
 Before creating the signature, the SHA-256 checksum has to be created. In this case, this would be `5db60d13f741dbdd7929a9c5a274f99f93ab8e27fbc983e44211756ef90a0480`. This checksum then has to be added to a json with the key `ucs`.
 This then has to be signed using the secret key, and appended to the url. The result will look something like this:
 ```
