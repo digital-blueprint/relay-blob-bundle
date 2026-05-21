@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.4
+
+- Add new CLI commands:
+  - `dbp:relay:blob:files:download` to download files
+  - `dbp:relay:blob:files:info` to get file information (size, hash, etc.)
+  - `dbp:relay:blob:files:list` to list all files in a bucket
+  - `dbp:relay:blob:buckets:list` to list all buckets
+
 ## v0.2.3
 - Remove dependency on `ramsey/uuid`
 
