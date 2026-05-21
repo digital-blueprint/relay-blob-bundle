@@ -1377,6 +1377,18 @@ class BlobService implements LoggerAwareInterface
         return $queryBuilder->getQuery()->getResult();
     }
 
+    public function getFileCountByInternalBucketId(string $internalBucketId): int
+    {
+        return (int) $this->entityManager
+            ->getRepository(FileData::class)
+            ->createQueryBuilder('f')
+            ->select('COUNT(f)')
+            ->where('f.internalBucketId = :bucketID')
+            ->setParameter('bucketID', $internalBucketId)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     /**
      * @return FileData[]
      *

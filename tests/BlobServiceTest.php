@@ -296,6 +296,29 @@ class BlobServiceTest extends ApiTestCase
         return $this->blobService->addFile($fileData);
     }
 
+    /**
+     * @throws \Exception
+     */
+    public function testGetFileCount(): void
+    {
+        $testBucketConfig = self::getTestBucketConfig();
+        $internalBucketId = $testBucketConfig['internal_bucket_id'];
+
+        $this->assertEquals(0, $this->blobService->getFileCountByInternalBucketId($internalBucketId));
+
+        $this->addTestFile();
+        $this->assertEquals(1, $this->blobService->getFileCountByInternalBucketId($internalBucketId));
+
+        $this->addTestFile();
+        $this->assertEquals(2, $this->blobService->getFileCountByInternalBucketId($internalBucketId));
+
+        $fileData = $this->addTestFile();
+        $this->assertEquals(3, $this->blobService->getFileCountByInternalBucketId($internalBucketId));
+
+        $this->blobService->removeFile($fileData);
+        $this->assertEquals(2, $this->blobService->getFileCountByInternalBucketId($internalBucketId));
+    }
+
     protected static function getTestBucketConfig(int $index = 0): ?array
     {
         return BlobTestUtils::getTestConfig()['buckets'][$index] ?? null;

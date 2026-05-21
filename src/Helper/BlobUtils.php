@@ -35,4 +35,17 @@ class BlobUtils
     {
         return new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
     }
+
+    public static function formatBytes(int $bytes): string
+    {
+        if ($bytes >= 1024 * 1024 * 1024) {
+            return round($bytes / (1024 * 1024 * 1024), 1).' GB';
+        } elseif ($bytes >= 1024 * 1024) {
+            return round($bytes / (1024 * 1024), 1).' MB';
+        } elseif ($bytes >= 1024) {
+            return round($bytes / 1024, 1).' KB';
+        }
+
+        return $bytes.' B';
+    }
 }
