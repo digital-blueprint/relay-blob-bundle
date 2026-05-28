@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.5
+
+- Add new CLI commands:
+  - `dbp:relay:blob:buckets:clear` to clear a bucket
+
 ## v0.2.4
 
 - Add new CLI commands:
