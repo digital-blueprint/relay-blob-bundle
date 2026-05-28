@@ -15,6 +15,8 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
 
     private mixed $backupFile;
 
+    private ?string $backupFilePath = null;
+
     public function __construct()
     {
     }
@@ -79,7 +81,11 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
 
     public function openMetadataBackup(string $internalBucketId, string $mode): bool
     {
-        $ret = fopen('dummyBackup.json', $mode);
+        if ($this->backupFilePath === null) {
+            $this->backupFilePath = tempnam(sys_get_temp_dir(), 'blob_backup_');
+        }
+
+        $ret = fopen($this->backupFilePath, $mode);
 
         if ($ret !== false) {
             $this->backupFile = $ret;
@@ -110,12 +116,21 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
     {
         $ret = fclose($this->backupFile);
 
+        if ($this->backupFilePath !== null && file_exists($this->backupFilePath)) {
+            unlink($this->backupFilePath);
+            $this->backupFilePath = null;
+        }
+
         return $ret !== false;
     }
 
     public function getMetadataBackupFileHash(string $intBucketId): ?string
     {
-        $ret = hash_file('sha256', 'dummyBackup.json');
+        if ($this->backupFilePath === null) {
+            return null;
+        }
+
+        $ret = hash_file('sha256', $this->backupFilePath);
 
         if ($ret === false) {
             return null;
@@ -126,7 +141,7 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
 
     public function getMetadataBackupFileRef(string $intBucketId): ?string
     {
-        return 'dummyBackup.json';
+        return $this->backupFilePath;
     }
 
     public function hasNextItemInMetadataBackup(): bool
