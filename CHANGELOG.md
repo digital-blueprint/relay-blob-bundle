@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.6
+
+- More efficient clearing of buckets
+- Add option for 'generate-file' command to generate multiple files
+- generate-file: convert some arguments to options
+
 ## v0.2.5
 
 - Add new CLI commands:
