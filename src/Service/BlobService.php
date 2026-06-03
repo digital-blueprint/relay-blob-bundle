@@ -1740,7 +1740,9 @@ class BlobService implements LoggerAwareInterface
         }
         if ($fileData->getFile() !== null) {
             $fileData->setFileSize($fileData->getFile()->getSize());
-            $fileData->setMimeType($fileData->getFile()->getMimeType() ?? '');
+            if ($fileData->getMimeType() === '') {
+                $fileData->setMimeType($fileData->getFile()->getMimeType() ?? '');
+            }
         }
         if ($fileData->getMetadata() !== null && strlen($fileData->getMetadata()) > $this->configurationService->getMetadataSizeLimit()) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Metadata exceeds configured size limit', $errorPrefix.'-metadata-too-big');

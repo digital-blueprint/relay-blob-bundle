@@ -129,6 +129,44 @@ class FileApiTest extends ApiTestCase
         $this->assertFileContentsEquals($blobFile->getIdentifier(), file_get_contents(__DIR__.'/test.txt'));
     }
 
+    /**
+     * @throws BlobApiError
+     */
+    public function testAddFileWithExplicitMimeType(): void
+    {
+        $blobFile = new BlobFile();
+        $blobFile->setPrefix('prefix');
+        $blobFile->setFileName(self::TEST_FILENAME);
+        $blobFile->setFile(self::TEST_FILE_CONTENTS);
+        $blobFile->setMimeType('application/octet-stream');
+
+        $blobFile = $this->fileApi->addFile(self::TEST_BUCKET_IDENTIFIER, $blobFile);
+        // The caller-supplied mime type must be stored and returned, not auto-detected from content.
+        $this->assertEquals('application/octet-stream', $blobFile->getMimeType());
+
+        $blobFileFromGet = $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFile->getIdentifier());
+        $this->assertEquals('application/octet-stream', $blobFileFromGet->getMimeType());
+    }
+
+    /**
+     * @throws BlobApiError
+     */
+    public function testUpdateFileWithExplicitMimeType(): void
+    {
+        $blobFile = $this->addTestFile();
+        $this->assertEquals('text/plain', $blobFile->getMimeType());
+
+        $updatedBlobFile = new BlobFile();
+        $updatedBlobFile->setIdentifier($blobFile->getIdentifier());
+        $updatedBlobFile->setMimeType('application/octet-stream');
+
+        $updatedBlobFile = $this->fileApi->updateFile(self::TEST_BUCKET_IDENTIFIER, $updatedBlobFile);
+        $this->assertEquals('application/octet-stream', $updatedBlobFile->getMimeType());
+
+        $blobFileFromGet = $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $updatedBlobFile->getIdentifier());
+        $this->assertEquals('application/octet-stream', $blobFileFromGet->getMimeType());
+    }
+
     public function testAddFileError(): void
     {
         $blobFile = new BlobFile();
