@@ -66,6 +66,9 @@ readonly class FileApi implements BlobFileApiInterface
         if (($type = $blobFile->getType()) !== null) {
             $fileData->setType($type);
         }
+        if (($type = $blobFile->getMimeType()) !== null) {
+            $fileData->setMimeType($type);
+        }
         if (($metadata = $blobFile->getMetadata()) !== null) {
             $fileData->setMetadata($metadata);
         }
