@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.7
+
+- Fix mimetype passed via the FileApi being ignored
+
 ## v0.2.6
 
 - More efficient clearing of buckets
