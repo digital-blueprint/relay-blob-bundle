@@ -105,6 +105,7 @@ class BlobService implements LoggerAwareInterface
         $fileData->setContentUrl($this->getDownloadUrl($options[self::BASE_URL_OPTION] ?? '', $fileData));
 
         /* dispatch POST success event */
+        assert($fileData->getBucketId() !== null);
         $successEvent = new AddFileDataByPostSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($successEvent);
 
@@ -145,6 +146,7 @@ class BlobService implements LoggerAwareInterface
             $this->saveFileData($fileData);
         }
 
+        assert($fileData->getBucketId() !== null);
         $patchSuccessEvent = new ChangeFileDataByPatchSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($patchSuccessEvent);
 
@@ -166,6 +168,7 @@ class BlobService implements LoggerAwareInterface
 
         $this->removeFileDataAndFile($fileData, -$fileData->getFileSize());
 
+        assert($fileData->getBucketId() !== null);
         $deleteSuccessEvent = new DeleteFileDataByDeleteSuccessEvent($fileData);
         $this->eventDispatcher->dispatch($deleteSuccessEvent);
     }

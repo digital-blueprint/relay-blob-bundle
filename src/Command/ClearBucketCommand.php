@@ -6,6 +6,7 @@ namespace Dbp\Relay\BlobBundle\Command;
 
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Helper\QuestionHelper;
@@ -107,7 +108,10 @@ class ClearBucketCommand extends Command
 
         try {
             do {
-                $batch = $this->blobService->getFileDataCollection($internalBucketId, maxNumItemsPerPage: $batchSize, includeDeleteAt: true);
+                $batch = $this->blobService->getFiles(
+                    $bucketConfig->getBucketId(),
+                    maxNumItemsPerPage: $batchSize,
+                    options: [BlobApi::INCLUDE_DELETE_AT_OPTION => true]);
 
                 foreach ($batch as $fileData) {
                     $progressBar->setMessage(sprintf(
