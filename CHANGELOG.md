@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.8
+
+- Fix clear command not sending events with the bucket ID set
+
 ## v0.2.7
 
 - Fix mimetype passed via the FileApi being ignored
