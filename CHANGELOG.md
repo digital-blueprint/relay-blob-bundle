@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.9
+
+- Support verity 0.2.x
+
 ## v0.2.8
 
 - Fix clear command not sending events with the bucket ID set
