@@ -26,7 +26,9 @@ use Dbp\Relay\CoreBundle\Rest\Query\Pagination\Pagination;
 use Dbp\Relay\VerityBundle\Event\VerityRequestEvent;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
-use JsonSchema\Validator;
+use Opis\JsonSchema\Errors\ErrorFormatter;
+use Opis\JsonSchema\Exceptions\SchemaException;
+use Opis\JsonSchema\Validator;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -213,7 +215,7 @@ class BlobService implements LoggerAwareInterface
      * @throws \Exception
      */
     public function getFiles(string $bucketIdentifier, ?Filter $filter = null, array $options = [],
-        int $currentPageNumber = 1, int $maxNumItemsPerPage = 30): array
+                             int $currentPageNumber = 1, int $maxNumItemsPerPage = 30): array
     {
         // TODO: make the upper limit configurable
         if ($maxNumItemsPerPage > 1000) {
@@ -1347,7 +1349,7 @@ class BlobService implements LoggerAwareInterface
      * @throws \Exception
      */
     public function getFileDataCollection(string $internalBucketID, ?Filter $filter = null,
-        int $firstItemIndex = 0, int $maxNumItemsPerPage = 30, bool $includeDeleteAt = false)
+                                          int $firstItemIndex = 0, int $maxNumItemsPerPage = 30, bool $includeDeleteAt = false)
     {
         $FILE_DATA_ENTITY_ALIAS = 'f';
 
@@ -1611,17 +1613,50 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
         }
 
-        if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $additionalTypes[$additionalType]) && $additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
+        if (
+            array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $additionalTypes[$additionalType])
+            && $additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null
+        ) {
             $schemaPath = $additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG];
+            $realSchemaPath = realpath($schemaPath);
+
+            if ($realSchemaPath === false) {
+                throw ApiError::withDetails(
+                    Response::HTTP_INTERNAL_SERVER_ERROR,
+                    'Failed to load metadata schema',
+                    $errorPrefix . '-schema-load-failed',
+                    ['message' => sprintf('Schema file not found: %s', $schemaPath)]
+                );
+            }
+
             $validator = new Validator();
-            $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($schemaPath)]);
-            if (!$validator->isValid()) {
-                $messages = [];
-                foreach ($validator->getErrors() as $error) {
-                    $messages[$error['property']] = $error['message'];
-                }
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type',
-                    $errorPrefix.'-metadata-does-not-match-type', $messages);
+
+            $schemaObject = (object) [
+                '$ref' => 'file://' . $realSchemaPath,
+            ];
+
+            try {
+                $validationResult = $validator->validate($metadataDecoded, $schemaObject);
+            } catch (SchemaException $e) {
+                throw ApiError::withDetails(
+                    Response::HTTP_INTERNAL_SERVER_ERROR,
+                    'Failed to load metadata schema',
+                    $errorPrefix . '-schema-load-failed',
+                    ['message' => $e->getMessage()]
+                );
+            }
+
+            if ($validationResult->isValid() === false) {
+                $messages = (new ErrorFormatter())->format($validationResult->error());
+
+                throw ApiError::withDetails(
+                    Response::HTTP_BAD_REQUEST,
+                    'metadata does not match specified type',
+                    $errorPrefix . '-metadata-does-not-match-type',
+                    $messages
+                );
+            } else {
+                dump('metadata validation successful');
             }
         }
     }
@@ -1666,14 +1701,45 @@ class BlobService implements LoggerAwareInterface
     {
         $filedataDecoded = json_decode($fileDataJson, false, flags: JSON_THROW_ON_ERROR);
         $schemaPath = $this->configurationService->getFiledataSchema();
+        $realSchemaPath = realpath($schemaPath);
+
+        if ($realSchemaPath === false) {
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'Failed to load filedata schema',
+                $errorPrefix . '-schema-load-failed',
+                ['message' => sprintf('Schema file not found: %s', $schemaPath)]
+            );
+        }
+
         $validator = new Validator();
-        $validator->validate($filedataDecoded, (object) ['$ref' => 'file://'.realpath($schemaPath)]);
-        if (!$validator->isValid()) {
-            $messages = [];
-            foreach ($validator->getErrors() as $error) {
-                $messages[$error['property']] = $error['message'];
-            }
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type', $errorPrefix.'-filedata-validation-failed', $messages);
+
+        $schemaObject = (object) [
+            '$ref' => 'file://' . $realSchemaPath,
+        ];
+
+        try {
+            $validationResult = $validator->validate($filedataDecoded, $schemaObject);
+        } catch (SchemaException $e) {
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'Failed to load filedata schema',
+                $errorPrefix . '-schema-load-failed',
+                ['message' => $e->getMessage()]
+            );
+        }
+
+        if ($validationResult->isValid() === false) {
+            $messages = (new ErrorFormatter())->format($validationResult->error());
+
+            throw ApiError::withDetails(
+                Response::HTTP_BAD_REQUEST,
+                'filedata does not match schema',
+                $errorPrefix . '-filedata-validation-failed',
+                $messages
+            );
+        } else {
+            dump('filedata validation successful');
         }
     }
 
