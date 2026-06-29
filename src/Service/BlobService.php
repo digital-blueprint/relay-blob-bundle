@@ -1768,6 +1768,33 @@ class BlobService implements LoggerAwareInterface
                 $errorPrefix . '-filedata-validation-failed',
                 $messages
             );
+        } else {
+            dump('filedata validation successful');
+
+        $schemaObject = (object) [
+            '$ref' => 'file://' . $realSchemaPath,
+        ];
+
+        try {
+            $validationResult = $validator->validate($filedataDecoded, $schemaObject);
+        } catch (SchemaException $e) {
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'Failed to load filedata schema',
+                $errorPrefix . '-schema-load-failed',
+                ['message' => $e->getMessage()]
+            );
+        }
+
+        if ($validationResult->isValid() === false) {
+            $messages = (new ErrorFormatter())->format($validationResult->error());
+
+            throw ApiError::withDetails(
+                Response::HTTP_BAD_REQUEST,
+                'filedata does not match schema',
+                $errorPrefix . '-filedata-validation-failed',
+                $messages
+            );
         }
     }
 
