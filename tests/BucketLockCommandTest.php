@@ -161,7 +161,7 @@ class BucketLockCommandTest extends ApiTestCase
     private function createCommandTester(Command $command): CommandTester
     {
         $application = new Application();
-        $application->add($command);
+        $application->addCommand($command);
         $commandName = $command->getName();
         $this->assertNotNull($commandName);
 
