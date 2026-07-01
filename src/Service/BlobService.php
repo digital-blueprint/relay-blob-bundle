@@ -27,7 +27,6 @@ use Dbp\Relay\VerityBundle\Event\VerityRequestEvent;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Opis\JsonSchema\Errors\ErrorFormatter;
-use Opis\JsonSchema\Schema;
 use Opis\JsonSchema\Exceptions\SchemaException;
 use Opis\JsonSchema\Validator;
 use Psr\Http\Message\StreamInterface;
@@ -216,7 +215,7 @@ class BlobService implements LoggerAwareInterface
      * @throws \Exception
      */
     public function getFiles(string $bucketIdentifier, ?Filter $filter = null, array $options = [],
-                             int $currentPageNumber = 1, int $maxNumItemsPerPage = 30): array
+        int $currentPageNumber = 1, int $maxNumItemsPerPage = 30): array
     {
         // TODO: make the upper limit configurable
         if ($maxNumItemsPerPage > 1000) {
@@ -1350,7 +1349,7 @@ class BlobService implements LoggerAwareInterface
      * @throws \Exception
      */
     public function getFileDataCollection(string $internalBucketID, ?Filter $filter = null,
-                                          int $firstItemIndex = 0, int $maxNumItemsPerPage = 30, bool $includeDeleteAt = false)
+        int $firstItemIndex = 0, int $maxNumItemsPerPage = 30, bool $includeDeleteAt = false)
     {
         $FILE_DATA_ENTITY_ALIAS = 'f';
 
@@ -1637,20 +1636,32 @@ class BlobService implements LoggerAwareInterface
                     throw ApiError::withDetails(
                         Response::HTTP_INTERNAL_SERVER_ERROR,
                         'Failed to load metadata schema',
-                        $errorPrefix . '-schema-load-failed',
+                        $errorPrefix.'-schema-load-failed',
                         ['message' => sprintf('Schema file not found: %s', $schemaPath)]
                     );
                 }
 
                 // get schema path, load and decode the file and register the json object as a schema
                 $realSchemaPath = 'file://'.$realSchemaPath;
-                $schema = json_decode(file_get_contents($realSchemaPath), false, JSON_THROW_ON_ERROR);
+                $file = file_get_contents($realSchemaPath);
+                if ($file === false) {
+                    throw ApiError::withDetails(
+                        Response::HTTP_INTERNAL_SERVER_ERROR,
+                        'Failed to load metadata schema',
+                        $errorPrefix.'-schema-file-not-found',
+                        ['message' => sprintf('Schema file not found: %s', $schemaPath)]
+                    );
+                }
+
+                $schema = json_decode($file, false, JSON_THROW_ON_ERROR);
                 $validator->resolver()->registerRaw($schema, 'schema:///'.basename($realSchemaPath));
             }
 
             try {
                 // get schema object of schema that we want to validate the json against
                 $realSchemaPath = realpath($additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG]);
+
+                // we can assume that the file will be found since we checked all files earlier
                 $schema = json_decode(file_get_contents($realSchemaPath), false, JSON_THROW_ON_ERROR);
 
                 // validate json
@@ -1659,7 +1670,7 @@ class BlobService implements LoggerAwareInterface
                 throw ApiError::withDetails(
                     Response::HTTP_INTERNAL_SERVER_ERROR,
                     'Failed to load metadata schema',
-                    $errorPrefix . '-schema-load-failed',
+                    $errorPrefix.'-schema-load-failed',
                     ['message' => $e->getMessage()]
                 );
             }
@@ -1672,8 +1683,6 @@ class BlobService implements LoggerAwareInterface
                     $errorPrefix . '-metadata-does-not-match-type',
                     $messages
                 );
-            } else {
-                dump('metadata validation successful');
             }
         }
     }
@@ -1755,8 +1764,6 @@ class BlobService implements LoggerAwareInterface
                 $errorPrefix . '-filedata-validation-failed',
                 $messages
             );
-        } else {
-            dump('filedata validation successful');
         }
     }
 
