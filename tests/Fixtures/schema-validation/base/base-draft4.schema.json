@@ -1,0 +1,24 @@
+{
+    "id": "base",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "definitions": {
+        "documentType": {
+            "type": "string",
+            "enum": ["DemoDocument"]
+        },
+        "owner": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id"],
+            "properties": {
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "groupId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        }
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "$id": "base-draft2019-09",
+    "$schema": "https://json-schema.org/draft/2019-09/schema",
+    "$defs": {
+        "documentType": {
+            "const": "DemoDocument2019"
+        },
+        "owner": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id"],
+            "properties": {
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "groupId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        }
+    }
+}

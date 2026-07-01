@@ -26,6 +26,9 @@ use Dbp\Relay\CoreBundle\Rest\Query\Pagination\Pagination;
 use Dbp\Relay\VerityBundle\Event\VerityRequestEvent;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
+use JsonSchema\Constraints\Constraint;
+use JsonSchema\DraftIdentifiers;
+use JsonSchema\Uri\UriRetriever;
 use JsonSchema\Validator;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerAwareInterface;
@@ -1613,8 +1616,20 @@ class BlobService implements LoggerAwareInterface
 
         if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $types[$type]) && $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
             $schemaPath = $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG];
+            $schemaUri = 'file://'.realpath($schemaPath);
+            // Load the schema first so strict mode sees the schema file's own $schema dialect.
+            // Validating a wrapper $ref here would keep the wrapper as the dialect root.
+            $schema = (new UriRetriever())->retrieve($schemaUri);
+            $schemaDialect = is_object($schema) && is_string($schema->{'$schema'} ?? null) ?
+                rtrim($schema->{'$schema'}, '#') : null;
+            // The validator documents strict mode only for draft-06, draft-07, and draft-2019-09.
+            $checkMode = in_array($schemaDialect, [
+                DraftIdentifiers::DRAFT_6()->withoutFragment(),
+                DraftIdentifiers::DRAFT_7()->withoutFragment(),
+                DraftIdentifiers::DRAFT_2019_09()->withoutFragment(),
+            ], true) ? Constraint::CHECK_MODE_STRICT : Constraint::CHECK_MODE_NORMAL;
             $validator = new Validator();
-            $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($schemaPath)]);
+            $validator->validate($metadataDecoded, $schema, $checkMode);
             if (!$validator->isValid()) {
                 $messages = [];
                 foreach ($validator->getErrors() as $error) {

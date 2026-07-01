@@ -1,0 +1,34 @@
+{
+    "$id": "demo-document-draft2019-09",
+    "$schema": "https://json-schema.org/draft/2019-09/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["@type", "owner", "groupId", "status", "approved"],
+    "properties": {
+        "@type": {
+            "$ref": "base/base-draft2019-09.schema.json#/$defs/documentType"
+        },
+        "owner": {
+            "$ref": "base/base-draft2019-09.schema.json#/$defs/owner"
+        },
+        "groupId": {
+            "$ref": "base/base-draft2019-09.schema.json#/$defs/groupId"
+        },
+        "status": {
+            "type": "string",
+            "enum": ["draft", "final"]
+        },
+        "approved": {
+            "const": true
+        },
+        "reviewer": {
+            "type": "string"
+        },
+        "reviewedAt": {
+            "type": "string"
+        }
+    },
+    "dependentRequired": {
+        "reviewer": ["reviewedAt"]
+    }
+}

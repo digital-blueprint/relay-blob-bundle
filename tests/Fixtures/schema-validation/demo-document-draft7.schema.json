@@ -1,0 +1,25 @@
+{
+    "$id": "demo-document-draft7",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["@type", "owner", "groupId", "status", "approved"],
+    "properties": {
+        "@type": {
+            "$ref": "base/base-draft7.schema.json#/definitions/documentType"
+        },
+        "owner": {
+            "$ref": "base/base-draft7.schema.json#/definitions/owner"
+        },
+        "groupId": {
+            "$ref": "base/base-draft7.schema.json#/definitions/groupId"
+        },
+        "status": {
+            "type": "string",
+            "enum": ["draft", "final"]
+        },
+        "approved": {
+            "const": true
+        }
+    }
+}
