@@ -6,7 +6,7 @@ namespace Dbp\Relay\BlobBundle\Command;
 
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
-use Dbp\Relay\BlobLibrary\Api\BlobApi;
+use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Helper\QuestionHelper;
@@ -104,34 +104,45 @@ class ClearBucketCommand extends Command
         $progressBar->start();
 
         $deleted = 0;
-        $batchSize = 100;
+        $failedFiles = [];
+        $lastIdentifier = null;
+        $batchSize = 1000;
+        $filter = FilterTreeBuilder::create()
+            ->equals('internalBucketId', $internalBucketId)
+            ->createFilter();
 
         try {
             do {
-                $batch = $this->blobService->getFiles(
-                    $bucketConfig->getBucketId(),
-                    maxNumItemsPerPage: $batchSize,
-                    options: [BlobApi::INCLUDE_DELETE_AT_OPTION => true]);
+                $batch = $this->blobService->getFileDataCollectionCursorBased($lastIdentifier, $batchSize, $filter);
 
                 foreach ($batch as $fileData) {
+                    $identifier = $fileData->getIdentifier();
+                    $lastIdentifier = $identifier;
+
                     $progressBar->setMessage(sprintf(
                         'Deleting "%s" (%s)',
-                        $fileData->getFileName() ?? $fileData->getIdentifier(),
+                        $fileData->getFileName() ?? $identifier,
                         BlobUtils::formatBytes($fileData->getFileSize() ?? 0)
                     ));
 
-                    if ($fileData->getInternalBucketId() !== $internalBucketId) {
-                        throw new \RuntimeException(sprintf(
-                            'Refusing to delete file "%s": expected internal bucket ID "%s" but got "%s".',
-                            $fileData->getIdentifier(),
-                            $internalBucketId,
-                            $fileData->getInternalBucketId()
-                        ));
+                    try {
+                        if ($fileData->getInternalBucketId() !== $internalBucketId) {
+                            throw new \RuntimeException(sprintf(
+                                'Refusing to delete file "%s": expected internal bucket ID "%s" but got "%s".',
+                                $identifier,
+                                $internalBucketId,
+                                $fileData->getInternalBucketId()
+                            ));
+                        }
+
+                        $fileData->setBucketId($bucketConfig->getBucketId());
+                        $this->blobService->removeFile($fileData);
+
+                        ++$deleted;
+                    } catch (\Exception $e) {
+                        $failedFiles[] = [$identifier, $e->getMessage()];
                     }
 
-                    $this->blobService->removeFile($fileData);
-
-                    ++$deleted;
                     $progressBar->advance();
                 }
             } while (count($batch) === $batchSize);
@@ -149,6 +160,19 @@ class ClearBucketCommand extends Command
 
         $output->writeln('');
         $output->writeln('');
+
+        if ($failedFiles !== []) {
+            $output->writeln('<error>Deleted '.$deleted.' file(s), but failed to delete '.count($failedFiles).' file(s) from bucket "'.$bucketIdentifier.'".</error>');
+            $output->writeln('');
+
+            $table = new Table($output);
+            $table->setHeaders(['File ID', 'Error']);
+            $table->setRows($failedFiles);
+            $table->render();
+
+            return Command::FAILURE;
+        }
+
         $output->writeln('<info>Successfully deleted '.$deleted.' file(s) from bucket "'.$bucketIdentifier.'".</info>');
 
         return Command::SUCCESS;
