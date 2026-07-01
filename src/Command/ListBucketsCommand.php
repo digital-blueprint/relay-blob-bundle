@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Command;
 
+use Dbp\Relay\BlobBundle\Entity\BucketLock;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Symfony\Component\Console\Command\Command;
@@ -48,6 +49,8 @@ class ListBucketsCommand extends Command
                     ->getCurrentBucketSize();
                 $quotaBytes = $bucket->getQuota() * 1024 * 1024;
                 $fileCount = $this->blobService->getFileCountByInternalBucketId($bucket->getInternalBucketId());
+                $lock = $this->blobService->getBucketLockByInternalBucketId($bucket->getInternalBucketId());
+                $locks = $lock === null ? [] : $this->getLockedMethods($lock);
 
                 $rows[] = [
                     'bucketId' => $bucket->getBucketId(),
@@ -56,6 +59,7 @@ class ListBucketsCommand extends Command
                     'currentSize' => $currentSizeBytes,
                     'quota' => $quotaBytes,
                     'service' => $bucket->getService(),
+                    'locks' => $locks,
                 ];
             }
 
@@ -63,10 +67,11 @@ class ListBucketsCommand extends Command
                 $output->writeln(json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
             } else {
                 $table = new Table($output);
-                $table->setHeaders(['bucketId', 'internalBucketId', 'files', 'currentSize', 'quota', 'service']);
+                $table->setHeaders(['bucketId', 'internalBucketId', 'files', 'currentSize', 'quota', 'service', 'locks']);
                 foreach ($rows as $row) {
                     $row['currentSize'] = BlobUtils::formatBytes($row['currentSize']);
                     $row['quota'] = BlobUtils::formatBytes($row['quota']);
+                    $row['locks'] = $this->formatMethods($row['locks']);
                     $table->addRow(array_values($row));
                 }
                 $table->render();
@@ -79,5 +84,32 @@ class ListBucketsCommand extends Command
         }
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * @return string[]
+     */
+    private function getLockedMethods(BucketLock $lock): array
+    {
+        $methods = [];
+        if ($lock->getGetLock()) {
+            $methods[] = 'GET';
+        }
+        if ($lock->getPostLock()) {
+            $methods[] = 'POST';
+        }
+        if ($lock->getPatchLock()) {
+            $methods[] = 'PATCH';
+        }
+        if ($lock->getDeleteLock()) {
+            $methods[] = 'DELETE';
+        }
+
+        return $methods;
+    }
+
+    private function formatMethods(array $methods): string
+    {
+        return count($methods) === 0 ? 'none' : implode(',', $methods);
     }
 }
