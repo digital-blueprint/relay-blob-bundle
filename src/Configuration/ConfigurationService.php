@@ -156,7 +156,7 @@ class ConfigurationService
         }
         foreach ($this->getBuckets() as $bucket) {
             // Make sure the schema files exist and are valid JSON
-            foreach ($bucket->getAdditionalTypes() as $type) {
+            foreach ($bucket->getTypes() as $type) {
                 $path = $type['json_schema_path'];
                 if ($path === null) {
                     continue;

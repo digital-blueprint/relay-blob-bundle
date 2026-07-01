@@ -20,7 +20,7 @@ class BucketConfig implements \JsonSerializable
     private ?array $reportingConfig = null;
     private ?array $integrityCheckConfig = null;
     private int $notifyWhenQuotaOver = 0;
-    private ?array $additionalTypes = null;
+    private ?array $types = null;
 
     private bool $outputValidation = true;
     private ?array $bucketSizeConfig = null;
@@ -163,14 +163,14 @@ class BucketConfig implements \JsonSerializable
         return $this;
     }
 
-    public function getAdditionalTypes(): array
+    public function getTypes(): array
     {
-        return $this->additionalTypes ?? [];
+        return $this->types ?? [];
     }
 
-    public function setAdditionalTypes(?array $additionalTypes): self
+    public function setTypes(?array $types): self
     {
-        $this->additionalTypes = $additionalTypes;
+        $this->types = $types;
 
         return $this;
     }
@@ -239,10 +239,15 @@ class BucketConfig implements \JsonSerializable
         }
 
         if (
+            array_key_exists('types', $config)
+            && is_array($config['types'])
+        ) {
+            $bucket->setTypes($config['types']);
+        } elseif (
             array_key_exists('additional_types', $config)
             && is_array($config['additional_types'])
         ) {
-            $bucket->setAdditionalTypes($config['additional_types']);
+            $bucket->setTypes($config['additional_types']);
         }
 
         return $bucket;
@@ -262,7 +267,7 @@ class BucketConfig implements \JsonSerializable
         $values['reportingConfig'] = $this->reportingConfig;
         $values['integrityCheckConfig'] = $this->integrityCheckConfig;
         $values['notifyWhenQuotaOver'] = $this->notifyWhenQuotaOver;
-        $values['additionalTypes'] = $this->additionalTypes;
+        $values['types'] = $this->types;
         $values['outputValidation'] = $this->outputValidation;
         $values['bucketSizeConfig'] = $this->bucketSizeConfig;
 
