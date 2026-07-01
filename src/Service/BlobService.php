@@ -27,6 +27,7 @@ use Dbp\Relay\VerityBundle\Event\VerityRequestEvent;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Opis\JsonSchema\Errors\ErrorFormatter;
+use Opis\JsonSchema\Schema;
 use Opis\JsonSchema\Exceptions\SchemaException;
 use Opis\JsonSchema\Validator;
 use Psr\Http\Message\StreamInterface;
@@ -1617,26 +1618,43 @@ class BlobService implements LoggerAwareInterface
             array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $additionalTypes[$additionalType])
             && $additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null
         ) {
-            $schemaPath = $additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG];
-            $realSchemaPath = realpath($schemaPath);
 
-            if ($realSchemaPath === false) {
-                throw ApiError::withDetails(
-                    Response::HTTP_INTERNAL_SERVER_ERROR,
-                    'Failed to load metadata schema',
-                    $errorPrefix . '-schema-load-failed',
-                    ['message' => sprintf('Schema file not found: %s', $schemaPath)]
-                );
-            }
-
+            $schema = null;
             $validator = new Validator();
 
-            $schemaObject = (object) [
-                '$ref' => 'file://' . $realSchemaPath,
-            ];
+            // register all available schemas for the bucket
+            // this needs to be done in case a schema references another schema
+            foreach ($additionalTypes as $type) {
+                $schemaPath = $type[BlobService::JSON_SCHEMA_PATH_CONFIG];
+
+                // skip if no json schema is available
+                if ($schemaPath === null) {
+                    continue;
+                }
+
+                $realSchemaPath = realpath($schemaPath);
+                if ($realSchemaPath === false) {
+                    throw ApiError::withDetails(
+                        Response::HTTP_INTERNAL_SERVER_ERROR,
+                        'Failed to load metadata schema',
+                        $errorPrefix . '-schema-load-failed',
+                        ['message' => sprintf('Schema file not found: %s', $schemaPath)]
+                    );
+                }
+
+                // get schema path, load and decode the file and register the json object as a schema
+                $realSchemaPath = 'file://'.$realSchemaPath;
+                $schema = json_decode(file_get_contents($realSchemaPath), false, JSON_THROW_ON_ERROR);
+                $validator->resolver()->registerRaw($schema, 'schema:///'.basename($realSchemaPath));
+            }
 
             try {
-                $validationResult = $validator->validate($metadataDecoded, $schemaObject);
+                // get schema object of schema that we want to validate the json against
+                $realSchemaPath = realpath($additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG]);
+                $schema = json_decode(file_get_contents($realSchemaPath), false, JSON_THROW_ON_ERROR);
+
+                // validate json
+                $validationResult = $validator->validate($metadataDecoded, $schema);
             } catch (SchemaException $e) {
                 throw ApiError::withDetails(
                     Response::HTTP_INTERNAL_SERVER_ERROR,
@@ -1648,7 +1666,6 @@ class BlobService implements LoggerAwareInterface
 
             if ($validationResult->isValid() === false) {
                 $messages = (new ErrorFormatter())->format($validationResult->error());
-
                 throw ApiError::withDetails(
                     Response::HTTP_BAD_REQUEST,
                     'metadata does not match specified type',
