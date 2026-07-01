@@ -78,6 +78,18 @@ class Configuration implements ConfigurationInterface
                         ->isRequired()
                         ->cannotBeEmpty()
                         ->arrayPrototype()
+                            // Keep existing configs working after renaming additional_types to types.
+                            ->beforeNormalization()
+                                ->ifArray()
+                                ->then(static function (array $config): array {
+                                    if (!array_key_exists('types', $config) && array_key_exists('additional_types', $config)) {
+                                        $config['types'] = $config['additional_types'];
+                                    }
+                                    unset($config['additional_types']);
+
+                                    return $config;
+                                })
+                            ->end()
                             ->children()
                                 ->scalarNode('service')
                                     ->isRequired()
@@ -179,7 +191,7 @@ class Configuration implements ConfigurationInterface
                                         ->end()
                                     ->end()
                                 ->end()
-                                ->arrayNode('additional_types')
+                                ->arrayNode('types')
                                     ->useAttributeAsKey('name')
                                     ->arrayPrototype()
                                         ->children()

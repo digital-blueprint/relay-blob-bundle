@@ -90,8 +90,9 @@ dbp_relay_blob:
         to: 'john@example.com'
         subject: 'Blob File Integrity Check Report'
         html_template: 'emails/integrity.html.twig'
-      additional_types:
-        - generic_id_card: '%kernel.project_dir%/config/packages/schemas/relay-blob-bundle/test-bucket/generic_id_card.json'
+      types:
+        generic_id_card:
+          json_schema_path: '%kernel.project_dir%/config/packages/schemas/relay-blob-bundle/test-bucket/generic_id_card.json'
 ```
 
 For more info on bundle configuration see <https://symfony.com/doc/current/bundles/configuration.html>.

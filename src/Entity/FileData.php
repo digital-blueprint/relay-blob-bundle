@@ -746,9 +746,9 @@ class FileData implements \JsonSerializable
         return $this->metadata;
     }
 
-    public function setMetadata(?string $additionalMetadata): void
+    public function setMetadata(?string $metadata): void
     {
-        $this->metadata = $additionalMetadata;
+        $this->metadata = $metadata;
     }
 
     public function getType(): ?string

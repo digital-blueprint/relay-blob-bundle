@@ -50,8 +50,9 @@ parameters:
             to: '<bucket-owner-email>'
             subject: 'Blob Bucket Size Check Warning'
             html_template: 'emails/bucketsize.html.twig'
-          additional_types:
-            - test_type: '<path-to-your-json-schema>'
+          types:
+            test_type:
+              json_schema_path: '<path-to-your-json-schema>'
 ```
 
 To generate a key you can use: `openssl rand -hex 32`

@@ -1586,7 +1586,7 @@ class BlobService implements LoggerAwareInterface
     public function validateMetadata(FileData $fileData, string $errorPrefix): void
     {
         $metadata = $fileData->getMetadata();
-        $additionalType = $fileData->getType();
+        $type = $fileData->getType();
 
         if ($metadata !== null) {
             // check if metadata is a valid json in all cases
@@ -1599,20 +1599,20 @@ class BlobService implements LoggerAwareInterface
             $metadataDecoded = null;
         }
 
-        // If additionalType is set the metadata has to match the schema
-        if (!$additionalType) {
+        // If type is set the metadata has to match the schema
+        if (!$type) {
             return;
         }
 
-        // check if additionaltype is defined
+        // check if type is defined
         $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
-        $additionalTypes = $bucket->getAdditionalTypes();
-        if (!array_key_exists($additionalType, $additionalTypes)) {
+        $types = $bucket->getTypes();
+        if (!array_key_exists($type, $types)) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
         }
 
-        if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $additionalTypes[$additionalType]) && $additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
-            $schemaPath = $additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG];
+        if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $types[$type]) && $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
+            $schemaPath = $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG];
             $validator = new Validator();
             $validator->validate($metadataDecoded, (object) ['$ref' => 'file://'.realpath($schemaPath)]);
             if (!$validator->isValid()) {
@@ -1631,22 +1631,22 @@ class BlobService implements LoggerAwareInterface
      */
     public function validateFile(FileData $fileData, string $errorPrefix): void
     {
-        $additionalType = $fileData->getType();
+        $type = $fileData->getType();
 
-        // If additionalType is set the file has to validate with the given profile
-        if (!$additionalType || !$fileData->getFile()) {
+        // If type is set the file has to validate with the given profile
+        if (!$type || !$fileData->getFile()) {
             return;
         }
 
-        // check if additionaltype is defined
+        // check if type is defined
         $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
-        $additionalTypes = $bucket->getAdditionalTypes();
-        if (!array_key_exists($additionalType, $additionalTypes)) {
+        $types = $bucket->getTypes();
+        if (!array_key_exists($type, $types)) {
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
         }
 
-        if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $additionalTypes[$additionalType]) && $additionalTypes[$additionalType][BlobService::VERITY_PROFILE_CONFIG] !== null) {
-            $verityProfile = $additionalTypes[$additionalType][BlobService::VERITY_PROFILE_CONFIG];
+        if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $types[$type]) && $types[$type][BlobService::VERITY_PROFILE_CONFIG] !== null) {
+            $verityProfile = $types[$type][BlobService::VERITY_PROFILE_CONFIG];
             $event = new VerityRequestEvent(Uuid::v4()->toRfc4122(),
                 $fileData->getFileName(),
                 null,
@@ -1706,11 +1706,11 @@ class BlobService implements LoggerAwareInterface
             return;
         }
         $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
-        $additionalTypes = $bucket->getAdditionalTypes();
-        if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $additionalTypes[$type]) && $additionalTypes[$type][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
+        $types = $bucket->getTypes();
+        if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $types[$type]) && $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
             $this->validateMetadata($fileData, $errorPrefix);
         }
-        if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $additionalTypes[$type]) && $additionalTypes[$type][BlobService::VERITY_PROFILE_CONFIG] !== null) {
+        if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $types[$type]) && $types[$type][BlobService::VERITY_PROFILE_CONFIG] !== null) {
             $fileData->setFile($this->getFileForFileData($fileData));
             $this->validateFile($fileData, $errorPrefix);
             @unlink($fileData->getFile()->getFileInfo()->getRealPath());

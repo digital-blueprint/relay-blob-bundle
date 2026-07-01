@@ -29,4 +29,4 @@ Below a table is provided with all the fields that are stored in the SQL table f
 For efficiency's sake, there are many indexes automatically created. Indexes on the columns `identifier`, `internal_bucket_id`, `prefix`, `date_created` and `delete_at` are automatically created. The efficiency was tested on tables with up to ~22Mio different entries.
 
 ## Metadata and Type
-Metadata is stored as a json, and is linked to the `type`. Given `metadata` needs to be a valid json, otherwise an error is returned. If a `type` is given, `metadata` which matches the json schema of the given `type` needs to be provided. The json schema of the `type` is stored in the blob config in `additional_types` defined on a bucket level.
+Metadata is stored as a json, and is linked to the `type`. Given `metadata` needs to be a valid json, otherwise an error is returned. If a `type` is given, `metadata` which matches the json schema of the given `type` needs to be provided. The json schema of the `type` is stored in the blob config in `types` defined on a bucket level.
