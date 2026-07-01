@@ -1687,13 +1687,25 @@ class BlobService implements LoggerAwareInterface
 
                 // get schema path, load and decode the file and register the json object as a schema
                 $realSchemaPath = 'file://'.$realSchemaPath;
-                $schema = json_decode(file_get_contents($realSchemaPath), false, JSON_THROW_ON_ERROR);
+                $file = file_get_contents($realSchemaPath);
+                if ($file === false) {
+                    throw ApiError::withDetails(
+                        Response::HTTP_INTERNAL_SERVER_ERROR,
+                        'Failed to load metadata schema',
+                        $errorPrefix.'-schema-file-not-found',
+                        ['message' => sprintf('Schema file not found: %s', $schemaPath)]
+                    );
+                }
+
+                $schema = json_decode($file, false, JSON_THROW_ON_ERROR);
                 $validator->resolver()->registerRaw($schema, 'schema:///'.basename($realSchemaPath));
             }
 
             try {
                 // get schema object of schema that we want to validate the json against
                 $realSchemaPath = realpath($additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG]);
+
+                // we can assume that the file will be found since we checked all files earlier
                 $schema = json_decode(file_get_contents($realSchemaPath), false, JSON_THROW_ON_ERROR);
 
                 // validate json
