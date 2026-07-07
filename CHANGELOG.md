@@ -5,6 +5,11 @@
 - Metadata is no longer double JSON encoded in the database. Existing double
   encoded values are still read correctly.
 - Only JSON objects are allowed as top level metadata value.
+- Add CLI commands for bucket locks
+- Clear CLI command: collect failed deletions and report them in the end
+- config: rename `additional_types` to `types` (the old config key is still
+  supported for backwards compatibility)
+- metadata: improved/stricter schema validation handling for draft 6/7/2019 json schema
 
 ## v0.2.9
 
