@@ -27,7 +27,6 @@ use Dbp\Relay\VerityBundle\Event\VerityRequestEvent;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Opis\JsonSchema\Errors\ErrorFormatter;
-use Opis\JsonSchema\Schema;
 use Opis\JsonSchema\Exceptions\SchemaException;
 use Opis\JsonSchema\Validator;
 use Psr\Http\Message\StreamInterface;
@@ -1594,8 +1593,8 @@ class BlobService implements LoggerAwareInterface
         if ($metadata !== null) {
             // check if metadata is a valid json in all cases
             try {
-                $metadataDecoded = json_decode($metadata, false, flags: JSON_THROW_ON_ERROR);
-            } catch (\JsonException $e) {
+                $metadataDecoded = json_decode($metadata, false, 512, JSON_THROW_ON_ERROR);
+            } catch (\JsonException) {
                 throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad metadata', $errorPrefix.'-bad-metadata');
             }
         } else {
@@ -1614,161 +1613,88 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
         }
 
-        if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $types[$type]) && $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
-            $schemaPath = $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG];
-            $schemaUri = 'file://'.realpath($schemaPath);
-            // Load the schema first so strict mode sees the schema file's own $schema dialect.
-            // Validating a wrapper $ref here would keep the wrapper as the dialect root.
-            $schema = (new UriRetriever())->retrieve($schemaUri);
-            $schemaDialect = is_object($schema) && is_string($schema->{'$schema'} ?? null) ?
-                rtrim($schema->{'$schema'}, '#') : null;
-            // The validator documents strict mode only for draft-06, draft-07, and draft-2019-09.
-            $checkMode = in_array($schemaDialect, [
-                DraftIdentifiers::DRAFT_6()->withoutFragment(),
-                DraftIdentifiers::DRAFT_7()->withoutFragment(),
-                DraftIdentifiers::DRAFT_2019_09()->withoutFragment(),
-            ], true) ? Constraint::CHECK_MODE_STRICT : Constraint::CHECK_MODE_NORMAL;
-        if (
-            array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $additionalTypes[$additionalType])
-            && $additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null
-        ) {
+        $schemaPath = $types[$type][self::JSON_SCHEMA_PATH_CONFIG] ?? null;
+        if ($schemaPath === null) {
+            return;
+        }
 
-            $schema = null;
-            $validator = new Validator();
+        $realSchemaPath = realpath($schemaPath);
+        if ($realSchemaPath === false) {
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'Failed to load metadata schema',
+                $errorPrefix.'-schema-load-failed',
+                ['message' => sprintf('Schema file not found: %s', $schemaPath)]
+            );
+        }
 
-            // register all available schemas for the bucket
-            // this needs to be done in case a schema references another schema
-            foreach ($additionalTypes as $type) {
-                $schemaPath = $type[BlobService::JSON_SCHEMA_PATH_CONFIG];
+        $schemaObject = $this->loadJsonSchemaObject($realSchemaPath, 'metadata', $errorPrefix);
+        $useStrictSchemaDialect = $this->supportsStrictJsonSchemaDialect($schemaObject->{'$schema'} ?? null);
 
-                // skip if no json schema is available
-                if ($schemaPath === null) {
+        $validator = new Validator();
+        $validator->resolver()?->registerProtocolDir('file', '', '/');
+
+        try {
+            $registeredSchemaDirectories = [];
+            foreach ($types as $typeConfig) {
+                $registeredSchemaPath = $typeConfig[self::JSON_SCHEMA_PATH_CONFIG] ?? null;
+                if ($registeredSchemaPath === null) {
                     continue;
                 }
 
-                $realSchemaPath = realpath($schemaPath);
-                if ($realSchemaPath === false) {
-                    throw ApiError::withDetails(
-                        Response::HTTP_INTERNAL_SERVER_ERROR,
-                        'Failed to load metadata schema',
-                        $errorPrefix . '-schema-load-failed',
-                        ['message' => sprintf('Schema file not found: %s', $schemaPath)]
-                    );
-                }
-            $validator = new Validator();
-            $validator->validate($metadataDecoded, $schema, $checkMode);
-            if (!$validator->isValid()) {
-                $messages = [];
-                foreach ($validator->getErrors() as $error) {
-                    $messages[$error['property']] = $error['message'];
-                }
-
-                $realSchemaPath = realpath($schemaPath);
-                if ($realSchemaPath === false) {
+                $realRegisteredSchemaPath = realpath($registeredSchemaPath);
+                if ($realRegisteredSchemaPath === false) {
                     throw ApiError::withDetails(
                         Response::HTTP_INTERNAL_SERVER_ERROR,
                         'Failed to load metadata schema',
                         $errorPrefix.'-schema-load-failed',
-                        ['message' => sprintf('Schema file not found: %s', $schemaPath)]
+                        ['message' => sprintf('Schema file not found: %s', $registeredSchemaPath)]
                     );
                 }
 
-                // get schema path, load and decode the file and register the json object as a schema
-                $realSchemaPath = 'file://'.$realSchemaPath;
-                $file = file_get_contents($realSchemaPath);
-                if ($file === false) {
+                $schemaContents = file_get_contents($realRegisteredSchemaPath);
+                if ($schemaContents === false) {
                     throw ApiError::withDetails(
                         Response::HTTP_INTERNAL_SERVER_ERROR,
                         'Failed to load metadata schema',
                         $errorPrefix.'-schema-file-not-found',
-                        ['message' => sprintf('Schema file not found: %s', $schemaPath)]
+                        ['message' => sprintf('Schema file not found: %s', $registeredSchemaPath)]
                     );
                 }
 
-                // get schema path, load and decode the file and register the json object as a schema
-                $realSchemaPath = 'file://'.$realSchemaPath;
-                $file = file_get_contents($realSchemaPath);
-                if ($file === false) {
-                    throw ApiError::withDetails(
-                        Response::HTTP_INTERNAL_SERVER_ERROR,
-                        'Failed to load metadata schema',
-                        $errorPrefix.'-schema-file-not-found',
-                        ['message' => sprintf('Schema file not found: %s', $schemaPath)]
+                if ($useStrictSchemaDialect) {
+                    $registeredSchemaDirectory = dirname($realRegisteredSchemaPath);
+                    if (!isset($registeredSchemaDirectories[$registeredSchemaDirectory])) {
+                        $this->registerJsonSchemaDirectory($validator, $registeredSchemaDirectory, 'metadata', $errorPrefix);
+                        $registeredSchemaDirectories[$registeredSchemaDirectory] = true;
+                    }
+                } else {
+                    $validator->resolver()?->registerRaw(
+                        json_decode($schemaContents, false, 512, JSON_THROW_ON_ERROR),
+                        'file://'.$realRegisteredSchemaPath
                     );
                 }
-
-                $schema = json_decode($file, false, JSON_THROW_ON_ERROR);
-                $validator->resolver()->registerRaw($schema, 'schema:///'.basename($realSchemaPath));
             }
 
-            try {
-                // get schema object of schema that we want to validate the json against
-                $realSchemaPath = realpath($additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG]);
+            $schemaReference = $this->createJsonSchemaReference($realSchemaPath, 'metadata', $errorPrefix);
+            $validationResult = $validator->validate($metadataDecoded, $schemaReference);
+        } catch (SchemaException|\JsonException $e) {
+            throw ApiError::withDetails(
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                'Failed to load metadata schema',
+                $errorPrefix.'-schema-load-failed',
+                ['message' => $e->getMessage()]
+            );
+        }
 
-                // we can assume that the file will be found since we checked all files earlier
-                $schema = json_decode(file_get_contents($realSchemaPath), false, JSON_THROW_ON_ERROR);
-
-                // validate json
-                $validationResult = $validator->validate($metadataDecoded, $schema);
-            } catch (SchemaException $e) {
-                throw ApiError::withDetails(
-                    Response::HTTP_INTERNAL_SERVER_ERROR,
-                    'Failed to load metadata schema',
-                    $errorPrefix . '-schema-load-failed',
-                    ['message' => $e->getMessage()]
-                );
-            }
-
-            if ($validationResult->isValid() === false) {
-                $messages = (new ErrorFormatter())->format($validationResult->error());
-                throw ApiError::withDetails(
-                    Response::HTTP_BAD_REQUEST,
-                    'metadata does not match specified type',
-                    $errorPrefix . '-metadata-does-not-match-type',
-                    $messages
-                );
-            } else {
-                dump('metadata validation successful');
-            $validator = new Validator();
-            $validator->validate($metadataDecoded, $schema, $checkMode);
-            if (!$validator->isValid()) {
-                $messages = [];
-                foreach ($validator->getErrors() as $error) {
-                    $messages[$error['property']] = $error['message'];
-                }
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type',
-                    $errorPrefix.'-metadata-does-not-match-type', $messages);
-                $schema = json_decode($file, false, JSON_THROW_ON_ERROR);
-                $validator->resolver()->registerRaw($schema, 'schema:///'.basename($realSchemaPath));
-            }
-
-            try {
-                // get schema object of schema that we want to validate the json against
-                $realSchemaPath = realpath($additionalTypes[$additionalType][BlobService::JSON_SCHEMA_PATH_CONFIG]);
-
-                // we can assume that the file will be found since we checked all files earlier
-                $schema = json_decode(file_get_contents($realSchemaPath), false, JSON_THROW_ON_ERROR);
-
-                // validate json
-                $validationResult = $validator->validate($metadataDecoded, $schema);
-            } catch (SchemaException $e) {
-                throw ApiError::withDetails(
-                    Response::HTTP_INTERNAL_SERVER_ERROR,
-                    'Failed to load metadata schema',
-                    $errorPrefix.'-schema-load-failed',
-                    ['message' => $e->getMessage()]
-                );
-            }
-
-            if ($validationResult->isValid() === false) {
-                $messages = (new ErrorFormatter())->format($validationResult->error());
-                throw ApiError::withDetails(
-                    Response::HTTP_BAD_REQUEST,
-                    'metadata does not match specified type',
-                    $errorPrefix . '-metadata-does-not-match-type',
-                    $messages
-                );
-            }
+        if ($validationResult->isValid() === false) {
+            $messages = $this->formatJsonSchemaValidationMessages($validationResult->error());
+            throw ApiError::withDetails(
+                Response::HTTP_BAD_REQUEST,
+                'metadata does not match specified type',
+                $errorPrefix.'-metadata-does-not-match-type',
+                $messages
+            );
         }
     }
 
@@ -1791,26 +1717,42 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', $errorPrefix.'-bad-type');
         }
 
-        if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $types[$type]) && $types[$type][BlobService::VERITY_PROFILE_CONFIG] !== null) {
-            $verityProfile = $types[$type][BlobService::VERITY_PROFILE_CONFIG];
-            $event = new VerityRequestEvent(Uuid::v4()->toRfc4122(),
+        if (($types[$type][self::VERITY_PROFILE_CONFIG] ?? null) !== null) {
+            $verityProfile = $types[$type][self::VERITY_PROFILE_CONFIG];
+            $event = new VerityRequestEvent(
+                Uuid::v4()->toRfc4122(),
                 $fileData->getFileName(),
                 null,
                 $verityProfile,
                 $fileData->getFile(),
                 $fileData->getMimeType(),
-                $fileData->getFileSize());
+                $fileData->getFileSize()
+            );
             $result = $this->eventDispatcher->dispatch($event);
             if (!$result->valid) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'file does not validate against the specified type',
-                    $errorPrefix.'-file-does-not-validate-against-type', $result->errors);
+                throw ApiError::withDetails(
+                    Response::HTTP_BAD_REQUEST,
+                    'file does not validate against the specified type',
+                    $errorPrefix.'-file-does-not-validate-against-type',
+                    $result->errors
+                );
             }
         }
     }
 
     public function validateJsonFileData(string $fileDataJson, string $errorPrefix): void
     {
-        $filedataDecoded = json_decode($fileDataJson, false, flags: JSON_THROW_ON_ERROR);
+        try {
+            $filedataDecoded = json_decode($fileDataJson, false, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw ApiError::withDetails(
+                Response::HTTP_BAD_REQUEST,
+                'filedata does not match schema',
+                $errorPrefix.'-filedata-validation-failed',
+                ['message' => $e->getMessage()]
+            );
+        }
+
         $schemaPath = $this->configurationService->getFiledataSchema();
         $realSchemaPath = realpath($schemaPath);
 
@@ -1818,65 +1760,195 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
                 'Failed to load filedata schema',
-                $errorPrefix . '-schema-load-failed',
+                $errorPrefix.'-schema-load-failed',
                 ['message' => sprintf('Schema file not found: %s', $schemaPath)]
             );
         }
 
         $validator = new Validator();
-
-        $schemaObject = (object) [
-            '$ref' => 'file://' . $realSchemaPath,
-        ];
+        $validator->resolver()?->registerProtocolDir('file', '', '/');
 
         try {
-            $validationResult = $validator->validate($filedataDecoded, $schemaObject);
+            $schemaReference = $this->createJsonSchemaReference($realSchemaPath, 'filedata', $errorPrefix);
+            $validationResult = $validator->validate($filedataDecoded, $schemaReference);
         } catch (SchemaException $e) {
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
                 'Failed to load filedata schema',
-                $errorPrefix . '-schema-load-failed',
+                $errorPrefix.'-schema-load-failed',
                 ['message' => $e->getMessage()]
             );
         }
 
         if ($validationResult->isValid() === false) {
-            $messages = (new ErrorFormatter())->format($validationResult->error());
+            $messages = $this->formatJsonSchemaValidationMessages($validationResult->error());
 
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
                 'filedata does not match schema',
-                $errorPrefix . '-filedata-validation-failed',
+                $errorPrefix.'-filedata-validation-failed',
                 $messages
             );
-        } else {
-            dump('filedata validation successful');
+        }
+    }
 
-        $schemaObject = (object) [
-            '$ref' => 'file://' . $realSchemaPath,
+    /**
+     * @throws ApiError
+     */
+    private function createJsonSchemaReference(string $realSchemaPath, string $schemaType, string $errorPrefix): object
+    {
+        $schemaObject = $this->loadJsonSchemaObject($realSchemaPath, $schemaType, $errorPrefix);
+
+        // Keep the actual schema file's declared dialect on the wrapper. Opis documents
+        // strict mode for draft-06, draft-07, and draft-2019-09, and validating a bare
+        // wrapper {"$ref": ...} object would otherwise make that wrapper the dialect root.
+        $schemaReference = (object) [
+            '$ref' => 'file://'.$realSchemaPath,
         ];
 
-        try {
-            $validationResult = $validator->validate($filedataDecoded, $schemaObject);
-        } catch (SchemaException $e) {
+        if ($this->supportsStrictJsonSchemaDialect($schemaObject->{'$schema'} ?? null)) {
+            $schemaReference->{'$schema'} = $schemaObject->{'$schema'};
+        }
+
+        return $schemaReference;
+    }
+
+    /**
+     * @throws ApiError
+     * @throws \JsonException
+     */
+    private function loadJsonSchemaObject(string $realSchemaPath, string $schemaType, string $errorPrefix): object
+    {
+        $schemaContents = file_get_contents($realSchemaPath);
+        if ($schemaContents === false) {
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
-                'Failed to load filedata schema',
-                $errorPrefix . '-schema-load-failed',
-                ['message' => $e->getMessage()]
+                sprintf('Failed to load %s schema', $schemaType),
+                $errorPrefix.'-schema-load-failed',
+                ['message' => sprintf('Schema file not found: %s', $realSchemaPath)]
             );
         }
 
-        if ($validationResult->isValid() === false) {
-            $messages = (new ErrorFormatter())->format($validationResult->error());
+        $schemaObject = json_decode($schemaContents, false, 512, JSON_THROW_ON_ERROR);
+        assert(is_object($schemaObject));
 
-            throw ApiError::withDetails(
-                Response::HTTP_BAD_REQUEST,
-                'filedata does not match schema',
-                $errorPrefix . '-filedata-validation-failed',
-                $messages
+        return $schemaObject;
+    }
+
+    /**
+     * @throws ApiError
+     * @throws \JsonException
+     */
+    private function registerJsonSchemaDirectory(Validator $validator, string $directory, string $schemaType, string $errorPrefix): void
+    {
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if (!$file->isFile() || $file->getExtension() !== 'json') {
+                continue;
+            }
+
+            $realSchemaPath = $file->getRealPath();
+            if ($realSchemaPath === false) {
+                continue;
+            }
+
+            $schemaObject = $this->normalizeJsonSchemaId(
+                $this->loadJsonSchemaObject($realSchemaPath, $schemaType, $errorPrefix),
+                $realSchemaPath
             );
+
+            $validator->resolver()?->registerRaw($schemaObject, 'file://'.$realSchemaPath);
         }
+    }
+
+    private function normalizeJsonSchemaId(object $schemaObject, string $realSchemaPath): object
+    {
+        if (!isset($schemaObject->{'$id'}) || !is_string($schemaObject->{'$id'})
+            || $this->isAbsoluteJsonSchemaId($schemaObject->{'$id'})) {
+            return $schemaObject;
+        }
+
+        $normalizedSchemaObject = clone $schemaObject;
+        $normalizedSchemaObject->{'$id'} = 'file://'.$realSchemaPath;
+
+        return $normalizedSchemaObject;
+    }
+
+    private function isAbsoluteJsonSchemaId(string $schemaId): bool
+    {
+        return preg_match('/^[a-z][a-z0-9+.-]*:/i', $schemaId) === 1;
+    }
+
+    private function supportsStrictJsonSchemaDialect(mixed $dialect): bool
+    {
+        return is_string($dialect) && (
+            str_contains($dialect, 'draft-06')
+            || str_contains($dialect, 'draft-07')
+            || str_contains($dialect, 'draft/2019-09')
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function formatJsonSchemaValidationMessages(\Opis\JsonSchema\Errors\ValidationError $error): array
+    {
+        $formatter = new ErrorFormatter();
+        $messages = [];
+
+        foreach ($formatter->formatKeyed(
+            $error,
+            fn (\Opis\JsonSchema\Errors\ValidationError $leafError): string => $this->formatJsonSchemaValidationMessage($formatter, $leafError),
+            fn (\Opis\JsonSchema\Errors\ValidationError $leafError): string => $formatter->formatErrorKey($leafError)
+        ) as $path => $pathMessages) {
+            foreach ($pathMessages as $message) {
+                $messages[] = $path !== '' ? sprintf('%s: %s', $path, $message) : $message;
+            }
+        }
+
+        return $messages;
+    }
+
+    private function formatJsonSchemaValidationMessage(
+        ErrorFormatter $formatter,
+        \Opis\JsonSchema\Errors\ValidationError $error
+    ): string {
+        $message = $formatter->formatErrorMessage($error);
+        $details = [];
+
+        foreach ($error->args() as $name => $value) {
+            if (in_array($name, ['keyword', 'uri'], true)) {
+                continue;
+            }
+
+            $details[] = sprintf('%s=%s', $name, $this->stringifyJsonSchemaValidationValue($value));
+        }
+
+        if ($details === []) {
+            return $message;
+        }
+
+        return sprintf('%s (%s)', $message, implode(', ', $details));
+    }
+
+    private function stringifyJsonSchemaValidationValue(mixed $value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (is_array($value)) {
+            return implode(', ', array_map(fn (mixed $item): string => $this->stringifyJsonSchemaValidationValue($item), $value));
+        }
+
+        if ($value === null) {
+            return 'null';
+        }
+
+        return (string) $value;
     }
 
     /**
@@ -1891,31 +1963,41 @@ class BlobService implements LoggerAwareInterface
         // check if file integrity should be checked and if so, check it
         if ($this->configurationService->doFileIntegrityChecks()) {
             if ($fileData->getFileHash() !== null && $this->getFileHashFromStorage($fileData) !== $fileData->getFileHash()) {
-                throw ApiError::withDetails(Response::HTTP_CONFLICT,
+                throw ApiError::withDetails(
+                    Response::HTTP_CONFLICT,
                     'sha256 file hash doesnt match! File integrity cannot be guaranteed',
-                    $errorPrefix.'-file-hash-mismatch');
+                    $errorPrefix.'-file-hash-mismatch'
+                );
             }
             if ($fileData->getMetadataHash() !== null
                 && ($fileData->getMetadata() === null
                     || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
-                throw ApiError::withDetails(Response::HTTP_CONFLICT,
+                throw ApiError::withDetails(
+                    Response::HTTP_CONFLICT,
                     'sha256 metadata hash doesnt match! Metadata integrity cannot be guaranteed',
-                    $errorPrefix.'-metadata-hash-mismatch');
+                    $errorPrefix.'-metadata-hash-mismatch'
+                );
             }
         }
+
         $type = $fileData->getType();
         if ($type === null) {
             return;
         }
+
         $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
         $types = $bucket->getTypes();
-        if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $types[$type]) && $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
+        if (($types[$type][self::JSON_SCHEMA_PATH_CONFIG] ?? null) !== null) {
             $this->validateMetadata($fileData, $errorPrefix);
         }
-        if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $types[$type]) && $types[$type][BlobService::VERITY_PROFILE_CONFIG] !== null) {
-            $fileData->setFile($this->getFileForFileData($fileData));
-            $this->validateFile($fileData, $errorPrefix);
-            @unlink($fileData->getFile()->getFileInfo()->getRealPath());
+        if (($types[$type][self::VERITY_PROFILE_CONFIG] ?? null) !== null) {
+            $file = $this->getFileForFileData($fileData);
+            try {
+                $fileData->setFile($file);
+                $this->validateFile($fileData, $errorPrefix);
+            } finally {
+                @unlink($file->getFileInfo()->getRealPath());
+            }
         }
     }
 
@@ -1967,8 +2049,11 @@ class BlobService implements LoggerAwareInterface
             $fileData->setFileHash(null);
         }
 
-        $fileData->setMetadataHash($this->configurationService->storeFileAndMetadataChecksums() && $fileData->getMetadata() !== null ?
-            hash('sha256', $fileData->getMetadata()) : null);
+        $fileData->setMetadataHash(
+            $this->configurationService->storeFileAndMetadataChecksums() && $fileData->getMetadata() !== null
+                ? hash('sha256', $fileData->getMetadata())
+                : null
+        );
     }
 
     private function getFileStreamInternal(FileData $fileData): StreamInterface
@@ -1994,9 +2079,25 @@ class BlobService implements LoggerAwareInterface
     {
         $stream = $this->getFileStreamInternal($fileData);
         $tempPath = tempnam(sys_get_temp_dir(), self::TEMP_FILE_PREFIX);
-        $target = fopen($tempPath, 'w');
-        stream_copy_to_stream($stream->detach(), $target);
+        if ($tempPath === false) {
+            throw new \RuntimeException('Could not create a unique temporary file path');
+        }
 
+        $target = fopen($tempPath, 'w');
+        if ($target === false) {
+            @unlink($tempPath);
+            throw new \RuntimeException('Could not open temporary file for writing');
+        }
+
+        $source = $stream->detach();
+        if (!is_resource($source)) {
+            fclose($target);
+            @unlink($tempPath);
+            throw new \RuntimeException('Could not detach file stream');
+        }
+
+        stream_copy_to_stream($source, $target);
+        fclose($source);
         fclose($target);
 
         return new File($tempPath, false);
@@ -2011,6 +2112,7 @@ class BlobService implements LoggerAwareInterface
         if ($path === false) {
             throw new \RuntimeException('Could not create a unique temporary file path');
         }
+
         $tempFilePath = $path;
         $tempFileResource = fopen($tempFilePath, 'w');
         if ($tempFileResource === false) {
@@ -2028,11 +2130,18 @@ class BlobService implements LoggerAwareInterface
         if ($size === 0) {
             throw new \RuntimeException('Could not convert string "filesize" to int');
         }
-        while ($bytesWritten < $filesize) {
+
+        while ($bytesWritten < $size) {
             $bytesToWrite = min($chunkSize, $size - $bytesWritten);
-            $bytesWritten += fwrite($tempFileResource, substr($data, 0, $bytesToWrite));
+            $written = fwrite($tempFileResource, substr($data, 0, $bytesToWrite));
+            if ($written === false) {
+                fclose($tempFileResource);
+                throw new \RuntimeException('Could not write to temporary file');
+            }
+            $bytesWritten += $written;
             fflush($tempFileResource);
         }
+
         fclose($tempFileResource);
 
         return new File($tempFilePath);
@@ -2048,6 +2157,7 @@ class BlobService implements LoggerAwareInterface
                 'blob:other-bucket-metadata-restore-job-running'
             );
         }
+
         $running = $this->getRunningMetadataBackupJobByInternalBucketId($internalId);
         if ($running !== null) {
             throw ApiError::withDetails(
