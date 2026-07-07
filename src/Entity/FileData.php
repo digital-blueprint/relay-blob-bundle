@@ -607,7 +607,7 @@ class FileData implements \JsonSerializable
 
     private ?File $file = null;
 
-    #[ORM\Column(type: 'json', nullable: true)]
+    #[ORM\Column(type: 'text', nullable: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input', 'BlobFiles:update'])]
     private ?string $metadata = null;
 
@@ -743,6 +743,13 @@ class FileData implements \JsonSerializable
 
     public function getMetadata(): ?string
     {
+        if ($this->metadata !== null && str_starts_with($this->metadata, '"')) {
+            // Legacy values were double JSON encoded in the database. A real metadata value
+            // is a JSON object and thus always starts with '{'. If it starts with '"' instead,
+            // it is a double encoded value (a JSON string) and needs to be decoded once.
+            return json_decode($this->metadata, flags: JSON_THROW_ON_ERROR);
+        }
+
         return $this->metadata;
     }
 

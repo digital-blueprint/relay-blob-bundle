@@ -1598,6 +1598,10 @@ class BlobService implements LoggerAwareInterface
             } catch (\JsonException $e) {
                 throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad metadata', $errorPrefix.'-bad-metadata');
             }
+            // only allow JSON objects as top level value (metadata always starts with '{')
+            if (!$metadataDecoded instanceof \stdClass) {
+                throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad metadata', $errorPrefix.'-bad-metadata');
+            }
         } else {
             $metadataDecoded = null;
         }

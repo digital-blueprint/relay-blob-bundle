@@ -9,6 +9,7 @@ use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
 use Dbp\Relay\BlobBundle\TestUtils\TestEntityManager;
+use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
 use Symfony\Component\HttpFoundation\File\File;
 
@@ -108,6 +109,52 @@ class BlobServiceTest extends ApiTestCase
 
         $file = new File(__DIR__.'/'.self::TEST_FILE_NAME, true);
         $this->assertEquals(hash('sha256', $file->getContent()), $fileData->getFileHash());
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function testAddFileWithJsonObjectMetadata(): void
+    {
+        $fileData = $this->addTestFile(metadata: '{"foo":"bar"}');
+        $this->assertEquals('{"foo":"bar"}', $fileData->getMetadata());
+    }
+
+    /**
+     * Only JSON objects are allowed as top level metadata value.
+     */
+    public function testAddFileWithNonObjectMetadataIsRejected(): void
+    {
+        $invalidMetadataValues = [
+            '[1,2,3]',      // array
+            '"a string"',   // string
+            '42',           // number
+            'true',         // boolean
+            'null',         // null
+        ];
+
+        foreach ($invalidMetadataValues as $metadata) {
+            try {
+                $this->addTestFile(metadata: $metadata);
+                $this->fail('Expected ApiError was not thrown for metadata: '.$metadata);
+            } catch (ApiError $apiError) {
+                $this->assertEquals('blob:create-file-data-bad-metadata', $apiError->getErrorId(),
+                    'Unexpected error id for metadata: '.$metadata);
+            }
+        }
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function testAddFileWithInvalidJsonMetadataIsRejected(): void
+    {
+        try {
+            $this->addTestFile(metadata: '{not valid json');
+            $this->fail('Expected ApiError was not thrown');
+        } catch (ApiError $apiError) {
+            $this->assertEquals('blob:create-file-data-bad-metadata', $apiError->getErrorId());
+        }
     }
 
     /**

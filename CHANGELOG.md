@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Metadata is no longer double JSON encoded in the database. Existing double
+  encoded values are still read correctly.
+- Only JSON objects are allowed as top level metadata value.
+
 ## v0.2.9
 
 - Support verity 0.2.x
