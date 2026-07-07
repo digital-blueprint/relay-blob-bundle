@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.2.10
+
 - Metadata is no longer double JSON encoded in the database. Existing double
   encoded values are still read correctly.
 - Only JSON objects are allowed as top level metadata value.
