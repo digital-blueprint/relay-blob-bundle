@@ -22,7 +22,6 @@ class FileApiSchemaValidationTest extends ApiTestCase
     private const TEST_FILENAME = 'test.txt';
     private const TEST_FILE_CONTENTS = 'this is a test file content';
     private const BLOB_BASE_URL = 'https://blob.com';
-    private const DEMO_DOCUMENT_DRAFT4_TYPE = 'demoDocumentDraft4';
     private const DEMO_DOCUMENT_DRAFT6_TYPE = 'demoDocumentDraft6';
     private const DEMO_DOCUMENT_DRAFT7_TYPE = 'demoDocumentDraft7';
     private const DEMO_DOCUMENT_DRAFT2019_TYPE = 'demoDocumentDraft2019';
@@ -42,10 +41,6 @@ class FileApiSchemaValidationTest extends ApiTestCase
 
         $testConfig = BlobTestUtils::getTestConfig();
         $testConfig['buckets'][0]['types'] = [
-            self::DEMO_DOCUMENT_DRAFT4_TYPE => [
-                'json_schema_path' => __DIR__.'/Fixtures/schema-validation/demo-document-draft4.schema.json',
-                'verity_profile' => null,
-            ],
             self::DEMO_DOCUMENT_DRAFT6_TYPE => [
                 'json_schema_path' => __DIR__.'/Fixtures/schema-validation/demo-document-draft6.schema.json',
                 'verity_profile' => null,
@@ -69,55 +64,6 @@ class FileApiSchemaValidationTest extends ApiTestCase
         parent::tearDown();
 
         BlobTestUtils::tearDown();
-    }
-
-    /**
-     * @throws BlobApiError
-     * @throws \JsonException
-     */
-    public function testAddFileWithDraft4SchemaValidatedMetadata(): void
-    {
-        $metadata = json_encode([
-            '@type' => 'DemoDocument',
-            'owner' => [
-                'id' => 'person-123',
-            ],
-            'groupId' => 'aae64261-e417-4fa4-b1f5-5c5c7d0c3ba4',
-            'status' => 'final',
-        ], JSON_THROW_ON_ERROR);
-        $blobFile = self::createDemoDocumentBlobFile(self::DEMO_DOCUMENT_DRAFT4_TYPE, $metadata);
-
-        // Draft-04: resolves definitions from a referenced schema in a subdirectory.
-        $blobFile = $this->fileApi->addFile(self::TEST_BUCKET_IDENTIFIER, $blobFile);
-
-        $this->assertTrue(Uuid::isValid($blobFile->getIdentifier()));
-        $this->assertEquals(self::DEMO_DOCUMENT_DRAFT4_TYPE, $blobFile->getType());
-        $this->assertEquals($metadata, $blobFile->getMetadata());
-        $this->assertEquals($blobFile->getIdentifier(), $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFile->getIdentifier())->getIdentifier());
-    }
-
-    public function testAddFileWithDraft4SchemaValidatedMetadataMissingPropertyFails(): void
-    {
-        $metadata = json_encode([
-            '@type' => 'DemoDocument',
-            'groupId' => 'aae64261-e417-4fa4-b1f5-5c5c7d0c3ba4',
-            'status' => 'final',
-        ], JSON_THROW_ON_ERROR);
-        $blobFile = self::createDemoDocumentBlobFile(
-            self::DEMO_DOCUMENT_DRAFT4_TYPE,
-            $metadata
-        );
-
-        // Draft-04: reports missing required properties from referenced definitions.
-        try {
-            $this->fileApi->addFile(self::TEST_BUCKET_IDENTIFIER, $blobFile);
-            $this->fail('Expected BlobApiError');
-        } catch (BlobApiError $blobApiError) {
-            $this->assertEquals(BlobApiError::CLIENT_ERROR, $blobApiError->getErrorId());
-            $this->assertEquals(Response::HTTP_BAD_REQUEST, $blobApiError->getStatusCode());
-            $this->assertEquals('blob:create-file-data-metadata-does-not-match-type', $blobApiError->getBlobErrorId());
-            $this->assertStringContainsString('owner', implode("\n", $blobApiError->getBlobErrorDetails()));
-        }
     }
 
     /**

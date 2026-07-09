@@ -1,6 +1,6 @@
 {
-    "id": "filedata-v1",
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "$filedata-v1",
+    "$schema": "http://json-schema.org/draft-06/schema#",
     "title": "FileData schema",
     "description": "JSON Schema of FileData entity",
     "type": "object",
