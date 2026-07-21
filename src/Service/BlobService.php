@@ -15,7 +15,6 @@ use Dbp\Relay\BlobBundle\Event\AddFileDataByPostSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\ChangeFileDataByPatchSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\DeleteFileDataByDeleteSuccessEvent;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
-use Dbp\Relay\BlobBundle\Helper\BlobUuidBinaryType;
 use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Doctrine\QueryHelper;
@@ -35,6 +34,7 @@ use Opis\JsonSchema\Validator;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
+use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\File\File;
@@ -1414,7 +1414,7 @@ class BlobService implements LoggerAwareInterface
             ->select($FILE_DATA_ENTITY_ALIAS)
             ->from(FileData::class, $FILE_DATA_ENTITY_ALIAS)
             ->where($queryBuilder->expr()->gt("$FILE_DATA_ENTITY_ALIAS.identifier", ':lastIdentifier'))
-            ->setParameter('lastIdentifier', $lastIdentifier, BlobUuidBinaryType::NAME)
+            ->setParameter('lastIdentifier', $lastIdentifier, UuidType::NAME)
             ->orderBy("$FILE_DATA_ENTITY_ALIAS.identifier", 'ASC');
 
         if ($filter !== null) {

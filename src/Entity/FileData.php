@@ -20,6 +20,7 @@ use Dbp\Relay\BlobBundle\ApiPlatform\FileDataProcessor;
 use Dbp\Relay\BlobBundle\ApiPlatform\FileDataProvider;
 use Dbp\Relay\CoreBundle\Serializer\DateTimeUtcNormalizer;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Serializer\Attribute\Context;
@@ -557,7 +558,7 @@ use Symfony\Component\Serializer\Attribute\Context;
 class FileData implements \JsonSerializable
 {
     #[ORM\Id]
-    #[ORM\Column(type: 'relay_blob_uuid_binary', unique: true)]
+    #[ORM\Column(type: UuidType::NAME, unique: true)]
     #[ApiProperty(identifier: true)]
     #[Groups(['BlobFiles:output', 'BlobFiles:input'])]
     private ?string $identifier = null;
