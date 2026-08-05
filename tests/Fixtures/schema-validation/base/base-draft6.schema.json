@@ -1,5 +1,5 @@
 {
-    "id": "base-draft6",
+    "$id": "base-draft6",
     "$schema": "http://json-schema.org/draft-06/schema#",
     "definitions": {
         "documentType": {

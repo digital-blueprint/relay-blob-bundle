@@ -112,7 +112,8 @@ class FileApiSchemaValidationTest extends ApiTestCase
             $this->assertEquals(BlobApiError::CLIENT_ERROR, $blobApiError->getErrorId());
             $this->assertEquals(Response::HTTP_BAD_REQUEST, $blobApiError->getStatusCode());
             $this->assertEquals('blob:create-file-data-metadata-does-not-match-type', $blobApiError->getBlobErrorId());
-            $this->assertStringContainsString('DemoDocumentV6', implode("\n", $blobApiError->getBlobErrorDetails()));
+            $this->assertArrayHasKey('@type', $blobApiError->getBlobErrorDetails());
+            $this->assertStringContainsString('const value', implode("\n", $blobApiError->getBlobErrorDetails()));
         }
     }
 
@@ -162,7 +163,8 @@ class FileApiSchemaValidationTest extends ApiTestCase
             $this->assertEquals(BlobApiError::CLIENT_ERROR, $blobApiError->getErrorId());
             $this->assertEquals(Response::HTTP_BAD_REQUEST, $blobApiError->getStatusCode());
             $this->assertEquals('blob:create-file-data-metadata-does-not-match-type', $blobApiError->getBlobErrorId());
-            $this->assertStringContainsString('true', implode("\n", $blobApiError->getBlobErrorDetails()));
+            $this->assertArrayHasKey('approved', $blobApiError->getBlobErrorDetails());
+            $this->assertStringContainsString('const value', implode("\n", $blobApiError->getBlobErrorDetails()));
         }
     }
 

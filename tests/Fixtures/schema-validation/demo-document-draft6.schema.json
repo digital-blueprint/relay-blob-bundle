@@ -1,5 +1,5 @@
 {
-    "id": "demo-document-draft6",
+    "$id": "demo-document-draft6",
     "$schema": "http://json-schema.org/draft-06/schema#",
     "type": "object",
     "additionalProperties": false,
