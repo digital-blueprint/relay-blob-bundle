@@ -15,6 +15,7 @@ use Dbp\Relay\BlobBundle\Event\AddFileDataByPostSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\ChangeFileDataByPatchSuccessEvent;
 use Dbp\Relay\BlobBundle\Event\DeleteFileDataByDeleteSuccessEvent;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
+use Dbp\Relay\BlobBundle\Helper\SchemaValidator;
 use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Doctrine\QueryHelper;
@@ -25,12 +26,6 @@ use Dbp\Relay\CoreBundle\Rest\Query\Pagination\Pagination;
 use Dbp\Relay\VerityBundle\Event\VerityRequestEvent;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
-use Opis\JsonSchema\Errors\ValidationError;
-use Opis\JsonSchema\Parsers\SchemaParser;
-use Opis\JsonSchema\Resolvers\SchemaResolver;
-use Opis\JsonSchema\SchemaLoader;
-use Opis\JsonSchema\Uri;
-use Opis\JsonSchema\Validator;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -1622,7 +1617,7 @@ class BlobService implements LoggerAwareInterface
 
         if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $types[$type]) && $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
             $schemaPath = $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG];
-            $messages = $this->validateJsonSchemaData($metadataDecoded, $schemaPath);
+            $messages = SchemaValidator::validateJsonSchemaData($metadataDecoded, $schemaPath);
             if ($messages !== []) {
                 throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type',
                     $errorPrefix.'-metadata-does-not-match-type', $messages);
@@ -1670,210 +1665,10 @@ class BlobService implements LoggerAwareInterface
     {
         $filedataDecoded = json_decode($fileDataJson, false, flags: JSON_THROW_ON_ERROR);
         $schemaPath = $this->configurationService->getFiledataSchema();
-        $messages = $this->validateJsonSchemaData($filedataDecoded, $schemaPath);
+        $messages = SchemaValidator::validateJsonSchemaData($filedataDecoded, $schemaPath);
         if ($messages !== []) {
             throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type', $errorPrefix.'-filedata-validation-failed', $messages);
         }
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function validateJsonSchemaData(mixed $data, string $schemaPath): array
-    {
-        $schemaRealPath = realpath($schemaPath);
-        if ($schemaRealPath === false) {
-            throw new \RuntimeException(sprintf('Schema file not found: %s', $schemaPath));
-        }
-
-        $result = $this->createJsonSchemaValidator()->validate($data, 'file://'.$schemaRealPath);
-
-        if ($result->isValid()) {
-            return [];
-        }
-
-        $error = $result->error();
-
-        return $error instanceof ValidationError ? $this->collectJsonSchemaValidationMessages($error) : ['$' => 'JSON schema validation failed'];
-    }
-
-    private function createJsonSchemaValidator(): Validator
-    {
-        $resolver = new SchemaResolver();
-        $resolver->registerProtocol('file', function (Uri $uri) {
-            $contents = file_get_contents($uri->path());
-            if (!is_string($contents)) {
-                return null;
-            }
-
-            $schemaData = json_decode($contents, false, 512, JSON_THROW_ON_ERROR);
-
-            return $this->normalizeJsonSchemaForOpis($schemaData, (string) $uri);
-        });
-
-        return new Validator(new SchemaLoader(new SchemaParser(), $resolver, true));
-    }
-
-    private function normalizeJsonSchemaForOpis(mixed $value, ?string $baseUri = null, ?string $draftUri = null): mixed
-    {
-        if (is_array($value)) {
-            foreach ($value as $key => $item) {
-                $value[$key] = $this->normalizeJsonSchemaForOpis($item, $baseUri, $draftUri);
-            }
-
-            return $value;
-        }
-
-        if (!is_object($value)) {
-            return $value;
-        }
-
-        $currentDraftUri = is_string($value->{'$schema'} ?? null) ? rtrim($value->{'$schema'}, '#') : $draftUri;
-
-        $currentBaseUri = $baseUri;
-        if (is_string($value->{'$id'} ?? null)) {
-            $currentBaseUri = (string) Uri::merge($value->{'$id'}, $baseUri, true);
-            $value->{'$id'} = $currentBaseUri;
-        } elseif (in_array($currentDraftUri, ['http://json-schema.org/draft-06/schema', 'http://json-schema.org/draft-07/schema'], true) && is_string($value->id ?? null)) {
-            $currentBaseUri = (string) Uri::merge($value->id, $baseUri, true);
-            $value->{'$id'} = $currentBaseUri;
-            unset($value->id);
-        }
-
-        if (property_exists($value, 'exclusiveMinimum') && is_bool($value->exclusiveMinimum) && isset($value->minimum) && is_numeric($value->minimum)) {
-            if ($value->exclusiveMinimum) {
-                $value->exclusiveMinimum = $value->minimum;
-                unset($value->minimum);
-            } else {
-                unset($value->exclusiveMinimum);
-            }
-        }
-
-        if (property_exists($value, 'exclusiveMaximum') && is_bool($value->exclusiveMaximum) && isset($value->maximum) && is_numeric($value->maximum)) {
-            if ($value->exclusiveMaximum) {
-                $value->exclusiveMaximum = $value->maximum;
-                unset($value->maximum);
-            } else {
-                unset($value->exclusiveMaximum);
-            }
-        }
-
-        foreach (get_object_vars($value) as $key => $item) {
-            $value->{$key} = $this->normalizeJsonSchemaForOpis($item, $currentBaseUri, $currentDraftUri);
-        }
-
-        return $value;
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function collectJsonSchemaValidationMessages(ValidationError $error): array
-    {
-        $messages = [];
-        $this->appendJsonSchemaValidationMessages($error, $messages);
-
-        if ($messages === []) {
-            $messages[$this->formatJsonSchemaValidationPath($error)] = $this->formatJsonSchemaValidationMessage($error);
-        }
-
-        return $messages;
-    }
-
-    /**
-     * @param array<string, string> $messages
-     */
-    private function appendJsonSchemaValidationMessages(ValidationError $error, array &$messages): void
-    {
-        $subErrors = $error->subErrors();
-        if ($subErrors !== []) {
-            foreach ($subErrors as $subError) {
-                $this->appendJsonSchemaValidationMessages($subError, $messages);
-            }
-
-            return;
-        }
-
-        $messages[$this->formatJsonSchemaValidationPath($error)] = $this->formatJsonSchemaValidationMessage($error);
-    }
-
-    private function formatJsonSchemaValidationPath(ValidationError $error): string
-    {
-        $path = $error->data()->fullPath();
-
-        if ($path === []) {
-            if ($error->keyword() === 'required') {
-                $missing = $error->args()['missing'] ?? [];
-                if (count($missing) === 1 && is_string($missing[0])) {
-                    return $missing[0];
-                }
-            }
-
-            if ($error->keyword() === 'dependentRequired' && is_string($error->args()['missing'] ?? null)) {
-                return $error->args()['missing'];
-            }
-
-            return '$';
-        }
-
-        $formattedPath = '';
-        foreach ($path as $segment) {
-            if (is_int($segment)) {
-                $formattedPath .= sprintf('[%d]', $segment);
-                continue;
-            }
-
-            $formattedPath .= $formattedPath === '' ? $segment : '.'.$segment;
-        }
-
-        return $formattedPath;
-    }
-
-    private function formatJsonSchemaValidationMessage(ValidationError $error): string
-    {
-        return match ($error->keyword()) {
-            'required' => sprintf(
-                'The required properties are missing: %s',
-                implode(', ', array_map(static fn (mixed $value): string => (string) $value, $error->args()['missing'] ?? []))
-            ),
-            'const' => sprintf(
-                'The data must match the const value: %s',
-                $this->stringifyJsonSchemaValidationValue($error->args()['const'] ?? null)
-            ),
-            default => $this->interpolateJsonSchemaValidationMessage($error),
-        };
-    }
-
-    private function interpolateJsonSchemaValidationMessage(ValidationError $error): string
-    {
-        $message = $error->message();
-
-        foreach ($error->args() as $key => $value) {
-            $message = str_replace('{'.$key.'}', $this->stringifyJsonSchemaValidationValue($value), $message);
-        }
-
-        return $message;
-    }
-
-    private function stringifyJsonSchemaValidationValue(mixed $value): string
-    {
-        if (is_array($value)) {
-            return implode(', ', array_map(fn (mixed $item): string => $this->stringifyJsonSchemaValidationValue($item), $value));
-        }
-
-        if (is_bool($value)) {
-            return $value ? 'true' : 'false';
-        }
-
-        if (is_object($value)) {
-            return json_encode($value, JSON_THROW_ON_ERROR);
-        }
-
-        if ($value === null) {
-            return 'null';
-        }
-
-        return (string) $value;
     }
 
     /**
