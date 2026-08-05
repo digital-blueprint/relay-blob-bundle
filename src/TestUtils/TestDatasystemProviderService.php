@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dbp\Relay\BlobBundle\TestUtils;
 
 use Dbp\Relay\BlobBundle\Service\DatasystemProviderServiceInterface;
-use GuzzleHttp\Psr7\Utils;
+use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Http\Message\StreamInterface;
 
 class TestDatasystemProviderService implements DatasystemProviderServiceInterface
@@ -69,7 +69,7 @@ class TestDatasystemProviderService implements DatasystemProviderServiceInterfac
             throw new \RuntimeException();
         }
 
-        return Utils::streamFor($this->data[$internalBucketId][$fileId]);
+        return (new Psr17Factory())->createStream($this->data[$internalBucketId][$fileId]);
     }
 
     /**

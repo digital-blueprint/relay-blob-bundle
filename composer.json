@@ -16,7 +16,6 @@
         "doctrine/doctrine-migrations-bundle": "^3.3",
         "doctrine/migrations": "^3.7",
         "doctrine/orm": "^2.19 || ^3.2",
-        "guzzlehttp/psr7": "^2.7",
         "kekos/multipart-form-data-parser": "^1.1",
         "nyholm/psr7": "^1.8",
         "opis/json-schema": "^2.6",

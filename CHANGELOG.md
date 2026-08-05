@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Drop the direct `guzzlehttp/psr7` dependency in favor of `nyholm/psr7`
+
 ## v0.2.10
 
 - Metadata is no longer double JSON encoded in the database. Existing double

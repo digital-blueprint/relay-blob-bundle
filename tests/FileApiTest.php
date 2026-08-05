@@ -15,7 +15,7 @@ use Dbp\Relay\BlobLibrary\Api\BlobFile;
 use Dbp\Relay\BlobLibrary\Helpers\TestUtils;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterException;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
-use GuzzleHttp\Psr7\Utils;
+use Nyholm\Psr7\Factory\Psr17Factory;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -121,7 +121,7 @@ class FileApiTest extends ApiTestCase
         $blobFile = new BlobFile();
         $blobFile->setPrefix('prefix');
         $blobFile->setFileName(self::TEST_FILENAME);
-        $blobFile->setFile(Utils::streamFor(fopen(__DIR__.'/test.txt', 'r')));
+        $blobFile->setFile((new Psr17Factory())->createStreamFromResource(fopen(__DIR__.'/test.txt', 'r')));
 
         $blobFile = $this->fileApi->addFile(self::TEST_BUCKET_IDENTIFIER, $blobFile);
         $this->assertTrue(Uuid::isValid($blobFile->getIdentifier()));
