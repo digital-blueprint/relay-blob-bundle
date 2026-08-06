@@ -242,6 +242,20 @@ class SchemaValidatorTest extends TestCase
         );
     }
 
+    /**
+     * opis/json-schema does not support draft-04, so validating against such a
+     * schema must fail.
+     */
+    public function testDraft4SchemaThrows(): void
+    {
+        $this->expectException(\Throwable::class);
+
+        SchemaValidator::validateJsonSchemaData(
+            self::decode(self::validDraft6Metadata()),
+            self::SCHEMA_DIR.'/demo-document-draft4.schema.json'
+        );
+    }
+
     public function testMissingSchemaFileThrows(): void
     {
         $this->expectException(\RuntimeException::class);

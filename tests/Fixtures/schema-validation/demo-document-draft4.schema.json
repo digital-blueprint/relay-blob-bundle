@@ -1,0 +1,21 @@
+{
+    "id": "demo-document-draft4",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["@type", "groupId", "status"],
+    "properties": {
+        "@type": {
+            "type": "string",
+            "enum": ["DemoDocument"]
+        },
+        "groupId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "status": {
+            "type": "string",
+            "enum": ["draft", "final"]
+        }
+    }
+}
