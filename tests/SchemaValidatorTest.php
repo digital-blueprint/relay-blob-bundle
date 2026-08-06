@@ -265,6 +265,58 @@ class SchemaValidatorTest extends TestCase
     }
 
     /**
+     * A valid schema (with references to included schema files) passes validateSchema().
+     */
+    public function testValidateSchemaAcceptsValidSchema(): void
+    {
+        SchemaValidator::validateSchema(self::SCHEMA_DIR.'/demo-document-draft7.schema.json');
+        $this->expectNotToPerformAssertions();
+    }
+
+    public function testValidateSchemaMissingFileThrows(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Schema file not found');
+
+        SchemaValidator::validateSchema(self::SCHEMA_DIR.'/does-not-exist.schema.json');
+    }
+
+    public function testValidateSchemaInvalidJsonThrows(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'blob-schema-').'.json';
+        file_put_contents($file, '{ not valid json');
+        $this->tempFiles[] = $file;
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Failed to parse schema file');
+
+        SchemaValidator::validateSchema($file);
+    }
+
+    public function testValidateSchemaNonSchemaJsonThrows(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'blob-schema-').'.json';
+        file_put_contents($file, json_encode([1, 2, 3], JSON_THROW_ON_ERROR));
+        $this->tempFiles[] = $file;
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Not a valid JSON schema');
+
+        SchemaValidator::validateSchema($file);
+    }
+
+    /**
+     * opis/json-schema does not support draft-04, so validateSchema() must reject such a schema.
+     */
+    public function testValidateSchemaDraft4Throws(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Failed to parse schema');
+
+        SchemaValidator::validateSchema(self::SCHEMA_DIR.'/demo-document-draft4.schema.json');
+    }
+
+    /**
      * A relative, non-URL "$id" must be accepted (resolved against the schema file location).
      */
     public function testRelativeSchemaIdIsSupported(): void

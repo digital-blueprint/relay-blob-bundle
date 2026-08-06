@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Configuration;
 
+use Dbp\Relay\BlobBundle\Helper\SchemaValidator;
+
 /**
  * @internal
  */
@@ -154,22 +156,17 @@ class ConfigurationService
         if (empty($this->getBuckets())) {
             throw new \RuntimeException('No buckets are defined, or one of the bucket configs is invalid');
         }
+        // Make sure the global filedata schema exists and is a parseable JSON schema
+        SchemaValidator::validateSchema($this->getFiledataSchema());
+
         foreach ($this->getBuckets() as $bucket) {
-            // Make sure the schema files exist and are valid JSON
+            // Make sure the per-type schema files exist and are parseable JSON schemas
             foreach ($bucket->getTypes() as $type) {
                 $path = $type['json_schema_path'];
                 if ($path === null) {
                     continue;
                 }
-                $content = file_get_contents($path);
-                if ($content === false) {
-                    throw new \RuntimeException('Failed to read: '.$path);
-                }
-                try {
-                    json_decode($content, flags: JSON_THROW_ON_ERROR);
-                } catch (\Exception $e) {
-                    throw new \RuntimeException('Failed to parse: '.$path.' ('.$e->getMessage().')');
-                }
+                SchemaValidator::validateSchema($path);
             }
         }
     }
