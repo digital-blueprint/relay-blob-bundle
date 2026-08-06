@@ -2,7 +2,13 @@
 
 ## Unreleased
 
+## v0.2.11
+
 - Drop the direct `guzzlehttp/psr7` dependency in favor of `nyholm/psr7`
+- Swiched from `justinrainbow/json-schema` to `opis/json-schema` for JSON schema
+  validation, as a result, `draft-4` schemas are no longer supported, only
+  `draft-6`, `draft-7` and `draft2019-09` schemas are supported now. The bundle
+  health check will fail if a bucket is configured with a draft-4 schema.
 
 ## v0.2.10
 
