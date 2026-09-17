@@ -9,13 +9,10 @@ use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
 use Dbp\Relay\CoreBundle\TestUtils\AbstractApiTest;
-use Dbp\Relay\CoreBundle\TestUtils\UserAuthTrait;
 use Symfony\Component\HttpFoundation\Response;
 
 class ApiTest extends AbstractApiTest
 {
-    use UserAuthTrait;
-
     protected function setUp(): void
     {
         parent::setUp();
