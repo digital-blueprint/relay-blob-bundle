@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v0.2.12
+
+- tests: stop using UserAuthTrait
+
 ## v0.2.11
 
 - Drop the direct `guzzlehttp/psr7` dependency in favor of `nyholm/psr7`
