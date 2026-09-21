@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Tests;
 
-use ApiPlatform\Symfony\Bundle\Test\Client;
 use Dbp\Relay\BlobBundle\ApiPlatform\CreateFileDataAction;
 use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
@@ -19,9 +18,9 @@ use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
 use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
-use Dbp\Relay\CoreBundle\TestUtils\AbstractApiTest;
+use Dbp\Relay\CoreBundle\TestUtils\ApiTestCase;
+use Dbp\Relay\CoreBundle\TestUtils\ApiTestClient;
 use Dbp\Relay\CoreBundle\TestUtils\TestAuthorizationService;
-use Dbp\Relay\CoreBundle\TestUtils\TestClient;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -33,14 +32,14 @@ use Symfony\Component\Uid\Uuid;
  * - Split tests into smaller chunks
  * - Don't mix unit tests and API tests (which use a test client/kernel).
  */
-class CurlGetTest extends AbstractApiTest
+class CurlGetTest extends ApiTestCase
 {
     private EntityManagerInterface $entityManager;
 
     /** @var array[] */
     private array $files;
 
-    private string $filesBearer = '24';
+    private string $filesBearer = ApiTestClient::TEST_TOKEN;
 
     private string $metadataBackupJobBaseUrl = '/blob/metadata-backup-jobs';
 
@@ -54,7 +53,7 @@ class CurlGetTest extends AbstractApiTest
     protected function setUp(): void
     {
         parent::setUp();
-        BlobApiTest::setUp($this->testClient->getContainer());
+        BlobApiTest::setUp($this->getContainer());
         $this->files = [
             0 => [
                 'name' => $n = 'test.txt',
@@ -84,19 +83,17 @@ class CurlGetTest extends AbstractApiTest
         BlobTestUtils::tearDown();
     }
 
-    protected function setUpClient(): Client
+    protected function setUpClient(): ApiTestClient
     {
-        $this->testClient->setUpUser(TestClient::TEST_USER_IDENTIFIER, [], [], token: $this->filesBearer);
-        $client = $this->testClient->getClient();
-        $client->disableReboot(); // allows multiple requests for one client
-        $this->entityManager = BlobApiTest::setUp($client->getContainer());
+        $this->login(token: $this->filesBearer);
+        $this->entityManager = BlobApiTest::setUp($this->getContainer());
 
-        return $client;
+        return $this->testClient;
     }
 
-    protected function getBucketConfig(Client $client): BucketConfig
+    protected function getBucketConfig(): BucketConfig
     {
-        $configService = $client->getContainer()->get(ConfigurationService::class);
+        $configService = $this->getContainer()->get(ConfigurationService::class);
 
         return $configService->getBuckets()[0];
     }
@@ -108,7 +105,7 @@ class CurlGetTest extends AbstractApiTest
     {
         try {
             $client = $this->setUpClient();
-            $bucket = $this->getBucketConfig($client);
+            $bucket = $this->getBucketConfig();
             $url = SignatureUtils::getSignedUrl('/blob/files', $bucket->getKey(), $bucket->getBucketId(), 'GET', ['prefix' => 'playground']);
 
             $options = [
@@ -145,10 +142,10 @@ class CurlGetTest extends AbstractApiTest
             $client = $this->setUpClient();
 
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
-            $bucket = $this->getBucketConfig($client);
+            $bucket = $this->getBucketConfig();
             $secret = $bucket->getKey();
             $bucketID = $bucket->getBucketId();
 
@@ -394,9 +391,9 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
             /** @var ConfigurationService $configService */
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -526,7 +523,7 @@ class CurlGetTest extends AbstractApiTest
     {
         try {
             $client = $this->setUpClient();
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             // =======================================================
             // GET a file with expired token
@@ -568,7 +565,7 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var ConfigurationService $configService */
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -630,8 +627,8 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -692,8 +689,8 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -735,8 +732,8 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -837,8 +834,8 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -939,8 +936,8 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -1059,8 +1056,8 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -1160,8 +1157,8 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -1253,8 +1250,8 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -1549,8 +1546,8 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -1704,8 +1701,8 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -1840,8 +1837,8 @@ class CurlGetTest extends AbstractApiTest
                 $response = $client->request('POST', $baseUrl.'&sig='.$token,
                     [
                         'headers' => [
-                            'Authorization' => "Bearer $this->filesBearer",
                             'Content-Type' => 'multipart/form-data',
+                            'Authorization' => "Bearer $this->filesBearer",
                         ],
                         'extra' => [
                             'files' => [
@@ -1871,8 +1868,8 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -2030,8 +2027,8 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -2183,8 +2180,8 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -2272,8 +2269,8 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
-            $configService = $client->getContainer()->get(ConfigurationService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
+            $configService = $this->getContainer()->get(ConfigurationService::class);
 
             $bucket = $configService->getBuckets()[0];
             $secret = $bucket->getKey();
@@ -2427,7 +2424,7 @@ class CurlGetTest extends AbstractApiTest
             /** @var AuthorizationService $authService */
             $authService = static::getContainer()->get(AuthorizationService::class);
 
-            $bucket = $this->getBucketConfig($client);
+            $bucket = $this->getBucketConfig();
 
             // *** POST TESTS ***
 
@@ -2441,10 +2438,10 @@ class CurlGetTest extends AbstractApiTest
                 ],
                 'body' => '{}',
             ];
-            $response = $client->request('POST', $url, $options);
+            $response = $client->request('POST', $url, $options, token: null);
             $this->assertEquals(401, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
 
             // test with bearer without permission
             $options = [
@@ -2458,7 +2455,7 @@ class CurlGetTest extends AbstractApiTest
             $response = $client->request('POST', $url, $options);
             $this->assertEquals(403, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
             $options = [
                 'headers' => [
                     'accept' => 'application/ld+json',
@@ -2491,10 +2488,10 @@ class CurlGetTest extends AbstractApiTest
                     'Content-Type' => 'application/ld+json',
                 ],
             ];
-            $response = $client->request('GET', $url, $options);
+            $response = $client->request('GET', $url, $options, token: null);
             $this->assertEquals(401, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
 
             // test without wrong scope
             $options = [
@@ -2507,7 +2504,7 @@ class CurlGetTest extends AbstractApiTest
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(403, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
 
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(200, $response->getStatusCode());
@@ -2525,10 +2522,10 @@ class CurlGetTest extends AbstractApiTest
                     'Content-Type' => 'application/ld+json',
                 ],
             ];
-            $response = $client->request('GET', $url, $options);
+            $response = $client->request('GET', $url, $options, token: null);
             $this->assertEquals(401, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
 
             // test without wrong scope
             $options = [
@@ -2541,7 +2538,7 @@ class CurlGetTest extends AbstractApiTest
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(403, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
 
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(200, $response->getStatusCode());
@@ -2559,10 +2556,10 @@ class CurlGetTest extends AbstractApiTest
                     'Content-Type' => 'application/ld+json',
                 ],
             ];
-            $response = $client->request('DELETE', $url, $options);
+            $response = $client->request('DELETE', $url, $options, token: null);
             $this->assertEquals(401, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
 
             // test without wrong scope
             $options = [
@@ -2575,7 +2572,7 @@ class CurlGetTest extends AbstractApiTest
             $response = $client->request('DELETE', $url, $options);
             $this->assertEquals(403, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
 
             $response = $client->request('DELETE', $url, $options);
             $this->assertEquals(204, $response->getStatusCode());
@@ -2594,17 +2591,17 @@ class CurlGetTest extends AbstractApiTest
         try {
             $client = $this->setUpClient();
             /** @var BlobService $blobService */
-            $blobService = $client->getContainer()->get(BlobService::class);
+            $blobService = $this->getContainer()->get(BlobService::class);
 
             /** @var AuthorizationService $authService */
             $authService = static::getContainer()->get(AuthorizationService::class);
 
-            $bucket = $this->getBucketConfig($client);
+            $bucket = $this->getBucketConfig();
 
             // POST backupJob to use for restore tests
             $url = $this->getMetadataBackupJobPostUrl($bucket->getBucketId());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
             $options = [
                 'headers' => [
                     'accept' => 'application/ld+json',
@@ -2644,10 +2641,10 @@ class CurlGetTest extends AbstractApiTest
                 ],
                 'body' => '{}',
             ];
-            $response = $client->request('POST', $url, $options);
+            $response = $client->request('POST', $url, $options, token: null);
             $this->assertEquals(401, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
 
             // test with bearer without permission
             $options = [
@@ -2661,7 +2658,7 @@ class CurlGetTest extends AbstractApiTest
             $response = $client->request('POST', $url, $options);
             $this->assertEquals(403, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
             $options = [
                 'headers' => [
                     'accept' => 'application/ld+json',
@@ -2694,10 +2691,10 @@ class CurlGetTest extends AbstractApiTest
                     'Content-Type' => 'application/ld+json',
                 ],
             ];
-            $response = $client->request('GET', $url, $options);
+            $response = $client->request('GET', $url, $options, token: null);
             $this->assertEquals(401, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
 
             // test without wrong scope
             $options = [
@@ -2710,7 +2707,7 @@ class CurlGetTest extends AbstractApiTest
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(403, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
 
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(200, $response->getStatusCode());
@@ -2740,10 +2737,10 @@ class CurlGetTest extends AbstractApiTest
                     'Content-Type' => 'application/ld+json',
                 ],
             ];
-            $response = $client->request('GET', $url, $options);
+            $response = $client->request('GET', $url, $options, token: null);
             $this->assertEquals(401, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
 
             // test without wrong scope
             $options = [
@@ -2756,7 +2753,7 @@ class CurlGetTest extends AbstractApiTest
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(403, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
 
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(200, $response->getStatusCode());
@@ -2774,10 +2771,10 @@ class CurlGetTest extends AbstractApiTest
                     'Content-Type' => 'application/ld+json',
                 ],
             ];
-            $response = $client->request('DELETE', $url, $options);
+            $response = $client->request('DELETE', $url, $options, token: null);
             $this->assertEquals(401, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
 
             // test without wrong scope
             $options = [
@@ -2790,7 +2787,7 @@ class CurlGetTest extends AbstractApiTest
             $response = $client->request('DELETE', $url, $options);
             $this->assertEquals(403, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
 
             $response = $client->request('DELETE', $url, $options);
             $this->assertEquals(204, $response->getStatusCode());
@@ -2812,7 +2809,7 @@ class CurlGetTest extends AbstractApiTest
             /** @var AuthorizationService $authService */
             $authService = static::getContainer()->get(AuthorizationService::class);
 
-            $bucket = $this->getBucketConfig($client);
+            $bucket = $this->getBucketConfig();
 
             /* *** POST TESTS *** */
 
@@ -2835,10 +2832,10 @@ class CurlGetTest extends AbstractApiTest
                 ],
                 'body' => $lockBody,
             ];
-            $response = $client->request('POST', $url, $options);
+            $response = $client->request('POST', $url, $options, token: null);
             $this->assertEquals(401, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
 
             // test with bearer without permission
             $options = [
@@ -2852,7 +2849,7 @@ class CurlGetTest extends AbstractApiTest
             $response = $client->request('POST', $url, $options);
             $this->assertEquals(403, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
             $options = [
                 'headers' => [
                     'accept' => 'application/ld+json',
@@ -2889,10 +2886,10 @@ class CurlGetTest extends AbstractApiTest
                     'Content-Type' => 'application/ld+json',
                 ],
             ];
-            $response = $client->request('GET', $url, $options);
+            $response = $client->request('GET', $url, $options, token: null);
             $this->assertEquals(401, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
 
             // test without wrong scope
             $options = [
@@ -2905,7 +2902,7 @@ class CurlGetTest extends AbstractApiTest
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(403, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
 
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(200, $response->getStatusCode());
@@ -2926,10 +2923,10 @@ class CurlGetTest extends AbstractApiTest
                     'Content-Type' => 'application/ld+json',
                 ],
             ];
-            $response = $client->request('GET', $url, $options);
+            $response = $client->request('GET', $url, $options, token: null);
             $this->assertEquals(401, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
 
             // test without wrong scope
             $options = [
@@ -2942,7 +2939,7 @@ class CurlGetTest extends AbstractApiTest
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(403, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
 
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(200, $response->getStatusCode());
@@ -2959,10 +2956,10 @@ class CurlGetTest extends AbstractApiTest
                     'Content-Type' => 'application/ld+json',
                 ],
             ];
-            $response = $client->request('DELETE', $url, $options);
+            $response = $client->request('DELETE', $url, $options, token: null);
             $this->assertEquals(401, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
 
             // test without wrong scope
             $options = [
@@ -2975,7 +2972,7 @@ class CurlGetTest extends AbstractApiTest
             $response = $client->request('DELETE', $url, $options);
             $this->assertEquals(403, $response->getStatusCode());
 
-            TestAuthorizationService::setUp($authService, TestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+            TestAuthorizationService::setUp($authService, ApiTestClient::TEST_USER_IDENTIFIER, ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
 
             $response = $client->request('DELETE', $url, $options);
             $this->assertEquals(204, $response->getStatusCode());
