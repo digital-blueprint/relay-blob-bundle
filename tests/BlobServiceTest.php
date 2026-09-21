@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Tests;
 
-use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
 use Dbp\Relay\BlobBundle\TestUtils\TestEntityManager;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\File\File;
 
-class BlobServiceTest extends ApiTestCase
+class BlobServiceTest extends KernelTestCase
 {
     private const TEST_PREFIX = 'test_prefix';
     private const TEST_FILE_NAME = 'test.txt';

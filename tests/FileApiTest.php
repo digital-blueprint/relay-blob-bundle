@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Tests;
 
-use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use Dbp\Relay\BlobBundle\Api\FileApi;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
@@ -16,12 +15,13 @@ use Dbp\Relay\BlobLibrary\Helpers\TestUtils;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterException;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
 use Nyholm\Psr7\Factory\Psr17Factory;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
 
-class FileApiTest extends ApiTestCase
+class FileApiTest extends KernelTestCase
 {
     private const TEST_BUCKET_IDENTIFIER = 'test-bucket';
     private const TEST_PREFIX = 'prefix';

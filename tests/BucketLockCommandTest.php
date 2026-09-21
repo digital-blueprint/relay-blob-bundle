@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Tests;
 
-use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use Dbp\Relay\BlobBundle\Command\ListBucketsCommand;
 use Dbp\Relay\BlobBundle\Command\LockBucketCommand;
 use Dbp\Relay\BlobBundle\Command\UnlockBucketCommand;
@@ -12,11 +11,12 @@ use Dbp\Relay\BlobBundle\Entity\BucketLock;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
 use Dbp\Relay\BlobBundle\TestUtils\TestEntityManager;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
-class BucketLockCommandTest extends ApiTestCase
+class BucketLockCommandTest extends KernelTestCase
 {
     private const TEST_BUCKET_IDENTIFIER = 'test-bucket';
 

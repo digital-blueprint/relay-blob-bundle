@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Tests;
 
-use ApiPlatform\Symfony\Bundle\Test\ApiTestCase;
 use Dbp\Relay\BlobBundle\Api\FileApi;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
 use Dbp\Relay\BlobBundle\TestUtils\TestEntityManager;
 use Dbp\Relay\BlobLibrary\Api\BlobApiError;
 use Dbp\Relay\BlobLibrary\Api\BlobFile;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
 
-class FileApiSchemaValidationTest extends ApiTestCase
+class FileApiSchemaValidationTest extends KernelTestCase
 {
     private const TEST_BUCKET_IDENTIFIER = 'test-bucket';
     private const TEST_FILENAME = 'test.txt';
