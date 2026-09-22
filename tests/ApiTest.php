@@ -8,16 +8,17 @@ use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
-use Dbp\Relay\CoreBundle\TestUtils\AbstractApiTest;
+use Dbp\Relay\CoreBundle\TestUtils\ApiTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
-class ApiTest extends AbstractApiTest
+class ApiTest extends ApiTestCase
 {
     protected function setUp(): void
     {
-        parent::setUp();
+        $this->createTestClient();
+        $this->login();
 
-        BlobApiTest::setUp($this->testClient->getContainer());
+        BlobApiTest::setUp($this->getContainer());
     }
 
     protected function tearDown(): void
@@ -40,7 +41,7 @@ class ApiTest extends AbstractApiTest
 
     private function getTestBucketConfig(int $index = 0): BucketConfig
     {
-        $configService = $this->testClient->getContainer()->get(ConfigurationService::class);
+        $configService = $this->getContainer()->get(ConfigurationService::class);
 
         return $configService->getBuckets()[$index];
     }
