@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v0.2.14
+
+- Add support for api-platform 5.0
+
 ## v0.2.13
 
 - Dependency updates
