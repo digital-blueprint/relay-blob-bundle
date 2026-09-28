@@ -399,16 +399,16 @@
         },
         {
             "name": "api-platform/metadata",
-            "version": "v5.0.0",
+            "version": "v5.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/api-platform/metadata.git",
-                "reference": "3f674c562ed5ba1da2e5a207226332606293a135"
+                "reference": "e26b051341c21eaf4fb0c03adf2195e2f1446081"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/api-platform/metadata/zipball/3f674c562ed5ba1da2e5a207226332606293a135",
-                "reference": "3f674c562ed5ba1da2e5a207226332606293a135",
+                "url": "https://api.github.com/repos/api-platform/metadata/zipball/e26b051341c21eaf4fb0c03adf2195e2f1446081",
+                "reference": "e26b051341c21eaf4fb0c03adf2195e2f1446081",
                 "shasum": ""
             },
             "require": {
@@ -426,7 +426,7 @@
                 "api-platform/state": "^5.0",
                 "phpspec/prophecy-phpunit": "^2.2",
                 "phpstan/phpdoc-parser": "^1.29 || ^2.0",
-                "phpunit/phpunit": "^11.5 || ^12.2",
+                "phpunit/phpunit": "^11.5 || ^12.2 || ^13.0",
                 "symfony/config": "^7.4 || ^8.0",
                 "symfony/routing": "^7.4 || ^8.0",
                 "symfony/var-dumper": "^7.4 || ^8.0",
@@ -491,22 +491,22 @@
                 "swagger"
             ],
             "support": {
-                "source": "https://github.com/api-platform/metadata/tree/v5.0.0"
+                "source": "https://github.com/api-platform/metadata/tree/v5.0.1"
             },
-            "time": "2026-09-16T09:49:42+00:00"
+            "time": "2026-09-25T19:26:16+00:00"
         },
         {
             "name": "api-platform/openapi",
-            "version": "v5.0.0",
+            "version": "v5.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/api-platform/openapi.git",
-                "reference": "29058f274f3c85050ef6a6240f2b93c2f9f539ac"
+                "reference": "6f30154e38b6eaf65d2ceca0faf58a00fa453708"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/api-platform/openapi/zipball/29058f274f3c85050ef6a6240f2b93c2f9f539ac",
-                "reference": "29058f274f3c85050ef6a6240f2b93c2f9f539ac",
+                "url": "https://api.github.com/repos/api-platform/openapi/zipball/6f30154e38b6eaf65d2ceca0faf58a00fa453708",
+                "reference": "6f30154e38b6eaf65d2ceca0faf58a00fa453708",
                 "shasum": ""
             },
             "require": {
@@ -526,7 +526,7 @@
                 "api-platform/doctrine-orm": "^5.0",
                 "api-platform/serializer": "^5.0",
                 "phpspec/prophecy-phpunit": "^2.2",
-                "phpunit/phpunit": "^11.5 || ^12.2",
+                "phpunit/phpunit": "^11.5 || ^12.2 || ^13.0",
                 "symfony/type-info": "^7.4 || ^8.0"
             },
             "type": "library",
@@ -582,9 +582,9 @@
                 "swagger"
             ],
             "support": {
-                "source": "https://github.com/api-platform/openapi/tree/v5.0.0"
+                "source": "https://github.com/api-platform/openapi/tree/v5.0.1"
             },
-            "time": "2026-09-16T09:49:42+00:00"
+            "time": "2026-09-23T07:51:19+00:00"
         },
         {
             "name": "api-platform/serializer",
