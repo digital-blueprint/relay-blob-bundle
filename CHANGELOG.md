@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v0.2.15
+
+- Add `--type` to the bucket clear command to delete only files of a given type.
+
 ## v0.2.14
 
 - Add support for api-platform 5.0
