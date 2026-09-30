@@ -13,6 +13,7 @@ use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
@@ -28,13 +29,15 @@ class ClearBucketCommand extends Command
     {
         $this->setName('dbp:relay:blob:buckets:clear');
         $this
-            ->setDescription('Deletes all files in a bucket.')
-            ->addArgument('bucketIdentifier', InputArgument::REQUIRED, 'The public bucket identifier of the bucket to clear.');
+            ->setDescription('Deletes files in a bucket, optionally limited to a type.')
+            ->addArgument('bucketIdentifier', InputArgument::REQUIRED, 'The public bucket identifier of the bucket to clear.')
+            ->addOption('type', null, InputOption::VALUE_REQUIRED, 'Only delete files with this exact type.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $bucketIdentifier = $input->getArgument('bucketIdentifier');
+        $type = $input->getOption('type');
 
         // 1. Validate that the bucket exists in the configuration.
         $bucketConfig = $this->blobService->getConfigurationService()->getBucketById($bucketIdentifier);
@@ -47,7 +50,7 @@ class ClearBucketCommand extends Command
         $internalBucketId = $bucketConfig->getInternalBucketId();
 
         try {
-            $fileCount = $this->blobService->getFileCountByInternalBucketId($internalBucketId);
+            $fileCount = $this->blobService->getFileCountByInternalBucketId($internalBucketId, $type);
             $bucketSize = $this->blobService->getBucketSizeByInternalIdFromDatabase($internalBucketId);
             $currentSizeBytes = $bucketSize->getCurrentBucketSize();
             $quotaBytes = $bucketConfig->getQuota() * 1024 * 1024;
@@ -64,6 +67,7 @@ class ClearBucketCommand extends Command
         $table->addRows([
             ['Bucket ID', $bucketConfig->getBucketId()],
             ['Internal bucket ID', $internalBucketId],
+            ['Type', $type ?? '(all)'],
             ['Storage service', $bucketConfig->getService()],
             ['Quota', BlobUtils::formatBytes($quotaBytes)],
             ['Current size', BlobUtils::formatBytes($currentSizeBytes)],
@@ -73,13 +77,13 @@ class ClearBucketCommand extends Command
         $output->writeln('');
 
         if ($fileCount === 0) {
-            $output->writeln('The bucket is already empty. Nothing to do.');
+            $output->writeln('No matching files found. Nothing to do.');
 
             return Command::SUCCESS;
         }
 
         // 3. Ask the user to type the bucket name to confirm.
-        $output->writeln('<comment>This will permanently delete all '.$fileCount.' file(s) in bucket "'.$bucketIdentifier.'".</comment>');
+        $output->writeln('<comment>This will permanently delete '.$fileCount.' file(s)'.($type !== null ? ' of type "'.$type.'"' : '').' in bucket "'.$bucketIdentifier.'".</comment>');
         $output->writeln('<comment>This action cannot be undone.</comment>');
         $output->writeln('');
 
@@ -108,8 +112,11 @@ class ClearBucketCommand extends Command
         $lastIdentifier = null;
         $batchSize = 1000;
         $filter = FilterTreeBuilder::create()
-            ->equals('internalBucketId', $internalBucketId)
-            ->createFilter();
+            ->equals('internalBucketId', $internalBucketId);
+        if ($type !== null) {
+            $filter->equals('type', $type);
+        }
+        $filter = $filter->createFilter();
 
         try {
             do {
@@ -132,6 +139,14 @@ class ClearBucketCommand extends Command
                                 $identifier,
                                 $internalBucketId,
                                 $fileData->getInternalBucketId()
+                            ));
+                        }
+                        if ($type !== null && $fileData->getType() !== $type) {
+                            throw new \RuntimeException(sprintf(
+                                'Refusing to delete file "%s": expected type "%s" but got "%s".',
+                                $identifier,
+                                $type,
+                                $fileData->getType() ?? '(none)'
                             ));
                         }
 

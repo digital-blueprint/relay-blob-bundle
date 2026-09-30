@@ -115,6 +115,17 @@ composer update dbp/relay-blob-bundle
 
 ## Scripts
 
+### Clear a bucket
+
+To delete all files in a bucket, run `php bin/console dbp:relay:blob:buckets:clear test-bucket`.
+To delete only files with an exact file type, pass `--type`:
+
+```bash
+php bin/console dbp:relay:blob:buckets:clear test-bucket --type=generic_id_card
+```
+
+The command displays the number of matching files and asks for the bucket name before deleting them.
+
 ### Database migration
 
 Run this script to migrate the database. Run this script after installation of the bundle and
