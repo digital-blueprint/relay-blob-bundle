@@ -121,6 +121,28 @@ class BlobServiceTest extends KernelTestCase
         $this->assertEquals('{"foo":"bar"}', $fileData->getMetadata());
     }
 
+    public function testChecksumsAreStoredWithIntegrityChecksDisabled(): void
+    {
+        $this->testConfig = BlobTestUtils::getTestConfig();
+        $this->testConfig['file_integrity_checks'] = false;
+        $this->setUpBlobService();
+
+        $fileData = $this->addTestFile();
+        $fileData = $this->testEntityManager->getFileDataById($fileData->getIdentifier());
+        $expectedFileHash = hash_file('sha256', __DIR__.'/'.self::TEST_FILE_NAME);
+        $this->assertSame($expectedFileHash, $fileData->getFileHash());
+        $this->assertSame(hash('sha256', self::TEST_METADATA), $fileData->getMetadataHash());
+
+        $fileData->setFile(null);
+        $previousFileData = clone $fileData;
+        $fileData->setMetadata(self::TEST_METADATA_2);
+        $this->blobService->updateFile($fileData, $previousFileData);
+
+        $fileData = $this->testEntityManager->getFileDataById($fileData->getIdentifier());
+        $this->assertSame($expectedFileHash, $fileData->getFileHash());
+        $this->assertSame(hash('sha256', self::TEST_METADATA_2), $fileData->getMetadataHash());
+    }
+
     public function testFileHashWithoutUploadedFileIsRejected(): void
     {
         $request = Request::create('/blob/files?bucketIdentifier=test-bucket', 'PATCH',

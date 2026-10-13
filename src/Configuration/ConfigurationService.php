@@ -116,14 +116,6 @@ class ConfigurationService
         return $this->config['file_integrity_checks'];
     }
 
-    /**
-     * TO DISCUSS: maybe always store checksums, independently of the current config setting?
-     */
-    public function storeFileAndMetadataChecksums(): bool
-    {
-        return $this->config['file_integrity_checks'];
-    }
-
     public function checkAdditionalAuth(): bool
     {
         return $this->config['additional_auth'];

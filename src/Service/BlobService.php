@@ -1771,16 +1771,12 @@ class BlobService implements LoggerAwareInterface
         $this->validateMetadata($fileData, $errorPrefix);
         $this->validateFile($fileData, $errorPrefix);
 
-        if ($this->configurationService->storeFileAndMetadataChecksums()) {
-            // if no file is set but a filehash is given, trust the already stored filehash
-            if ($fileData->getFile() !== null) {
-                $fileData->setFileHash(\hash_file('sha256', $fileData->getFile()->getPathname()));
-            }
-        } else {
-            $fileData->setFileHash(null);
+        // Preserve the stored file hash when no replacement file is provided.
+        if ($fileData->getFile() !== null) {
+            $fileData->setFileHash(\hash_file('sha256', $fileData->getFile()->getPathname()));
         }
 
-        $fileData->setMetadataHash($this->configurationService->storeFileAndMetadataChecksums() && $fileData->getMetadata() !== null ?
+        $fileData->setMetadataHash($fileData->getMetadata() !== null ?
             hash('sha256', $fileData->getMetadata()) : null);
     }
 
