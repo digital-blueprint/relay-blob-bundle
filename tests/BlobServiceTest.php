@@ -132,6 +132,17 @@ class BlobServiceTest extends KernelTestCase
         $this->blobService->setUpFileDataFromRequest(new FileData(), $request, 'blob:patch-file-data');
     }
 
+    public function testMetadataHashWithoutMetadataIsRejected(): void
+    {
+        $request = Request::create('/blob/files?bucketIdentifier=test-bucket', 'PATCH',
+            ['metadataHash' => hash('sha256', '{"foo":"bar"}')]);
+
+        $this->expectException(ApiError::class);
+        $this->expectExceptionMessage('metadataHash requires metadata');
+
+        $this->blobService->setUpFileDataFromRequest(new FileData(), $request, 'blob:patch-file-data');
+    }
+
     /**
      * Only JSON objects are allowed as top level metadata value.
      */

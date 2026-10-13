@@ -285,6 +285,13 @@ class BlobService implements LoggerAwareInterface
             );
         }
 
+        if ($metadataHash !== null && $metadata === null) {
+            throw new ApiError(
+                Response::HTTP_BAD_REQUEST,
+                'metadataHash requires metadata'
+            );
+        }
+
         $fileData->setBucketId($bucketIdentifier);
 
         $lock = $this->getBucketLockByInternalBucketIdAndMethod($this->getInternalBucketIdByBucketID($bucketIdentifier), $request->getMethod());

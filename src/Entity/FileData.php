@@ -346,7 +346,7 @@ use Symfony\Component\Serializer\Attribute\Context;
                                         'example' => '{"key":"value"}',
                                     ],
                                     'metadataHash' => [
-                                        'description' => 'Sha256 hash of the metadata. If one is provided, then it has to match the actual sha256 hash of the uploaded metadata!',
+                                        'description' => 'Sha256 hash of the metadata. Requires metadata and must match its actual sha256 hash!',
                                         'type' => 'string',
                                         'example' => '0938744de39e1afc2d6bca532b937848918c9b4db41689576930d636bd73d275',
                                     ],
@@ -473,7 +473,7 @@ use Symfony\Component\Serializer\Attribute\Context;
                                         'example' => '{"key":"value"}',
                                     ],
                                     'metadataHash' => [
-                                        'description' => 'Sha256 hash of the metadata. If one is provided, then it has to match the actual sha256 hash of the uploaded metadata!',
+                                        'description' => 'Sha256 hash of the metadata. Requires metadata and must match its actual sha256 hash!',
                                         'type' => 'string',
                                         'example' => '0938744de39e1afc2d6bca532b937848918c9b4db41689576930d636bd73d275',
                                     ],
