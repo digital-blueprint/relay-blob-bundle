@@ -319,10 +319,9 @@ class BlobService implements LoggerAwareInterface
                 );
             }
             if ($fileHash !== null && $fileHash !== \hash_file('sha256', $uploadedFile->getPathname())) {
-                throw ApiError::withDetails(
-                    Response::HTTP_FORBIDDEN,
-                    'File hash change forbidden',
-                    $errorPrefix.'-file-hash-change-forbidden'
+                throw new ApiError(
+                    Response::HTTP_BAD_REQUEST,
+                    'File hash does not match the uploaded file'
                 );
             }
             $fileData->setFile($uploadedFile);
@@ -330,10 +329,9 @@ class BlobService implements LoggerAwareInterface
 
         if ($metadataHash !== null) {
             if ($metadataHash !== hash('sha256', $metadata)) {
-                throw ApiError::withDetails(
-                    Response::HTTP_FORBIDDEN,
-                    'Metadata hash change forbidden',
-                    $errorPrefix.'-metadata-hash-change-forbidden'
+                throw new ApiError(
+                    Response::HTTP_BAD_REQUEST,
+                    'Metadata hash does not match the submitted metadata'
                 );
             }
         }
