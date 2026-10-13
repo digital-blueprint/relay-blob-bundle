@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v0.2.16
+
+- Fix generating signed URLs outside of a request context
+
 ## v0.2.15
 
 - Add `--type` to the bucket clear command to delete only files of a given type.
