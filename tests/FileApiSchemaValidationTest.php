@@ -14,6 +14,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Uid\Uuid;
 
 class FileApiSchemaValidationTest extends KernelTestCase
@@ -37,7 +38,9 @@ class FileApiSchemaValidationTest extends KernelTestCase
         $this->testEntityManager = BlobTestUtils::createTestEntityManager($kernel->getContainer());
 
         $this->requestStack = new RequestStack();
-        $this->requestStack->push(Request::create(self::BLOB_BASE_URL.'/blob/files'));
+        $request = Request::create(self::BLOB_BASE_URL.'/blob/files');
+        $this->requestStack->push($request);
+        self::getContainer()->get(RouterInterface::class)->getContext()->fromRequest($request);
 
         $testConfig = BlobTestUtils::getTestConfig();
         $testConfig['buckets'][0]['types'] = [
@@ -56,7 +59,7 @@ class FileApiSchemaValidationTest extends KernelTestCase
         ];
 
         $this->blobService = BlobTestUtils::createTestBlobService($this->testEntityManager->getEntityManager(), $testConfig);
-        $this->fileApi = new FileApi($this->blobService, $this->requestStack);
+        $this->fileApi = new FileApi($this->blobService, self::getContainer()->get(RouterInterface::class));
     }
 
     protected function tearDown(): void

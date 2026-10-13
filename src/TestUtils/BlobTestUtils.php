@@ -14,7 +14,7 @@ use Psr\Log\NullLogger;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Routing\RouterInterface;
 
 class BlobTestUtils
 {
@@ -44,10 +44,9 @@ class BlobTestUtils
     }
 
     public static function createLocalModeBlobApi(string $bucketIdentifier, EntityManagerInterface $entityManager,
-        ?array $testConfig = null, ?EventSubscriberInterface $eventSubscriber = null, ?RequestStack $requestStack = null): BlobApi
+        RouterInterface $router, ?array $testConfig = null, ?EventSubscriberInterface $eventSubscriber = null): BlobApi
     {
-        $requestStack ??= new RequestStack();
-        $fileApi = new FileApi(self::createTestBlobService($entityManager, $testConfig, $eventSubscriber), $requestStack);
+        $fileApi = new FileApi(self::createTestBlobService($entityManager, $testConfig, $eventSubscriber), $router);
 
         return BlobApi::createFromBlobFileApi($bucketIdentifier, $fileApi);
     }

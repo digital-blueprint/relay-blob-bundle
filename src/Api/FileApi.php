@@ -20,6 +20,8 @@ use Psr\Http\Message\StreamInterface;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\UrlHelper;
+use Symfony\Component\Routing\RouterInterface;
 
 readonly class FileApi implements BlobFileApiInterface
 {
@@ -170,7 +172,7 @@ readonly class FileApi implements BlobFileApiInterface
 
     public function __construct(
         private BlobService $blobService,
-        private RequestStack $requestStack)
+        private RouterInterface $router)
     {
     }
 
@@ -184,9 +186,7 @@ readonly class FileApi implements BlobFileApiInterface
             $fileData = self::createOrUpdateFileDataFromBlobFile($blobFile, $tempFilePath, options: $options);
             $fileData->setBucketId($bucketIdentifier);
 
-            if (($blobBaseUrl = $this->tryGetBlobBaseUrlFromCurrentRequest()) !== null) {
-                $options[BlobService::BASE_URL_OPTION] = $blobBaseUrl;
-            }
+            $options[BlobService::BASE_URL_OPTION] = $this->getBlobBaseUrl();
 
             try {
                 return self::createBlobFileFromFileData($this->blobService->addFile($fileData, $options));
@@ -281,9 +281,7 @@ readonly class FileApi implements BlobFileApiInterface
                 $filter = $options['filter'] ?? null;
             }
 
-            if ($blobBaseUrl = $this->tryGetBlobBaseUrlFromCurrentRequest()) {
-                $options[BlobService::BASE_URL_OPTION] = $blobBaseUrl;
-            }
+            $options[BlobService::BASE_URL_OPTION] = $this->getBlobBaseUrl();
 
             foreach ($this->blobService->getFiles($bucketIdentifier, $filter, $options, $currentPage, $maxNumItemsPerPage) as $fileData) {
                 yield self::createBlobFileFromFileData($fileData);
@@ -325,7 +323,7 @@ readonly class FileApi implements BlobFileApiInterface
         }
 
         return SignatureTools::createSignedUrl($bucketIdentifier, $bucketConfig->getKey(),
-            $method, $this->tryGetBlobBaseUrlFromCurrentRequest() ?? '', $identifier, $action, $parameters, $options);
+            $method, $this->getBlobBaseUrl(), $identifier, $action, $parameters, $options);
     }
 
     /**
@@ -348,9 +346,7 @@ readonly class FileApi implements BlobFileApiInterface
      */
     private function getFileData(string $bucketIdentifier, string $identifier, array $options = []): FileData
     {
-        if (($blobBaseUrl = $this->tryGetBlobBaseUrlFromCurrentRequest()) !== null) {
-            $options[BlobService::BASE_URL_OPTION] = $blobBaseUrl;
-        }
+        $options[BlobService::BASE_URL_OPTION] = $this->getBlobBaseUrl();
         $options[BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION] = $bucketIdentifier;
 
         return $this->blobService->getFileData($identifier, $options);
@@ -386,9 +382,11 @@ readonly class FileApi implements BlobFileApiInterface
             $message, $errorId, $statusCode, $blobErrorId, $blobErrorDetails, $exception);
     }
 
-    private function tryGetBlobBaseUrlFromCurrentRequest(): ?string
+    private function getBlobBaseUrl(): string
     {
-        return $this->requestStack->getCurrentRequest()?->getSchemeAndHttpHost();
+        // Use only the router context so subrequests cannot inherit the main request's host.
+        return rtrim((new UrlHelper(new RequestStack(), $this->router))->getAbsoluteUrl(
+            $this->router->getContext()->getBaseUrl().'/'), '/');
     }
 
     private static function createGetFileDataOptions(array &$options, bool $isInternalGet): array

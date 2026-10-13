@@ -19,6 +19,8 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\RequestContext;
+use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Uid\Uuid;
 
 class FileApiTest extends KernelTestCase
@@ -40,9 +42,11 @@ class FileApiTest extends KernelTestCase
         $this->testEntityManager = BlobTestUtils::createTestEntityManager($kernel->getContainer());
 
         $this->requestStack = new RequestStack();
-        $this->requestStack->push(Request::create(self::BLOB_BASE_URL.'/blob/files'));
+        $request = Request::create(self::BLOB_BASE_URL.'/blob/files');
+        $this->requestStack->push($request);
+        self::getContainer()->get(RouterInterface::class)->getContext()->fromRequest($request);
         $this->blobService = BlobTestUtils::createTestBlobService($this->testEntityManager->getEntityManager());
-        $this->fileApi = new FileApi($this->blobService, $this->requestStack);
+        $this->fileApi = new FileApi($this->blobService, self::getContainer()->get(RouterInterface::class));
     }
 
     protected function tearDown(): void
@@ -57,10 +61,11 @@ class FileApiTest extends KernelTestCase
      */
     public function testAddFileWithoutRequest(): void
     {
-        // without a current request, the content url should be without http scheme and host
         $this->requestStack->pop();
+        self::getContainer()->get(RouterInterface::class)->setContext(RequestContext::fromUri(Kernel::DEFAULT_URI));
         $blobFile = $this->addTestFile();
-        $this->assertStringStartsWith('/blob/files/'.$blobFile->getIdentifier(), $blobFile->getContentUrl());
+        $this->assertStringStartsWith(Kernel::DEFAULT_URI.'/blob/files/'.$blobFile->getIdentifier().'/download?',
+            $blobFile->getContentUrl());
     }
 
     /**
@@ -68,7 +73,8 @@ class FileApiTest extends KernelTestCase
      */
     public function testCreateLocalModeBlobApi(): void
     {
-        $blobApi = BlobTestUtils::createLocalModeBlobApi('test-bucket', $this->testEntityManager->getEntityManager());
+        $blobApi = BlobTestUtils::createLocalModeBlobApi('test-bucket', $this->testEntityManager->getEntityManager(),
+            self::getContainer()->get(RouterInterface::class));
 
         $blobFile = new BlobFile();
         $blobFile->setPrefix('prefix');

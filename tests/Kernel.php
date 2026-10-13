@@ -18,6 +18,8 @@ class Kernel extends BaseKernel
 {
     use CoreTestKernelTrait;
 
+    public const DEFAULT_URI = 'https://api.test/deployment';
+
     protected function registerAdditionalBundles(): iterable
     {
         yield new DoctrineBundle();
@@ -30,6 +32,9 @@ class Kernel extends BaseKernel
      */
     protected function configureAdditionalContainer(ContainerConfigurator $container): void
     {
+        $container->extension('framework', [
+            'router' => ['default_uri' => self::DEFAULT_URI],
+        ]);
         $container->extension('dbp_relay_blob', BlobTestUtils::getTestConfig());
         $container->services()->set(MessageHandler::class)
             ->tag('messenger.message_handler')

@@ -83,7 +83,9 @@ class SignatureUtils
                 'Parameter creationTime too old', $errorPrefix.'-creation-time-too-old');
         }
 
-        if (false === SignatureUtils::isSignatureValid($bucket->getKey(), $signature, $request->getRequestUri())) {
+        // Exclude the deployment prefix while preserving the signed query's original encoding and order.
+        $requestUri = $request->getPathInfo().(strstr($request->getRequestUri(), '?') ?: '');
+        if (false === SignatureUtils::isSignatureValid($bucket->getKey(), $signature, $requestUri)) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature invalid', 'blob:signature-invalid');
         }
 
