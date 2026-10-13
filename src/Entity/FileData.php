@@ -336,7 +336,7 @@ use Symfony\Component\Serializer\Attribute\Context;
                                         'example' => 'myfile.txt',
                                     ],
                                     'fileHash' => [
-                                        'description' => 'Sha256 hash of the file. If one is provided, then it has to match the actual sha256 hash of the uploaded file!',
+                                        'description' => 'Sha256 hash of the file. Requires an uploaded file and must match its actual sha256 hash!',
                                         'type' => 'string',
                                         'example' => '0938744de39e1afc2d6bca532b937848918c9b4db41689576930d636bd73d275',
                                     ],
@@ -463,7 +463,7 @@ use Symfony\Component\Serializer\Attribute\Context;
                                         'example' => 'myfile.txt',
                                     ],
                                     'fileHash' => [
-                                        'description' => 'Sha256 hash of the file. If one is provided, then it has to match the actual sha256 hash of the uploaded file!',
+                                        'description' => 'Sha256 hash of the file. Requires an uploaded file and must match its actual sha256 hash!',
                                         'type' => 'string',
                                         'example' => '0938744de39e1afc2d6bca532b937848918c9b4db41689576930d636bd73d275',
                                     ],

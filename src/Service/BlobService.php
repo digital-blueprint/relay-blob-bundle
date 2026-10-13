@@ -278,6 +278,13 @@ class BlobService implements LoggerAwareInterface
         /** @var ?UploadedFile $uploadedFile */
         $uploadedFile = $request->files->get('file');
 
+        if ($fileHash !== null && $uploadedFile === null) {
+            throw new ApiError(
+                Response::HTTP_BAD_REQUEST,
+                'fileHash requires an uploaded file'
+            );
+        }
+
         $fileData->setBucketId($bucketIdentifier);
 
         $lock = $this->getBucketLockByInternalBucketIdAndMethod($this->getInternalBucketIdByBucketID($bucketIdentifier), $request->getMethod());

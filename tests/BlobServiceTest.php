@@ -12,6 +12,7 @@ use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpFoundation\Request;
 
 class BlobServiceTest extends KernelTestCase
 {
@@ -118,6 +119,17 @@ class BlobServiceTest extends KernelTestCase
     {
         $fileData = $this->addTestFile(metadata: '{"foo":"bar"}');
         $this->assertEquals('{"foo":"bar"}', $fileData->getMetadata());
+    }
+
+    public function testFileHashWithoutUploadedFileIsRejected(): void
+    {
+        $request = Request::create('/blob/files?bucketIdentifier=test-bucket', 'PATCH',
+            ['fileHash' => hash('sha256', 'test content')]);
+
+        $this->expectException(ApiError::class);
+        $this->expectExceptionMessage('fileHash requires an uploaded file');
+
+        $this->blobService->setUpFileDataFromRequest(new FileData(), $request, 'blob:patch-file-data');
     }
 
     /**
