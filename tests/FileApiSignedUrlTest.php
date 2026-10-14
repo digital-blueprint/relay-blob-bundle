@@ -85,6 +85,21 @@ class FileApiSignedUrlTest extends KernelTestCase
         $this->assertInvalidSignature($url.'&sig='.$signature);
     }
 
+    public function testHeadRequiresGetInAllowedMethods(): void
+    {
+        $configuration = self::getContainer()->get(ConfigurationService::class);
+        $bucket = $configuration->getBucketById(self::BUCKET_IDENTIFIER);
+        $url = SignatureUtils::getSignedUrl('/blob/files', $bucket->getKey(), $bucket->getBucketId(), 'GET');
+        $request = Request::create($url, 'HEAD');
+        $filters = $request->query->all();
+
+        SignatureUtils::checkSignature('test', $configuration, $request, $filters, ['GET']);
+
+        $this->expectException(ApiError::class);
+        $this->expectExceptionMessage('method is not suitable');
+        SignatureUtils::checkSignature('test', $configuration, $request, $filters, ['POST']);
+    }
+
     private function createSignedDownloadUrl(): string
     {
         $blobApi = BlobApi::createFromConfig(BlobApi::getCustomModeConfig(self::BUCKET_IDENTIFIER), self::getContainer());

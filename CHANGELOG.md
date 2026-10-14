@@ -6,6 +6,7 @@
 - Reject downloads when the file does not belong to the bucket specified in the signed URL.
 - Enforce bucket read locks for downloads, including HEAD requests.
 - Return HTTP 400 for malformed signature parameters and invalid expiry durations instead of HTTP 500.
+- Only allow HEAD requests with GET signatures when GET is in the method allowlist.
 
 ## v0.2.16
 
