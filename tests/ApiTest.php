@@ -94,6 +94,27 @@ class ApiTest extends ApiTestCase
         $this->assertSame('locked file contents', $response->getContent());
     }
 
+    public function testMalformedSignatureParametersAreRejected(): void
+    {
+        $parameters = [
+            'bucketIdentifier' => $this->getTestBucketConfig()->getBucketId(),
+            'creationTime' => date('c'),
+            'method' => 'GET',
+            'sig' => 'invalid',
+        ];
+        $malformedParameters = [
+            'signature array' => ['sig' => ['invalid']],
+            'invalid expiry' => ['expireIn' => 'invalid'],
+            'null byte in creation time' => ['creationTime' => date('c')."\0"],
+        ];
+
+        foreach ($malformedParameters as $description => $override) {
+            $url = '/blob/files/404/download?'.http_build_query(array_replace($parameters, $override));
+            $response = $this->testClient->get($url);
+            $this->assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode(), $description);
+        }
+    }
+
     private function getTestBucketConfig(int $index = 0): BucketConfig
     {
         $configService = $this->getContainer()->get(ConfigurationService::class);

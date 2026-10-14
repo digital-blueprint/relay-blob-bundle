@@ -22,6 +22,13 @@ class SignatureUtils
     public static function checkSignature(string $errorPrefix, ConfigurationService $config, Request $request,
         array $filters = [], array $allowedMethods = []): void
     {
+        foreach (['sig', 'bucketIdentifier', 'creationTime', 'method', 'expireIn'] as $parameterName) {
+            $value = $filters[$parameterName] ?? null;
+            if ($value !== null && !is_string($value)) {
+                throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter '.$parameterName.' is invalid');
+            }
+        }
+
         $signature = $filters['sig'] ?? null;
         $bucketIdentifier = $filters['bucketIdentifier'] ?? null;
         $creationTime = $filters['creationTime'] ?? null;
@@ -52,30 +59,37 @@ class SignatureUtils
         }
 
         $now = BlobUtils::now();
+        $linkExpiryInterval = new \DateInterval($bucket->getLinkExpireTime());
 
         if ($expiryDuration) {
-            if ($now->add(new \DateInterval($expiryDuration)) >
-                $now->add(new \DateInterval($bucket->getLinkExpireTime()))) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
-                    'expireIn is too big!', $errorPrefix.'-expireIn-too-big');
+            try {
+                $requestedExpiryInterval = new \DateInterval($expiryDuration);
+            } catch (\Exception) {
+                throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter expireIn is in a bad format!');
             }
-            $linkExpiryTime = $expiryDuration;
-        } else {
-            $linkExpiryTime = $bucket->getLinkExpireTime();
+            if ($now->add($requestedExpiryInterval) > $now->add($linkExpiryInterval)) {
+                throw new ApiError(Response::HTTP_BAD_REQUEST, 'expireIn is too big!');
+            }
+            $linkExpiryInterval = $requestedExpiryInterval;
         }
 
-        $creationDateTime = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $creationTime);
-        if ($creationDateTime === false) {
-            // RFC3339_EXTENDED is broken in PHP
-            $creationDateTime = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $creationTime);
+        try {
+            $creationDateTime = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $creationTime);
             if ($creationDateTime === false) {
-                throw ApiError::withDetails(Response::HTTP_FORBIDDEN,
-                    'Parameter creationTime is in a bad format!', 'blob:check-signature-creation-time-bad-format');
+                // RFC3339_EXTENDED is broken in PHP
+                $creationDateTime = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $creationTime);
+                if ($creationDateTime === false) {
+                    throw ApiError::withDetails(Response::HTTP_FORBIDDEN,
+                        'Parameter creationTime is in a bad format!', 'blob:check-signature-creation-time-bad-format');
+                }
             }
+        } catch (\ValueError) {
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
+                'Parameter creationTime is in a bad format!', 'blob:check-signature-creation-time-bad-format');
         }
 
-        $expiryTime = $now->sub(new \DateInterval($linkExpiryTime));
-        $futureBlock = $now->add(new \DateInterval($linkExpiryTime));
+        $expiryTime = $now->sub($linkExpiryInterval);
+        $futureBlock = $now->add($linkExpiryInterval);
 
         // check if the request is expired or in the future
         if ($creationDateTime < $expiryTime || $creationDateTime > $futureBlock) {

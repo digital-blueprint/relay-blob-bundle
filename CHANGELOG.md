@@ -5,6 +5,7 @@
 - Reject query parameters appended after a signed URL's signature to prevent unsigned parameter overrides.
 - Reject downloads when the file does not belong to the bucket specified in the signed URL.
 - Enforce bucket read locks for downloads, including HEAD requests.
+- Return HTTP 400 for malformed signature parameters and invalid expiry durations instead of HTTP 500.
 
 ## v0.2.16
 
