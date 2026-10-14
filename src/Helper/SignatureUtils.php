@@ -131,7 +131,7 @@ class SignatureUtils
 
         try {
             $payload = SignatureTools::verifySignature($bucketKey, $signature);
-            if (array_key_exists('ucs', $payload) && $payload['ucs'] === SignatureTools::generateSha256Checksum($url[0])) {
+            if (array_key_exists('ucs', $payload) && $payload['ucs'] === hash('sha256', $url[0])) {
                 return true;
             }
         } catch (\Exception) {
