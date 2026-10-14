@@ -122,13 +122,6 @@ class SignatureUtils
         return $url.'&sig='.$signature;
     }
 
-    private static function generateSha256FromRequestUri(string $requestUri): string
-    {
-        $url = explode('&sig=', $requestUri);
-
-        return SignatureTools::generateSha256Checksum($url[0]);
-    }
-
     /**
      * Verify a JWS token and the checksum inside the signature.
      *
@@ -138,9 +131,15 @@ class SignatureUtils
      */
     private static function isSignatureValid(string $bucketKey, string $signature, string $requestUri): bool
     {
+        // Require the signature to be the final parameter so all request parameters are signed.
+        $url = explode('&sig=', $requestUri, 2);
+        if (count($url) !== 2 || $url[1] !== $signature) {
+            return false;
+        }
+
         try {
             $payload = SignatureTools::verifySignature($bucketKey, $signature);
-            if (array_key_exists('ucs', $payload) && $payload['ucs'] === self::generateSha256FromRequestUri($requestUri)) {
+            if (array_key_exists('ucs', $payload) && $payload['ucs'] === SignatureTools::generateSha256Checksum($url[0])) {
                 return true;
             }
         } catch (\Exception) {

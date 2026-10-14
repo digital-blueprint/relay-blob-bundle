@@ -64,9 +64,25 @@ class FileApiSignedUrlTest extends KernelTestCase
     {
         $url = str_replace(self::DOWNLOAD_PATH, '/blob/files/other/download', $this->createSignedDownloadUrl());
 
-        $this->expectException(ApiError::class);
-        $this->expectExceptionMessage('Signature invalid');
-        $this->assertValidSignature($url, '/deployment');
+        $this->assertInvalidSignature($url);
+    }
+
+    public function testUnsignedPrefixOverrideIsRejected(): void
+    {
+        $this->assertInvalidSignature($this->createSignedDownloadUrl().'&prefix=other');
+    }
+
+    public function testUnsignedQueryParameterIsRejected(): void
+    {
+        $this->assertInvalidSignature($this->createSignedDownloadUrl().'&includeData=1');
+    }
+
+    public function testDuplicateSignatureIsRejected(): void
+    {
+        $url = $this->createSignedDownloadUrl();
+        $signature = Request::create($url)->query->get('sig');
+
+        $this->assertInvalidSignature($url.'&sig='.$signature);
     }
 
     private function createSignedDownloadUrl(): string
@@ -86,5 +102,12 @@ class FileApiSignedUrlTest extends KernelTestCase
         ]);
         SignatureUtils::checkSignature('test', $configuration, $request, $request->query->all(), ['GET']);
         $this->assertTrue($request->query->has('sig'));
+    }
+
+    private function assertInvalidSignature(string $url): void
+    {
+        $this->expectException(ApiError::class);
+        $this->expectExceptionMessage('Signature invalid');
+        $this->assertValidSignature($url, '/deployment');
     }
 }

@@ -47,7 +47,7 @@ In general, the parameters have to be given in the specified order while optiona
 
 The signatures are JWTs created with the algorithm `HS256` and are sent as a string. There is one signed item, a `SHA-256` checksum `ucs` that was generated using the url, and it is needed in every request.
 Everything beginning from and including `/blob` has to be included when generating the url checksum `ucs`. `POST` and `PATCH` requests should only have multipart/formdata bodys.
-The signature then has to be appended at the end of the url using the `sig` parameter.
+The signature then has to be appended at the end of the url using the `sig` parameter. The `sig` parameter must be the final query parameter; requests with query parameters appended after it are rejected.
 The key used for signing and verifying the checksum has to be defined in the blob bucket config and the other backend system communicating with blob.
 
 ### Signature url encoding

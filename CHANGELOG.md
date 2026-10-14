@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reject query parameters appended after a signed URL's signature to prevent unsigned parameter overrides.
+
 ## v0.2.16
 
 - Fix generating signed URLs outside of a request context
