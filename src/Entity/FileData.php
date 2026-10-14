@@ -288,6 +288,20 @@ use Symfony\Component\Serializer\Attribute\Context;
                         example: 'PATCH',
                     ),
                     new Parameter(
+                        name: 'fileHash',
+                        in: 'query',
+                        description: 'Signed SHA-256 constraint for the uploaded file. Requires a file in the request body.',
+                        required: false,
+                        schema: ['type' => 'string'],
+                    ),
+                    new Parameter(
+                        name: 'metadataHash',
+                        in: 'query',
+                        description: 'Signed SHA-256 constraint for the exact metadata string. Requires metadata in the request body.',
+                        required: false,
+                        schema: ['type' => 'string'],
+                    ),
+                    new Parameter(
                         name: 'notifyEmail',
                         in: 'query',
                         description: 'An email address which gets notified before the files expires',
@@ -396,6 +410,20 @@ use Symfony\Component\Serializer\Attribute\Context;
                         required: true,
                         schema: ['type' => 'string'],
                         example: 'POST',
+                    ),
+                    new Parameter(
+                        name: 'fileHash',
+                        in: 'query',
+                        description: 'Signed SHA-256 constraint for the uploaded file. Requires a file in the request body.',
+                        required: false,
+                        schema: ['type' => 'string'],
+                    ),
+                    new Parameter(
+                        name: 'metadataHash',
+                        in: 'query',
+                        description: 'Signed SHA-256 constraint for the exact metadata string. Requires metadata in the request body.',
+                        required: false,
+                        schema: ['type' => 'string'],
                     ),
                     new Parameter(
                         name: 'notifyEmail',

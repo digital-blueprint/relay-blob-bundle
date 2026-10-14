@@ -271,8 +271,8 @@ class BlobService implements LoggerAwareInterface
         /* get the params from body */
         $metadata = $request->request->get('metadata');
         $fileName = $request->request->get('fileName');
-        $fileHash = $request->request->get('fileHash');
-        $metadataHash = $request->request->get('metadataHash');
+        $fileHash = self::getRequestHash($request, 'fileHash');
+        $metadataHash = self::getRequestHash($request, 'metadataHash');
 
         /* get the file */
         /** @var ?UploadedFile $uploadedFile */
@@ -369,6 +369,20 @@ class BlobService implements LoggerAwareInterface
         }
 
         return $fileData;
+    }
+
+    private static function getRequestHash(Request $request, string $parameter): ?string
+    {
+        $queryHash = $request->query->get($parameter);
+        $bodyHash = $request->request->get($parameter);
+
+        // Body hashes must not override constraints from the signed URL.
+        if ($queryHash !== null && $bodyHash !== null && $queryHash !== $bodyHash) {
+            throw new ApiError(Response::HTTP_BAD_REQUEST,
+                $parameter.' in the body does not match the URL');
+        }
+
+        return $queryHash ?? $bodyHash;
     }
 
     /**
