@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.2.17
+
 - Support optional signed `fileHash` and `metadataHash` constraints for POST and PATCH uploads.
 - Reject query parameters appended after a signed URL's signature to prevent unsigned parameter overrides.
 - Reject downloads when the file does not belong to the bucket specified in the signed URL.
