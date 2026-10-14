@@ -7,10 +7,10 @@ namespace Dbp\Relay\BlobBundle\Tests;
 use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\BucketLock;
-use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
 use Dbp\Relay\BlobLibrary\Api\BlobFile;
+use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\TestUtils\ApiTestCase;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
@@ -36,8 +36,7 @@ class ApiTest extends ApiTestCase
     {
         $bucketConfig = self::getTestBucketConfig();
 
-        $url = '/blob/files/404';
-        $url = SignatureUtils::getSignedUrl($url, $bucketConfig->getKey(), $bucketConfig->getBucketId(), 'GET');
+        $url = SignatureTools::createSignedUrl($bucketConfig->getBucketId(), $bucketConfig->getKey(), 'GET', identifier: '404');
 
         $response = $this->testClient->get($url);
         $this->assertEquals(Response::HTTP_NOT_FOUND, $response->getStatusCode());
@@ -55,13 +54,13 @@ class ApiTest extends ApiTestCase
         $file->setFile('private file contents');
         $fileApi = self::getContainer()->get('dbp.relay.blob.file_api');
         $file = $fileApi->addFile($fileBucket->getBucketId(), $file);
-        $path = '/blob/files/'.$file->getIdentifier().'/download';
-
-        $url = SignatureUtils::getSignedUrl($path, $otherBucket->getKey(), $otherBucket->getBucketId(), 'GET');
+        $url = SignatureTools::createSignedUrl($otherBucket->getBucketId(), $otherBucket->getKey(), 'GET',
+            identifier: $file->getIdentifier(), action: 'download');
         $response = $this->testClient->get($url);
         $this->assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
 
-        $url = SignatureUtils::getSignedUrl($path, $fileBucket->getKey(), $fileBucket->getBucketId(), 'GET');
+        $url = SignatureTools::createSignedUrl($fileBucket->getBucketId(), $fileBucket->getKey(), 'GET',
+            identifier: $file->getIdentifier(), action: 'download');
         $response = $this->testClient->get($url);
         $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
         $this->assertSame('private file contents', $response->getContent());
@@ -73,8 +72,8 @@ class ApiTest extends ApiTestCase
         $file = new BlobFile(['prefix' => 'locked', 'fileName' => 'locked.txt'], 'locked file contents');
         $fileApi = self::getContainer()->get('dbp.relay.blob.file_api');
         $file = $fileApi->addFile($bucket->getBucketId(), $file);
-        $url = SignatureUtils::getSignedUrl('/blob/files/'.$file->getIdentifier().'/download',
-            $bucket->getKey(), $bucket->getBucketId(), 'GET');
+        $url = SignatureTools::createSignedUrl($bucket->getBucketId(), $bucket->getKey(), 'GET',
+            identifier: $file->getIdentifier(), action: 'download');
 
         $lock = new BucketLock();
         $lock->setIdentifier((string) Uuid::v7());

@@ -9,7 +9,6 @@ use Dbp\Relay\BlobBundle\Authorization\AuthorizationService;
 use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
-use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobBundle\MessageHandler\MessageHandler;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\Task\MetadataBackupTask;
@@ -106,7 +105,7 @@ class CurlGetTest extends ApiTestCase
         try {
             $client = $this->setUpClient();
             $bucket = $this->getBucketConfig();
-            $url = SignatureUtils::getSignedUrl('/blob/files', $bucket->getKey(), $bucket->getBucketId(), 'GET', ['prefix' => 'playground']);
+            $url = SignatureTools::createSignedUrl($bucket->getBucketId(), $bucket->getKey(), 'GET', parameters: ['prefix' => 'playground']);
 
             $options = [
                 'headers' => [
@@ -448,7 +447,8 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // GET a file by id
             // =======================================================
-            $url = SignatureUtils::getSignedUrl('/blob/files/'.$this->files[0]['uuid'], $secret, $bucketID, 'GET', ['includeDeleteAt' => '1']);
+            $url = SignatureTools::createSignedUrl($bucketID, $secret, 'GET',
+                identifier: $this->files[0]['uuid'], parameters: ['includeDeleteAt' => '1']);
             $options = [
                 'headers' => [
                     'Authorization' => "Bearer $this->filesBearer",
@@ -2406,8 +2406,7 @@ class CurlGetTest extends ApiTestCase
             // =======================================================
             // Check download with invalid action
             // =======================================================
-            $baseUrl = '/blob/files/'.$this->files[0]['uuid'];
-            $url = SignatureUtils::getSignedUrl($baseUrl, $secret, $bucketID, 'DELETE');
+            $url = SignatureTools::createSignedUrl($bucketID, $secret, 'DELETE', identifier: $this->files[0]['uuid']);
             $client = $this->setUpClient();
             $response = $client->request('GET', $url, $options);
             $this->assertEquals(405, $response->getStatusCode());

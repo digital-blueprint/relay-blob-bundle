@@ -114,29 +114,6 @@ class SignatureUtils
         }
     }
 
-    public static function getSignedUrl(string $url, string $secret, string $bucketIdentifier, string $method,
-        array $additionalQueryParameters = [], ?string $creationTime = null): string
-    {
-        $creationTime ??= rawurlencode(date('c'));
-        $url = "$url?bucketIdentifier=$bucketIdentifier&creationTime=$creationTime&method=$method";
-
-        foreach ($additionalQueryParameters as $key => $value) {
-            $url .= "&$key=".rawurlencode($value);
-        }
-
-        $payload = [
-            'ucs' => SignatureTools::generateSha256Checksum($url),
-        ];
-
-        try {
-            $signature = SignatureTools::createSignature($secret, $payload);
-        } catch (\JsonException) {
-            throw new \RuntimeException('JSON encoding payload failed');
-        }
-
-        return $url.'&sig='.$signature;
-    }
-
     /**
      * Verify a JWS token and the checksum inside the signature.
      *

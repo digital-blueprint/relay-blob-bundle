@@ -7,6 +7,7 @@ namespace Dbp\Relay\BlobBundle\Tests;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
 use Dbp\Relay\BlobLibrary\Api\BlobApi;
+use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -89,7 +90,7 @@ class FileApiSignedUrlTest extends KernelTestCase
     {
         $configuration = self::getContainer()->get(ConfigurationService::class);
         $bucket = $configuration->getBucketById(self::BUCKET_IDENTIFIER);
-        $url = SignatureUtils::getSignedUrl('/blob/files', $bucket->getKey(), $bucket->getBucketId(), 'GET');
+        $url = SignatureTools::createSignedUrl($bucket->getBucketId(), $bucket->getKey(), 'GET');
         $request = Request::create($url, 'HEAD');
         $filters = $request->query->all();
 
