@@ -37,6 +37,9 @@ class DownloadAction extends AbstractController
         SignatureUtils::checkSignature(
             $errorPrefix, $this->config, $request, $request->query->all(), ['GET']);
 
+        $bucketIdentifier = $request->query->get('bucketIdentifier');
+        $this->blobService->assertBucketNotLocked($bucketIdentifier, Request::METHOD_GET);
+
         $disableOutputValidation = $request->query->get('disableOutputValidation') === '1';
         $includeDeleteAt = $request->query->get('includeDeleteAt') === '1';
 
@@ -44,7 +47,7 @@ class DownloadAction extends AbstractController
             BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => $disableOutputValidation,
             BlobApi::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
             BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => true,
-            BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION => $request->query->get('bucketIdentifier'),
+            BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION => $bucketIdentifier,
         ]);
         $fileStream = $this->blobService->getFileStream($fileData);
 

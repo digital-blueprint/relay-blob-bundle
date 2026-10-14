@@ -1018,6 +1018,18 @@ class BlobService implements LoggerAwareInterface
         }
     }
 
+    public function assertBucketNotLocked(string $bucketIdentifier, string $method): void
+    {
+        $internalBucketId = $this->getInternalBucketIdByBucketID($bucketIdentifier);
+        if ($this->getBucketLockByInternalBucketIdAndMethod($internalBucketId, $method)) {
+            throw ApiError::withDetails(
+                Response::HTTP_FORBIDDEN,
+                $method.' is locked for this bucket',
+                'blob:bucket-locked'
+            );
+        }
+    }
+
     public function getBucketLockByInternalBucketId(string $internalBucketId): ?BucketLock
     {
         return $this->entityManager->getRepository(BucketLock::class)->findOneBy(['internalBucketId' => $internalBucketId]);
