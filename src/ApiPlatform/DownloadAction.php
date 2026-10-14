@@ -44,6 +44,7 @@ class DownloadAction extends AbstractController
             BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => $disableOutputValidation,
             BlobApi::INCLUDE_DELETE_AT_OPTION => $includeDeleteAt,
             BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => true,
+            BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION => $request->query->get('bucketIdentifier'),
         ]);
         $fileStream = $this->blobService->getFileStream($fileData);
 
