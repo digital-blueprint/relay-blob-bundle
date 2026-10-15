@@ -86,7 +86,7 @@ class BlobService implements LoggerAwareInterface
     public function addFile(FileData $fileData, array $options = []): FileData
     {
         if ($fileData->getFile() === null) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'file is missing', 'blob:file-missing');
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'file is missing');
         }
 
         $fileData->setIdentifier(Uuid::v7()->toRfc4122());
@@ -215,10 +215,7 @@ class BlobService implements LoggerAwareInterface
     {
         // TODO: make the upper limit configurable
         if ($maxNumItemsPerPage > 1000) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
-                'Requested too many items per page',
-                'blob:get-file-data-collection-too-many-items-per-page'
-            );
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'The page size must not exceed 1000 items');
         }
 
         $fileDataCollection = $this->getFileDataCollection(
@@ -252,11 +249,7 @@ class BlobService implements LoggerAwareInterface
         // check content-length header to prevent misleading error messages if the upload is too big for the server to accept
         if (($contentLength = $request->headers->get('Content-Length') ?? null) !== null
             && intval($contentLength) > ini_parse_quantity(ini_get('post_max_size'))) {
-            throw ApiError::withDetails(
-                Response::HTTP_BAD_REQUEST,
-                'Given file is too large',
-                'blob:file-too-big'
-            );
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'The request exceeds the configured post_max_size');
         }
 
         /* get the url query params */
@@ -303,18 +296,10 @@ class BlobService implements LoggerAwareInterface
 
         if ($uploadedFile !== null) {
             if ($uploadedFile instanceof UploadedFile && $uploadedFile->getError() !== UPLOAD_ERR_OK) {
-                throw ApiError::withDetails(
-                    Response::HTTP_BAD_REQUEST,
-                    $uploadedFile->getErrorMessage(),
-                    'blob:file-upload-failed'
-                );
+                throw new ApiError(Response::HTTP_BAD_REQUEST, $uploadedFile->getErrorMessage());
             }
             if ($uploadedFile->getSize() === 0) {
-                throw ApiError::withDetails(
-                    Response::HTTP_BAD_REQUEST,
-                    'Empty files cannot be added!',
-                    'blob:file-empty'
-                );
+                throw new ApiError(Response::HTTP_BAD_REQUEST, 'Empty files cannot be added!');
             }
             if ($fileHash !== null && $fileHash !== \hash_file('sha256', $uploadedFile->getPathname())) {
                 throw new ApiError(
@@ -335,11 +320,7 @@ class BlobService implements LoggerAwareInterface
         }
         if ($fileName !== null) {
             if (str_contains($fileName, '/')) {
-                throw ApiError::withDetails(
-                    Response::HTTP_FORBIDDEN,
-                    '/ is not allowed in a filename',
-                    'blob:file-name-invalid'
-                );
+                throw new ApiError(Response::HTTP_BAD_REQUEST, '/ is not allowed in a filename');
             }
             $fileData->setFileName($fileName);
         }
@@ -350,7 +331,7 @@ class BlobService implements LoggerAwareInterface
             if ($deleteIn === 'null' || $deleteIn === '') {
                 $fileData->setDeleteAt(null);
             } else {
-                $fileData->setDeleteAt(BlobUtils::now()->add(new \DateInterval($deleteIn)));
+                $fileData->setDeleteAt(BlobUtils::now()->add(BlobUtils::parseRequestDuration($deleteIn, 'deleteIn')));
             }
         }
         if ($notifyEmail !== null) {
@@ -1636,11 +1617,11 @@ class BlobService implements LoggerAwareInterface
             try {
                 $metadataDecoded = json_decode($metadata, false, flags: JSON_THROW_ON_ERROR);
             } catch (\JsonException $e) {
-                throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad metadata', 'blob:metadata-invalid');
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Metadata must be valid JSON', 'blob:metadata-invalid');
             }
             // only allow JSON objects as top level value (metadata always starts with '{')
             if (!$metadataDecoded instanceof \stdClass) {
-                throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad metadata', 'blob:metadata-invalid');
+                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Metadata must be a JSON object', 'blob:metadata-invalid');
             }
         } else {
             $metadataDecoded = null;
@@ -1655,7 +1636,7 @@ class BlobService implements LoggerAwareInterface
         $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
         $types = $bucket->getTypes();
         if (!array_key_exists($type, $types)) {
-            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', 'blob:type-not-configured');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'The specified type is not configured for this bucket', 'blob:type-not-configured');
         }
 
         if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $types[$type]) && $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
@@ -1684,7 +1665,7 @@ class BlobService implements LoggerAwareInterface
         $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
         $types = $bucket->getTypes();
         if (!array_key_exists($type, $types)) {
-            throw ApiError::withDetails(Response::HTTP_CONFLICT, 'Bad type', 'blob:type-not-configured');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'The specified type is not configured for this bucket', 'blob:type-not-configured');
         }
 
         if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $types[$type]) && $types[$type][BlobService::VERITY_PROFILE_CONFIG] !== null) {
@@ -1726,14 +1707,14 @@ class BlobService implements LoggerAwareInterface
         // check if file integrity should be checked and if so, check it
         if ($this->configurationService->doFileIntegrityChecks()) {
             if ($fileData->getFileHash() !== null && $this->getFileHashFromStorage($fileData) !== $fileData->getFileHash()) {
-                throw ApiError::withDetails(Response::HTTP_CONFLICT,
+                throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR,
                     'sha256 file hash doesnt match! File integrity cannot be guaranteed',
                     'blob:file-hash-mismatch');
             }
             if ($fileData->getMetadataHash() !== null
                 && ($fileData->getMetadata() === null
                     || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
-                throw ApiError::withDetails(Response::HTTP_CONFLICT,
+                throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR,
                     'sha256 metadata hash doesnt match! Metadata integrity cannot be guaranteed',
                     'blob:metadata-hash-mismatch');
             }
@@ -1770,13 +1751,13 @@ class BlobService implements LoggerAwareInterface
             throw new \RuntimeException('identifier is missing');
         }
         if (Tools::isNullOrEmpty($fileData->getFileName())) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'fileName is missing', 'blob:file-name-missing');
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'fileName is missing');
         }
         if (Tools::isNullOrEmpty($fileData->getPrefix())) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'prefix is missing', 'blob:prefix-missing');
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'prefix is missing');
         }
         if (Tools::isNullOrEmpty($fileData->getBucketId())) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'bucket ID is missing', 'blob:bucket-id-missing');
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'bucketIdentifier is missing');
         }
         if ($fileData->getFile() !== null) {
             $fileData->setFileSize($fileData->getFile()->getSize());
@@ -1785,10 +1766,14 @@ class BlobService implements LoggerAwareInterface
             }
         }
         if ($fileData->getMetadata() !== null && strlen($fileData->getMetadata()) > $this->configurationService->getMetadataSizeLimit()) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Metadata exceeds configured size limit', 'blob:metadata-too-big');
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Metadata exceeds configured size limit');
         }
 
-        $fileData->setInternalBucketId($this->configurationService->getInternalBucketIdByBucketID($fileData->getBucketId()));
+        $internalBucketId = $this->configurationService->getInternalBucketIdByBucketID($fileData->getBucketId());
+        if ($internalBucketId === null) {
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'The specified bucketIdentifier is not configured');
+        }
+        $fileData->setInternalBucketId($internalBucketId);
 
         $this->validateMetadata($fileData);
         $this->validateFile($fileData);

@@ -384,8 +384,8 @@ class FileApiTest extends KernelTestCase
             $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFile->getIdentifier());
             $this->fail('Expected BlobApiError');
         } catch (BlobApiError $blobApiError) {
-            $this->assertEquals(BlobApiError::CLIENT_ERROR, $blobApiError->getErrorId());
-            $this->assertEquals(Response::HTTP_CONFLICT, $blobApiError->getStatusCode());
+            $this->assertEquals(BlobApiError::SERVER_ERROR, $blobApiError->getErrorId());
+            $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, $blobApiError->getStatusCode());
         }
 
         $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFile->getIdentifier(),

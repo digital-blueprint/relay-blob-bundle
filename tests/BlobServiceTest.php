@@ -176,6 +176,35 @@ class BlobServiceTest extends KernelTestCase
         $this->blobService->setUpFileDataFromRequest(new FileData(), $request);
     }
 
+    public function testInvalidRetentionDurationIsBadRequest(): void
+    {
+        $request = Request::create('/blob/files?bucketIdentifier=test-bucket&deleteIn=invalid', 'PATCH');
+        try {
+            $this->blobService->setUpFileDataFromRequest(new FileData(), $request);
+            $this->fail('Expected an invalid duration error');
+        } catch (ApiError $error) {
+            $this->assertSame(400, $error->getStatusCode());
+            $this->assertNull($error->getErrorId());
+            $this->assertStringContainsString('deleteIn', $error->getMessage());
+        }
+    }
+
+    public function testInvalidPatchMetadataIsBadRequest(): void
+    {
+        $fileData = $this->addTestFile();
+        $previousFileData = clone $fileData;
+        $fileData->setFile(null);
+        $fileData->setMetadata('[1,2,3]');
+        try {
+            $this->blobService->updateFile($fileData, $previousFileData);
+            $this->fail('Expected invalid patch metadata to be rejected');
+        } catch (ApiError $error) {
+            $this->assertSame(400, $error->getStatusCode());
+            $this->assertSame('blob:metadata-invalid', $error->getErrorId());
+            $this->assertSame('Metadata must be a JSON object', $error->getMessage());
+        }
+    }
+
     /**
      * Only JSON objects are allowed as top level metadata value.
      */
@@ -194,8 +223,9 @@ class BlobServiceTest extends KernelTestCase
                 $this->addTestFile(metadata: $metadata);
                 $this->fail('Expected ApiError was not thrown for metadata: '.$metadata);
             } catch (ApiError $apiError) {
-                $this->assertEquals('blob:metadata-invalid', $apiError->getErrorId(),
-                    'Unexpected error id for metadata: '.$metadata);
+                $this->assertSame('blob:metadata-invalid', $apiError->getErrorId());
+                $this->assertSame(400, $apiError->getStatusCode());
+                $this->assertStringContainsString('Metadata must be', $apiError->getMessage());
             }
         }
     }
@@ -209,7 +239,9 @@ class BlobServiceTest extends KernelTestCase
             $this->addTestFile(metadata: '{not valid json');
             $this->fail('Expected ApiError was not thrown');
         } catch (ApiError $apiError) {
-            $this->assertEquals('blob:metadata-invalid', $apiError->getErrorId());
+            $this->assertSame('blob:metadata-invalid', $apiError->getErrorId());
+            $this->assertSame(400, $apiError->getStatusCode());
+            $this->assertSame('Metadata must be valid JSON', $apiError->getMessage());
         }
     }
 

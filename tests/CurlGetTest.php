@@ -675,7 +675,8 @@ class CurlGetTest extends ApiTestCase
             $fileData = $c->__invoke($requestPost);
             $this->fail('    FileData incorrectly saved: '.$fileData->getIdentifier());
         } catch (ApiError $e) {
-            $this->assertEquals(405, $e->getStatusCode());
+            $this->assertEquals(400, $e->getStatusCode());
+            $this->assertNull($e->getErrorId());
         } catch (\Throwable $e) {
             throw $e;
         }
@@ -718,7 +719,7 @@ class CurlGetTest extends ApiTestCase
 
             $response = $client->request('GET', $url.'&sig='.$token, $options);
 
-            $this->assertEquals(405, $response->getStatusCode());
+            $this->assertEquals(400, $response->getStatusCode());
         } catch (\Throwable $e) {
             throw $e;
         }
@@ -819,7 +820,7 @@ class CurlGetTest extends ApiTestCase
 
                 $response = $client->request('GET', $url.'&sig='.$token, $options);
 
-                $this->assertEquals(405, $response->getStatusCode());
+                $this->assertEquals(400, $response->getStatusCode());
             }
         } catch (\Throwable $e) {
             throw $e;
@@ -921,7 +922,7 @@ class CurlGetTest extends ApiTestCase
                 $client = $this->setUpClient();
                 $response = $client->request('PATCH', $url.'&sig='.$token, $options);
 
-                $this->assertEquals(405, $response->getStatusCode());
+                $this->assertEquals(400, $response->getStatusCode());
             }
         } catch (\Throwable $e) {
             throw $e;
@@ -1141,7 +1142,7 @@ class CurlGetTest extends ApiTestCase
 
                     $client = $this->setUpClient();
                     $response = $client->request($method, $url.'&sig='.$token, $options);
-                    $this->assertEquals(405, $response->getStatusCode());
+                    $this->assertEquals(in_array($method, ['GET', 'POST'], true) ? 400 : 405, $response->getStatusCode());
                 }
             }
         } catch (\Throwable $e) {
@@ -2409,7 +2410,7 @@ class CurlGetTest extends ApiTestCase
             $url = SignatureTools::createSignedUrl($bucketID, $secret, 'DELETE', identifier: $this->files[0]['uuid']);
             $client = $this->setUpClient();
             $response = $client->request('GET', $url, $options);
-            $this->assertEquals(405, $response->getStatusCode());
+            $this->assertEquals(400, $response->getStatusCode());
         } catch (\Throwable $e) {
             throw $e;
         }

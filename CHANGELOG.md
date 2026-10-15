@@ -4,6 +4,9 @@
 
 - Breaking change: Replace operation-prefixed error IDs with shared,
   failure-specific IDs for signature checks, file validation and storage.
+- Breaking change: Basic client input errors no longer return an error ID.
+- Invalid metadata and unsupported types now return HTTP 400 instead of 409.
+- Stored-data integrity failures now return HTTP 500 instead of 409.
 
 ## v0.2.17
 

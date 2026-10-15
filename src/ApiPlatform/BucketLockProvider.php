@@ -63,6 +63,9 @@ class BucketLockProvider extends AbstractDataProvider implements LoggerAwareInte
         $this->authorizationService->checkCanRoleAccessMetadataBackup();
 
         $bucketID = rawurldecode($filters['bucketIdentifier'] ?? '');
+        if ($bucketID === '') {
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter bucketIdentifier is missing');
+        }
 
         $intBucketId = $this->blobService->getInternalBucketIdByBucketID($bucketID);
 

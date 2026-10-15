@@ -100,8 +100,9 @@ class FileApiSignedUrlTest extends KernelTestCase
             SignatureUtils::checkSignature($configuration, $request, $filters, ['POST']);
             $this->fail('Expected a method error');
         } catch (ApiError $error) {
-            $this->assertSame('blob:method-not-allowed', $error->getErrorId());
-            $this->assertSame(405, $error->getStatusCode());
+            $this->assertNull($error->getErrorId());
+            $this->assertSame(400, $error->getStatusCode());
+            $this->assertStringContainsString('Parameter method', $error->getMessage());
         }
     }
 
@@ -126,8 +127,13 @@ class FileApiSignedUrlTest extends KernelTestCase
 
     private function assertInvalidSignature(string $url): void
     {
-        $this->expectException(ApiError::class);
-        $this->expectExceptionMessage('Signature invalid');
-        $this->assertValidSignature($url, '/deployment');
+        try {
+            $this->assertValidSignature($url, '/deployment');
+            $this->fail('Expected an invalid signature error');
+        } catch (ApiError $error) {
+            $this->assertSame('Signature invalid', $error->getMessage());
+            $this->assertSame('blob:signature-invalid', $error->getErrorId());
+            $this->assertSame(403, $error->getStatusCode());
+        }
     }
 }
