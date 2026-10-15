@@ -201,7 +201,8 @@ class ApiTest extends ApiTestCase
         foreach ($malformedParameters as $description => $override) {
             $url = '/blob/files/404/download?'.http_build_query(array_replace($parameters, $override));
             $response = $this->testClient->get($url);
-            $this->assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode(), $description);
+            $expectedStatus = $description === 'signature array' ? Response::HTTP_BAD_REQUEST : Response::HTTP_FORBIDDEN;
+            $this->assertSame($expectedStatus, $response->getStatusCode(), $description);
         }
     }
 

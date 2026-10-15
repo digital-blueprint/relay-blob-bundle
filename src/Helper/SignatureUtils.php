@@ -23,7 +23,7 @@ class SignatureUtils
     {
         $filters = $request->query->all();
 
-        foreach (['sig', 'bucketIdentifier', 'creationTime', 'method', 'expireIn'] as $parameterName) {
+        foreach (['sig', 'bucketIdentifier'] as $parameterName) {
             $value = $filters[$parameterName] ?? null;
             if ($value !== null && !is_string($value)) {
                 throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter '.$parameterName.' must be a string');
@@ -32,9 +32,6 @@ class SignatureUtils
 
         $signature = $filters['sig'] ?? null;
         $bucketIdentifier = $filters['bucketIdentifier'] ?? null;
-        $creationTime = $filters['creationTime'] ?? null;
-        $urlMethod = $filters['method'] ?? null;
-        $expiryDuration = $filters['expireIn'] ?? null;
 
         if (!$signature) {
             throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter sig is missing');
@@ -42,16 +39,33 @@ class SignatureUtils
         if (!$bucketIdentifier) {
             throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter bucketIdentifier is missing');
         }
+        $bucket = $config->getBucketById($bucketIdentifier);
+        if ($bucket === null) {
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'The specified bucketIdentifier is not configured');
+        }
+
+        // Exclude the deployment prefix while preserving the signed query's original encoding and order.
+        $requestUri = $request->getPathInfo().(strstr($request->getRequestUri(), '?') ?: '');
+        if (false === SignatureUtils::isSignatureValid($bucket->getKey(), $signature, $requestUri)) {
+            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature invalid', 'blob:signature-invalid');
+        }
+
+        foreach (['creationTime', 'method', 'expireIn'] as $parameterName) {
+            $value = $filters[$parameterName] ?? null;
+            if ($value !== null && !is_string($value)) {
+                throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter '.$parameterName.' must be a string');
+            }
+        }
+
+        $creationTime = $filters['creationTime'] ?? null;
+        $urlMethod = $filters['method'] ?? null;
+        $expiryDuration = $filters['expireIn'] ?? null;
+
         if (!$creationTime) {
             throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter creationTime is missing');
         }
         if (!$urlMethod) {
             throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter method is missing');
-        }
-
-        $bucket = $config->getBucketById($bucketIdentifier);
-        if ($bucket === null) {
-            throw new ApiError(Response::HTTP_BAD_REQUEST, 'The specified bucketIdentifier is not configured');
         }
 
         $now = BlobUtils::now();
@@ -85,12 +99,6 @@ class SignatureUtils
         if ($creationDateTime < $expiryTime || $creationDateTime > $futureBlock) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN,
                 'Parameter creationTime too old', 'blob:creation-time-out-of-range');
-        }
-
-        // Exclude the deployment prefix while preserving the signed query's original encoding and order.
-        $requestUri = $request->getPathInfo().(strstr($request->getRequestUri(), '?') ?: '');
-        if (false === SignatureUtils::isSignatureValid($bucket->getKey(), $signature, $requestUri)) {
-            throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature invalid', 'blob:signature-invalid');
         }
 
         // Treat HEAD with a GET signature as GET for both method matching and the allowlist.
