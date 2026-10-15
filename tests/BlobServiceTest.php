@@ -151,7 +151,7 @@ class BlobServiceTest extends KernelTestCase
         $this->expectException(ApiError::class);
         $this->expectExceptionMessage('fileHash requires an uploaded file');
 
-        $this->blobService->setUpFileDataFromRequest(new FileData(), $request, 'blob:patch-file-data');
+        $this->blobService->setUpFileDataFromRequest(new FileData(), $request);
     }
 
     public function testMetadataHashWithoutMetadataIsRejected(): void
@@ -162,7 +162,7 @@ class BlobServiceTest extends KernelTestCase
         $this->expectException(ApiError::class);
         $this->expectExceptionMessage('metadataHash requires metadata');
 
-        $this->blobService->setUpFileDataFromRequest(new FileData(), $request, 'blob:patch-file-data');
+        $this->blobService->setUpFileDataFromRequest(new FileData(), $request);
     }
 
     public function testMetadataHashMismatchHasClearMessage(): void
@@ -173,7 +173,7 @@ class BlobServiceTest extends KernelTestCase
         $this->expectException(ApiError::class);
         $this->expectExceptionMessage('Metadata hash does not match the submitted metadata');
 
-        $this->blobService->setUpFileDataFromRequest(new FileData(), $request, 'blob:patch-file-data');
+        $this->blobService->setUpFileDataFromRequest(new FileData(), $request);
     }
 
     /**
@@ -194,7 +194,7 @@ class BlobServiceTest extends KernelTestCase
                 $this->addTestFile(metadata: $metadata);
                 $this->fail('Expected ApiError was not thrown for metadata: '.$metadata);
             } catch (ApiError $apiError) {
-                $this->assertEquals('blob:create-file-data-bad-metadata', $apiError->getErrorId(),
+                $this->assertEquals('blob:metadata-invalid', $apiError->getErrorId(),
                     'Unexpected error id for metadata: '.$metadata);
             }
         }
@@ -209,7 +209,7 @@ class BlobServiceTest extends KernelTestCase
             $this->addTestFile(metadata: '{not valid json');
             $this->fail('Expected ApiError was not thrown');
         } catch (ApiError $apiError) {
-            $this->assertEquals('blob:create-file-data-bad-metadata', $apiError->getErrorId());
+            $this->assertEquals('blob:metadata-invalid', $apiError->getErrorId());
         }
     }
 

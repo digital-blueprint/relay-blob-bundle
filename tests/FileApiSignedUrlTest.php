@@ -94,11 +94,15 @@ class FileApiSignedUrlTest extends KernelTestCase
         $request = Request::create($url, 'HEAD');
         $filters = $request->query->all();
 
-        SignatureUtils::checkSignature('test', $configuration, $request, $filters, ['GET']);
+        SignatureUtils::checkSignature($configuration, $request, $filters, ['GET']);
 
-        $this->expectException(ApiError::class);
-        $this->expectExceptionMessage('method is not suitable');
-        SignatureUtils::checkSignature('test', $configuration, $request, $filters, ['POST']);
+        try {
+            SignatureUtils::checkSignature($configuration, $request, $filters, ['POST']);
+            $this->fail('Expected a method error');
+        } catch (ApiError $error) {
+            $this->assertSame('blob:method-not-allowed', $error->getErrorId());
+            $this->assertSame(405, $error->getStatusCode());
+        }
     }
 
     private function createSignedDownloadUrl(): string
@@ -116,7 +120,7 @@ class FileApiSignedUrlTest extends KernelTestCase
             'SCRIPT_NAME' => $basePath.'/index.php',
             'SCRIPT_FILENAME' => '/srv/public/index.php',
         ]);
-        SignatureUtils::checkSignature('test', $configuration, $request, $request->query->all(), ['GET']);
+        SignatureUtils::checkSignature($configuration, $request, $request->query->all(), ['GET']);
         $this->assertTrue($request->query->has('sig'));
     }
 

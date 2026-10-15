@@ -114,7 +114,7 @@ class FileApiSchemaValidationTest extends KernelTestCase
         } catch (BlobApiError $blobApiError) {
             $this->assertEquals(BlobApiError::CLIENT_ERROR, $blobApiError->getErrorId());
             $this->assertEquals(Response::HTTP_BAD_REQUEST, $blobApiError->getStatusCode());
-            $this->assertEquals('blob:create-file-data-metadata-does-not-match-type', $blobApiError->getBlobErrorId());
+            $this->assertEquals('blob:metadata-does-not-match-type', $blobApiError->getBlobErrorId());
             $this->assertArrayHasKey('@type', $blobApiError->getBlobErrorDetails());
             $this->assertStringContainsString('const value', implode("\n", $blobApiError->getBlobErrorDetails()));
         }
@@ -165,7 +165,7 @@ class FileApiSchemaValidationTest extends KernelTestCase
         } catch (BlobApiError $blobApiError) {
             $this->assertEquals(BlobApiError::CLIENT_ERROR, $blobApiError->getErrorId());
             $this->assertEquals(Response::HTTP_BAD_REQUEST, $blobApiError->getStatusCode());
-            $this->assertEquals('blob:create-file-data-metadata-does-not-match-type', $blobApiError->getBlobErrorId());
+            $this->assertEquals('blob:metadata-does-not-match-type', $blobApiError->getBlobErrorId());
             $this->assertArrayHasKey('approved', $blobApiError->getBlobErrorDetails());
             $this->assertStringContainsString('const value', implode("\n", $blobApiError->getBlobErrorDetails()));
         }
@@ -217,7 +217,7 @@ class FileApiSchemaValidationTest extends KernelTestCase
         } catch (BlobApiError $blobApiError) {
             $this->assertEquals(BlobApiError::CLIENT_ERROR, $blobApiError->getErrorId());
             $this->assertEquals(Response::HTTP_BAD_REQUEST, $blobApiError->getStatusCode());
-            $this->assertEquals('blob:create-file-data-metadata-does-not-match-type', $blobApiError->getBlobErrorId());
+            $this->assertEquals('blob:metadata-does-not-match-type', $blobApiError->getBlobErrorId());
             $this->assertStringContainsString('reviewedAt', implode("\n", $blobApiError->getBlobErrorDetails()));
         }
     }

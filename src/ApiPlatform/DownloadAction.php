@@ -33,9 +33,8 @@ class DownloadAction extends AbstractController
             $this->requireAuthentication();
         }
 
-        $errorPrefix = 'blob:download-file-by-id';
         SignatureUtils::checkSignature(
-            $errorPrefix, $this->config, $request, $request->query->all(), ['GET']);
+            $this->config, $request, $request->query->all(), ['GET']);
 
         $bucketIdentifier = $request->query->get('bucketIdentifier');
         $this->blobService->assertBucketNotLocked($bucketIdentifier, Request::METHOD_GET);
