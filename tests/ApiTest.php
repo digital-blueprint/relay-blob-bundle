@@ -57,7 +57,7 @@ class ApiTest extends ApiTestCase
         $url = SignatureTools::createSignedUrl($otherBucket->getBucketId(), $otherBucket->getKey(), 'GET',
             identifier: $file->getIdentifier(), action: 'download');
         $response = $this->testClient->get($url);
-        $this->assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
+        $this->assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
 
         $url = SignatureTools::createSignedUrl($fileBucket->getBucketId(), $fileBucket->getKey(), 'GET',
             identifier: $file->getIdentifier(), action: 'download');
@@ -91,6 +91,24 @@ class ApiTest extends ApiTestCase
         $response = $this->testClient->get($url);
         $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
         $this->assertSame('locked file contents', $response->getContent());
+    }
+
+    public function testCrossBucketAndMissingFilesHaveSameError(): void
+    {
+        $requestBucket = $this->getTestBucketConfig();
+        $fileBucket = $this->getTestBucketConfig(1);
+        $fileApi = self::getContainer()->get('dbp.relay.blob.file_api');
+        $file = $fileApi->addFile($fileBucket->getBucketId(),
+            new BlobFile(['prefix' => 'private', 'fileName' => 'private.txt'], 'private file contents'));
+
+        foreach ([$file->getIdentifier(), (string) Uuid::v7()] as $identifier) {
+            $url = SignatureTools::createSignedUrl($requestBucket->getBucketId(), $requestBucket->getKey(), 'GET',
+                identifier: $identifier);
+            $response = $this->testClient->get($url);
+            $this->assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
+            $error = $response->toArray(false);
+            $this->assertSame('FileData was not found!', $error['detail']);
+        }
     }
 
     public function testMalformedSignatureParametersAreRejected(): void
