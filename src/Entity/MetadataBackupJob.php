@@ -194,7 +194,7 @@ class MetadataBackupJob
         $this->finished = $finished;
     }
 
-    public function getErrorId(): string
+    public function getErrorId(): ?string
     {
         return $this->errorId;
     }

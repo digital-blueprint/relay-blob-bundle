@@ -1660,13 +1660,18 @@ class BlobService implements LoggerAwareInterface
         }
     }
 
+    /**
+     * Validates a serialized database record before writing it to a metadata backup.
+     */
     public function validateJsonFileData(string $fileDataJson): void
     {
         $filedataDecoded = json_decode($fileDataJson, false, flags: JSON_THROW_ON_ERROR);
         $schemaPath = $this->configurationService->getFiledataSchema();
         $messages = SchemaValidator::validateJsonSchemaData($filedataDecoded, $schemaPath);
         if ($messages !== []) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'File data does not match its schema', 'blob:file-data-validation-failed', $messages);
+            $error = new ApiError(Response::HTTP_INTERNAL_SERVER_ERROR, 'Metadata backup record does not match the configured file-data schema');
+            $error->setErrorDetails($messages);
+            throw $error;
         }
     }
 
