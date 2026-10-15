@@ -7,6 +7,7 @@ namespace Dbp\Relay\BlobBundle\Tests;
 use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\BucketLock;
+use Dbp\Relay\BlobBundle\Entity\MetadataBackupJob;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
 use Dbp\Relay\BlobLibrary\Api\BlobFile;
@@ -140,9 +141,38 @@ class ApiTest extends ApiTestCase
 
         $response = $this->testClient->postJson('/blob/bucket-locks?bucketIdentifier=missing-bucket', new \stdClass());
         $this->assertErrorWithoutId($response, Response::HTTP_BAD_REQUEST);
+    }
+
+    public function testRestoreWithMissingBackupJobIsNotFound(): void
+    {
+        $this->login(userAttributes: ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
 
         $response = $this->testClient->postJson('/blob/metadata-restore-jobs?metadataBackupJobId='.Uuid::v7(), new \stdClass());
-        $this->assertErrorWithoutId($response, Response::HTTP_BAD_REQUEST);
+        $this->assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
+    }
+
+    public function testRestoreWithUnfinishedBackupRemainsBadRequest(): void
+    {
+        $this->login(userAttributes: ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+        $job = new MetadataBackupJob();
+        $blobService = $this->getContainer()->get(BlobService::class);
+        $blobService->setupMetadataBackupJob($job, $this->getTestBucketConfig()->getInternalBucketId());
+
+        $response = $this->testClient->postJson('/blob/metadata-restore-jobs?metadataBackupJobId='.$job->getIdentifier(), new \stdClass());
+        $this->assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+    }
+
+    public function testMissingJobsRequirePermissionBeforeLookup(): void
+    {
+        $this->login(userAttributes: ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => false]);
+
+        foreach (['metadata-backup-jobs', 'metadata-restore-jobs'] as $resource) {
+            $response = $this->testClient->postJson('/blob/'.$resource.'/'.Uuid::v7().'/cancel', new \stdClass());
+            $this->assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
+        }
+
+        $response = $this->testClient->postJson('/blob/metadata-restore-jobs?metadataBackupJobId='.Uuid::v7(), new \stdClass());
+        $this->assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
     }
 
     private function assertErrorWithoutId(ResponseInterface $response, int $statusCode): void

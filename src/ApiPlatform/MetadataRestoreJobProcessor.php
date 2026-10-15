@@ -44,14 +44,17 @@ class MetadataRestoreJobProcessor extends AbstractDataProcessor
             throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter metadataBackupJobId is missing');
         }
         $metadataBackupJobId = $filters['metadataBackupJobId'];
-        if (empty($metadataBackupJobId)) {
+        if ($metadataBackupJobId === null || $metadataBackupJobId === '') {
             throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter metadataBackupJobId is missing');
+        }
+        if (!is_string($metadataBackupJobId)) {
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter metadataBackupJobId must be a string');
         }
 
         $backupJob = $this->blobService->getMetadataBackupJobById($metadataBackupJobId);
 
         if ($backupJob === null) {
-            throw new ApiError(Response::HTTP_BAD_REQUEST, 'The metadata backup job with the given id cannot be found!');
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'The metadata backup job with the given id cannot be found!');
         }
 
         if ($backupJob->getStatus() !== MetadataBackupJob::JOB_STATUS_FINISHED) {

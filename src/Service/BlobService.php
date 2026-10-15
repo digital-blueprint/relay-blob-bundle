@@ -756,7 +756,8 @@ class BlobService implements LoggerAwareInterface
             ->getOneOrNullResult();
 
         if ($job === null) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Identifier not found!', 'blob:no-job-with-given-identifier');
+            $this->entityManager->rollback();
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'The metadata backup job with the given id cannot be found!');
         }
 
         $job->setStatus(MetadataBackupJob::JOB_STATUS_CANCELLED);
@@ -784,7 +785,8 @@ class BlobService implements LoggerAwareInterface
             ->getOneOrNullResult();
 
         if ($job === null) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Identifier not found!', 'blob:no-job-with-given-identifier');
+            $this->entityManager->rollback();
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'The metadata restore job with the given id cannot be found!');
         }
 
         $job->setStatus(MetadataRestoreJob::JOB_STATUS_CANCELLED);
