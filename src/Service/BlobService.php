@@ -821,8 +821,8 @@ class BlobService implements LoggerAwareInterface
      */
     public function checkMetadataRestoreJobRunning(string $identifier): bool
     {
-        /** @var MetadataBackupJob|null $job */
-        $job = $this->getMetadataBackupJobById($identifier);
+        /** @var MetadataRestoreJob|null $job */
+        $job = $this->getMetadataRestoreJobById($identifier);
 
         if ($job === null) {
             return false;
