@@ -14,6 +14,7 @@ use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\TestUtils\ApiTestCase;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 
 class ApiTest extends ApiTestCase
 {
@@ -105,10 +106,52 @@ class ApiTest extends ApiTestCase
             $url = SignatureTools::createSignedUrl($requestBucket->getBucketId(), $requestBucket->getKey(), 'GET',
                 identifier: $identifier);
             $response = $this->testClient->get($url);
-            $this->assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
-            $error = $response->toArray(false);
-            $this->assertSame('FileData was not found!', $error['detail']);
+            $this->assertErrorWithoutId($response, Response::HTTP_NOT_FOUND);
+            $this->assertSame('FileData was not found!', $response->toArray(false)['detail']);
         }
+    }
+
+    public function testMissingJobsAndLocksHaveNoErrorId(): void
+    {
+        $this->login(userAttributes: ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+
+        foreach (['metadata-backup-jobs', 'metadata-restore-jobs', 'bucket-locks'] as $resource) {
+            $response = $this->testClient->get('/blob/'.$resource.'/'.Uuid::v7());
+            $this->assertErrorWithoutId($response, Response::HTTP_NOT_FOUND);
+        }
+    }
+
+    public function testMissingJobForCancellationHasNoErrorId(): void
+    {
+        $this->login(userAttributes: ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+
+        foreach (['metadata-backup-jobs', 'metadata-restore-jobs'] as $resource) {
+            $response = $this->testClient->postJson('/blob/'.$resource.'/'.Uuid::v7().'/cancel', new \stdClass());
+            $this->assertErrorWithoutId($response, Response::HTTP_NOT_FOUND);
+        }
+    }
+
+    public function testInvalidResourceQueryParametersAreBadRequestsWithoutErrorId(): void
+    {
+        $this->login(userAttributes: ['SCOPE_BLOB_METADATA_BACKUP_AND_RESTORE' => true]);
+
+        $response = $this->testClient->get('/blob/bucket-locks?bucketIdentifier=missing-bucket');
+        $this->assertErrorWithoutId($response, Response::HTTP_BAD_REQUEST);
+
+        $response = $this->testClient->postJson('/blob/bucket-locks?bucketIdentifier=missing-bucket', new \stdClass());
+        $this->assertErrorWithoutId($response, Response::HTTP_BAD_REQUEST);
+
+        $response = $this->testClient->postJson('/blob/metadata-restore-jobs?metadataBackupJobId='.Uuid::v7(), new \stdClass());
+        $this->assertErrorWithoutId($response, Response::HTTP_BAD_REQUEST);
+    }
+
+    private function assertErrorWithoutId(ResponseInterface $response, int $statusCode): void
+    {
+        $this->assertSame($statusCode, $response->getStatusCode());
+        $error = $response->toArray(false);
+        $this->assertNotEmpty($error['detail']);
+        $this->assertArrayNotHasKey('relay:errorId', $error);
+        $this->assertArrayNotHasKey('relay:errorDetails', $error);
     }
 
     public function testMalformedSignatureParametersAreRejected(): void

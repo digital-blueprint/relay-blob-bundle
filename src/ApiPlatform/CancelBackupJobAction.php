@@ -33,7 +33,7 @@ class CancelBackupJobAction extends AbstractController
         $this->authService->checkCanAccessMetadataBackup();
 
         if ($this->blobService->getMetadataBackupJobById($identifier) === null) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND, 'Job cannot be found!', 'blob:job-cannot-be-found');
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'The metadata backup job with the given id cannot be found!');
         }
 
         if ($this->blobService->checkMetadataBackupJobRunning($identifier)) {

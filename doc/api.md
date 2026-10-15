@@ -91,7 +91,6 @@ Metadata, type and file validators are shared by POST/PATCH input validation and
 
 | `relay:errorId` | Status code | Description |
 |----------------|-------------|-------------|
-| `blob:file-data-not-found` | 404 | The file data does not exist or is no longer retrievable because of its deletion date. |
 | `blob:bucket-locked` | 403 | The requested method is locked for the bucket. |
 | `blob:bucket-locked-post` | 403 | Request input processing finds that the bucket is locked for the requested method. |
 | `blob:bucket-quota-reached` | 507 | Saving the file would exceed the bucket quota. |

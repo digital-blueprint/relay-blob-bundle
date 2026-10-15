@@ -9,6 +9,12 @@
 - Stored-data integrity failures now return HTTP 500 instead of 409.
 - Scope file lookups to the requested bucket and return the same HTTP 404 for
   missing and cross-bucket files, preventing disclosure of file existence.
+- Breaking change: Remove blob-specific error IDs from missing file, job, bucket
+  and lock errors while retaining descriptive messages.
+- Return HTTP 404 instead of 400 for missing restore jobs during cancellation
+  and missing locks during lock-state lookup.
+- Return HTTP 400 instead of 404 for unconfigured bucket query parameters when
+  listing locks, consistent with other input validation.
 
 ## v0.2.17
 

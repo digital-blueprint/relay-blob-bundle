@@ -181,8 +181,7 @@ class BlobService implements LoggerAwareInterface
 
         if ($fileData->getDeleteAt() !== null
             && (($options[BlobApi::INCLUDE_DELETE_AT_OPTION] ?? false) === false || $fileData->getDeleteAt() < BlobUtils::now())) {
-            throw ApiError::withDetails(Response::HTTP_NOT_FOUND,
-                'FileData was not found!', 'blob:file-data-not-found');
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'FileData was not found!');
         }
 
         if (($options[BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION] ?? false) === false && $bucketConfig->getOutputValidation()) {
@@ -840,11 +839,7 @@ class BlobService implements LoggerAwareInterface
 
         if (!Uuid::isValid($identifier)
             || ($bucketIdentifier !== null && $criteria['internalBucketId'] === null)) {
-            throw ApiError::withDetails(
-                Response::HTTP_NOT_FOUND,
-                'FileData was not found!',
-                'blob:file-data-not-found'
-            );
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'FileData was not found!');
         }
 
         /** @var ?FileData $fileData */
@@ -853,11 +848,7 @@ class BlobService implements LoggerAwareInterface
             ->findOneBy($criteria);
 
         if (!$fileData) {
-            throw ApiError::withDetails(
-                Response::HTTP_NOT_FOUND,
-                'FileData was not found!',
-                'blob:file-data-not-found'
-            );
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'FileData was not found!');
         }
 
         $fileData->setBucketId(
@@ -1053,8 +1044,7 @@ class BlobService implements LoggerAwareInterface
     {
         $lock = $this->getBucketLockByInternalBucketId($internalBucketId);
         if ($lock === null) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketLock could not be found!',
-                'blob:bucket-lock-not-found');
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'BucketLock was not found!');
         }
 
         return $lock->getPostLock();
@@ -1064,8 +1054,7 @@ class BlobService implements LoggerAwareInterface
     {
         $lock = $this->getBucketLockByInternalBucketId($internalBucketId);
         if ($lock === null) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketLock could not be found!',
-                'blob:bucket-lock-not-found');
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'BucketLock was not found!');
         }
 
         return $lock->getPatchLock();
@@ -1075,8 +1064,7 @@ class BlobService implements LoggerAwareInterface
     {
         $lock = $this->getBucketLockByInternalBucketId($internalBucketId);
         if ($lock === null) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'BucketLock could not be found!',
-                'blob:bucket-lock-not-found');
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'BucketLock was not found!');
         }
 
         return $lock->getDeleteLock();
@@ -1098,11 +1086,7 @@ class BlobService implements LoggerAwareInterface
     public function getBucketLock(string $identifier): BucketLock
     {
         if (!Uuid::isValid($identifier)) {
-            throw ApiError::withDetails(
-                Response::HTTP_NOT_FOUND,
-                'BucketLock was not found!',
-                'blob:bucket-lock-not-found'
-            );
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'BucketLock was not found!');
         }
 
         /** @var ?BucketLock $lock */
@@ -1111,11 +1095,7 @@ class BlobService implements LoggerAwareInterface
             ->find($identifier);
 
         if (!$lock) {
-            throw ApiError::withDetails(
-                Response::HTTP_NOT_FOUND,
-                'BucketLock was not found!',
-                'blob:bucket-lock-not-found'
-            );
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'BucketLock was not found!');
         }
 
         return $lock;
@@ -1129,11 +1109,7 @@ class BlobService implements LoggerAwareInterface
         $intBucketId = $this->getInternalBucketIdByBucketID($bucketId);
 
         if (!$intBucketId) {
-            throw ApiError::withDetails(
-                Response::HTTP_NOT_FOUND,
-                'bucketIdentifier was not found!',
-                'blob:bucket-identifier-not-found'
-            );
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'The specified bucketIdentifier is not configured');
         }
 
         /** @var array $locks */
@@ -1150,11 +1126,7 @@ class BlobService implements LoggerAwareInterface
     public function updateBucketLock(string $id, array $filters, mixed $data): void
     {
         if (!Uuid::isValid($id)) {
-            throw ApiError::withDetails(
-                Response::HTTP_NOT_FOUND,
-                'BucketLock was not found!',
-                'blob:bucket-lock-not-found'
-            );
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'BucketLock was not found!');
         }
         $this->addBucketLock($data);
     }

@@ -70,11 +70,7 @@ class BucketLockProvider extends AbstractDataProvider implements LoggerAwareInte
         $intBucketId = $this->blobService->getInternalBucketIdByBucketID($bucketID);
 
         if (!$intBucketId) {
-            throw ApiError::withDetails(
-                Response::HTTP_NOT_FOUND,
-                'bucketIdentifier was not found!',
-                'blob:bucket-identifier-not-found'
-            );
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'The specified bucketIdentifier is not configured');
         }
 
         return $this->blobService->getBucketLocksByBucketId($bucketID, $currentPageNumber, $maxNumItemsPerPage);

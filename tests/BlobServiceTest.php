@@ -13,6 +13,7 @@ use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class BlobServiceTest extends KernelTestCase
 {
@@ -119,6 +120,22 @@ class BlobServiceTest extends KernelTestCase
     {
         $fileData = $this->addTestFile(metadata: '{"foo":"bar"}');
         $this->assertEquals('{"foo":"bar"}', $fileData->getMetadata());
+    }
+
+    public function testExpiredFileHasNoNotFoundErrorId(): void
+    {
+        $file = $this->addTestFile();
+        $file->setDeleteAt(new \DateTimeImmutable('-1 day'));
+
+        try {
+            $this->blobService->getFileData($file->getIdentifier());
+            $this->fail('Expected an expired file to be unavailable');
+        } catch (ApiError $error) {
+            $this->assertSame(Response::HTTP_NOT_FOUND, $error->getStatusCode());
+            $this->assertSame('FileData was not found!', $error->getMessage());
+            $this->assertNull($error->getErrorId());
+            $this->assertNull($error->getErrorDetails());
+        }
     }
 
     public function testChecksumsAreStoredWithIntegrityChecksDisabled(): void

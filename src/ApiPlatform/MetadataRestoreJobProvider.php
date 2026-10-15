@@ -52,11 +52,7 @@ class MetadataRestoreJobProvider extends AbstractDataProvider implements LoggerA
         $this->authService->checkCanAccessMetadataBackup();
         $backupJob = $this->blobService->getMetadataRestoreJobById($id);
         if ($backupJob === null) {
-            throw ApiError::withDetails(
-                Response::HTTP_NOT_FOUND,
-                'The metadata backup job with the given id cannot be found!',
-                'blob:metadata-backup-job-not-found'
-            );
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'The metadata restore job with the given id cannot be found!');
         }
 
         return $backupJob;
@@ -81,11 +77,7 @@ class MetadataRestoreJobProvider extends AbstractDataProvider implements LoggerA
         }
         $backupJobs = $this->blobService->getMetadataRestoreJobsByInternalBucketId($internalId, $currentPageNumber, $maxNumItemsPerPage);
         if (empty($backupJobs)) {
-            throw ApiError::withDetails(
-                Response::HTTP_NOT_FOUND,
-                'No metadata backup jobs cannot be found for the given bucket id!',
-                'blob:metadata-backup-jobs-not-found'
-            );
+            throw new ApiError(Response::HTTP_NOT_FOUND, 'No metadata restore jobs were found for the given bucket id!');
         }
 
         return $backupJobs;
