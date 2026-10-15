@@ -41,8 +41,7 @@ class FileDataProcessor extends AbstractDataProcessor
         assert($previousData instanceof FileData);
 
         $fileData = $this->blobService->setUpFileDataFromRequest($data,
-            BlobUtils::convertPatchRequest($this->requestStack->getCurrentRequest()),
-            'blob:patch-file-data');
+            BlobUtils::convertPatchRequest($this->requestStack->getCurrentRequest()));
 
         return $this->blobService->updateFile($fileData, $previousData);
     }

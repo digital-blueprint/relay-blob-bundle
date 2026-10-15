@@ -131,10 +131,10 @@ class SignedUploadTest extends KernelTestCase
 
     private function validateRequest(Request $request): FileData
     {
-        SignatureUtils::checkSignature('test', self::getContainer()->get(ConfigurationService::class),
+        SignatureUtils::checkSignature(self::getContainer()->get(ConfigurationService::class),
             $request, $request->query->all(), ['POST', 'PATCH']);
 
         return self::getContainer()->get(BlobService::class)
-            ->setUpFileDataFromRequest(new FileData(), $request, 'test');
+            ->setUpFileDataFromRequest(new FileData(), $request);
     }
 }

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Breaking change: Replace operation-prefixed error IDs with shared,
+  failure-specific IDs for signature checks, file validation and storage.
+
 ## v0.2.17
 
 - Support optional signed `fileHash` and `metadataHash` constraints for POST and PATCH uploads.
