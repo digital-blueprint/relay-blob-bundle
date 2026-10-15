@@ -54,7 +54,7 @@ class MessageHandler
             if ($e instanceof ApiError) {
                 $job->setErrorId($e->getErrorId());
                 $this->blobService->finishAndSaveMetadataBackupJob($job, $internalId);
-                throw ApiError::withDetails($e->getStatusCode(), $job->getErrorMessage(), $job->getErrorId());
+                throw $e;
             }
             $this->blobService->finishAndSaveMetadataBackupJob($job, $internalId);
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Something went wrong!');

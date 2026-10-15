@@ -85,7 +85,6 @@ Metadata, type and file validators are shared by POST/PATCH input validation and
 | `blob:file-does-not-validate-against-type` | 400 | The file fails the type's validation profile; `relay:errorDetails` contains validation errors. |
 | `blob:file-hash-mismatch` | 500 | The stored file's SHA-256 hash does not match the saved hash. |
 | `blob:metadata-hash-mismatch` | 500 | The stored metadata's SHA-256 hash does not match the saved hash. |
-| `blob:file-data-validation-failed` | 400 | File data does not match the configured file-data schema during metadata backup; `relay:errorDetails` contains validation errors. |
 
 ### Retrieval, storage and bucket limits
 
