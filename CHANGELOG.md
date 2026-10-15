@@ -7,6 +7,8 @@
 - Breaking change: Basic client input errors no longer return an error ID.
 - Invalid metadata and unsupported types now return HTTP 400 instead of 409.
 - Stored-data integrity failures now return HTTP 500 instead of 409.
+- Scope file lookups to the requested bucket and return the same HTTP 404 for
+  missing and cross-bucket files, preventing disclosure of file existence.
 
 ## v0.2.17
 

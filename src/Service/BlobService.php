@@ -176,14 +176,8 @@ class BlobService implements LoggerAwareInterface
      */
     public function getFileData(string $identifier, array $options = []): FileData
     {
-        $fileData = $this->getFileDataInternal($identifier);
+        $fileData = $this->getFileDataInternal($identifier, $options[self::ASSERT_BUCKET_ID_EQUALS_OPTION] ?? null);
         $bucketConfig = $this->getBucketConfig($fileData->getInternalBucketId());
-
-        if (($bucketIdToMatch = $options[self::ASSERT_BUCKET_ID_EQUALS_OPTION] ?? null) !== null) {
-            if ($bucketConfig->getBucketId() !== $bucketIdToMatch) {
-                throw new ApiError(Response::HTTP_FORBIDDEN);
-            }
-        }
 
         if ($fileData->getDeleteAt() !== null
             && (($options[BlobApi::INCLUDE_DELETE_AT_OPTION] ?? false) === false || $fileData->getDeleteAt() < BlobUtils::now())) {
@@ -836,9 +830,16 @@ class BlobService implements LoggerAwareInterface
         return $job->getStatus() === MetadataRestoreJob::JOB_STATUS_RUNNING;
     }
 
-    private function getFileDataInternal(string $identifier): FileData
+    private function getFileDataInternal(string $identifier, ?string $bucketIdentifier = null): FileData
     {
-        if (!Uuid::isValid($identifier)) {
+        $criteria = ['identifier' => $identifier];
+        if ($bucketIdentifier !== null) {
+            // Scope the lookup before loading or processing another bucket's file.
+            $criteria['internalBucketId'] = $this->getInternalBucketIdByBucketID($bucketIdentifier);
+        }
+
+        if (!Uuid::isValid($identifier)
+            || ($bucketIdentifier !== null && $criteria['internalBucketId'] === null)) {
             throw ApiError::withDetails(
                 Response::HTTP_NOT_FOUND,
                 'FileData was not found!',
@@ -849,7 +850,7 @@ class BlobService implements LoggerAwareInterface
         /** @var ?FileData $fileData */
         $fileData = $this->entityManager
             ->getRepository(FileData::class)
-            ->find($identifier);
+            ->findOneBy($criteria);
 
         if (!$fileData) {
             throw ApiError::withDetails(
