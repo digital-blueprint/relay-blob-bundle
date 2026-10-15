@@ -34,19 +34,11 @@ class BucketLockProcessor extends AbstractDataProcessor
         $this->authorizationService->checkCanRoleAccessMetadataBackup();
 
         if (!array_key_exists('bucketIdentifier', $filters)) {
-            throw ApiError::withDetails(
-                Response::HTTP_BAD_REQUEST,
-                'Bucket could not be found!',
-                'blob:bucket-not-found'
-            );
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter bucketIdentifier is missing');
         }
         $internalId = $this->blobService->getInternalBucketIdByBucketID($filters['bucketIdentifier']);
         if ($internalId === null) {
-            throw ApiError::withDetails(
-                Response::HTTP_BAD_REQUEST,
-                'Bucket could not be found!',
-                'blob:bucket-not-found'
-            );
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'The specified bucketIdentifier is not configured');
         }
 
         if ($this->blobService->getBucketLockByInternalBucketId($internalId) !== null) {

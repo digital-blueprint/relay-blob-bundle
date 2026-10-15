@@ -69,27 +69,15 @@ class MetadataRestoreJobProvider extends AbstractDataProvider implements LoggerA
     {
         $this->authService->checkCanAccessMetadataBackup();
         if (!array_key_exists('bucketIdentifier', $filters)) {
-            throw ApiError::withDetails(
-                Response::HTTP_BAD_REQUEST,
-                'Bucket could not be found!',
-                'blob:bucket-not-found'
-            );
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter bucketIdentifier is missing');
         }
         $bucketIdentifier = $filters['bucketIdentifier'];
         if ($bucketIdentifier === null) {
-            throw ApiError::withDetails(
-                Response::HTTP_BAD_REQUEST,
-                'Bucket could not be found!',
-                'blob:bucket-not-found'
-            );
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter bucketIdentifier is missing');
         }
         $internalId = $this->blobService->getInternalBucketIdByBucketID($bucketIdentifier);
         if ($internalId === null) {
-            throw ApiError::withDetails(
-                Response::HTTP_BAD_REQUEST,
-                'Bucket could not be found!',
-                'blob:bucket-not-found'
-            );
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'The specified bucketIdentifier is not configured');
         }
         $backupJobs = $this->blobService->getMetadataRestoreJobsByInternalBucketId($internalId, $currentPageNumber, $maxNumItemsPerPage);
         if (empty($backupJobs)) {

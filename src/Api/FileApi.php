@@ -107,7 +107,7 @@ readonly class FileApi implements BlobFileApiInterface
         }
         if (($deleteIn = $options[BlobApi::DELETE_IN_OPTION] ?? null) !== null) {
             $fileData->setDeleteAt($deleteIn === 'null' ?
-                null : BlobUtils::now()->add(new \DateInterval($deleteIn)));
+                null : BlobUtils::now()->add(BlobUtils::parseRequestDuration($deleteIn, 'deleteIn')));
         }
 
         return $fileData;
@@ -188,11 +188,9 @@ readonly class FileApi implements BlobFileApiInterface
 
             $options[BlobService::BASE_URL_OPTION] = $this->getBlobBaseUrl();
 
-            try {
-                return self::createBlobFileFromFileData($this->blobService->addFile($fileData, $options));
-            } catch (\Exception $exception) {
-                throw $this->createBlobApiError($exception, 'Adding file failed');
-            }
+            return self::createBlobFileFromFileData($this->blobService->addFile($fileData, $options));
+        } catch (\Exception $exception) {
+            throw $this->createBlobApiError($exception, 'Adding file failed');
         } finally {
             if ($tempFilePath !== null) {
                 @unlink($tempFilePath);
@@ -366,6 +364,7 @@ readonly class FileApi implements BlobFileApiInterface
             $blobErrorId = $exception->getBlobErrorId();
             $blobErrorDetails = $exception->getBlobErrorDetails();
         } elseif ($exception instanceof ApiError) {
+            $message .= ': '.$exception->getMessage();
             $statusCode = $exception->getStatusCode();
             if ($exception->getStatusCode() === Response::HTTP_NOT_FOUND) {
                 $errorId = BlobApiError::FILE_NOT_FOUND;
@@ -375,7 +374,7 @@ readonly class FileApi implements BlobFileApiInterface
                 $errorId = BlobApiError::SERVER_ERROR;
             }
             $blobErrorId = $exception->getErrorId();
-            $blobErrorDetails = $exception->getErrorDetails();
+            $blobErrorDetails = $exception->getErrorDetails() ?? [];
         }
 
         return new BlobApiError(

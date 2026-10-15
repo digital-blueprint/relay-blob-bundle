@@ -25,8 +25,7 @@ class SignatureUtils
         foreach (['sig', 'bucketIdentifier', 'creationTime', 'method', 'expireIn'] as $parameterName) {
             $value = $filters[$parameterName] ?? null;
             if ($value !== null && !is_string($value)) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Parameter '.$parameterName.' is invalid',
-                    'blob:signature-parameter-invalid');
+                throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter '.$parameterName.' must be a string');
             }
         }
 
@@ -37,41 +36,30 @@ class SignatureUtils
         $expiryDuration = $filters['expireIn'] ?? null;
 
         if (!$signature) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
-                'signature missing', 'blob:signature-missing');
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter sig is missing');
         }
         if (!$bucketIdentifier) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
-                'bucketID is missing', 'blob:bucket-id-missing');
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter bucketIdentifier is missing');
         }
         if (!$creationTime) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
-                'creationTime is missing', 'blob:creation-time-missing');
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter creationTime is missing');
         }
         if (!$urlMethod) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
-                'method is missing', 'blob:method-missing');
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter method is missing');
         }
 
         $bucket = $config->getBucketById($bucketIdentifier);
         if ($bucket === null) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
-                'bucketID is not configured', 'blob:bucket-id-not-configured');
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'The specified bucketIdentifier is not configured');
         }
 
         $now = BlobUtils::now();
         $linkExpiryInterval = new \DateInterval($bucket->getLinkExpireTime());
 
         if ($expiryDuration) {
-            try {
-                $requestedExpiryInterval = new \DateInterval($expiryDuration);
-            } catch (\Exception) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Parameter expireIn is in a bad format!',
-                    'blob:expiry-duration-invalid');
-            }
+            $requestedExpiryInterval = BlobUtils::parseRequestDuration($expiryDuration, 'expireIn');
             if ($now->add($requestedExpiryInterval) > $now->add($linkExpiryInterval)) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'expireIn is too big!',
-                    'blob:expiry-duration-too-long');
+                throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter expireIn exceeds the configured link lifetime');
             }
             $linkExpiryInterval = $requestedExpiryInterval;
         }
@@ -82,13 +70,11 @@ class SignatureUtils
                 // RFC3339_EXTENDED is broken in PHP
                 $creationDateTime = \DateTimeImmutable::createFromFormat("Y-m-d\TH:i:s.uP", $creationTime);
                 if ($creationDateTime === false) {
-                    throw ApiError::withDetails(Response::HTTP_FORBIDDEN,
-                        'Parameter creationTime is in a bad format!', 'blob:creation-time-invalid');
+                    throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter creationTime must be a valid ISO 8601 timestamp');
                 }
             }
         } catch (\ValueError) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
-                'Parameter creationTime is in a bad format!', 'blob:creation-time-invalid');
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter creationTime must be a valid ISO 8601 timestamp');
         }
 
         $expiryTime = $now->sub($linkExpiryInterval);
@@ -112,8 +98,7 @@ class SignatureUtils
             $method = 'GET';
         }
         if ($urlMethod !== $method || !in_array($method, $allowedMethods, true)) {
-            throw ApiError::withDetails(Response::HTTP_METHOD_NOT_ALLOWED,
-                'method is not suitable', 'blob:method-not-allowed');
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter method must match the request method and be allowed on this endpoint');
         }
     }
 

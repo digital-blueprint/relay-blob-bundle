@@ -37,9 +37,7 @@ final class CreateFileDataAction extends AbstractController
         SignatureUtils::checkSignature($this->config, $request, $request->query->all(), ['POST']);
 
         if ($request->files->get('file') === null) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST,
-                'No file with parameter key "file" was received!',
-                'blob:file-missing');
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'No file with parameter key "file" was received!');
         }
 
         $fileData = $this->blobService->setUpFileDataFromRequest(new FileData(), $request);

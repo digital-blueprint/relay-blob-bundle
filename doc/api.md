@@ -62,45 +62,29 @@ This timespan gets converted to a timestamp and stored in the database in the fi
 
 ## Error codes and descriptions
 
-Error IDs describe the failure, not the endpoint or HTTP method. Shared checks return the same ID for creation, updates, retrieval and downloads. Operation-prefixed IDs from earlier versions are no longer used for these checks.
+Invalid request input returns HTTP 400 with a message explaining the problem. Basic input checks omit blob-specific `relay:errorId` and `relay:errorDetails`; shared metadata and file validators retain their error IDs and structured validation details.
 
-### Signature and URL parameters (all signed file endpoints)
+### Signature verification (all signed file endpoints)
 
 | `relay:errorId` | Status code | Description |
 |----------------|-------------|-------------|
-| `blob:signature-parameter-invalid` | 400 | A signature parameter (`sig`, `bucketIdentifier`, `creationTime`, `method` or `expireIn`) is not a string. |
-| `blob:signature-missing` | 400 | The `sig` parameter is missing or empty. |
-| `blob:bucket-id-missing` | 400 | The `bucketIdentifier` parameter is missing or empty. |
-| `blob:creation-time-missing` | 400 | The `creationTime` parameter is missing or empty. |
-| `blob:method-missing` | 400 | The `method` parameter is missing or empty. |
-| `blob:bucket-id-not-configured` | 400 | The specified bucket is not configured. |
-| `blob:expiry-duration-invalid` | 400 | `expireIn` is not a valid ISO 8601 duration. |
-| `blob:expiry-duration-too-long` | 400 | `expireIn` exceeds the bucket's configured link lifetime. |
-| `blob:creation-time-invalid` | 400 or 403 | `creationTime` is not a valid supported timestamp; embedded null bytes produce 400, other parse failures produce 403. |
 | `blob:creation-time-out-of-range` | 403 | The request is expired or its creation time is too far in the future. |
 | `blob:signature-invalid` | 403 | The signature or URL checksum is invalid, or `sig` is not the final query parameter. |
-| `blob:method-not-allowed` | 405 | The request method does not match the signed method or is not allowed on the endpoint. HEAD is accepted with a GET signature where GET is allowed. |
 
-### File input and validation
+HEAD is accepted with a GET signature where GET is allowed. Unsupported HTTP methods may still return HTTP 405 from routing before input validation runs.
 
-Input errors apply to POST `/blob/files` and PATCH `/blob/files/{identifier}`. Metadata, type and file validation errors can also occur during item retrieval or downloads when output validation is enabled. Integrity errors apply when output validation and integrity checks are enabled.
+### Metadata, file and stored-data validation
+
+Metadata, type and file validators are shared by POST/PATCH input validation and item retrieval or downloads when output validation is enabled. Integrity errors apply only to stored data when output validation and integrity checks are enabled. File-data schema validation is used during metadata backup.
 
 | `relay:errorId` | Status code | Description |
 |----------------|-------------|-------------|
-| `blob:file-missing` | 400 | A file required for creation is missing. |
-| `blob:file-too-big` | 400 | The request exceeds the webserver's configured `post_max_size`. |
-| `blob:file-upload-failed` | 400 | The uploaded file has a PHP upload error. |
-| `blob:file-empty` | 400 | Empty files are not allowed. |
-| `blob:file-name-missing` | 400 | The required `fileName` is missing or empty. |
-| `blob:prefix-missing` | 400 | The required `prefix` is missing or empty. |
-| `blob:file-name-invalid` | 403 | The filename contains `/`. |
-| `blob:metadata-too-big` | 400 | Metadata exceeds the configured size limit. |
-| `blob:metadata-invalid` | 409 | Metadata is not valid JSON or its top-level value is not an object. |
-| `blob:type-not-configured` | 409 | The requested type is not configured for the bucket. |
+| `blob:metadata-invalid` | 400 | Metadata is not valid JSON or its top-level value is not an object. |
+| `blob:type-not-configured` | 400 | The requested type is not configured for the bucket. |
 | `blob:metadata-does-not-match-type` | 400 | Metadata does not match the type's JSON schema; `relay:errorDetails` contains validation errors. |
 | `blob:file-does-not-validate-against-type` | 400 | The file fails the type's validation profile; `relay:errorDetails` contains validation errors. |
-| `blob:file-hash-mismatch` | 409 | The stored file's SHA-256 hash does not match the saved hash. |
-| `blob:metadata-hash-mismatch` | 409 | The stored metadata's SHA-256 hash does not match the saved hash. |
+| `blob:file-hash-mismatch` | 500 | The stored file's SHA-256 hash does not match the saved hash. |
+| `blob:metadata-hash-mismatch` | 500 | The stored metadata's SHA-256 hash does not match the saved hash. |
 | `blob:file-data-validation-failed` | 400 | File data does not match the configured file-data schema during metadata backup; `relay:errorDetails` contains validation errors. |
 
 ### Retrieval, storage and bucket limits
@@ -108,7 +92,6 @@ Input errors apply to POST `/blob/files` and PATCH `/blob/files/{identifier}`. M
 | `relay:errorId` | Status code | Description |
 |----------------|-------------|-------------|
 | `blob:file-data-not-found` | 404 | The file data does not exist or is no longer retrievable because of its deletion date. |
-| `blob:get-file-data-collection-too-many-items-per-page` | 400 | The requested collection page size exceeds 1000 items. |
 | `blob:bucket-locked` | 403 | The requested method is locked for the bucket. |
 | `blob:bucket-locked-post` | 403 | Request input processing finds that the bucket is locked for the requested method. |
 | `blob:bucket-quota-reached` | 507 | Saving the file would exceed the bucket quota. |
@@ -120,4 +103,4 @@ Input errors apply to POST `/blob/files` and PATCH `/blob/files/{identifier}`. M
 | `blob:removing-file-from-datasystem-service-failed` | 500 | The file could not be removed from the storage provider. |
 | `blob:failed-to-get-file-from-datasystem-service` | 500 | The file could not be read from the storage provider. |
 
-Other failures, such as missing authentication, bucket access denial or invalid submitted hash constraints, may use generic Relay errors rather than a blob-specific error ID.
+Other failures, such as missing authentication or bucket access denial, may use generic Relay errors rather than a blob-specific error ID.

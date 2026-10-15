@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Dbp\Relay\BlobBundle\Helper;
 
+use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Kekos\MultipartFormDataParser\Parser;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
 use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class BlobUtils
 {
@@ -29,6 +31,15 @@ class BlobUtils
         $httpFoundationFactory = new HttpFoundationFactory();
 
         return $httpFoundationFactory->createRequest($psrRequest);
+    }
+
+    public static function parseRequestDuration(string $duration, string $parameterName): \DateInterval
+    {
+        try {
+            return new \DateInterval($duration);
+        } catch (\Exception) {
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter '.$parameterName.' must be a valid ISO 8601 duration');
+        }
     }
 
     public static function now(): \DateTimeImmutable
