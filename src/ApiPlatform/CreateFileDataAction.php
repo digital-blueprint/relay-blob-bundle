@@ -34,7 +34,7 @@ final class CreateFileDataAction extends AbstractController
             $this->requireAuthentication();
         }
 
-        SignatureUtils::checkSignature($this->config, $request, $request->query->all(), ['POST']);
+        SignatureUtils::checkSignature($this->config, $request, ['POST']);
 
         if ($request->files->get('file') === null) {
             throw new ApiError(Response::HTTP_BAD_REQUEST, 'No file with parameter key "file" was received!');

@@ -34,7 +34,7 @@ class DownloadAction extends AbstractController
         }
 
         SignatureUtils::checkSignature(
-            $this->config, $request, $request->query->all(), ['GET']);
+            $this->config, $request, ['GET']);
 
         $bucketIdentifier = $request->query->get('bucketIdentifier');
         $this->blobService->assertBucketNotLocked($bucketIdentifier, Request::METHOD_GET);

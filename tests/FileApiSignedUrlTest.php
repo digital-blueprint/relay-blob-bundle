@@ -92,12 +92,11 @@ class FileApiSignedUrlTest extends KernelTestCase
         $bucket = $configuration->getBucketById(self::BUCKET_IDENTIFIER);
         $url = SignatureTools::createSignedUrl($bucket->getBucketId(), $bucket->getKey(), 'GET');
         $request = Request::create($url, 'HEAD');
-        $filters = $request->query->all();
 
-        SignatureUtils::checkSignature($configuration, $request, $filters, ['GET']);
+        SignatureUtils::checkSignature($configuration, $request, ['GET']);
 
         try {
-            SignatureUtils::checkSignature($configuration, $request, $filters, ['POST']);
+            SignatureUtils::checkSignature($configuration, $request, ['POST']);
             $this->fail('Expected a method error');
         } catch (ApiError $error) {
             $this->assertNull($error->getErrorId());
@@ -121,7 +120,7 @@ class FileApiSignedUrlTest extends KernelTestCase
             'SCRIPT_NAME' => $basePath.'/index.php',
             'SCRIPT_FILENAME' => '/srv/public/index.php',
         ]);
-        SignatureUtils::checkSignature($configuration, $request, $request->query->all(), ['GET']);
+        SignatureUtils::checkSignature($configuration, $request, ['GET']);
         $this->assertTrue($request->query->has('sig'));
     }
 
