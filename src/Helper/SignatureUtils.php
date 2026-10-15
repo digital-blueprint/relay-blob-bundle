@@ -13,15 +13,16 @@ use Symfony\Component\HttpFoundation\Response;
 class SignatureUtils
 {
     /**
-     * Checks if the parameters bucketID, creationTime, method and sig are present and valid,
-     * either using filter or the request itself.
+     * Checks if the query parameters bucketIdentifier, creationTime, method and sig are present and valid.
      * Also checks if the creationTime is too old, the bucket with given ID is configured, and if the specified method is allowed.
      *
      * @throws \Exception
      */
     public static function checkSignature(ConfigurationService $config, Request $request,
-        array $filters = [], array $allowedMethods = []): void
+        array $allowedMethods = []): void
     {
+        $filters = $request->query->all();
+
         foreach (['sig', 'bucketIdentifier', 'creationTime', 'method', 'expireIn'] as $parameterName) {
             $value = $filters[$parameterName] ?? null;
             if ($value !== null && !is_string($value)) {

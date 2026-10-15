@@ -56,7 +56,7 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
         $request = $this->requestStack->getCurrentRequest();
         $isGetRequest = $request->getMethod() === Request::METHOD_GET;
 
-        SignatureUtils::checkSignature($this->config, $request, $filters, ['GET', 'PATCH', 'DELETE']);
+        SignatureUtils::checkSignature($this->config, $request, ['GET', 'PATCH', 'DELETE']);
 
         // if output validation is disabled, a user can get the data even if the system usually throws an invalid data error
         $disableOutputValidation = !$isGetRequest || ($filters['disableOutputValidation'] ?? null) === '1';
@@ -86,7 +86,6 @@ class FileDataProvider extends AbstractDataProvider implements LoggerAwareInterf
         SignatureUtils::checkSignature(
             $this->config,
             $this->requestStack->getCurrentRequest(),
-            $filters,
             ['GET']
         );
 
