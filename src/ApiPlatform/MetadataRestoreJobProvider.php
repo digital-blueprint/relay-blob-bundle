@@ -50,12 +50,12 @@ class MetadataRestoreJobProvider extends AbstractDataProvider implements LoggerA
     protected function getMetadataRestoreJobById(string $id, array $filters): object
     {
         $this->authService->checkCanAccessMetadataBackup();
-        $backupJob = $this->blobService->getMetadataRestoreJobById($id);
-        if ($backupJob === null) {
+        $restoreJob = $this->blobService->getMetadataRestoreJobById($id);
+        if ($restoreJob === null) {
             throw new ApiError(Response::HTTP_NOT_FOUND, 'The metadata restore job with the given id cannot be found!');
         }
 
-        return $backupJob;
+        return $restoreJob;
     }
 
     /**
@@ -75,11 +75,11 @@ class MetadataRestoreJobProvider extends AbstractDataProvider implements LoggerA
         if ($internalId === null) {
             throw new ApiError(Response::HTTP_BAD_REQUEST, 'The specified bucketIdentifier is not configured');
         }
-        $backupJobs = $this->blobService->getMetadataRestoreJobsByInternalBucketId($internalId, $currentPageNumber, $maxNumItemsPerPage);
-        if (empty($backupJobs)) {
+        $restoreJobs = $this->blobService->getMetadataRestoreJobsByInternalBucketId($internalId, $currentPageNumber, $maxNumItemsPerPage);
+        if (empty($restoreJobs)) {
             throw new ApiError(Response::HTTP_NOT_FOUND, 'No metadata restore jobs were found for the given bucket id!');
         }
 
-        return $backupJobs;
+        return $restoreJobs;
     }
 }
