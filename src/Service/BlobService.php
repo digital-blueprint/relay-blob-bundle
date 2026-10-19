@@ -1723,9 +1723,13 @@ class BlobService implements LoggerAwareInterface
             $this->validateMetadataInternal($fileData, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
         if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $types[$type]) && $types[$type][BlobService::VERITY_PROFILE_CONFIG] !== null) {
-            $fileData->setFile($this->getFileForFileData($fileData));
-            $this->validateFileInternal($fileData, Response::HTTP_INTERNAL_SERVER_ERROR);
-            @unlink($fileData->getFile()->getFileInfo()->getRealPath());
+            $file = $this->getFileForFileData($fileData);
+            $fileData->setFile($file);
+            try {
+                $this->validateFileInternal($fileData, Response::HTTP_INTERNAL_SERVER_ERROR);
+            } finally {
+                @unlink($file->getPathname());
+            }
         }
     }
 
