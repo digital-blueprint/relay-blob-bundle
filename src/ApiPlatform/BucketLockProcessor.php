@@ -45,7 +45,7 @@ class BucketLockProcessor extends AbstractDataProcessor
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
                 'Lock on bucket already exists!',
-                'blob:lock-already-exists'
+                'blob:bucket-lock-already-exists'
             );
         }
 

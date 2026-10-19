@@ -279,7 +279,7 @@ class BlobServiceTest extends KernelTestCase
             $this->fail('Expected invalid stored metadata to be rejected');
         } catch (ApiError $error) {
             $this->assertSame(Response::HTTP_INTERNAL_SERVER_ERROR, $error->getStatusCode());
-            $this->assertSame('blob:metadata-does-not-match-type', $error->getErrorId());
+            $this->assertSame('blob:metadata-validation-failed', $error->getErrorId());
             $this->assertNotEmpty($error->getErrorDetails());
         }
     }
@@ -294,7 +294,7 @@ class BlobServiceTest extends KernelTestCase
             $this->fail('Expected unknown stored type to be rejected');
         } catch (ApiError $error) {
             $this->assertSame(Response::HTTP_INTERNAL_SERVER_ERROR, $error->getStatusCode());
-            $this->assertSame('blob:type-not-configured', $error->getErrorId());
+            $this->assertSame('blob:type-unknown', $error->getErrorId());
         }
     }
 

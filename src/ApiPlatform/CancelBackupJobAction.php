@@ -37,7 +37,7 @@ class CancelBackupJobAction extends AbstractController
         }
 
         if (!$this->blobService->checkMetadataBackupJobRunning($identifier)) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Cannot cancel already finished job!', 'blob:cannot-cancel-finished-job');
+            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Cannot cancel already finished job!', 'blob:job-not-running');
         }
 
         $encoders = [new JsonEncoder()];
