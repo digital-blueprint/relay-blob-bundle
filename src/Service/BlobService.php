@@ -283,7 +283,7 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(
                 Response::HTTP_FORBIDDEN,
                 $request->getMethod().' is locked for this bucket',
-                'blob:bucket-locked-post'
+                'blob:bucket-locked'
             );
         }
 
@@ -468,7 +468,7 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
                 'Filedata could not be saved!',
-                'blob:filedata-not-saved',
+                'blob:file-data-save-failed',
                 ['message' => $e->getMessage()]
             );
         }
@@ -493,23 +493,6 @@ class BlobService implements LoggerAwareInterface
         return $bucket;
     }
 
-    /**
-     * Used to persist given fileData in entity manager, and automatically adapts last access timestamp.
-     *
-     * @param BucketSize $bucket bucket to be persisted
-     *
-     * @throws \Exception
-     */
-    public function saveBucketSize(BucketSize $bucket): void
-    {
-        try {
-            $this->entityManager->persist($bucket);
-            $this->entityManager->flush();
-        } catch (\Exception $e) {
-            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Bucket data could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
-        }
-    }
-
     public function updateBucketSize(BucketSize $bucket, int $bucketSizeDelta): void
     {
         try {
@@ -526,7 +509,7 @@ class BlobService implements LoggerAwareInterface
             $this->entityManager->flush();
         } catch (\Exception $e) {
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR,
-                'Bucket data could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
+                'Bucket data could not be saved!', 'blob:bucket-size-update-failed', ['message' => $e->getMessage()]);
         }
     }
 
@@ -649,7 +632,7 @@ class BlobService implements LoggerAwareInterface
                 $out->writeln('Successfully updated blob_bucket_sizes table!');
             }
         } catch (\Exception $e) {
-            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Bucket data could not be saved!', 'blob:file-not-saved', ['message' => $e->getMessage()]);
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Bucket data could not be saved!', 'blob:bucket-size-update-failed', ['message' => $e->getMessage()]);
         }
     }
 
@@ -669,7 +652,7 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
                 'saving file to datasystem service failed',
-                'blob:file-storage-failed'
+                'blob:file-storage-save-failed'
             );
         }
     }
@@ -891,7 +874,7 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
                 'BucketLock could not be saved!',
-                'blob:bucket-lock-not-saved',
+                'blob:bucket-lock-save-failed',
                 ['message' => $e->getMessage()]
             );
         }
@@ -907,7 +890,7 @@ class BlobService implements LoggerAwareInterface
             $this->entityManager->persist($job);
             $this->entityManager->flush();
         } catch (\Exception $e) {
-            $errorId = 'blob:metadata-backup-job-could-not-be-saved';
+            $errorId = 'blob:metadata-backup-job-save-failed';
             $errorMessage = 'MetadataBackupJob could not be saved! ';
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
@@ -994,7 +977,7 @@ class BlobService implements LoggerAwareInterface
             $this->entityManager->persist($job);
             $this->entityManager->flush();
         } catch (\Exception $e) {
-            $errorId = 'blob:metadata-restore-job-could-not-be-saved';
+            $errorId = 'blob:metadata-restore-job-save-failed';
             $errorMessage = 'MetadataRestoreJob could not be saved! ';
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
@@ -1207,7 +1190,7 @@ class BlobService implements LoggerAwareInterface
         $config->setKey('<redacted>');
 
         if (!$opened) {
-            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Metadata backup couldnt be opened!', 'blob:metadata-backup-not-opened');
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Metadata backup couldnt be opened!', 'blob:metadata-backup-open-failed');
         }
 
         $service->appendToMetadataBackup(json_encode($config)."\n");
@@ -1237,7 +1220,7 @@ class BlobService implements LoggerAwareInterface
             foreach ($items as $item) {
                 $json = json_encode($item);
                 if ($json === false) {
-                    throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Could not encode filedata as json!', 'blob:metadata-backup-cannot-encode-filedata-as-json');
+                    throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Could not encode filedata as json!', 'blob:metadata-backup-serialization-failed');
                 }
                 $this->validateJsonFileData($json);
                 $service->appendToMetadataBackup($json."\n");
@@ -1266,7 +1249,7 @@ class BlobService implements LoggerAwareInterface
         $opened = $service->openMetadataBackup($intBucketId, 'r');
 
         if (!$opened) {
-            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Metadata backup couldnt be opened!', 'blob:metadata-backup-not-opened');
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR, 'Metadata backup couldnt be opened!', 'blob:metadata-backup-open-failed');
         }
 
         // handle bucket data separately
@@ -1472,7 +1455,7 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
                 'Error while removing file from datasystem service',
-                'blob:removing-file-from-datasystem-service-failed'
+                'blob:file-storage-remove-failed'
             );
         }
     }
@@ -1518,7 +1501,7 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(
                 Response::HTTP_INSUFFICIENT_STORAGE,
                 'Bucket quota is reached',
-                'blob:bucket-quota-reached'
+                'blob:bucket-quota-exceeded'
             );
         }
         $this->saveFileToDatasystemService($fileData);
@@ -1574,7 +1557,7 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
                 'Error while removing the file data',
-                'blob:remove-file-data-save-file-failed'
+                'blob:file-removal-failed'
             );
         }
     }
@@ -1616,7 +1599,7 @@ class BlobService implements LoggerAwareInterface
         $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
         $types = $bucket->getTypes();
         if (!array_key_exists($type, $types)) {
-            throw ApiError::withDetails($failureStatus, 'The specified type is not configured for this bucket', 'blob:type-not-configured');
+            throw ApiError::withDetails($failureStatus, 'The specified type is not configured for this bucket', 'blob:type-unknown');
         }
 
         if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $types[$type]) && $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
@@ -1624,7 +1607,7 @@ class BlobService implements LoggerAwareInterface
             $messages = SchemaValidator::validateJsonSchemaData($metadataDecoded, $schemaPath);
             if ($messages !== []) {
                 throw ApiError::withDetails($failureStatus, 'metadata does not match specified type',
-                    'blob:metadata-does-not-match-type', $messages);
+                    'blob:metadata-validation-failed', $messages);
             }
         }
     }
@@ -1650,7 +1633,7 @@ class BlobService implements LoggerAwareInterface
         $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
         $types = $bucket->getTypes();
         if (!array_key_exists($type, $types)) {
-            throw ApiError::withDetails($failureStatus, 'The specified type is not configured for this bucket', 'blob:type-not-configured');
+            throw ApiError::withDetails($failureStatus, 'The specified type is not configured for this bucket', 'blob:type-unknown');
         }
 
         if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $types[$type]) && $types[$type][BlobService::VERITY_PROFILE_CONFIG] !== null) {
@@ -1665,7 +1648,7 @@ class BlobService implements LoggerAwareInterface
             $result = $this->eventDispatcher->dispatch($event);
             if (!$result->valid) {
                 throw ApiError::withDetails($failureStatus, 'file does not validate against the specified type',
-                    'blob:file-does-not-validate-against-type', $result->errors);
+                    'blob:file-validation-failed', $result->errors);
             }
         }
     }
@@ -1717,7 +1700,7 @@ class BlobService implements LoggerAwareInterface
         $types = $bucket->getTypes();
         if (!array_key_exists($type, $types)) {
             throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR,
-                'The specified type is not configured for this bucket', 'blob:type-not-configured');
+                'The specified type is not configured for this bucket', 'blob:type-unknown');
         }
         if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $types[$type]) && $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
             $this->validateMetadataInternal($fileData, Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -1799,7 +1782,7 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(
                 Response::HTTP_INTERNAL_SERVER_ERROR,
                 'Failed to get file from storage backend',
-                'blob:failed-to-get-file-from-datasystem-service'
+                'blob:file-storage-read-failed'
             );
         }
     }
@@ -1859,7 +1842,7 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
                 'A metadata restore job with ID '.$running->getIdentifier().' is currently running for bucket '.$this->getBucketIdByInternalBucketID($internalId),
-                'blob:other-bucket-metadata-restore-job-running'
+                'blob:metadata-restore-job-running'
             );
         }
         $running = $this->getRunningMetadataBackupJobByInternalBucketId($internalId);
@@ -1867,7 +1850,7 @@ class BlobService implements LoggerAwareInterface
             throw ApiError::withDetails(
                 Response::HTTP_BAD_REQUEST,
                 'A metadata backup job with ID '.$running->getIdentifier().' is currently running for bucket '.$this->getBucketIdByInternalBucketID($internalId),
-                'blob:other-bucket-metadata-backup-job-running'
+                'blob:metadata-backup-job-running'
             );
         }
     }

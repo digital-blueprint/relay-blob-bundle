@@ -73,32 +73,16 @@ Invalid request input returns HTTP 400 with a message explaining the problem. Ba
 
 HEAD is accepted with a GET signature where GET is allowed. Unsupported HTTP methods may still return HTTP 405 from routing before input validation runs.
 
-### Metadata, file and stored-data validation
+### Validation and bucket locks
 
-Metadata, type and file validators are shared by POST/PATCH input validation and item retrieval or downloads when output validation is enabled. Integrity errors apply only to stored data when output validation and integrity checks are enabled. File-data schema validation is used during metadata backup.
+Validation errors apply to POST/PATCH input validation. Bucket locks apply to the requested method.
 
 | `relay:errorId` | Status code | Description |
 |----------------|-------------|-------------|
 | `blob:metadata-invalid` | 400 | Metadata is not valid JSON or its top-level value is not an object. |
-| `blob:type-not-configured` | 400 | The requested type is not configured for the bucket. |
-| `blob:metadata-does-not-match-type` | 400 | Metadata does not match the type's JSON schema; `relay:errorDetails` contains validation errors. |
-| `blob:file-does-not-validate-against-type` | 400 | The file fails the type's validation profile; `relay:errorDetails` contains validation errors. |
-| `blob:file-hash-mismatch` | 500 | The stored file's SHA-256 hash does not match the saved hash. |
-| `blob:metadata-hash-mismatch` | 500 | The stored metadata's SHA-256 hash does not match the saved hash. |
-
-### Retrieval, storage and bucket limits
-
-| `relay:errorId` | Status code | Description |
-|----------------|-------------|-------------|
+| `blob:type-unknown` | 400 | The requested type is not configured for the bucket. |
+| `blob:metadata-validation-failed` | 400 | Metadata does not match the type's JSON schema; `relay:errorDetails` contains validation errors. |
+| `blob:file-validation-failed` | 400 | The file fails the type's validation profile; `relay:errorDetails` contains validation errors. |
 | `blob:bucket-locked` | 403 | The requested method is locked for the bucket. |
-| `blob:bucket-locked-post` | 403 | Request input processing finds that the bucket is locked for the requested method. |
-| `blob:bucket-quota-reached` | 507 | Saving the file would exceed the bucket quota. |
-| `blob:file-storage-failed` | 500 | The file could not be saved to the storage provider. |
-| `blob:file-data-save-failed` | 500 | Saving file data and updating the bucket size failed. |
-| `blob:filedata-not-saved` | 500 | File metadata could not be saved. |
-| `blob:file-not-saved` | 500 | Bucket data could not be saved. |
-| `blob:remove-file-data-save-file-failed` | 500 | Removing file data and updating storage or bucket size failed. |
-| `blob:removing-file-from-datasystem-service-failed` | 500 | The file could not be removed from the storage provider. |
-| `blob:failed-to-get-file-from-datasystem-service` | 500 | The file could not be read from the storage provider. |
 
 Other failures, such as missing authentication or bucket access denial, may use generic Relay errors rather than a blob-specific error ID.
