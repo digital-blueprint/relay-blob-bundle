@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.2.18
+
 - Breaking change: Replace operation-prefixed error IDs with shared,
   failure-specific IDs for signature checks, file validation and storage.
 - Breaking change: Basic client input errors no longer return an error ID.
