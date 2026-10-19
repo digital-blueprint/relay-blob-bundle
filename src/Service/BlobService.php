@@ -1584,6 +1584,11 @@ class BlobService implements LoggerAwareInterface
      */
     public function validateMetadata(FileData $fileData): void
     {
+        $this->validateMetadataInternal($fileData, Response::HTTP_BAD_REQUEST);
+    }
+
+    private function validateMetadataInternal(FileData $fileData, int $failureStatus): void
+    {
         $metadata = $fileData->getMetadata();
         $type = $fileData->getType();
 
@@ -1592,11 +1597,11 @@ class BlobService implements LoggerAwareInterface
             try {
                 $metadataDecoded = json_decode($metadata, false, flags: JSON_THROW_ON_ERROR);
             } catch (\JsonException $e) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Metadata must be valid JSON', 'blob:metadata-invalid');
+                throw ApiError::withDetails($failureStatus, 'Metadata must be valid JSON', 'blob:metadata-invalid');
             }
             // only allow JSON objects as top level value (metadata always starts with '{')
             if (!$metadataDecoded instanceof \stdClass) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'Metadata must be a JSON object', 'blob:metadata-invalid');
+                throw ApiError::withDetails($failureStatus, 'Metadata must be a JSON object', 'blob:metadata-invalid');
             }
         } else {
             $metadataDecoded = null;
@@ -1611,14 +1616,14 @@ class BlobService implements LoggerAwareInterface
         $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
         $types = $bucket->getTypes();
         if (!array_key_exists($type, $types)) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'The specified type is not configured for this bucket', 'blob:type-not-configured');
+            throw ApiError::withDetails($failureStatus, 'The specified type is not configured for this bucket', 'blob:type-not-configured');
         }
 
         if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $types[$type]) && $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
             $schemaPath = $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG];
             $messages = SchemaValidator::validateJsonSchemaData($metadataDecoded, $schemaPath);
             if ($messages !== []) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'metadata does not match specified type',
+                throw ApiError::withDetails($failureStatus, 'metadata does not match specified type',
                     'blob:metadata-does-not-match-type', $messages);
             }
         }
@@ -1628,6 +1633,11 @@ class BlobService implements LoggerAwareInterface
      * @throws \Exception
      */
     public function validateFile(FileData $fileData): void
+    {
+        $this->validateFileInternal($fileData, Response::HTTP_BAD_REQUEST);
+    }
+
+    private function validateFileInternal(FileData $fileData, int $failureStatus): void
     {
         $type = $fileData->getType();
 
@@ -1640,7 +1650,7 @@ class BlobService implements LoggerAwareInterface
         $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
         $types = $bucket->getTypes();
         if (!array_key_exists($type, $types)) {
-            throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'The specified type is not configured for this bucket', 'blob:type-not-configured');
+            throw ApiError::withDetails($failureStatus, 'The specified type is not configured for this bucket', 'blob:type-not-configured');
         }
 
         if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $types[$type]) && $types[$type][BlobService::VERITY_PROFILE_CONFIG] !== null) {
@@ -1654,7 +1664,7 @@ class BlobService implements LoggerAwareInterface
                 $fileData->getFileSize());
             $result = $this->eventDispatcher->dispatch($event);
             if (!$result->valid) {
-                throw ApiError::withDetails(Response::HTTP_BAD_REQUEST, 'file does not validate against the specified type',
+                throw ApiError::withDetails($failureStatus, 'file does not validate against the specified type',
                     'blob:file-does-not-validate-against-type', $result->errors);
             }
         }
@@ -1705,12 +1715,16 @@ class BlobService implements LoggerAwareInterface
         }
         $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
         $types = $bucket->getTypes();
+        if (!array_key_exists($type, $types)) {
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR,
+                'The specified type is not configured for this bucket', 'blob:type-not-configured');
+        }
         if (array_key_exists(BlobService::JSON_SCHEMA_PATH_CONFIG, $types[$type]) && $types[$type][BlobService::JSON_SCHEMA_PATH_CONFIG] !== null) {
-            $this->validateMetadata($fileData);
+            $this->validateMetadataInternal($fileData, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
         if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $types[$type]) && $types[$type][BlobService::VERITY_PROFILE_CONFIG] !== null) {
             $fileData->setFile($this->getFileForFileData($fileData));
-            $this->validateFile($fileData);
+            $this->validateFileInternal($fileData, Response::HTTP_INTERNAL_SERVER_ERROR);
             @unlink($fileData->getFile()->getFileInfo()->getRealPath());
         }
     }

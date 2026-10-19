@@ -262,6 +262,42 @@ class BlobServiceTest extends KernelTestCase
         }
     }
 
+    public function testStoredMetadataValidationIsServerError(): void
+    {
+        $this->testConfig = BlobTestUtils::getTestConfig();
+        $this->testConfig['file_integrity_checks'] = false;
+        $this->testConfig['buckets'][0]['types']['document'] = [
+            'json_schema_path' => __DIR__.'/Fixtures/schema-validation/demo-document-draft7.schema.json',
+            'verity_profile' => null,
+        ];
+        $this->setUpBlobService();
+        $fileData = $this->addTestFile();
+        $fileData->setType('document');
+
+        try {
+            $this->blobService->getFileData($fileData->getIdentifier());
+            $this->fail('Expected invalid stored metadata to be rejected');
+        } catch (ApiError $error) {
+            $this->assertSame(Response::HTTP_INTERNAL_SERVER_ERROR, $error->getStatusCode());
+            $this->assertSame('blob:metadata-does-not-match-type', $error->getErrorId());
+            $this->assertNotEmpty($error->getErrorDetails());
+        }
+    }
+
+    public function testUnknownStoredTypeIsServerError(): void
+    {
+        $fileData = $this->addTestFile();
+        $fileData->setType('unknown');
+
+        try {
+            $this->blobService->getFileData($fileData->getIdentifier());
+            $this->fail('Expected unknown stored type to be rejected');
+        } catch (ApiError $error) {
+            $this->assertSame(Response::HTTP_INTERNAL_SERVER_ERROR, $error->getStatusCode());
+            $this->assertSame('blob:type-not-configured', $error->getErrorId());
+        }
+    }
+
     /**
      * @throws \Exception
      */
