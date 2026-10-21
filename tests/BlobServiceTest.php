@@ -104,7 +104,6 @@ class BlobServiceTest extends KernelTestCase
         $this->assertNotNull($fileData->getContentUrl());
 
         $this->testConfig = BlobTestUtils::getTestConfig();
-        $this->testConfig['file_integrity_checks'] = true;
         $this->setUpBlobService();
 
         $fileData = $this->blobService->addFile($fileData);
@@ -138,10 +137,10 @@ class BlobServiceTest extends KernelTestCase
         }
     }
 
-    public function testChecksumsAreStoredWithIntegrityChecksDisabled(): void
+    public function testChecksumsAreStoredWithOutputValidationDisabled(): void
     {
         $this->testConfig = BlobTestUtils::getTestConfig();
-        $this->testConfig['file_integrity_checks'] = false;
+        $this->testConfig['buckets'][0]['output_validation'] = false;
         $this->setUpBlobService();
 
         $fileData = $this->addTestFile();
@@ -169,6 +168,40 @@ class BlobServiceTest extends KernelTestCase
         $this->expectExceptionMessage('fileHash requires an uploaded file');
 
         $this->blobService->setUpFileDataFromRequest(new FileData(), $request);
+    }
+
+    public function testOutputValidationRejectsFileHashMismatch(): void
+    {
+        $fileData = $this->addTestFile();
+        $fileData->setFileHash(hash('sha256', 'different file contents'));
+
+        $this->expectException(ApiError::class);
+        $this->expectExceptionMessage('sha256 file hash doesnt match!');
+
+        $this->blobService->getFileData($fileData->getIdentifier());
+    }
+
+    public function testOutputValidationRejectsMetadataHashMismatch(): void
+    {
+        $fileData = $this->addTestFile();
+        $fileData->setMetadata(self::TEST_METADATA_2);
+
+        $this->expectException(ApiError::class);
+        $this->expectExceptionMessage('sha256 metadata hash doesnt match!');
+
+        $this->blobService->getFileData($fileData->getIdentifier());
+    }
+
+    public function testDisabledOutputValidationSkipsHashChecks(): void
+    {
+        $this->testConfig = BlobTestUtils::getTestConfig();
+        $this->testConfig['buckets'][0]['output_validation'] = false;
+        $this->setUpBlobService();
+        $fileData = $this->addTestFile();
+        $fileData->setFileHash(hash('sha256', 'different file contents'));
+        $fileData->setMetadata(self::TEST_METADATA_2);
+
+        $this->assertSame($fileData, $this->blobService->getFileData($fileData->getIdentifier()));
     }
 
     public function testMetadataHashWithoutMetadataIsRejected(): void
@@ -265,7 +298,6 @@ class BlobServiceTest extends KernelTestCase
     public function testStoredMetadataValidationIsServerError(): void
     {
         $this->testConfig = BlobTestUtils::getTestConfig();
-        $this->testConfig['file_integrity_checks'] = false;
         $this->testConfig['buckets'][0]['types']['document'] = [
             'json_schema_path' => __DIR__.'/Fixtures/schema-validation/demo-document-draft7.schema.json',
             'verity_profile' => null,
@@ -329,7 +361,6 @@ class BlobServiceTest extends KernelTestCase
         $this->assertNull($fileData->getNotifyEmail());
 
         $this->testConfig = BlobTestUtils::getTestConfig();
-        $this->testConfig['file_integrity_checks'] = true;
         $this->setUpBlobService();
 
         $originalFileData = $this->addTestFile();

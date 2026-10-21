@@ -111,11 +111,6 @@ class ConfigurationService
         return false; // disabled for now, since it doesn't scale for large numbers of files
     }
 
-    public function doFileIntegrityChecks(): bool
-    {
-        return $this->config['file_integrity_checks'];
-    }
-
     public function checkAdditionalAuth(): bool
     {
         return $this->config['additional_auth'];

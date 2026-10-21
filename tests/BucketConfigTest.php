@@ -47,7 +47,6 @@ class BucketConfigTest extends TestCase
             'reporting_interval' => '0 9 * * MON',
             'quota_warning_interval' => '0 6 * * *',
             'cleanup_interval' => '0 * * * *',
-            'file_integrity_checks' => true,
             'additional_auth' => false,
             'filedata_schema' => '/tmp/filedata-v1.schema.json',
             'integrity_check_interval' => '0 0 1 * *',

@@ -347,7 +347,6 @@ class BlobChecks implements LoggerAwareInterface
     {
         $debug = $options['debug'] ?? false;
         $maxNumFiles = $options['limit'] ?? null;
-        $doFileIntegrityChecks = $this->configurationService->doFileIntegrityChecks();
         $maxNumItemsPerPage = 100;
         $buckets = $internalBucketId !== null ?
             [$this->configurationService->getBucketByInternalID($internalBucketId)] :
@@ -402,7 +401,7 @@ class BlobChecks implements LoggerAwareInterface
                     foreach ($fileDataCollection as $fileData) {
                         try {
                             $microtimeStart = microtime(true);
-                            if ($doFileIntegrityChecks && $fileData->getFileHash() !== null) {
+                            if ($fileData->getFileHash() !== null) {
                                 if ($debug) {
                                     self::output(sprintf("Checking file hash of %s\n", $fileData->getIdentifier()), $out, $outFileName);
                                 }
@@ -448,7 +447,7 @@ class BlobChecks implements LoggerAwareInterface
                             }
                         }
 
-                        if ($doFileIntegrityChecks && $fileData->getMetadataHash() !== null) {
+                        if ($fileData->getMetadataHash() !== null) {
                             $microtimeStart = microtime(true);
                             if ($fileData->getMetadata() === null
                                 || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash()) {

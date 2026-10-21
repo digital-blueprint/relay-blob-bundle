@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Breaking change: Remove the `file_integrity_checks` configuration option.
+  Integrity scans always verify available file and metadata hashes; retrieval
+  verifies them when `output_validation` is enabled and not explicitly bypassed.
+
 ## v0.2.18
 
 - Breaking change: Replace operation-prefixed error IDs with shared,

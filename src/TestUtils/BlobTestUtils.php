@@ -62,7 +62,6 @@ class BlobTestUtils
             'database_url' => 'sqlite:///:memory:',
             'reporting_interval' => '0 9 * * MON',
             'cleanup_interval' => '0 * * * *',
-            'file_integrity_checks' => true,
             'additional_auth' => false,
             'integrity_check_interval' => '0 0 1 * *',
             'bucket_size_check_interval' => '0 2 * * 1',

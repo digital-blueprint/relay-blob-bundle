@@ -1677,20 +1677,17 @@ class BlobService implements LoggerAwareInterface
      */
     public function checkFileDataBeforeRetrieval(FileData $fileData): void
     {
-        // check if file integrity should be checked and if so, check it
-        if ($this->configurationService->doFileIntegrityChecks()) {
-            if ($fileData->getFileHash() !== null && $this->getFileHashFromStorage($fileData) !== $fileData->getFileHash()) {
-                throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR,
-                    'sha256 file hash doesnt match! File integrity cannot be guaranteed',
-                    'blob:file-hash-mismatch');
-            }
-            if ($fileData->getMetadataHash() !== null
-                && ($fileData->getMetadata() === null
-                    || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
-                throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR,
-                    'sha256 metadata hash doesnt match! Metadata integrity cannot be guaranteed',
-                    'blob:metadata-hash-mismatch');
-            }
+        if ($fileData->getFileHash() !== null && $this->getFileHashFromStorage($fileData) !== $fileData->getFileHash()) {
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR,
+                'sha256 file hash doesnt match! File integrity cannot be guaranteed',
+                'blob:file-hash-mismatch');
+        }
+        if ($fileData->getMetadataHash() !== null
+            && ($fileData->getMetadata() === null
+                || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash())) {
+            throw ApiError::withDetails(Response::HTTP_INTERNAL_SERVER_ERROR,
+                'sha256 metadata hash doesnt match! Metadata integrity cannot be guaranteed',
+                'blob:metadata-hash-mismatch');
         }
         $type = $fileData->getType();
         if ($type === null) {
