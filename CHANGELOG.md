@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Breaking change: File POST and PATCH requests now reject unknown body and
+  upload fields with HTTP 400 instead of silently ignoring them.
 - Breaking change: Missing file hashes, or missing metadata hashes when metadata
   exists, now fail retrieval validation and integrity scans.
 - CLI downloads now use the bucket's output validation instead of checking hashes
