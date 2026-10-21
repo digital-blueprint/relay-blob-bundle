@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Breaking change: Missing file hashes, or missing metadata hashes when metadata
+  exists, now fail retrieval validation and integrity scans.
+- CLI downloads now use the bucket's output validation instead of checking hashes
+  manually. Add `--disable-output-validation` to bypass validation.
+
 - Breaking change: Remove the `file_integrity_checks` configuration option.
   Integrity scans always verify available file and metadata hashes; retrieval
   verifies them when `output_validation` is enabled and not explicitly bypassed.

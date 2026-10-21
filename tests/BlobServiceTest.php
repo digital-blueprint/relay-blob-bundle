@@ -204,6 +204,49 @@ class BlobServiceTest extends KernelTestCase
         $this->assertSame($fileData, $this->blobService->getFileData($fileData->getIdentifier()));
     }
 
+    public function testOutputValidationRejectsMissingFileHash(): void
+    {
+        $fileData = $this->addTestFile();
+        $fileData->setFileHash(null);
+
+        $this->expectException(ApiError::class);
+        $this->expectExceptionMessage('sha256 file hash is missing!');
+
+        $this->blobService->getFileData($fileData->getIdentifier());
+    }
+
+    public function testOutputValidationRejectsMissingMetadataHash(): void
+    {
+        $fileData = $this->addTestFile();
+        $fileData->setMetadataHash(null);
+
+        $this->expectException(ApiError::class);
+        $this->expectExceptionMessage('sha256 metadata hash is missing!');
+
+        $this->blobService->getFileData($fileData->getIdentifier());
+    }
+
+    public function testOutputValidationAllowsAbsentMetadata(): void
+    {
+        $fileData = $this->addTestFile();
+        $fileData->setMetadata(null);
+        $fileData->setMetadataHash(null);
+
+        $this->assertSame($fileData, $this->blobService->getFileData($fileData->getIdentifier()));
+    }
+
+    public function testDisabledOutputValidationAllowsMissingHashes(): void
+    {
+        $this->testConfig = BlobTestUtils::getTestConfig();
+        $this->testConfig['buckets'][0]['output_validation'] = false;
+        $this->setUpBlobService();
+        $fileData = $this->addTestFile();
+        $fileData->setFileHash(null);
+        $fileData->setMetadataHash(null);
+
+        $this->assertSame($fileData, $this->blobService->getFileData($fileData->getIdentifier()));
+    }
+
     public function testMetadataHashWithoutMetadataIsRejected(): void
     {
         $request = Request::create('/blob/files?bucketIdentifier=test-bucket', 'PATCH',

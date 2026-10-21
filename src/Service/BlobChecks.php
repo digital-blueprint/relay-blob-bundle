@@ -8,6 +8,7 @@ use Dbp\Relay\BlobBundle\Configuration\BucketConfig;
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Helper\BlobUtils;
+use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\NonUniqueResultException;
@@ -399,19 +400,15 @@ class BlobChecks implements LoggerAwareInterface
                     }
 
                     foreach ($fileDataCollection as $fileData) {
+                        $fileHash = $fileData->getFileHash();
+                        $fileIntegrityViolation = $fileHash === null;
                         try {
                             $microtimeStart = microtime(true);
-                            if ($fileData->getFileHash() !== null) {
+                            if ($fileHash !== null) {
                                 if ($debug) {
                                     self::output(sprintf("Checking file hash of %s\n", $fileData->getIdentifier()), $out, $outFileName);
                                 }
-                                if ($this->blobService->getFileHashFromStorage($fileData) !== $fileData->getFileHash()) {
-                                    if (count($fileDataIdentifiersWithFileIntegrityViolation) < $maxNumStoredIdentifiers) {
-                                        $fileDataIdentifiersWithFileIntegrityViolation[] = $fileData->getIdentifier();
-                                    }
-                                    ++$numFilesWithFileIntegrityViolation;
-                                    self::output(sprintf("%s FI\n", $fileData->getIdentifier()), $out, $outFileName);
-                                }
+                                $fileIntegrityViolation = $this->blobService->getFileHashFromStorage($fileData) !== $fileHash;
                                 $compareFileHashSumMicrotime += (float) microtime(true) - $microtimeStart;
                             } else {
                                 if ($debug) {
@@ -447,18 +444,25 @@ class BlobChecks implements LoggerAwareInterface
                             }
                         }
 
-                        if ($fileData->getMetadataHash() !== null) {
-                            $microtimeStart = microtime(true);
-                            if ($fileData->getMetadata() === null
-                                || hash('sha256', $fileData->getMetadata()) !== $fileData->getMetadataHash()) {
-                                if (count($fileDataIdentifiersWithMetadataIntegrityViolation) < $maxNumStoredIdentifiers) {
-                                    $fileDataIdentifiersWithMetadataIntegrityViolation[] = $fileData->getIdentifier();
-                                }
-                                ++$numFilesWithMetadataIntegrityViolation;
-                                self::output(sprintf("%s MI\n", $fileData->getIdentifier()), $out, $outFileName);
+                        if ($fileIntegrityViolation) {
+                            if (count($fileDataIdentifiersWithFileIntegrityViolation) < $maxNumStoredIdentifiers) {
+                                $fileDataIdentifiersWithFileIntegrityViolation[] = $fileData->getIdentifier();
                             }
-                            $compareMetadataSumMicrotime += (float) microtime(true) - $microtimeStart;
+                            ++$numFilesWithFileIntegrityViolation;
+                            self::output(sprintf("%s FI\n", $fileData->getIdentifier()), $out, $outFileName);
                         }
+
+                        $microtimeStart = microtime(true);
+                        try {
+                            $this->blobService->checkMetadataHash($fileData);
+                        } catch (ApiError) {
+                            if (count($fileDataIdentifiersWithMetadataIntegrityViolation) < $maxNumStoredIdentifiers) {
+                                $fileDataIdentifiersWithMetadataIntegrityViolation[] = $fileData->getIdentifier();
+                            }
+                            ++$numFilesWithMetadataIntegrityViolation;
+                            self::output(sprintf("%s MI\n", $fileData->getIdentifier()), $out, $outFileName);
+                        }
+                        $compareMetadataSumMicrotime += (float) microtime(true) - $microtimeStart;
                         ++$numFilesChecked;
                         if ($maxNumFiles !== null && $numFilesChecked >= $maxNumFiles) {
                             $finished = true;

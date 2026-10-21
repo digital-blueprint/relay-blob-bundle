@@ -29,7 +29,8 @@ class DownloadFileCommand extends Command
             ->setDescription('Downloads a file from blob storage to the local filesystem.')
             ->addArgument('identifier', InputArgument::REQUIRED, 'The identifier (UUID) of the file to download.')
             ->addOption('output-dir', 'd', InputOption::VALUE_REQUIRED, 'Directory to save the file into (uses the stored filename).')
-            ->addOption('output-file', 'o', InputOption::VALUE_REQUIRED, 'Full output path including filename.');
+            ->addOption('output-file', 'o', InputOption::VALUE_REQUIRED, 'Full output path including filename.')
+            ->addOption('disable-output-validation', null, InputOption::VALUE_NONE, 'Skip the bucket\'s output validation.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -47,7 +48,7 @@ class DownloadFileCommand extends Command
         try {
             $fileData = $this->blobService->getFileData($identifier, [
                 BlobService::UPDATE_LAST_ACCESS_TIMESTAMP_OPTION => false,
-                BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => true,
+                BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => $input->getOption('disable-output-validation'),
             ]);
         } catch (\Exception $e) {
             $output->writeln('<error>Failed to retrieve file metadata: '.$e->getMessage().'</error>');
@@ -81,18 +82,6 @@ class DownloadFileCommand extends Command
             $output->writeln('<error>Failed to download file: '.$e->getMessage().'</error>');
 
             return Command::FAILURE;
-        }
-
-        $expectedHash = $fileData->getFileHash();
-        if ($expectedHash !== null) {
-            $actualHash = hash('sha256', $contents);
-            if ($actualHash !== $expectedHash) {
-                $output->writeln('<error>File hash mismatch — file has not been saved.</error>');
-                $output->writeln('<error>Expected: '.$expectedHash.'</error>');
-                $output->writeln('<error>Got:      '.$actualHash.'</error>');
-
-                return Command::FAILURE;
-            }
         }
 
         if (file_put_contents($targetPath, $contents) === false) {

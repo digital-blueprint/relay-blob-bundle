@@ -136,13 +136,13 @@ readonly class FileApi implements BlobFileApiInterface
         if ($fileData->getFileName()) {
             $blobFile->setFileName($fileData->getFileName());
         }
-        if ($fileData->getFileHash()) {
+        if ($fileData->getFileHash() !== null) {
             $blobFile->setFileHash($fileData->getFileHash());
         }
         if ($fileData->getMetadata()) {
             $blobFile->setMetadata($fileData->getMetadata());
         }
-        if ($fileData->getMetadataHash()) {
+        if ($fileData->getMetadataHash() !== null) {
             $blobFile->setMetadataHash($fileData->getMetadataHash());
         }
         if ($fileData->getContentUrl()) {

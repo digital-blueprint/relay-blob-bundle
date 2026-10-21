@@ -392,6 +392,20 @@ class FileApiTest extends KernelTestCase
             options: [BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => true]);
     }
 
+    public function testGetFilePreservesEmptyHashesWhenValidationIsBypassed(): void
+    {
+        $blobFile = $this->addTestFile();
+        $fileData = $this->testEntityManager->getFileDataById($blobFile->getIdentifier());
+        $fileData->setFileHash('');
+        $fileData->setMetadataHash('');
+
+        $result = $this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $blobFile->getIdentifier(),
+            options: [BlobApi::DISABLE_OUTPUT_VALIDATION_OPTION => true]);
+
+        $this->assertSame('', $result->getFileHash());
+        $this->assertSame('', $result->getMetadataHash());
+    }
+
     /**
      * @throws BlobApiError
      */
