@@ -6,9 +6,10 @@ namespace Dbp\Relay\BlobBundle\ApiPlatform;
 
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Entity\FileData;
-use Dbp\Relay\BlobBundle\Helper\BlobUtils;
+use Dbp\Relay\BlobBundle\Helper\PatchRequestParser;
 use Dbp\Relay\BlobBundle\Service\BlobService;
 use Dbp\Relay\CoreBundle\Rest\AbstractDataProcessor;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
@@ -40,10 +41,14 @@ class FileDataProcessor extends AbstractDataProcessor
         assert($data instanceof FileData);
         assert($previousData instanceof FileData);
 
-        $fileData = $this->blobService->setUpFileDataFromRequest($data,
-            BlobUtils::convertPatchRequest($this->requestStack->getCurrentRequest()));
+        return (new PatchRequestParser())->withParsedRequest(
+            $this->requestStack->getCurrentRequest(),
+            function (Request $request) use ($data, $previousData): FileData {
+                $fileData = $this->blobService->setUpFileDataFromRequest($data, $request);
 
-        return $this->blobService->updateFile($fileData, $previousData);
+                return $this->blobService->updateFile($fileData, $previousData);
+            }
+        );
     }
 
     /**

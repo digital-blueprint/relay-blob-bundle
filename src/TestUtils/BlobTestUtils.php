@@ -14,10 +14,27 @@ use Psr\Log\NullLogger;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\RouterInterface;
 
 class BlobTestUtils
 {
+    /**
+     * @param list<string> $fields
+     */
+    public static function createPatchUploadRequest(array $fields): Request
+    {
+        $body = '';
+        foreach ($fields as $field) {
+            $body .= "--TestBoundary\r\nContent-Disposition: form-data; name=\"$field\"; filename=\"test.txt\"\r\n"
+                ."Content-Type: text/plain\r\n\r\nupload contents\r\n";
+        }
+        $body .= "--TestBoundary--\r\n";
+
+        return Request::create('/blob/files/test-file', 'PATCH',
+            server: ['CONTENT_TYPE' => 'multipart/form-data; boundary=TestBoundary'], content: $body);
+    }
+
     public static function createTestEntityManager(ContainerInterface $container): TestEntityManager
     {
         return new TestEntityManager($container);
