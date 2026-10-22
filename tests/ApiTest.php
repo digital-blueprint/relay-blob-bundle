@@ -13,9 +13,7 @@ use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
 use Dbp\Relay\BlobLibrary\Api\BlobFile;
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\TestUtils\ApiTestCase;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Mime\Part\Multipart\FormDataPart;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
@@ -151,60 +149,6 @@ class ApiTest extends ApiTestCase
 
         $response = $this->testClient->postJson('/blob/metadata-restore-jobs?metadataBackupJobId='.Uuid::v7(), new \stdClass());
         $this->assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
-    }
-
-    public function testFilePostRejectsUnknownBodyAndUploadFields(): void
-    {
-        $bucket = $this->getTestBucketConfig();
-        $url = SignatureTools::createSignedUrl($bucket->getBucketId(), $bucket->getKey(), 'POST', parameters: ['prefix' => 'test']);
-
-        $uploadedFile = new UploadedFile(__DIR__.'/test.txt', 'test.txt', test: true);
-        foreach ([
-            ['parameters' => ['fileName' => 'test.txt', 'unknownField' => 'value'], 'files' => ['file' => $uploadedFile]],
-            ['parameters' => ['fileName' => 'test.txt'], 'files' => ['file' => $uploadedFile, 'unknownField' => $uploadedFile]],
-        ] as $extra) {
-            $response = $this->testClient->request('POST', $url, [
-                'headers' => ['Content-Type' => 'multipart/form-data'],
-                'extra' => $extra,
-            ]);
-            $this->assertUnknownFieldError($response);
-        }
-    }
-
-    public function testFilePatchRejectsUnknownFieldsAndAcceptsKnownFields(): void
-    {
-        $bucket = $this->getTestBucketConfig();
-        $fileApi = self::getContainer()->get('dbp.relay.blob.file_api');
-        $file = $fileApi->addFile($bucket->getBucketId(),
-            new BlobFile(['prefix' => 'test', 'fileName' => 'test.txt'], 'test contents'));
-        $url = SignatureTools::createSignedUrl($bucket->getBucketId(), $bucket->getKey(), 'PATCH',
-            identifier: $file->getIdentifier());
-
-        $response = $this->testClient->patchJson($url, ['fileName' => 'renamed.txt']);
-        $this->assertSame(Response::HTTP_UNSUPPORTED_MEDIA_TYPE, $response->getStatusCode());
-
-        $this->assertUnknownFieldError($this->patchMultipart($url, ['unknownField' => 'value']));
-
-        $response = $this->patchMultipart($url, ['fileName' => 'renamed.txt', 'metadata' => '{"customKey":"value"}']);
-        $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
-        $this->assertSame('renamed.txt', $response->toArray()['fileName']);
-        $this->assertSame('{"customKey":"value"}', $response->toArray()['metadata']);
-    }
-
-    private function patchMultipart(string $url, array $fields): ResponseInterface
-    {
-        $body = new FormDataPart($fields);
-
-        return $this->testClient->request('PATCH', $url, [
-            'headers' => ['Content-Type' => $body->getPreparedHeaders()->get('Content-Type')->getBodyAsString()],
-            'body' => $body->bodyToString(),
-        ]);
-    }
-
-    private function assertUnknownFieldError(ResponseInterface $response): void
-    {
-        $this->assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
-        $this->assertSame('Unknown request body fields: unknownField', $response->toArray(false)['detail']);
     }
 
     public function testRestoreWithUnfinishedBackupRemainsBadRequest(): void

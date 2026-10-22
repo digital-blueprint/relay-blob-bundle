@@ -16,11 +16,6 @@ class BlobUtils
 {
     public static function convertPatchRequest(Request $request): Request
     {
-        $contentType = trim(explode(';', $request->headers->get('Content-Type', ''))[0]);
-        if (strcasecmp($contentType, 'multipart/form-data') !== 0) {
-            throw new ApiError(Response::HTTP_UNSUPPORTED_MEDIA_TYPE, 'File PATCH requests require multipart/form-data');
-        }
-
         $uploaded_file_factory = new Psr17Factory();
         $stream_factory = $uploaded_file_factory;
 

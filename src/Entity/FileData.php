@@ -241,6 +241,7 @@ use Symfony\Component\Serializer\Attribute\Context;
         new Patch(
             uriTemplate: '/files/{identifier}',
             inputFormats: [
+                'json' => ['application/merge-patch+json'],
                 'multipart' => ['multipart/form-data'],
             ],
             openapi: new Operation(
@@ -338,7 +339,6 @@ use Symfony\Component\Serializer\Attribute\Context;
                         'multipart/form-data' => [
                             'schema' => [
                                 'type' => 'object',
-                                'additionalProperties' => false,
                                 'properties' => [
                                     'file' => [
                                         'type' => 'string',
@@ -479,7 +479,6 @@ use Symfony\Component\Serializer\Attribute\Context;
                         'multipart/form-data' => [
                             'schema' => [
                                 'type' => 'object',
-                                'additionalProperties' => false,
                                 'required' => ['file', 'fileName'],
                                 'properties' => [
                                     'file' => [

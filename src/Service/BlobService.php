@@ -245,15 +245,6 @@ class BlobService implements LoggerAwareInterface
             throw new ApiError(Response::HTTP_BAD_REQUEST, 'The request exceeds the configured post_max_size');
         }
 
-        $unknownFields = array_unique(array_merge(
-            array_diff($request->request->keys(), ['fileName', 'fileHash', 'metadata', 'metadataHash']),
-            array_diff($request->files->keys(), ['file'])
-        ));
-        if ($unknownFields !== []) {
-            throw new ApiError(Response::HTTP_BAD_REQUEST,
-                'Unknown request body fields: '.implode(', ', $unknownFields));
-        }
-
         /* get the url query params */
         $bucketIdentifier = $request->query->get('bucketIdentifier');
         $prefix = $request->query->get('prefix');
