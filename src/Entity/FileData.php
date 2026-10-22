@@ -241,7 +241,6 @@ use Symfony\Component\Serializer\Attribute\Context;
         new Patch(
             uriTemplate: '/files/{identifier}',
             inputFormats: [
-                'json' => ['application/merge-patch+json'],
                 'multipart' => ['multipart/form-data'],
             ],
             openapi: new Operation(
