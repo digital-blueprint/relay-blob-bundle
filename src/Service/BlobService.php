@@ -246,6 +246,7 @@ class BlobService implements LoggerAwareInterface
         }
 
         self::checkAllowedFields($request);
+        self::checkUploadFieldShapes($request);
 
         /* get the url query params */
         $bucketIdentifier = $request->query->get('bucketIdentifier');
@@ -343,6 +344,20 @@ class BlobService implements LoggerAwareInterface
         }
 
         return $fileData;
+    }
+
+    private static function checkUploadFieldShapes(Request $request): void
+    {
+        $body = $request->request->all();
+        $uploads = $request->files->all();
+        foreach (['metadata', 'fileName', 'fileHash', 'metadataHash'] as $field) {
+            if (isset($uploads[$field]) || (isset($body[$field]) && !is_string($body[$field]))) {
+                throw new ApiError(Response::HTTP_BAD_REQUEST, 'Body field '.$field.' must be a string');
+            }
+        }
+        if (array_key_exists('file', $body) || (isset($uploads['file']) && !$uploads['file'] instanceof UploadedFile)) {
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Body field file must be a single uploaded file');
+        }
     }
 
     private static function checkAllowedFields(Request $request): void

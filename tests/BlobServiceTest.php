@@ -12,8 +12,10 @@ use Dbp\Relay\BlobBundle\TestUtils\TestEntityManager;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
 use Nyholm\Psr7\Stream;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -188,6 +190,42 @@ class BlobServiceTest extends KernelTestCase
         $fileData = $this->testEntityManager->getFileDataById($fileData->getIdentifier());
         $this->assertSame($expectedFileHash, $fileData->getFileHash());
         $this->assertSame(hash('sha256', self::TEST_METADATA_2), $fileData->getMetadataHash());
+    }
+
+    public static function invalidUploadFields(): iterable
+    {
+        foreach (['metadata', 'fileName', 'fileHash', 'metadataHash'] as $field) {
+            yield $field.' array' => [[$field => ['value']], [], $field.' must be a string'];
+        }
+        $file = new UploadedFile(__DIR__.'/'.self::TEST_FILE_NAME, self::TEST_FILE_NAME, test: true);
+        yield 'file array' => [[], ['file' => [$file]], 'file must be a single uploaded file'];
+        yield 'file as text' => [['file' => 'contents'], [], 'file must be a single uploaded file'];
+        yield 'metadata as upload' => [[], ['metadata' => $file], 'metadata must be a string'];
+    }
+
+    #[DataProvider('invalidUploadFields')]
+    public function testInvalidUploadFieldShapesAreBadRequest(array $body, array $files, string $message): void
+    {
+        $request = Request::create('/blob/files?bucketIdentifier=test-bucket', 'PATCH', $body, files: $files);
+        $fileData = new FileData();
+        try {
+            $this->blobService->setUpFileDataFromRequest($fileData, $request);
+            $this->fail('Expected invalid upload fields to be rejected');
+        } catch (ApiError $error) {
+            $this->assertSame(Response::HTTP_BAD_REQUEST, $error->getStatusCode());
+            $this->assertSame('Body field '.$message, $error->getMessage());
+            $this->assertNull($fileData->getBucketId());
+        }
+    }
+
+    public function testUploadFieldShapesAllowEmptyStringsAndUnknownFields(): void
+    {
+        $request = Request::create('/blob/files?bucketIdentifier=test-bucket', 'PATCH',
+            ['fileName' => '', 'metadata' => '', 'unknown' => ['ignored']]);
+
+        $fileData = $this->blobService->setUpFileDataFromRequest(new FileData(), $request);
+        $this->assertSame('', $fileData->getFileName());
+        $this->assertSame('', $fileData->getMetadata());
     }
 
     public function testFileHashWithoutUploadedFileIsRejected(): void
