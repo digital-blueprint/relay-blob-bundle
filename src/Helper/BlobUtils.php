@@ -15,8 +15,21 @@ use Symfony\Component\HttpFoundation\Response;
 
 class BlobUtils
 {
+    public static function checkRequestSize(Request $request): void
+    {
+        $maxSize = ini_parse_quantity(ini_get('post_max_size'));
+        $contentLength = $request->headers->get('Content-Length');
+
+        // A zero post_max_size means unlimited uploads.
+        if ($maxSize > 0 && $contentLength !== null && intval($contentLength) > $maxSize) {
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'The request exceeds the configured post_max_size');
+        }
+    }
+
     public static function convertPatchRequest(Request $request): Request
     {
+        self::checkRequestSize($request);
+
         $contentType = trim(explode(';', $request->headers->get('Content-Type', ''))[0]);
         if (strcasecmp($contentType, 'multipart/form-data') !== 0) {
             throw new ApiError(Response::HTTP_UNSUPPORTED_MEDIA_TYPE, 'File PATCH requests require multipart/form-data');
