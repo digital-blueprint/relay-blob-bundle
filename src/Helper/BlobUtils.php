@@ -6,6 +6,7 @@ namespace Dbp\Relay\BlobBundle\Helper;
 
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Kekos\MultipartFormDataParser\Parser;
+use Kekos\MultipartFormDataParser\ParserException;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
 use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
@@ -29,7 +30,15 @@ class BlobUtils
 
         // convert to psr7 to decorate request with multipart formdata
         $psrRequest = $psrHttpFactory->createRequest($request);
-        $parser = Parser::createFromRequest($psrRequest, $uploaded_file_factory, $stream_factory);
+        // Normalize the media type for the case-sensitive parser without changing the boundary.
+        $contentTypeParts = explode(';', $psrRequest->getHeaderLine('Content-Type'), 2);
+        $contentTypeParts[0] = Parser::CONTENT_TYPE_MULTIPART;
+        $psrRequest = $psrRequest->withHeader('Content-Type', implode(';', $contentTypeParts));
+        try {
+            $parser = Parser::createFromRequest($psrRequest, $uploaded_file_factory, $stream_factory);
+        } catch (ParserException $exception) {
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Malformed multipart/form-data request', $exception);
+        }
         $psrRequest = $parser->decorateRequest($psrRequest);
 
         // convert back to symfony request to get a symfony uploadedFile instead of a PSR-7 uploadedFile

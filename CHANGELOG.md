@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Return HTTP 400 for multipart parser errors in file PATCH requests and accept
+  case-insensitive multipart media types.
+
 - Add the signed `allowedFields` query parameter for POST and PATCH to restrict
   request body fields. `metadataHash` and `fileHash` remain implicitly allowed.
 
