@@ -1655,19 +1655,24 @@ class BlobService implements LoggerAwareInterface
      */
     public function validateFile(FileData $fileData): void
     {
-        $this->validateFileInternal($fileData, Response::HTTP_BAD_REQUEST);
+        $file = $fileData->getFile();
+        if ($file === null) {
+            return;
+        }
+
+        $this->validateFileInternal($fileData, $file, Response::HTTP_BAD_REQUEST);
     }
 
-    private function validateFileInternal(FileData $fileData, int $failureStatus): void
+    private function validateFileInternal(FileData $fileData, File $file, int $failureStatus): void
     {
         $type = $fileData->getType();
 
         // If type is set the file has to validate with the given profile
-        if (!$type || !$fileData->getFile()) {
+        if (!$type) {
             return;
         }
 
-        // check if type is defined
+        // Check if type is defined
         $bucket = $this->getBucketConfig($fileData->getInternalBucketId());
         $types = $bucket->getTypes();
         if (!array_key_exists($type, $types)) {
@@ -1680,7 +1685,7 @@ class BlobService implements LoggerAwareInterface
                 $fileData->getFileName(),
                 null,
                 $verityProfile,
-                $fileData->getFile(),
+                $file,
                 $fileData->getMimeType(),
                 $fileData->getFileSize());
             $result = $this->eventDispatcher->dispatch($event);
@@ -1737,9 +1742,8 @@ class BlobService implements LoggerAwareInterface
         }
         if (array_key_exists(BlobService::VERITY_PROFILE_CONFIG, $types[$type]) && $types[$type][BlobService::VERITY_PROFILE_CONFIG] !== null) {
             $file = $this->getFileForFileData($fileData);
-            $fileData->setFile($file);
             try {
-                $this->validateFileInternal($fileData, Response::HTTP_INTERNAL_SERVER_ERROR);
+                $this->validateFileInternal($fileData, $file, Response::HTTP_INTERNAL_SERVER_ERROR);
             } finally {
                 @unlink($file->getPathname());
             }
