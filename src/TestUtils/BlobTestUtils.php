@@ -63,7 +63,6 @@ class BlobTestUtils
             'reporting_interval' => '0 9 * * MON',
             'cleanup_interval' => '0 * * * *',
             'additional_auth' => false,
-            'integrity_check_interval' => '0 0 1 * *',
             'bucket_size_check_interval' => '0 2 * * 1',
             'quota_warning_interval' => '0 6 * * *',
             'filedata_schema' => '%kernel.project_dir%/vendor/dbp/relay-blob-bundle/src/Resources/filedata-v1.schema.json',

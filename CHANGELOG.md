@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Breaking change: Remove the unused `integrity_check_interval` configuration
+  option and the previously disabled integrity-check cron job. Use
+  `dbp:relay:blob:check-integrity` to run integrity checks manually.
+
 - Return HTTP 400 for multipart parser errors in file PATCH requests and accept
   case-insensitive multipart media types.
 

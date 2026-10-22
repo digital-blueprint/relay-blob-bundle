@@ -10,7 +10,6 @@ parameters:
       database_url: '<mysql-url>'
       reporting_interval: "0 11 * * MON" # when notification cronjob should run
       cleanup_interval: "*/5 * * * *" # when file cleanup of expired files should run
-      integrity_check_interval: "0 1 * * MON" # when file integrity check should run
       bucket_size_check_interval: "0 6 * * MON" # when bucket size check cronjob should run
       quota_warning_interval: "0 10 * * MON" # when bucket quota should be checked and if needed warning emails should be sent
       additional_auth: true # enable client credential flow

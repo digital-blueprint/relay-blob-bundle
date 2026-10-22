@@ -56,7 +56,6 @@ dbp_relay_blob:
   database_url: %env(resolve:DATABASE_URL)%'
   reporting_interval: "0 11 * * MON" # when notification cronjob should run
   cleanup_interval: "*/5 * * * *" # when cleanup cronjob should run
-  integrity_check_interval: "0 0 1 * *" # when integrity check cronjob should run
   bucket_size_check_interval: "0 2 * * 1" # when bucket size check cronjob should run
   quota_warning_interval: "0 7 * * *" # when bucket quota should be checked and if needed warning emails should be sent
   additional_auth: true # enable client credential flow
@@ -167,7 +166,5 @@ The option `bucket_size_check_interval` indicates in which interval this should 
 
 ### Integrity Check
 
-This cronjobs sends reports to the in `integrity` configured email.
-This emails lets the configured person know if the metadata or file integrity checks fail. This means, that the metadata or file hashes, which are stored upon upload, are different then the hashes of the metadata or file that are currently stored. This could indicate bitrot or manual changes in the database or file.
-An email is sent if some inconsistencies are detected.
-The option `integrity_check_interval` indicates in which interval this should get checked.
+Run `dbp:relay:blob:check-integrity` to check stored file and metadata hashes. Use `--email` to send reports to the address configured in `integrity`.
+The previously disabled integrity-check cron job has been removed.

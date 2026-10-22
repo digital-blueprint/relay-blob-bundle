@@ -49,7 +49,6 @@ class BucketConfigTest extends TestCase
             'cleanup_interval' => '0 * * * *',
             'additional_auth' => false,
             'filedata_schema' => '/tmp/filedata-v1.schema.json',
-            'integrity_check_interval' => '0 0 1 * *',
             'bucket_size_check_interval' => '0 2 * * 1',
             'metadata_size_limit' => 1000000,
             'buckets' => [$bucketConfig],

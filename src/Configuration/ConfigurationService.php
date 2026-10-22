@@ -106,11 +106,6 @@ class ConfigurationService
         return $this->config['cleanup_interval'];
     }
 
-    public function runFileIntegrityHealthchecks(): bool
-    {
-        return false; // disabled for now, since it doesn't scale for large numbers of files
-    }
-
     public function checkAdditionalAuth(): bool
     {
         return $this->config['additional_auth'];
@@ -119,11 +114,6 @@ class ConfigurationService
     public function getMetadataSizeLimit(): int
     {
         return $this->config['metadata_size_limit'];
-    }
-
-    public function getIntegrityCheckInterval(): string
-    {
-        return $this->config['integrity_check_interval'];
     }
 
     public function getBucketSizeCheckInterval()
