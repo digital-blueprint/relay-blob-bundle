@@ -245,6 +245,8 @@ class BlobService implements LoggerAwareInterface
             throw new ApiError(Response::HTTP_BAD_REQUEST, 'The request exceeds the configured post_max_size');
         }
 
+        self::checkAllowedFields($request);
+
         /* get the url query params */
         $bucketIdentifier = $request->query->get('bucketIdentifier');
         $prefix = $request->query->get('prefix');
@@ -341,6 +343,30 @@ class BlobService implements LoggerAwareInterface
         }
 
         return $fileData;
+    }
+
+    private static function checkAllowedFields(Request $request): void
+    {
+        if (!$request->query->has('allowedFields')) {
+            return;
+        }
+
+        $allowedFields = $request->query->all()['allowedFields'];
+        if (!is_string($allowedFields)) {
+            throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter allowedFields must be a string');
+        }
+
+        $allowedFields = array_filter(array_map('trim', explode(',', $allowedFields)),
+            static fn (string $field): bool => $field !== '');
+        $allowedFields = array_merge(['metadataHash', 'fileHash'], $allowedFields);
+
+        // Check both form fields and uploads before changing any file data.
+        $bodyFields = array_unique(array_merge(array_keys($request->request->all()), array_keys($request->files->all())));
+        foreach ($bodyFields as $field) {
+            if (!in_array($field, $allowedFields, true)) {
+                throw new ApiError(Response::HTTP_BAD_REQUEST, 'Body field '.$field.' is not allowed by allowedFields');
+            }
+        }
     }
 
     private static function getRequestHash(Request $request, string $parameter): ?string

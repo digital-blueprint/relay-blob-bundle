@@ -13,9 +13,9 @@ The bundle provides GET endpoints for retrieving file metadata, file binary data
 | `/blob/files`                       | GET    | Used to GET a collection of files                                                           | `bucketIdentifier`, `creationTime`, `method`, `sig`           | `prefix`, `includeData`, `startsWith`               | -                                            |                                        |
 | `/blob/files/{identifier}`          | GET    | Used to retrieve file metadata or file base64 encoded data of the file with `{identifier}`. | `bucketIdentifier`, `creationTime`, `method`, `sig`           | `includeData` (was called `binary` below `v0.1.14`) | -                                            |                                        |
 | `/blob/files/{identifier}/download` | GET    | Used to retrieve binary file data of the file with `{identifier}`                           | `bucketIdentifier`, `creationTime`, `method`, `sig`           |                                                     | -                                            |                                        |
-| `/blob/files`                       | POST   | Used to create a file                                                                       | `bucketIdentifier`, `creationTime`, `prefix`, `method`, `sig` | `notifyEmail`, `retentionDuration`, `type`, `fileHash`, `metadataHash` | `file`, `fileName`,                          | `metadata`, `fileHash`, `metadataHash` |
+| `/blob/files`                       | POST   | Used to create a file                                                                       | `bucketIdentifier`, `creationTime`, `prefix`, `method`, `sig` | `notifyEmail`, `retentionDuration`, `type`, `fileHash`, `metadataHash`, `allowedFields` | `file`, `fileName`,                          | `metadata`, `fileHash`, `metadataHash` |
 | `/blob/files/{identifier}`          | DELETE | Used to DELETE the file with given {id}                                                     | `bucketIdentifier`, `creationTime`, `method`, `sig`           |                                                     | -                                            |                                        |
-| `/blob/files/{identifier}`          | PATCH  | Used to update the file with given {id}                                                     | `bucketIdentifier`, `creationTime`, `method`, `sig`           | `type`, `deleteAt`, `notifyEmail`, `fileHash`, `metadataHash` | at least one of the optional body parameters | `file`, `fileName`, `metadata`, `fileHash`, `metadataHash` |
+| `/blob/files/{identifier}`          | PATCH  | Used to update the file with given {id}                                                     | `bucketIdentifier`, `creationTime`, `method`, `sig`           | `type`, `deleteAt`, `notifyEmail`, `fileHash`, `metadataHash`, `allowedFields` | at least one of the optional body parameters | `file`, `fileName`, `metadata`, `fileHash`, `metadataHash` |
 
 In general, the parameters have to be given in the specified order while optional parameters can be selectively left out for the computation of the checksum. The only exception is the `sig` parameter, which always has to be the last parameter.
 
@@ -32,6 +32,7 @@ In general, the parameters have to be given in the specified order while optiona
 | `fileName`                                                   | original filename of the file                                                                                                                          | string        | all valid strings                |
 | `fileHash`                                                   | SHA-256 hash of the uploaded file; can be a signed URL constraint for POST/PATCH                                                                         | string        | lowercase hexadecimal SHA-256    |
 | `metadataHash`                                               | SHA-256 hash of the exact submitted metadata string; can be a signed URL constraint for POST/PATCH                                                       | string        | lowercase hexadecimal SHA-256    |
+| `allowedFields`                                              | Signed restriction on body fields for POST/PATCH; `metadataHash` and `fileHash` are always allowed                                                       | string        | comma-separated field names      |
 | `includeData`                                                | defines whether the base64 encoded binary data should be returned (=1) or a link to the binary data                                                    | int           | `0` or `1`                       |
 | `notifyEmail`                                                | email address of a person that wants to be notified before deletion                                                                                    | string        | all valid email addresses        |
 | `retentionDuration`                                          | defines the lifespan of the file                                                                                                                       | int           | all non-negative int durations   |
@@ -39,6 +40,18 @@ In general, the parameters have to be given in the specified order while optiona
 | `type` (was called `additionalType` until `v0.1.35`)         | a type given to the `metadata`. If the type is also defined in the blob bundle config, then the `metadata` is also validated against the given schema. | string        | all valid strings                |
 | `deleteAt`                                                   | a timestamp in ISO 8601 that defines how long the resource should exist                                                                                | string        | datetime string                  |
 | `file`                                                       | the file to upload                                                                                                                                     | file          |                                  |
+
+## Restricting request body fields
+
+For POST and PATCH, the optional `allowedFields` query parameter specifies a comma-separated list of permitted multipart body fields, including uploaded files. Names are case-sensitive; whitespace around each name is ignored.
+
+- Omit `allowedFields` to preserve unrestricted body-field handling.
+- Leave `allowedFields` empty for no extra allowed fields. `metadataHash` and `fileHash` are always allowed.
+- The two hash fields are always permitted, even when not listed. Their existing validation still applies: they require the corresponding file or metadata and must match its SHA-256 hash.
+- Any body field not permitted by the list causes HTTP 400; fields are not silently ignored.
+- This only restricts body fields, not other query parameters, and does not relax required-field checks.
+
+For example, use `allowedFields=file,fileName,metadata` for a POST upload, or `allowedFields=metadata` for a metadata-only PATCH. Include the URL-encoded parameter in the URL checksum before appending `sig`; changing or removing it invalidates the signature.
 
 ## Signature
 

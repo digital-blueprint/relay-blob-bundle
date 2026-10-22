@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add the signed `allowedFields` query parameter for POST and PATCH to restrict
+  request body fields. `metadataHash` and `fileHash` remain implicitly allowed.
+
 - Breaking change: Missing file hashes, or missing metadata hashes when metadata
   exists, now fail retrieval validation and integrity scans.
 - CLI downloads now use the bucket's output validation instead of checking hashes

@@ -15,6 +15,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class SignedUploadTest extends KernelTestCase
 {
@@ -102,6 +103,100 @@ class SignedUploadTest extends KernelTestCase
         $this->validateRequest(Request::create($url, 'PATCH', server: $this->getServer()));
     }
 
+    public static function requestMethods(): iterable
+    {
+        yield 'POST' => ['POST'];
+        yield 'PATCH' => ['PATCH'];
+    }
+
+    #[DataProvider('requestMethods')]
+    public function testAllowedFieldsAcceptsListedFieldsAndImplicitHashes(string $method): void
+    {
+        $request = $this->createRequest($method, ['allowedFields' => 'file, fileName,metadata'],
+            $this->getHashes() + ['fileName' => 'test.txt']);
+
+        $fileData = $this->validateRequest($request);
+
+        $this->assertSame('test.txt', $fileData->getFileName());
+        $this->assertSame(self::METADATA, $fileData->getMetadata());
+        $this->assertSame($this->getHashes()['fileHash'], $fileData->getFileHash());
+        $this->assertNotNull($fileData->getFile());
+    }
+
+    public static function disallowedFields(): iterable
+    {
+        yield 'file' => ['metadata', 'file'];
+        yield 'metadata' => ['file', 'metadata'];
+        yield 'fileName' => ['file,metadata', 'fileName', ['fileName' => '']];
+        yield 'unknown field' => ['file,metadata', 'unknown', ['unknown' => 'value']];
+        yield 'body cannot override allowlist' => ['file,metadata', 'allowedFields', ['allowedFields' => 'file,fileName,metadata']];
+        yield 'empty allowlist' => ['', 'metadata'];
+    }
+
+    #[DataProvider('disallowedFields')]
+    public function testDisallowedBodyFieldIsRejected(string $allowedFields, string $field, array $body = []): void
+    {
+        $request = $this->createRequest('PATCH', ['allowedFields' => $allowedFields], $body);
+
+        $this->assertBadRequest($request, 'Body field '.$field.' is not allowed by allowedFields');
+    }
+
+    #[DataProvider('requestMethods')]
+    public function testOmittedAllowedFieldsPreservesUnrestrictedHandling(string $method): void
+    {
+        $request = $this->createRequest($method, [], ['fileName' => 'test.txt', 'unknown' => 'ignored']);
+
+        $this->assertSame('test.txt', $this->validateRequest($request)->getFileName());
+    }
+
+    #[DataProvider('hashParameters')]
+    public function testImplicitHashesStillRequireContent(string $parameter): void
+    {
+        $request = $this->createRequest('PATCH', ['allowedFields' => ''], [$parameter => $this->getHashes()[$parameter]]);
+        $request->request->remove('metadata');
+        $request->files->remove('file');
+
+        $this->assertBadRequest($request, $parameter.' requires');
+    }
+
+    #[DataProvider('hashParameters')]
+    public function testImplicitHashesStillValidateContent(string $parameter, string $input, string $message): void
+    {
+        $request = $this->createRequest('PATCH', ['allowedFields' => 'file,metadata'],
+            [$parameter => hash('sha256', 'different content')]);
+
+        $this->assertBadRequest($request, $message);
+    }
+
+    public function testAllowedFieldsMustBeAString(): void
+    {
+        $request = $this->createRequest('PATCH', ['allowedFields' => ['file', 'metadata']]);
+
+        $this->assertBadRequest($request, 'Parameter allowedFields must be a string');
+    }
+
+    #[DataProvider('requestMethods')]
+    public function testAllowedFieldsCannotBeTamperedWith(string $method): void
+    {
+        $url = $this->createRequest($method, ['allowedFields' => 'metadata'])->getUri();
+        $url = str_replace('allowedFields=metadata', 'allowedFields=metadata%2Cfile', $url);
+
+        $this->expectException(ApiError::class);
+        $this->expectExceptionMessage('Signature invalid');
+        $this->validateRequest(Request::create($url, $method, server: $this->getServer()));
+    }
+
+    private function assertBadRequest(Request $request, string $message): void
+    {
+        try {
+            $this->validateRequest($request);
+            $this->fail('Expected a bad request');
+        } catch (ApiError $error) {
+            $this->assertSame(Response::HTTP_BAD_REQUEST, $error->getStatusCode());
+            $this->assertStringContainsString($message, $error->getMessage());
+        }
+    }
+
     private function getHashes(): array
     {
         return [
@@ -110,10 +205,10 @@ class SignedUploadTest extends KernelTestCase
         ];
     }
 
-    private function createRequest(string $method, array $hashes, array $body = []): Request
+    private function createRequest(string $method, array $queryParameters, array $body = []): Request
     {
         $blobApi = BlobApi::createFromConfig(BlobApi::getCustomModeConfig('test-bucket'), self::getContainer());
-        $url = $blobApi->createSignedUrl($method, parameters: $hashes,
+        $url = $blobApi->createSignedUrl($method, parameters: $queryParameters,
             identifier: $method === 'PATCH' ? 'test-file' : null);
 
         return Request::create($url, $method, $body + ['metadata' => self::METADATA], files: [

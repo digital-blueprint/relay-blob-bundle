@@ -287,6 +287,15 @@ use Symfony\Component\Serializer\Attribute\Context;
                         example: 'PATCH',
                     ),
                     new Parameter(
+                        name: 'allowedFields',
+                        in: 'query',
+                        description: 'Signed comma-separated list of allowed body fields. Omit for no restriction; leave empty for no extra allowed fields. metadataHash and fileHash are always allowed; their existing validation still applies.',
+                        required: false,
+                        schema: ['type' => 'string'],
+                        example: 'file,metadata',
+                        allowEmptyValue: true,
+                    ),
+                    new Parameter(
                         name: 'fileHash',
                         in: 'query',
                         description: 'Signed SHA-256 constraint for the uploaded file. Requires a file in the request body.',
@@ -409,6 +418,15 @@ use Symfony\Component\Serializer\Attribute\Context;
                         required: true,
                         schema: ['type' => 'string'],
                         example: 'POST',
+                    ),
+                    new Parameter(
+                        name: 'allowedFields',
+                        in: 'query',
+                        description: 'Signed comma-separated list of allowed body fields. Omit for no restriction; leave empty for no extra allowed fields. metadataHash and fileHash are always allowed; their existing validation still applies.',
+                        required: false,
+                        schema: ['type' => 'string'],
+                        example: 'file,fileName,metadata',
+                        allowEmptyValue: true,
                     ),
                     new Parameter(
                         name: 'fileHash',
