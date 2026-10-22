@@ -6,10 +6,12 @@ namespace Dbp\Relay\BlobBundle\Tests;
 
 use Dbp\Relay\BlobBundle\Entity\FileData;
 use Dbp\Relay\BlobBundle\Service\BlobService;
+use Dbp\Relay\BlobBundle\Service\DatasystemProviderServiceInterface;
 use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
 use Dbp\Relay\BlobBundle\TestUtils\TestEntityManager;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
 use Dbp\Relay\CoreBundle\Rest\Query\Filter\FilterTreeBuilder;
+use Nyholm\Psr7\Stream;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\Request;
@@ -119,6 +121,35 @@ class BlobServiceTest extends KernelTestCase
     {
         $fileData = $this->addTestFile(metadata: '{"foo":"bar"}');
         $this->assertEquals('{"foo":"bar"}', $fileData->getMetadata());
+    }
+
+    public function testGetFileForFileData(): void
+    {
+        $file = $this->blobService->getFileForFileData($this->addTestFile());
+        try {
+            $this->assertSame(file_get_contents(__DIR__.'/'.self::TEST_FILE_NAME), $file->getContent());
+        } finally {
+            unlink($file->getPathname());
+        }
+    }
+
+    public function testGetFileForFileDataCleansUpAfterCopyFailure(): void
+    {
+        $source = fopen('php://output', 'w');
+        $provider = $this->createMock(DatasystemProviderServiceInterface::class);
+        $provider->method('getFileStream')->willReturn(Stream::create($source));
+        $blobService = $this->createPartialMock(BlobService::class, ['getDatasystemProvider']);
+        $blobService->method('getDatasystemProvider')->willReturn($provider);
+        $tempFiles = glob(sys_get_temp_dir().'/'.BlobService::TEMP_FILE_PREFIX.'*');
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Could not copy file to temporary file path');
+        try {
+            $blobService->getFileForFileData($this->addTestFile());
+        } finally {
+            $this->assertFalse(is_resource($source));
+            $this->assertSame($tempFiles, glob(sys_get_temp_dir().'/'.BlobService::TEMP_FILE_PREFIX.'*'));
+        }
     }
 
     public function testExpiredFileHasNoNotFoundErrorId(): void

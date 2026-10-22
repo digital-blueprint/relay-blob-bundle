@@ -1833,13 +1833,40 @@ class BlobService implements LoggerAwareInterface
     public function getFileForFileData(FileData $fileData): File
     {
         $stream = $this->getFileStreamInternal($fileData);
-        $tempPath = tempnam(sys_get_temp_dir(), self::TEMP_FILE_PREFIX);
-        $target = fopen($tempPath, 'w');
-        stream_copy_to_stream($stream->detach(), $target);
+        $tempPath = false;
+        $source = null;
+        $target = null;
+        $file = null;
+        try {
+            $tempPath = @tempnam(sys_get_temp_dir(), self::TEMP_FILE_PREFIX);
+            if ($tempPath === false) {
+                throw new \RuntimeException('Could not create a unique temporary file path');
+            }
+            $target = @fopen($tempPath, 'w');
+            if ($target === false) {
+                throw new \RuntimeException('Could not open temporary file for writing');
+            }
+            $source = $stream->detach();
+            if ($source === null || @stream_copy_to_stream($source, $target) === false) {
+                throw new \RuntimeException('Could not copy file to temporary file path');
+            }
+            $file = new File($tempPath, false);
 
-        fclose($target);
-
-        return new File($tempPath, false);
+            return $file;
+        } finally {
+            if (is_resource($source)) {
+                fclose($source);
+            } else {
+                $stream->close();
+            }
+            if (is_resource($target)) {
+                fclose($target);
+            }
+            // The caller owns the temporary file only after creation succeeds.
+            if ($file === null && $tempPath !== false) {
+                @unlink($tempPath);
+            }
+        }
     }
 
     /**
