@@ -2,24 +2,23 @@
 
 ## Unreleased
 
+## v0.2.19
+
 - Breaking change: Remove the unused `integrity_check_interval` configuration
   option and the previously disabled integrity-check cron job. Use
   `dbp:relay:blob:check-integrity` to run integrity checks manually.
-
 - Return HTTP 400 for multipart parser errors in file PATCH requests and accept
   case-insensitive multipart media types.
-
 - Add the signed `allowedFields` query parameter for POST and PATCH to restrict
   request body fields. `metadataHash` and `fileHash` remain implicitly allowed.
-
 - Breaking change: Missing file hashes, or missing metadata hashes when metadata
   exists, now fail retrieval validation and integrity scans.
 - CLI downloads now use the bucket's output validation instead of checking hashes
   manually. Add `--disable-output-validation` to bypass validation.
-
 - Breaking change: Remove the `file_integrity_checks` configuration option.
   Integrity scans always verify available file and metadata hashes; retrieval
   verifies them when `output_validation` is enabled and not explicitly bypassed.
+- Various smaller fixes
 
 ## v0.2.18
 
