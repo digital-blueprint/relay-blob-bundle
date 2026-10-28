@@ -69,14 +69,14 @@ class SignatureUtils
         }
 
         $now = BlobUtils::now();
-        $linkExpiryInterval = new \DateInterval($bucket->getLinkExpireTime());
+        $allowedLinkLifetime = new \DateInterval($bucket->getLinkExpireTime());
 
         if ($expiryDuration) {
-            $requestedExpiryInterval = BlobUtils::parseRequestDuration($expiryDuration, 'expireIn');
-            if ($now->add($requestedExpiryInterval) > $now->add($linkExpiryInterval)) {
+            $requestedLinkLifetime = BlobUtils::parseRequestDuration($expiryDuration, 'expireIn');
+            if ($now->add($requestedLinkLifetime) > $now->add($allowedLinkLifetime)) {
                 throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter expireIn exceeds the configured link lifetime');
             }
-            $linkExpiryInterval = $requestedExpiryInterval;
+            $allowedLinkLifetime = $requestedLinkLifetime;
         }
 
         try {
@@ -92,13 +92,16 @@ class SignatureUtils
             throw new ApiError(Response::HTTP_BAD_REQUEST, 'Parameter creationTime must be a valid ISO 8601 timestamp');
         }
 
-        $expiryTime = $now->sub($linkExpiryInterval);
-        $futureBlock = $now->add($linkExpiryInterval);
+        $earliestAllowedCreationTime = $now->sub($allowedLinkLifetime);
+        $latestAllowedCreationTime = $now->add($allowedLinkLifetime);
 
         // check if the request is expired or in the future
-        if ($creationDateTime < $expiryTime || $creationDateTime > $futureBlock) {
+        if ($creationDateTime < $earliestAllowedCreationTime || $creationDateTime > $latestAllowedCreationTime) {
+            $message = $creationDateTime < $earliestAllowedCreationTime
+                ? 'Signed URL has expired: parameter creationTime is outside the allowed lifetime'
+                : 'Signed URL is not valid yet: parameter creationTime is too far in the future';
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN,
-                'Parameter creationTime too old', 'blob:creation-time-out-of-range');
+                $message, 'blob:creation-time-out-of-range');
         }
 
         // Treat HEAD with a GET signature as GET for both method matching and the allowlist.
