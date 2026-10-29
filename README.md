@@ -64,7 +64,7 @@ dbp_relay_blob:
       service: 'Dbp\Relay\BlobConnectorFilesystemBundle\Service\FilesystemService' # The path to a dbp relay blob connector service
       internal_bucket_id: '019072b9-7736-7430-aabd-ad1bbeeebacf' # A given internal id for a bucket
       bucket_id: 'test-bucket' # friendly name of the bucket thats also used for the request
-      key: '12345' # public key for signed request
+      key: '12345' # Optional secret key for signed requests
       quota: 500 # Max quota in MB
       notify_when_quota_over: 70 # percent of quota when the bucket owner should be notified that the storage is running out
       report_when_expiry_in: 'P30D' # duration of how much in advance a bucket owner or user should be warned about the deletion of files

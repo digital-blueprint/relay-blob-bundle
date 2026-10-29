@@ -6,6 +6,7 @@ namespace Dbp\Relay\BlobBundle\Tests;
 
 use Dbp\Relay\BlobBundle\Configuration\ConfigurationService;
 use Dbp\Relay\BlobBundle\Helper\SignatureUtils;
+use Dbp\Relay\BlobBundle\TestUtils\BlobTestUtils;
 use Dbp\Relay\BlobLibrary\Api\BlobApi;
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\Exception\ApiError;
@@ -84,6 +85,16 @@ class FileApiSignedUrlTest extends KernelTestCase
         $signature = Request::create($url)->query->get('sig');
 
         $this->assertInvalidSignature($url.'&sig='.$signature);
+    }
+
+    public function testBucketWithoutSigningKeyRejectsPreviouslyValidSignature(): void
+    {
+        $url = $this->createSignedDownloadUrl();
+        $config = BlobTestUtils::getTestConfig();
+        unset($config['buckets'][0]['key']);
+        self::getContainer()->get(ConfigurationService::class)->setConfig($config);
+
+        $this->assertInvalidSignature($url);
     }
 
     public function testHeadRequiresGetInAllowedMethods(): void

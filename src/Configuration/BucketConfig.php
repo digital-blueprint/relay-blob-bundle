@@ -13,7 +13,7 @@ class BucketConfig implements \JsonSerializable
     private string $service = '';
     private string $bucketId = '';
     private string $reportExpiryWhenIn = '';
-    private string $key = '';
+    private ?string $key = null;
     private int $quota = 0;
     private string $linkExpireTime = '';
     private ?array $warnQuotaOverConfig = null;
@@ -75,12 +75,12 @@ class BucketConfig implements \JsonSerializable
         return $this->notifyWhenQuotaOver;
     }
 
-    public function getKey(): string
+    public function getKey(): ?string
     {
         return $this->key;
     }
 
-    public function setKey(string $key): void
+    public function setKey(?string $key): void
     {
         $this->key = $key;
     }
@@ -186,7 +186,7 @@ class BucketConfig implements \JsonSerializable
         $bucket->setBucketId((string) $config['bucket_id']);
         $bucket->setNotifyWhenQuotaOver((int) $config['notify_when_quota_over']);
         $bucket->setReportExpiryWhenIn((string) $config['report_when_expiry_in']);
-        $bucket->setKey((string) $config['key']);
+        $bucket->setKey(isset($config['key']) ? (string) $config['key'] : null);
         $bucket->setQuota((int) $config['quota']);
         $bucket->setOutputValidation((bool) $config['output_validation']);
         $bucket->setLinkExpireTime((string) $config['link_expire_time']);

@@ -696,17 +696,21 @@ class BlobService implements LoggerAwareInterface
     }
 
     /**
-     * Creates an HTTP link to binary file content.
+     * Creates an HTTP link to binary file content, or returns null if no signing key is configured.
      *
      * @param FileData $fileData fileData for which a link should be provided
      *
      * @throws \Exception
      */
-    public function getDownloadUrl(string $baseurl, FileData $fileData): string
+    public function getDownloadUrl(string $baseurl, FileData $fileData): ?string
     {
         $bucketConfig = $this->getBucketConfig($fileData->getInternalBucketId());
+        $bucketKey = $bucketConfig->getKey();
+        if ($bucketKey === null) {
+            return null;
+        }
 
-        return SignatureTools::createSignedUrl($bucketConfig->getBucketId(), $bucketConfig->getKey(),
+        return SignatureTools::createSignedUrl($bucketConfig->getBucketId(), $bucketKey,
             Request::METHOD_GET, $baseurl, $fileData->getIdentifier(), 'download');
     }
 

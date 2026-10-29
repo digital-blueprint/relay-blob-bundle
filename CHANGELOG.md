@@ -15,6 +15,8 @@
   orphan files after confirmation. Requires `--int-bucket-id`.
 - Improve signed URL error messages to distinguish expired URLs from creation
   timestamps too far in the future.
+- Make bucket signing keys optional for PHP-only use. Buckets without a `key`
+  return no download URL and reject signed HTTP requests and signed URL creation.
 
 ## v0.2.19
 

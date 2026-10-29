@@ -18,6 +18,18 @@ class BucketConfigTest extends TestCase
         ],
     ];
 
+    public function testSigningKeyIsOptional(): void
+    {
+        $bucketConfig = $this->createBucketConfig();
+        unset($bucketConfig['key']);
+
+        $config = (new Processor())->processConfiguration(new BlobConfiguration(), [
+            $this->createBundleConfig($bucketConfig),
+        ]);
+
+        $this->assertNull(BucketConfig::fromConfig($config['buckets'][0])->getKey());
+    }
+
     public function testTypesConfigIsLoaded(): void
     {
         $bucketConfig = BucketConfig::fromConfig($this->createBucketConfig([

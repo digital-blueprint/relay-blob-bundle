@@ -56,6 +56,37 @@ class FileApiTest extends KernelTestCase
         BlobTestUtils::tearDown();
     }
 
+    public function testFileOperationsWithoutSigningKey(): void
+    {
+        $this->configureBucketWithoutSigningKey();
+        $file = $this->addTestFile();
+        $identifier = $file->getIdentifier();
+        $this->assertNull($file->getContentUrl());
+        $this->assertNull($this->fileApi->getFile(self::TEST_BUCKET_IDENTIFIER, $identifier)->getContentUrl());
+        $this->assertFileContentsEquals($identifier, self::TEST_FILE_CONTENTS);
+
+        $files = iterator_to_array($this->fileApi->getFiles(self::TEST_BUCKET_IDENTIFIER));
+        $this->assertCount(1, $files);
+        $this->assertNull($files[0]->getContentUrl());
+    }
+
+    public function testCreatingSignedUrlWithoutSigningKeyFails(): void
+    {
+        $this->configureBucketWithoutSigningKey();
+
+        $this->expectException(BlobApiError::class);
+        $this->expectExceptionMessage('Signing key not configured');
+
+        $this->fileApi->createSignedUrl(self::TEST_BUCKET_IDENTIFIER, 'GET');
+    }
+
+    private function configureBucketWithoutSigningKey(): void
+    {
+        $config = BlobTestUtils::getTestConfig();
+        unset($config['buckets'][0]['key']);
+        $this->blobService->getConfigurationService()->setConfig($config);
+    }
+
     /**
      * @throws BlobApiError
      */

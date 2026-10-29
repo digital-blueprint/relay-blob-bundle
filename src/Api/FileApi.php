@@ -319,8 +319,12 @@ readonly class FileApi implements BlobFileApiInterface
         if ($bucketConfig === null) {
             throw new BlobApiError('bucket not configured', BlobApiError::CONFIGURATION_INVALID);
         }
+        $bucketKey = $bucketConfig->getKey();
+        if ($bucketKey === null) {
+            throw new BlobApiError('Signing key not configured for bucket', BlobApiError::CONFIGURATION_INVALID);
+        }
 
-        return SignatureTools::createSignedUrl($bucketIdentifier, $bucketConfig->getKey(),
+        return SignatureTools::createSignedUrl($bucketIdentifier, $bucketKey,
             $method, $this->getBlobBaseUrl(), $identifier, $action, $parameters, $options);
     }
 

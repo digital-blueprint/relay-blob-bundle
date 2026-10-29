@@ -46,7 +46,8 @@ class SignatureUtils
 
         // Exclude the deployment prefix while preserving the signed query's original encoding and order.
         $requestUri = $request->getPathInfo().(strstr($request->getRequestUri(), '?') ?: '');
-        if (false === SignatureUtils::isSignatureValid($bucket->getKey(), $signature, $requestUri)) {
+        $bucketKey = $bucket->getKey();
+        if ($bucketKey === null || false === SignatureUtils::isSignatureValid($bucketKey, $signature, $requestUri)) {
             throw ApiError::withDetails(Response::HTTP_FORBIDDEN, 'Signature invalid', 'blob:signature-invalid');
         }
 
