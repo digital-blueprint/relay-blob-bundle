@@ -26,9 +26,8 @@ class CheckFileAndMetadataIntegrityCommand extends Command
         $this
             ->setDescription('Checks the file and metadata hashes stored in the table against newly generated hashes of the stored files and metadata')
             ->addOption('int-bucket-id', mode: InputOption::VALUE_OPTIONAL, description: 'The internal bucket ID of the bucket to be tested')
-            ->addOption('file', mode: InputOption::VALUE_REQUIRED, description: 'Name of the output file', default: 'file_integrity_report')
-            ->addOption('stdout', mode: InputOption::VALUE_NONE, description: 'print output to stdout')
-            ->addOption('email', mode: InputOption::VALUE_NONE, description: 'print output to stdout')
+            ->addOption('file', mode: InputOption::VALUE_REQUIRED, description: 'Name of the output file')
+            ->addOption('email', mode: InputOption::VALUE_NONE, description: 'Send the report by email')
             ->addOption('debug', mode: InputOption::VALUE_NONE, description: 'print debug output to stdout')
             ->addOption('limit', mode: InputOption::VALUE_OPTIONAL, description: 'only check the given number of files');
     }
@@ -42,7 +41,6 @@ class CheckFileAndMetadataIntegrityCommand extends Command
         $intBucketId = $input->getOption('int-bucket-id');
         $email = $input->getOption('email');
         $file = $input->getOption('file');
-        $stdout = $input->getOption('stdout');
         $debug = $input->getOption('debug');
         $limit = $input->getOption('limit');
 
@@ -60,7 +58,7 @@ class CheckFileAndMetadataIntegrityCommand extends Command
             $options['limit'] = intval($limit);
         }
         $this->blobChecks->checkFileAndMetadataIntegrity($intBucketId,
-            $stdout ? $output : null, $file, $email, $options);
+            $file === null ? $output : null, $file, $email, $options);
 
         return 0;
     }

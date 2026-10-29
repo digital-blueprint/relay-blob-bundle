@@ -24,9 +24,8 @@ class CheckBucketSizesCommand extends Command
         $this
             ->setDescription('Calculates the difference between actual bucket sizes (sum of file sizes) and the stored bucket size.')
             ->addOption('int-bucket-id', mode: InputOption::VALUE_OPTIONAL, description: 'The internal bucket ID of the bucket to be tested')
-            ->addOption('file', mode: InputOption::VALUE_REQUIRED, description: 'Name of the output file', default: 'bucket_sizes_report')
-            ->addOption('stdout', mode: InputOption::VALUE_NONE, description: 'print output to stdout')
-            ->addOption('email', mode: InputOption::VALUE_NONE, description: 'print output to stdout');
+            ->addOption('file', mode: InputOption::VALUE_REQUIRED, description: 'Name of the output file')
+            ->addOption('email', mode: InputOption::VALUE_NONE, description: 'Send the report by email');
     }
 
     /**
@@ -37,7 +36,6 @@ class CheckBucketSizesCommand extends Command
         $intBucketId = $input->getOption('int-bucket-id');
         $email = $input->getOption('email');
         $file = $input->getOption('file');
-        $stdout = $input->getOption('stdout');
 
         if ($file !== null) {
             $file = $file.'_'.BlobChecks::getDateTimeString(isForFilename: true).'.txt';
@@ -45,7 +43,7 @@ class CheckBucketSizesCommand extends Command
 
         $output->writeln('Checking bucket sizes...');
         $this->blobChecks->checkBucketSizes($intBucketId,
-            $stdout ? $output : null, $file, $email);
+            $file === null ? $output : null, $file, $email);
 
         return 0;
     }
