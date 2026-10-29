@@ -24,8 +24,8 @@ class FindOrphanStorageFilesCommand extends Command
         $this
             ->setDescription('Finds files in file storage which are not present in the blob files table.')
             ->addOption('int-bucket-id', mode: InputOption::VALUE_OPTIONAL, description: 'The internal bucket ID of the bucket to be tested')
-            ->addOption('file', mode: InputOption::VALUE_REQUIRED, description: 'Name of the output file', default: 'orphan_files_report')
-            ->addOption('stdout', mode: InputOption::VALUE_NONE, description: 'print output to stdout');
+            ->addOption('file', mode: InputOption::VALUE_REQUIRED, description: 'Name of the output file')
+            ->addOption('stdout', mode: InputOption::VALUE_NONE, description: 'Print output to stdout (default when no output file is specified)');
     }
 
     /**
@@ -35,7 +35,7 @@ class FindOrphanStorageFilesCommand extends Command
     {
         $intBucketId = $input->getOption('int-bucket-id');
         $file = $input->getOption('file');
-        $stdout = $input->getOption('stdout');
+        $stdout = $input->getOption('stdout') || $file === null;
 
         if ($file !== null) {
             $file = $file.'_'.BlobChecks::getDateTimeString(isForFilename: true).'.txt';
