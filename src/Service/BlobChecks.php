@@ -255,14 +255,22 @@ class BlobChecks implements LoggerAwareInterface
         $out->writeln(' ');
     }
 
+    /**
+     * @return list<string> Orphan IDs, collected only when requested for deletion
+     */
     public function findOrphanFilesInStorage(?string $internalBucketId = null,
-        ?OutputInterface $out = null, ?string $outFileName = null, bool $includeHash = false): void
+        ?OutputInterface $out = null, ?string $outFileName = null, bool $includeHash = false,
+        bool $collectOrphanFiles = false): array
     {
+        $orphanFileIds = [];
         $buckets = $internalBucketId !== null ?
             [$this->configurationService->getBucketByInternalID($internalBucketId)] :
             $this->configurationService->getBuckets();
 
         foreach ($buckets as $bucket) {
+            if ($bucket === null) {
+                throw new \InvalidArgumentException(sprintf('Unknown internal bucket ID "%s"', $internalBucketId));
+            }
             if ($internalBucketId !== null && $internalBucketId !== $bucket->getInternalBucketId()) {
                 continue;
             }
@@ -287,6 +295,9 @@ class BlobChecks implements LoggerAwareInterface
                         $details .= '  SHA-256: '.$service->getFileHash($bucket->getInternalBucketId(), $fileId);
                     }
                     self::output($details."\n", $out, $outFileName);
+                    if ($collectOrphanFiles) {
+                        $orphanFileIds[] = $fileId;
+                    }
                 }
                 ++$numFilesChecked;
                 if (++$itemCounter % $batchSize === 0) {
@@ -308,6 +319,40 @@ class BlobChecks implements LoggerAwareInterface
             self::output("------------------------------------------------------------------\n", $out, $outFileName);
             self::output("\n", $out, $outFileName);
         }
+
+        return $orphanFileIds;
+    }
+
+    /**
+     * Deletes only the confirmed scan candidates.
+     *
+     * @param list<string> $orphanFileIds
+     */
+    public function deleteOrphanFilesInStorage(string $internalBucketId, array $orphanFileIds,
+        ?OutputInterface $out = null, ?string $outFileName = null): bool
+    {
+        $bucket = $this->configurationService->getBucketByInternalID($internalBucketId);
+        if ($bucket === null) {
+            throw new \InvalidArgumentException(sprintf('Unknown internal bucket ID "%s"', $internalBucketId));
+        }
+        $service = $this->datasystemService->getService($bucket->getService());
+        $numDeleted = 0;
+        $numFailed = 0;
+
+        foreach ($orphanFileIds as $fileId) {
+            try {
+                $service->removeFile($internalBucketId, $fileId);
+                ++$numDeleted;
+                self::output(sprintf("Deleted %s\n", $fileId), $out, $outFileName);
+            } catch (\Exception $exception) {
+                ++$numFailed;
+                self::output(sprintf("Failed to delete %s: %s\n", $fileId, $exception->getMessage()), $out, $outFileName);
+            }
+        }
+        self::output(sprintf("Deletion summary: %d deleted, %d failed.\n",
+            $numDeleted, $numFailed), $out, $outFileName);
+
+        return $numFailed === 0;
     }
 
     public function checkBucketSizes(?string $internalBucketId = null, ?OutputInterface $out = null,
