@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.2.20
+
 - Breaking change: The `dbp:relay:blob:check-bucket-sizes`,
   `dbp:relay:blob:check-integrity` and
   `dbp:relay:blob:find-orphan-storage-files` commands now report to stdout by
