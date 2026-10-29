@@ -25,7 +25,8 @@ class FindOrphanStorageFilesCommand extends Command
             ->setDescription('Finds files in file storage which are not present in the blob files table.')
             ->addOption('int-bucket-id', mode: InputOption::VALUE_OPTIONAL, description: 'The internal bucket ID of the bucket to be tested')
             ->addOption('file', mode: InputOption::VALUE_REQUIRED, description: 'Name of the output file')
-            ->addOption('stdout', mode: InputOption::VALUE_NONE, description: 'Print output to stdout (default when no output file is specified)');
+            ->addOption('stdout', mode: InputOption::VALUE_NONE, description: 'Print output to stdout (default when no output file is specified)')
+            ->addOption('hash', mode: InputOption::VALUE_NONE, description: 'Include SHA-256 hashes of orphan files (reads each orphan file in full)');
     }
 
     /**
@@ -43,7 +44,7 @@ class FindOrphanStorageFilesCommand extends Command
 
         $output->writeln('Searching for orphan files in storage...');
         $this->blobChecks->findOrphanFilesInStorage($intBucketId,
-            $stdout ? $output : null, $file);
+            $stdout ? $output : null, $file, $input->getOption('hash'));
 
         return 0;
     }

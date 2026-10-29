@@ -256,7 +256,7 @@ class BlobChecks implements LoggerAwareInterface
     }
 
     public function findOrphanFilesInStorage(?string $internalBucketId = null,
-        ?OutputInterface $out = null, ?string $outFileName = null): void
+        ?OutputInterface $out = null, ?string $outFileName = null, bool $includeHash = false): void
     {
         $buckets = $internalBucketId !== null ?
             [$this->configurationService->getBucketByInternalID($internalBucketId)] :
@@ -277,11 +277,16 @@ class BlobChecks implements LoggerAwareInterface
             $batchSize = 100;
             $itemCounter = 0;
 
-            foreach ($this->datasystemService->getService($bucket->getService())
-                         ->listFiles($bucket->getInternalBucketId()) as $fileId) {
+            $service = $this->datasystemService->getService($bucket->getService());
+            foreach ($service->listFiles($bucket->getInternalBucketId()) as $fileId) {
                 if (null === $this->entityManager->getRepository(FileData::class)->find($fileId)) {
                     ++$numOrphanFiles;
-                    self::output(sprintf("%s\n", $fileId), $out, $outFileName);
+                    $details = sprintf('%s  size: %s', $fileId,
+                        BlobUtils::formatBytes($service->getFileSize($bucket->getInternalBucketId(), $fileId)));
+                    if ($includeHash) {
+                        $details .= '  SHA-256: '.$service->getFileHash($bucket->getInternalBucketId(), $fileId);
+                    }
+                    self::output($details."\n", $out, $outFileName);
                 }
                 ++$numFilesChecked;
                 if (++$itemCounter % $batchSize === 0) {
