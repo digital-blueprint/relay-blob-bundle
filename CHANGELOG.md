@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Breaking change: The `dbp:relay:blob:check-bucket-sizes`,
+  `dbp:relay:blob:check-integrity` and
+  `dbp:relay:blob:find-orphan-storage-files` commands now report to stdout by
+  default. Use `--file` to write a report file instead. Remove the
+  `--stdout` option from all three commands.
+- Breaking change: Remove the unused `--email` option from
+  `dbp:relay:blob:find-orphan-storage-files`.
+- Orphan file reports now include file sizes. Add `--hash` to include SHA-256
+  hashes.
+- Add `--delete` to `dbp:relay:blob:find-orphan-storage-files` to delete reported
+  orphan files after confirmation. Requires `--int-bucket-id`.
+- Improve signed URL error messages to distinguish expired URLs from creation
+  timestamps too far in the future.
+
 ## v0.2.19
 
 - Breaking change: Remove the unused `integrity_check_interval` configuration
