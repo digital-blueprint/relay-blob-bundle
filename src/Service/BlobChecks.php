@@ -256,7 +256,7 @@ class BlobChecks implements LoggerAwareInterface
     }
 
     public function findOrphanFilesInStorage(?string $internalBucketId = null,
-        ?OutputInterface $out = null, ?string $outFileName = null, bool $email = false): void
+        ?OutputInterface $out = null, ?string $outFileName = null): void
     {
         $buckets = $internalBucketId !== null ?
             [$this->configurationService->getBucketByInternalID($internalBucketId)] :
