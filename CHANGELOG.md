@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.2.21
+
 - Fix downloads failing for filenames with umlauts, emoji or `%`.
 
 ## v0.2.20
