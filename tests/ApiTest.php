@@ -13,6 +13,7 @@ use Dbp\Relay\BlobBundle\TestUtils\BlobApiTest;
 use Dbp\Relay\BlobLibrary\Api\BlobFile;
 use Dbp\Relay\BlobLibrary\Helpers\SignatureTools;
 use Dbp\Relay\CoreBundle\TestUtils\ApiTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\HttpClient\ResponseInterface;
@@ -66,6 +67,42 @@ class ApiTest extends ApiTestCase
         $response = $this->testClient->get($url);
         $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
         $this->assertSame('private file contents', $response->getContent());
+    }
+
+    #[DataProvider('downloadFileNameProvider')]
+    public function testDownloadFileName(string $fileName, string $expectedDisposition): void
+    {
+        $bucket = $this->getTestBucketConfig();
+        $fileApi = self::getContainer()->get('dbp.relay.blob.file_api');
+        $file = $fileApi->addFile($bucket->getBucketId(),
+            new BlobFile(['prefix' => 'download', 'fileName' => $fileName], 'download file contents'));
+        $url = SignatureTools::createSignedUrl($bucket->getBucketId(), $bucket->getKey(), 'GET',
+            identifier: $file->getIdentifier(), action: 'download');
+
+        $response = $this->testClient->get($url);
+        $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertSame('download file contents', $response->getContent());
+        $this->assertSame($expectedDisposition, $response->getHeaders()['content-disposition'][0]);
+    }
+
+    public static function downloadFileNameProvider(): array
+    {
+        return [
+            'ASCII' => ['test.txt', 'attachment; filename=test.txt'],
+            'reported umlaut' => [
+                ':test_23_BGF_Print_IPA Verkehrsmalbuch für Kinder_4.jpg',
+                'attachment; filename=":test_23_BGF_Print_IPA Verkehrsmalbuch f_r Kinder_4.jpg"; filename*=utf-8\'\''
+                .rawurlencode(':test_23_BGF_Print_IPA Verkehrsmalbuch für Kinder_4.jpg'),
+            ],
+            'non-Latin and emoji' => [
+                '文件😀.txt',
+                'attachment; filename=___.txt; filename*=utf-8\'\''.rawurlencode('文件😀.txt'),
+            ],
+            'percent' => [
+                '100%.txt',
+                'attachment; filename=100_.txt; filename*=utf-8\'\'100%25.txt',
+            ],
+        ];
     }
 
     public function testDownloadRespectsReadLock(): void

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix downloads failing for filenames with umlauts, emoji or `%`.
+
 ## v0.2.20
 
 - Breaking change: The `dbp:relay:blob:check-bucket-sizes`,

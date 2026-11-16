@@ -49,6 +49,8 @@ class DownloadAction extends AbstractController
             BlobService::ASSERT_BUCKET_ID_EQUALS_OPTION => $bucketIdentifier,
         ]);
         $fileStream = $this->blobService->getFileStream($fileData);
+        $fileName = $fileData->getFileName();
+        $fileNameFallback = preg_replace('/[^\x20-\x7E]|%/u', '_', $fileName);
 
         return new StreamedResponse(
             function () use ($fileStream) {
@@ -60,7 +62,7 @@ class DownloadAction extends AbstractController
                 'Content-Type' => $fileData->getMimeType(),
                 'Content-Length' => (string) $fileData->getFileSize(),
                 'Content-Disposition' => HeaderUtils::makeDisposition(
-                    ResponseHeaderBag::DISPOSITION_ATTACHMENT, $fileData->getFileName()),
+                    ResponseHeaderBag::DISPOSITION_ATTACHMENT, $fileName, $fileNameFallback),
             ]);
     }
 }
